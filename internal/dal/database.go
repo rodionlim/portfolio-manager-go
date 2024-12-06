@@ -8,3 +8,8 @@ type Database interface {
 	Delete(key string) error
 	GetAllKeysWithPrefix(prefix string) ([]string, error)
 }
+
+const (
+	LDB = "leveldb"
+	RDB = "rocksdb"
+)

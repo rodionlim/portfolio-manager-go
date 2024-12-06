@@ -2,3 +2,4 @@ verboseLogging: true
 logFilePath: ./portfoliomanager.log
 host: localhost
 port: 8080
+db: leveldb

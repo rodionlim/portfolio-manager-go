@@ -6,7 +6,9 @@ import (
 	"log"
 	"os"
 
+	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/config"
+	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/server"
 
 	"portfolio-manager/pkg/logging"
@@ -25,12 +27,36 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to setup logger: %s", err)
 	}
+	defer logger.CloseLogger()
 
 	// Create context with logger
 	ctx := context.WithValue(context.Background(), "logger", logger)
 
 	// Log out configurations
 	logger.Info("Starting application with configuration:", config)
+
+	// Initialize the database
+	var db dal.Database
+	switch config.Db {
+	case dal.LDB:
+		db, err = dal.NewLevelDB("./portfolio-manager.db")
+		if err != nil {
+			logger.Fatalf("Failed to initialize LevelDB: %s", err)
+		}
+	case dal.RDB:
+		// Add RocksDB initialization here when implemented
+		logger.Fatalf("RocksDB is not yet implemented")
+	default:
+		logger.Fatalf("Unsupported database type: %s", config.Db)
+	}
+	defer db.Close()
+
+	// Create a new blotter service
+	blotterSvc := blotter.NewBlotter(db)
+	err = blotterSvc.LoadFromDB()
+	if err != nil {
+		logger.Fatalf("Failed to create blotter service: %s", err)
+	}
 
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)

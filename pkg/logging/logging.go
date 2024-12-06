@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sync"
 )
 
 type Logger struct {
@@ -12,30 +13,42 @@ type Logger struct {
 	logFile *os.File
 }
 
+var (
+	instance *Logger
+	once     sync.Once
+)
+
 // InitializeLogger initializes the logger with the specified log level and log file path
 func InitializeLogger(verboseLogging bool, logFilePath string) (*Logger, error) {
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	var err error
+	once.Do(func() {
+		log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
-	l := &Logger{
-		verbose: verboseLogging,
-	}
-
-	if logFilePath != "" {
-		// Open the log file for writing
-		var err error
-		l.logFile, err = os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-		if err != nil {
-			return nil, err
+		instance = &Logger{
+			verbose: verboseLogging,
 		}
 
-		// Tee the log output to both stdout and the log file
-		log.SetOutput(io.MultiWriter(os.Stdout, l.logFile))
-	} else {
-		// Log only to stdout
-		log.SetOutput(os.Stdout)
-	}
+		if logFilePath != "" {
+			// Open the log file for writing
+			instance.logFile, err = os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+			if err != nil {
+				instance = nil
+				return
+			}
 
-	return l, nil
+			// Tee the log output to both stdout and the log file
+			log.SetOutput(io.MultiWriter(os.Stdout, instance.logFile))
+		} else {
+			// Log only to stdout
+			log.SetOutput(os.Stdout)
+		}
+	})
+	return instance, err
+}
+
+// GetLogger returns the singleton logger instance
+func GetLogger() *Logger {
+	return instance
 }
 
 // Debug logs a debug message
@@ -58,6 +71,12 @@ func (l *Logger) Warn(v ...interface{}) {
 // Error logs an error message
 func (l *Logger) Error(v ...interface{}) {
 	log.Output(2, fmt.Sprintf("ERROR: %s", fmt.Sprintln(v...)))
+}
+
+// Fatalf logs a fatal error message and exits the application
+func (l *Logger) Fatalf(format string, v ...interface{}) {
+	log.Output(2, fmt.Sprintf("FATAL: "+format, v...))
+	os.Exit(1)
 }
 
 // CloseLogger closes the log file

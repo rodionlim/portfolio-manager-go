@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/common"
+	"portfolio-manager/pkg/logging"
 	"time"
 
 	"github.com/go-gota/gota/dataframe"
@@ -43,26 +44,24 @@ func NewBlotter(db dal.Database) *Blotter {
 	}
 }
 
-// NewBlotterFromDB creates a new Blotter instance and loads trades from the database.
-func NewBlotterFromDB(db dal.Database) (*Blotter, error) {
-	blotter := NewBlotter(db)
-
-	// Load trades from the database
-	tradeKeys, err := db.GetAllKeysWithPrefix("trade:")
+func (b *Blotter) LoadFromDB() error {
+	tradeKeys, err := b.db.GetAllKeysWithPrefix("trade:")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, key := range tradeKeys {
 		var trade Trade
-		err := db.Get(key, &trade)
+		err := b.db.Get(key, &trade)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		blotter.AddTrade(trade)
+		b.AddTrade(trade)
 	}
 
-	return blotter, nil
+	logging.GetLogger().Info("Loaded trades from database")
+
+	return nil
 }
 
 // AddTrade adds a new trade to the blotter and writes it to the database.

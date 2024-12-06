@@ -3,9 +3,9 @@ package dal
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 type LevelDB struct {
@@ -60,24 +60,19 @@ func (l *LevelDB) Delete(key string) error {
 	return nil
 }
 
-func (l *LevelDB) GetAllTickers() ([]string, error) {
-	iter := l.db.NewIterator(nil, nil)
+// GetAllKeysWithPrefix retrieves all keys with the specified prefix.
+func (l *LevelDB) GetAllKeysWithPrefix(prefix string) ([]string, error) {
+	iter := l.db.NewIterator(util.BytesPrefix([]byte(prefix)), nil)
 	defer iter.Release()
 
-	var tickers []string
+	var keys []string
 	for iter.Next() {
-		key := iter.Key()
-		if string(key) == "ticker" {
-			value := iter.Value()
-			ticker := string(value)
-			tickers = append(tickers, ticker)
-			log.Printf("Retrieved ticker: %s\n", ticker)
-		}
+		keys = append(keys, string(iter.Key()))
 	}
 
 	if err := iter.Error(); err != nil {
-		return nil, fmt.Errorf("failed to iterate over database: %w", err)
+		return nil, fmt.Errorf("failed to iterate over keys with prefix %s: %w", prefix, err)
 	}
 
-	return tickers, nil
+	return keys, nil
 }

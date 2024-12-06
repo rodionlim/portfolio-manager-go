@@ -1,7 +1,8 @@
 package config
 
 import (
-	"io/ioutil"
+	"encoding/json"
+	"os"
 
 	"gopkg.in/yaml.v2"
 )
@@ -10,11 +11,18 @@ import (
 type Config struct {
 	VerboseLogging bool   `yaml:"verboseLogging"`
 	LogFilePath    string `yaml:"logFilePath"`
+	Port		   int    `yaml:"port"`
+}
+
+// Implement the Stringer interface for Config
+func (c Config) String() string {
+	jConfig, _ := json.MarshalIndent(c, "", "\t")
+	return string(jConfig)
 }
 
 // NewConfig reads the configuration file at the given path and returns a Config object.
 func NewConfig(path string) (*Config, error) {
-	file, err := ioutil.ReadFile(path)
+	file, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

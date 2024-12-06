@@ -23,9 +23,7 @@ func main() {
 	}
 
 	// Log some sample messages
-	logger.Info("Starting application with configuration: %v", config)
-	logger.Debug("Debugging information")
-	logger.Warn("Warning message")
+	logger.Info("Starting application with configuration:", config)
 
 	// Exit
 	os.Exit(0)

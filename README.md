@@ -14,11 +14,24 @@ A command line application to value stocks and cryptocurrencies in your personal
 
 1. Install Go version 1.23.4 or higher.
 2. Clone the repository to your local machine.
-3. Install the required dependencies by running go get.
-4. Run `go build` to build the application.
-5. Run the executable file to launch the application.
+3. Run `make` to build and install the application
+4. Run the `portfolio-manager` binary to start the application
 
-## Usage
+## Quickstart
+
+Start the application
+
+```sh
+make run
+```
+
+Build the application
+
+```sh
+make
+```
+
+## Key Features
 
 1. Add assets to your portfolio using the add command.
 2. View all assets in your portfolio using the view command.

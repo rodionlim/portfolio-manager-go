@@ -11,7 +11,8 @@ import (
 type Config struct {
 	VerboseLogging bool   `yaml:"verboseLogging"`
 	LogFilePath    string `yaml:"logFilePath"`
-	Port		   int    `yaml:"port"`
+	Host           string `yaml:"host"`
+	Port           string `yaml:"port"`
 }
 
 // Implement the Stringer interface for Config
@@ -31,6 +32,11 @@ func NewConfig(path string) (*Config, error) {
 	err = yaml.Unmarshal(file, &config)
 	if err != nil {
 		return nil, err
+	}
+
+	// Set default value for Host if not provided
+	if config.Host == "" {
+		config.Host = "localhost"
 	}
 
 	return &config, nil

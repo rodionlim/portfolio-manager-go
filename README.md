@@ -12,7 +12,7 @@ A command line application to value stocks and cryptocurrencies in your personal
 
 ## Installation
 
-1. Install Go version 1.16 or higher.
+1. Install Go version 1.23.4 or higher.
 2. Clone the repository to your local machine.
 3. Install the required dependencies by running go get.
 4. Run `go build` to build the application.
@@ -47,7 +47,7 @@ portfolio-manager/
 │ └── config/
 │   ├── config.go
 │ └── dal/
-│   ├── levledb.go
+│   ├── leveldb.go
 ├── .gitignore
 ├── go.mod
 └── README.md

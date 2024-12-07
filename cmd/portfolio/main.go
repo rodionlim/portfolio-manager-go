@@ -41,11 +41,11 @@ func main() {
 	case dal.LDB:
 		db, err = dal.NewLevelDB("./portfolio-manager.db")
 		if err != nil {
-			logger.Fatalf("Failed to initialize LevelDB: %s", err)
+			logger.Fatalf("Failed to initialize %s: %s", dal.LDB, err)
 		}
 	case dal.RDB:
 		// Add RocksDB initialization here when implemented
-		logger.Fatalf("RocksDB is not yet implemented")
+		logger.Fatalf("%s is not yet implemented", dal.RDB)
 	default:
 		logger.Fatalf("Unsupported database type: %s", config.Db)
 	}

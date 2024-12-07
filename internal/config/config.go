@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"portfolio-manager/internal/dal"
 
 	"gopkg.in/yaml.v2"
 )
@@ -15,6 +16,7 @@ type Config struct {
 	Host           string `yaml:"host"`
 	Port           string `yaml:"port"`
 	Db             string `yaml:"db"`
+	DbPath         string `yaml:"dbPath"`
 }
 
 // Implement the Stringer interface for Config
@@ -43,10 +45,13 @@ func NewConfig(path string) (*Config, error) {
 
 	// Validate the database field
 	if config.Db == "" {
-		config.Db = "leveldb"
+		config.Db = dal.LDB
 	}
-	if config.Db != "leveldb" && config.Db != "rocksdb" {
+	if config.Db != dal.LDB && config.Db != dal.RDB {
 		return nil, errors.New("invalid db type: must be 'leveldb' or 'rocksdb'")
+	}
+	if config.DbPath == "" {
+		config.DbPath = "./portfolio-manager.db"
 	}
 
 	return &config, nil

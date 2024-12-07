@@ -101,8 +101,57 @@ func (b *Blotter) AddTrade(trade Trade) error {
 }
 
 // GetTrades returns all trades in the blotter.
-func (b *Blotter) GetTrades() dataframe.DataFrame {
+func (b *Blotter) GetTradesDf() dataframe.DataFrame {
 	return b.trades
+}
+
+// GetTradeByID returns a trade with the given ID.
+func (b *Blotter) GetTradeByID(tradeID string) (*Trade, error) {
+	row := b.trades.Filter(dataframe.F{
+		Colname:    "TradeID",
+		Comparator: "==",
+		Comparando: tradeID,
+	})
+	if row.Nrow() == 0 {
+		return nil, errors.New("trade not found")
+	}
+
+	trade := b.createTradeFromRow(row)
+	return trade, nil
+}
+
+// GetTradesByTicker returns all trades for the given ticker.
+func (b *Blotter) GetTradesByTicker(ticker string) ([]Trade, error) {
+	rows := b.trades.Filter(dataframe.F{
+		Colname:    "Ticker",
+		Comparator: "==",
+		Comparando: ticker,
+	})
+	if rows.Nrow() == 0 {
+		return nil, errors.New("no trades found for the given ticker")
+	}
+
+	var trades []Trade
+	for i := 0; i < rows.Nrow(); i++ {
+		trades = append(trades, *b.createTradeFromRow(rows.Subset(i)))
+	}
+
+	return trades, nil
+}
+
+// createTradeFromRow creates a Trade instance from a dataframe row.
+func (b *Blotter) createTradeFromRow(row dataframe.DataFrame) *Trade {
+	return &Trade{
+		Side:          row.Elem(0, common.IndexOf(b.trades.Names(), "side")).String(),
+		Quantity:      row.Elem(0, common.IndexOf(b.trades.Names(), "quantity")).Float(),
+		AssetClass:    row.Elem(0, common.IndexOf(b.trades.Names(), "asset_class")).String(),
+		AssetSubClass: row.Elem(0, common.IndexOf(b.trades.Names(), "asset_subclass")).String(),
+		Price:         row.Elem(0, common.IndexOf(b.trades.Names(), "price")).Float(),
+		Yield:         row.Elem(0, common.IndexOf(b.trades.Names(), "yield")).Float(),
+		Ticker:        row.Elem(0, common.IndexOf(b.trades.Names(), "ticker")).String(),
+		TradeDate:     row.Elem(0, common.IndexOf(b.trades.Names(), "trade_date")).String(),
+		TradeID:       row.Elem(0, common.IndexOf(b.trades.Names(), "trade_id")).String(),
+	}
 }
 
 // Trade represents a trade in the blotter.

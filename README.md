@@ -1,10 +1,10 @@
 # Portfolio Valuation Tool
 
-A command line application to value stocks and cryptocurrencies in your personal portfolio.
+An application to value stocks, fx, commodities and cryptocurrencies in your personal portfolio.
 
 ## Features
 
-- Valuate stocks and cryptocurrencies based on current market prices
+- Value stocks and cryptocurrencies based on current market prices
 - Store portfolio data in a JSON file for easy access and manipulation
 - Store portfolio data in leveldb for persistence
 - Calculate total portfolio value based on current prices

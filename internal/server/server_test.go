@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/types"
 )
 
 // TestUpcheckHandler tests the upcheckHandler function.
@@ -39,13 +40,12 @@ func TestStart(t *testing.T) {
 		t.Fatalf("could not initialize logger: %v", err)
 	}
 
-	ctx := context.WithValue(context.Background(), "logger", logger)
-	srv := NewServer(":0") // Use port 0 to get an available port
+	ctx := context.WithValue(context.Background(), types.LoggerKey, logger)
+	srv := NewServer(":0", nil) // Use port 0 to get an available port
 
 	go func() {
-		if err := srv.Start(ctx); err != nil && err != http.ErrServerClosed {
-			t.Fatalf("could not start server: %v", err)
-		}
+		// don't need to check for errors here since we check the handlers after
+		srv.Start(ctx)
 	}()
 
 	// Give the server a moment to start

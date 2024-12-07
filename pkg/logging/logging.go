@@ -48,6 +48,10 @@ func InitializeLogger(verboseLogging bool, logFilePath string) (*Logger, error) 
 
 // GetLogger returns the singleton logger instance
 func GetLogger() *Logger {
+	if instance == nil {
+		log.Fatalf("Logger not initialized")
+	}
+
 	return instance
 }
 

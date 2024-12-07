@@ -5,18 +5,22 @@ import (
 	"fmt"
 	"net/http"
 
+	"portfolio-manager/internal/blotter"
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/types"
 )
 
 // Server represents the HTTP server.
 type Server struct {
-	Addr string
+	Addr    string
+	Blotter *blotter.Blotter
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string) *Server {
+func NewServer(addr string, blotterSvc *blotter.Blotter) *Server {
 	return &Server{
-		Addr: addr,
+		Addr:    addr,
+		Blotter: blotterSvc,
 	}
 }
 
@@ -27,7 +31,7 @@ func upcheckHandler(w http.ResponseWriter, r *http.Request) {
 
 // Start starts the HTTP server.
 func (s *Server) Start(ctx context.Context) error {
-	logger := ctx.Value("logger").(*logging.Logger)
+	logger := ctx.Value(types.LoggerKey).(*logging.Logger)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		upcheckHandler(w, r.WithContext(ctx))

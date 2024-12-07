@@ -12,6 +12,7 @@ import (
 	"portfolio-manager/internal/server"
 
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/types"
 )
 
 func main() {
@@ -30,7 +31,7 @@ func main() {
 	defer logger.CloseLogger()
 
 	// Create context with logger
-	ctx := context.WithValue(context.Background(), "logger", logger)
+	ctx := context.WithValue(context.Background(), types.LoggerKey, logger)
 
 	// Log out configurations
 	logger.Info("Starting application with configuration:", config)
@@ -60,7 +61,7 @@ func main() {
 
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	srv := server.NewServer(addr)
+	srv := server.NewServer(addr, blotterSvc)
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)
 	}

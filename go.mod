@@ -10,8 +10,12 @@ require (
 )
 
 require (
-	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
-	golang.org/x/net v0.0.0-20210423184538-5f58ad60dda6 // indirect
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
-	gonum.org/v1/gonum v0.9.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
+	golang.org/x/net v0.32.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	gonum.org/v1/gonum v0.15.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

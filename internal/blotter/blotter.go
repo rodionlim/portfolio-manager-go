@@ -19,6 +19,8 @@ const (
 	AssetClassEquities    = "eq"
 	AssetClassCrypto      = "crypto"
 	AssetClassCommodities = "cmdty"
+	AssetClassCash        = "cash"
+	AssetClassBonds       = "bond"
 )
 
 // Blotter represents a service for managing trades.
@@ -36,6 +38,7 @@ func NewBlotter(db dal.Database) *Blotter {
 			series.New([]string{}, series.String, "asset_class"),
 			series.New([]string{}, series.String, "asset_subclass"),
 			series.New([]float64{}, series.Float, "price"),
+			series.New([]float64{}, series.Float, "yield"),
 			series.New([]string{}, series.String, "ticker"),
 			series.New([]time.Time{}, series.String, "trade_date"),
 			series.New([]string{}, series.String, "trade_id"),
@@ -109,13 +112,14 @@ type Trade struct {
 	AssetClass    string  `json:"asset_class"`    // e.g., Equity, Fixed Income, Commodity
 	AssetSubClass string  `json:"asset_subclass"` // e.g., Stock, Bond, Gold
 	Price         float64 `json:"price"`          // Price per unit of the asset
+	Yield         float64 `json:"yield"`          // Yield of the asset
 	Ticker        string  `json:"ticker"`         // Ticker symbol of the asset
 	TradeDate     string  `json:"trade_date"`     // Date and time of the trade
 	TradeID       string  `json:"trade_id"`       // Unique identifier for the trade
 }
 
 // NewTrade creates a new Trade instance.
-func NewTrade(side string, quantity float64, assetClass, assetSubClass, ticker string, price float64, tradeDate time.Time) (*Trade, error) {
+func NewTrade(side string, quantity float64, assetClass, assetSubClass, ticker string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
 	if !isValidAssetClass(assetClass) {
 		return nil, errors.New("unsupported asset class")
 	}
@@ -126,6 +130,7 @@ func NewTrade(side string, quantity float64, assetClass, assetSubClass, ticker s
 		AssetClass:    assetClass,
 		AssetSubClass: assetSubClass,
 		Price:         price,
+		Yield:         yield,
 		Ticker:        ticker,
 		TradeDate:     tradeDate.Format(time.RFC3339),
 		TradeID:       uuid.New().String(),
@@ -135,7 +140,7 @@ func NewTrade(side string, quantity float64, assetClass, assetSubClass, ticker s
 // isValidAssetClass checks if the provided asset class is supported.
 func isValidAssetClass(assetClass string) bool {
 	switch assetClass {
-	case AssetClassFX, AssetClassEquities, AssetClassCrypto, AssetClassCommodities:
+	case AssetClassFX, AssetClassEquities, AssetClassCrypto, AssetClassCommodities, AssetClassCash, AssetClassBonds:
 		return true
 	default:
 		return false

@@ -1,10 +1,10 @@
 # Portfolio Valuation Tool
 
-An application to value stocks, fx, commodities and cryptocurrencies in your personal portfolio.
+An application to value stocks, fx, commodities, cash, bonds and cryptocurrencies in your personal portfolio.
 
 ## Features
 
-- Value stocks and cryptocurrencies based on current market prices
+- Value assets based on current market prices
 - Store portfolio data in a JSON file for easy access and manipulation
 - Store portfolio data in leveldb for persistence
 - Calculate total portfolio value based on current prices

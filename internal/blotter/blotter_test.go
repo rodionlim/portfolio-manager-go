@@ -47,8 +47,8 @@ func TestAddTrade(t *testing.T) {
 	err = blotter.AddTrade(*trade)
 	assert.NoError(t, err)
 
-	trades := blotter.GetTradesDf()
-	assert.Equal(t, 1, trades.Nrow())
+	trades := blotter.GetTrades()
+	assert.Equal(t, 1, len(trades))
 }
 
 func TestGetTradeByID(t *testing.T) {
@@ -83,8 +83,8 @@ func TestRemoveTrade(t *testing.T) {
 	err = blotter.RemoveTrade(trade.TradeID)
 	assert.NoError(t, err)
 
-	trades := blotter.GetTradesDf()
-	assert.Equal(t, 0, trades.Nrow())
+	trades := blotter.GetTrades()
+	assert.Equal(t, 0, len(trades))
 }
 
 func TestCreateTradeWithInvalidSide(t *testing.T) {

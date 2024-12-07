@@ -13,11 +13,11 @@ import (
 // Server represents the HTTP server.
 type Server struct {
 	Addr    string
-	Blotter *blotter.Blotter
+	Blotter *blotter.TradeBlotter
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string, blotterSvc *blotter.Blotter) *Server {
+func NewServer(addr string, blotterSvc *blotter.TradeBlotter) *Server {
 	return &Server{
 		Addr:    addr,
 		Blotter: blotterSvc,

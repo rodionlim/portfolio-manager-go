@@ -4,12 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"portfolio-manager/internal/dal"
-	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
 	"time"
 
-	"github.com/go-gota/gota/dataframe"
-	"github.com/go-gota/gota/series"
 	"github.com/google/uuid"
 )
 
@@ -29,31 +26,27 @@ const (
 	TradeSideSell = "sell"
 )
 
-// Blotter represents a service for managing trades.
-type Blotter struct {
-	trades dataframe.DataFrame
-	db     dal.Database
+// TradeBlotter represents a service for managing trades.
+type TradeBlotter struct {
+	trades             []Trade
+	tradesByID         map[string]*Trade
+	tradesByTicker     map[string][]Trade
+	tradesByAssetClass map[string][]Trade
+	db                 dal.Database
 }
 
-// NewBlotter creates a new Blotter instance.
-func NewBlotter(db dal.Database) *Blotter {
-	return &Blotter{
-		trades: dataframe.New(
-			series.New([]string{}, series.String, "TradeID"),
-			series.New([]string{}, series.String, "TradeDate"),
-			series.New([]string{}, series.String, "Ticker"),
-			series.New([]string{}, series.String, "Side"),
-			series.New([]float64{}, series.Float, "Quantity"),
-			series.New([]string{}, series.String, "AssetClass"),
-			series.New([]string{}, series.String, "AssetSubClass"),
-			series.New([]float64{}, series.Float, "Price"),
-			series.New([]float64{}, series.Float, "Yield"),
-		),
-		db: db,
+// NewBlotter creates a new TradeBlotter instance.
+func NewBlotter(db dal.Database) *TradeBlotter {
+	return &TradeBlotter{
+		trades:             []Trade{},
+		tradesByID:         make(map[string]*Trade),
+		tradesByTicker:     make(map[string][]Trade),
+		tradesByAssetClass: make(map[string][]Trade),
+		db:                 db,
 	}
 }
 
-func (b *Blotter) LoadFromDB() error {
+func (b *TradeBlotter) LoadFromDB() error {
 	tradeKeys, err := b.db.GetAllKeysWithPrefix("trade:")
 	if err != nil {
 		return err
@@ -77,7 +70,7 @@ func (b *Blotter) LoadFromDB() error {
 }
 
 // AddTrade adds a new trade to the blotter and writes it to the database.
-func (b *Blotter) AddTrade(trade Trade) error {
+func (b *TradeBlotter) AddTrade(trade Trade) error {
 	// Write trade to the database
 	tradeKey := generateTradeKey(trade)
 	err := b.db.Put(tradeKey, trade)
@@ -85,108 +78,78 @@ func (b *Blotter) AddTrade(trade Trade) error {
 		return err
 	}
 
-	// Check if the trade already exists in the DataFrame
-	existingRow := b.trades.Filter(dataframe.F{
-		Colname:    "TradeID",
-		Comparator: "==",
-		Comparando: trade.TradeID,
-	})
-
-	if existingRow.Nrow() > 0 {
-		// Update the existing row
-		for i := 0; i < b.trades.Nrow(); i++ {
-			if b.trades.Elem(i, common.IndexOf(b.trades.Names(), "TradeID")).String() == trade.TradeID {
-				b.trades = b.trades.Drop(i)
+	// Check if the trade already exists
+	if existingTrade, exists := b.tradesByID[trade.TradeID]; exists {
+		// Remove the existing trade from the trades slice
+		for i, t := range b.trades {
+			if t.TradeID == existingTrade.TradeID {
+				b.trades = append(b.trades[:i], b.trades[i+1:]...)
 				break
 			}
 		}
 	}
 
-	// Add trade to the DataFrame
-	newRow := dataframe.LoadStructs([]Trade{trade})
-	if newRow.Error() != nil {
-		return newRow.Error()
-	}
-
-	b.trades = b.trades.RBind(newRow)
+	// Add trade to the trades slice and indexes
+	b.trades = append(b.trades, trade)
+	b.tradesByID[trade.TradeID] = &trade
+	b.tradesByTicker[trade.Ticker] = append(b.tradesByTicker[trade.Ticker], trade)
+	b.tradesByAssetClass[trade.AssetClass] = append(b.tradesByAssetClass[trade.AssetClass], trade)
 
 	return nil
 }
 
 // RemoveTrade removes a trade from the blotter and deletes it from the database.
-func (b *Blotter) RemoveTrade(tradeID string) error {
-	// Check if the trade exists in the DataFrame
-	row := b.trades.Filter(dataframe.F{
-		Colname:    "TradeID",
-		Comparator: "==",
-		Comparando: tradeID,
-	})
-	if row.Nrow() == 0 {
+func (b *TradeBlotter) RemoveTrade(tradeID string) error {
+	// Check if the trade exists
+	trade, exists := b.tradesByID[tradeID]
+	if !exists {
 		return errors.New("trade not found")
 	}
 
-	// Remove trade from the DataFrame
-	b.trades = b.trades.Filter(dataframe.F{
-		Colname:    "TradeID",
-		Comparator: "!=",
-		Comparando: tradeID,
-	})
-
-	// Remove trade from the database
-	trade, err := b.createTradeFromRow(row)
-	if err != nil {
-		return err
+	// Remove trade from the trades slice
+	for i, t := range b.trades {
+		if t.TradeID == tradeID {
+			b.trades = append(b.trades[:i], b.trades[i+1:]...)
+			break
+		}
 	}
 
+	// Remove trade from the indexes
+	delete(b.tradesByID, tradeID)
+	b.tradesByTicker[trade.Ticker] = removeTradeFromSlice(b.tradesByTicker[trade.Ticker], tradeID)
+	b.tradesByAssetClass[trade.AssetClass] = removeTradeFromSlice(b.tradesByAssetClass[trade.AssetClass], tradeID)
+
+	// Remove trade from the database
 	tradeKey := generateTradeKey(*trade)
-	err = b.db.Delete(tradeKey)
+	err := b.db.Delete(tradeKey)
 	if err != nil {
 		logging.GetLogger().Error("Failed to delete trade from database", err)
-
-		// Add the trade back to the DataFrame (ROLLBACK)
-		newRow := dataframe.LoadStructs([]Trade{*trade})
-		b.trades = b.trades.RBind(newRow)
+		return err
 	}
 
 	return nil
 }
 
 // GetTrades returns all trades in the blotter.
-func (b *Blotter) GetTradesDf() dataframe.DataFrame {
+func (b *TradeBlotter) GetTrades() []Trade {
 	return b.trades
 }
 
 // GetTradeByID returns a trade with the given ID.
-func (b *Blotter) GetTradeByID(tradeID string) (*Trade, error) {
-	row := b.trades.Filter(dataframe.F{
-		Colname:    "TradeID",
-		Comparator: "==",
-		Comparando: tradeID,
-	})
-	if row.Nrow() == 0 {
+func (b *TradeBlotter) GetTradeByID(tradeID string) (*Trade, error) {
+	trade, exists := b.tradesByID[tradeID]
+	if !exists {
 		return nil, errors.New("trade not found")
 	}
-
-	return b.createTradeFromRow(row)
+	return trade, nil
 }
 
 // GetTradesByTicker returns all trades for the given ticker.
-func (b *Blotter) GetTradesByTicker(ticker string) ([]Trade, error) {
-	rows := b.trades.Filter(dataframe.F{
-		Colname:    "Ticker",
-		Comparator: "==",
-		Comparando: ticker,
-	})
-	if rows.Nrow() == 0 {
+func (b *TradeBlotter) GetTradesByTicker(ticker string) ([]Trade, error) {
+	trades, exists := b.tradesByTicker[ticker]
+	if !exists {
 		return nil, errors.New("no trades found for the given ticker")
 	}
-
-	var trades []Trade
-	for i := 0; i < rows.Nrow(); i++ {
-		trade, _ := b.createTradeFromRow(rows.Subset(i))
-		trades = append(trades, *trade)
-	}
-
 	return trades, nil
 }
 
@@ -195,25 +158,14 @@ func generateTradeKey(trade Trade) string {
 	return fmt.Sprintf("trade:%s:%s:%s", trade.AssetClass, trade.Ticker, trade.TradeID)
 }
 
-// createTradeFromRow creates a Trade instance from a dataframe row.
-func (b *Blotter) createTradeFromRow(row dataframe.DataFrame) (*Trade, error) {
-	if row.Nrow() > 1 {
-		return nil, errors.New("more than one row found")
+// removeTradeFromSlice removes a trade from a slice of trades by trade ID.
+func removeTradeFromSlice(trades []Trade, tradeID string) []Trade {
+	for i, t := range trades {
+		if t.TradeID == tradeID {
+			return append(trades[:i], trades[i+1:]...)
+		}
 	}
-
-	dfCols := b.trades.Names()
-
-	return &Trade{
-		TradeID:       row.Elem(0, common.IndexOf(dfCols, "TradeID")).String(),
-		TradeDate:     row.Elem(0, common.IndexOf(dfCols, "TradeDate")).String(),
-		Ticker:        row.Elem(0, common.IndexOf(dfCols, "Ticker")).String(),
-		Side:          row.Elem(0, common.IndexOf(dfCols, "Side")).String(),
-		Quantity:      row.Elem(0, common.IndexOf(dfCols, "Quantity")).Float(),
-		AssetClass:    row.Elem(0, common.IndexOf(dfCols, "AssetClass")).String(),
-		AssetSubClass: row.Elem(0, common.IndexOf(dfCols, "AssetSubClass")).String(),
-		Price:         row.Elem(0, common.IndexOf(dfCols, "Price")).Float(),
-		Yield:         row.Elem(0, common.IndexOf(dfCols, "Yield")).Float(),
-	}, nil
+	return trades
 }
 
 // Trade represents a trade in the blotter.

@@ -108,14 +108,9 @@ func (b *TradeBlotter) addTrade(trade Trade, isPreLoadFromDB bool) error {
 		}
 
 		// Check if the trade already exists
-		if existingTrade, exists := b.tradesByID[trade.TradeID]; exists {
+		if _, exists := b.tradesByID[trade.TradeID]; exists {
 			// Remove the existing trade from the trades slice
-			for i, t := range b.trades {
-				if t.TradeID == existingTrade.TradeID {
-					b.trades = append(b.trades[:i], b.trades[i+1:]...)
-					break
-				}
-			}
+			return errors.New("trade already exists. call RemoveTrade instead")
 		}
 	}
 

@@ -1,7 +1,6 @@
 package portfolio
 
 import (
-	"context"
 	"sync"
 
 	"portfolio-manager/internal/blotter"
@@ -18,6 +17,7 @@ type Position struct {
 	Mv        float64
 	PnL       float64
 	Dividends float64
+	AvgPx     float64
 }
 
 type Portfolio struct {
@@ -65,7 +65,7 @@ func (p *Portfolio) LoadPositions() error {
 	return nil
 }
 
-func (p *Portfolio) SubscribeToBlotter(ctx context.Context, blotterSvc *blotter.TradeBlotter) {
+func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 	// Check if the currentSeqNum is less than the current sequence number of the blotter, i
 	// if it is, replay the trades from the blotter starting from the currentSeqNum
 	blotterSeqNum := blotterSvc.GetCurrentSeqNum()
@@ -74,8 +74,8 @@ func (p *Portfolio) SubscribeToBlotter(ctx context.Context, blotterSvc *blotter.
 	}
 
 	blotterSvc.Subscribe(blotter.NewTradeEvent, event.NewEventHandler(func(e event.Event) {
-		trade := e.Data.(*blotter.Trade)
-		p.updatePosition(trade)
+		trade := e.Data.(blotter.NewTradeEventPayload).Trade
+		p.updatePosition(&trade)
 	}))
 
 }
@@ -100,6 +100,7 @@ func (p *Portfolio) updatePositionFromDb(position *Position) error {
 	positionToUpdate.Mv = position.Mv
 	positionToUpdate.PnL = position.PnL
 	positionToUpdate.Dividends = position.Dividends
+	positionToUpdate.AvgPx = position.AvgPx
 
 	return nil
 }

@@ -27,6 +27,10 @@ clean:
 	rm -f $(BINARY_MAC_ARM)
 	rm -f *.log
 
+# Wipe the database
+clean-db:
+	rm -rf *.db
+
 # Run the application
 run: build
 	@./$(BINARY_NAME)

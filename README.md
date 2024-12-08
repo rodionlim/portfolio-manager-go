@@ -31,6 +31,12 @@ Build the application
 make
 ```
 
+Wipe the entire database
+
+```sh
+make clean-db
+```
+
 ## Key Features
 
 1. Add assets to your portfolio using the `/blotter/trade` POST api.
@@ -46,15 +52,16 @@ portfolio-manager/
 │   └── portfolio/
 │       └── main.go
 ├── internal/
-│   ├── portfolio/
-│   ├── config/
-│   ├── server/
 │   ├── blotter/
-│   └── dal/
+│   ├── config/
+│   ├── dal/
+│   ├── portfolio/
+│   └── server/
 ├── pkg/
-│   ├── types/
 │   ├── common/
-│   └── logging/
+│   ├── event/
+│   ├── logging/
+│   └── types/
 ├── .gitignore
 ├── go.mod
 └── README.md

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
 	"time"
@@ -35,6 +36,7 @@ type TradeBlotter struct {
 	tradesByAssetClass map[string][]Trade
 	currentSeqNum      int // used as a pointer to the head of the blotter
 	db                 dal.Database
+	eventBus           *event.EventBus
 }
 
 // NewBlotter creates a new TradeBlotter instance.
@@ -52,6 +54,7 @@ func NewBlotter(db dal.Database) *TradeBlotter {
 		tradesByAssetClass: make(map[string][]Trade),
 		currentSeqNum:      currentSeqNum,
 		db:                 db,
+		eventBus:           event.NewEventBus(),
 	}
 }
 
@@ -106,6 +109,9 @@ func (b *TradeBlotter) AddTrade(trade Trade) error {
 	b.tradesByTicker[trade.Ticker] = append(b.tradesByTicker[trade.Ticker], trade)
 	b.tradesByAssetClass[trade.AssetClass] = append(b.tradesByAssetClass[trade.AssetClass], trade)
 
+	// Publish a new trade event
+	b.PublishNewTradeEvent(trade)
+
 	return nil
 }
 
@@ -138,6 +144,8 @@ func (b *TradeBlotter) RemoveTrade(tradeID string) error {
 		return err
 	}
 
+	b.PublishRemoveTradeEvent(*trade)
+
 	return nil
 }
 
@@ -162,6 +170,16 @@ func (b *TradeBlotter) GetTradesByTicker(ticker string) ([]Trade, error) {
 		return nil, errors.New("no trades found for the given ticker")
 	}
 	return trades, nil
+}
+
+// Subscribe allows other packages to subscribe to blotter events.
+func (tb *TradeBlotter) Subscribe(eventName string, handler event.EventHandler) {
+	tb.eventBus.Subscribe(eventName, handler)
+}
+
+// Unsubscribe allows other packages to unsubscribe from blotter events.
+func (tb *TradeBlotter) Unsubscribe(eventName string, corrId uuid.UUID) {
+	tb.eventBus.Unsubscribe(eventName, corrId)
 }
 
 // generateTradeKey generates a unique key for the trade.

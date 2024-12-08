@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/event"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -115,4 +116,55 @@ func TestTradeSequenceNumber(t *testing.T) {
 	assert.Equal(t, 2, len(trades))
 	assert.Equal(t, 0, trades[0].SeqNum)
 	assert.Equal(t, 1, trades[1].SeqNum)
+}
+
+func TestEventPublishingOnAddTrade(t *testing.T) {
+	db, dbPath := setupTempDB(t)
+	defer cleanupTempDB(t, db, dbPath)
+
+	blotterSvc := NewBlotter(db)
+	trade, err := createTestTrade()
+	assert.NoError(t, err)
+
+	eventPublished := false
+	blotterSvc.Subscribe(NewTradeEvent, event.NewEventHandler(func(handler event.Event) {
+		if handler.Data.(NewTradeEventPayload).Trade.TradeID == trade.TradeID {
+			eventPublished = true
+		}
+	}))
+
+	err = blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	// Wait for the event to be published
+	time.Sleep(50 * time.Millisecond)
+
+	assert.True(t, eventPublished, "Expected event to be published when trade is added")
+}
+
+func TestEventPublishingOnRemoveTrade(t *testing.T) {
+	db, dbPath := setupTempDB(t)
+	defer cleanupTempDB(t, db, dbPath)
+
+	blotterSvc := NewBlotter(db)
+	trade, err := createTestTrade()
+	assert.NoError(t, err)
+
+	err = blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	eventPublished := false
+	blotterSvc.Subscribe(RemoveTradeEvent, event.NewEventHandler(func(handler event.Event) {
+		if handler.Data.(NewTradeEventPayload).Trade.TradeID == trade.TradeID {
+			eventPublished = true
+		}
+	}))
+
+	err = blotterSvc.RemoveTrade(trade.TradeID)
+	assert.NoError(t, err)
+
+	// Wait for the event to be published
+	time.Sleep(50 * time.Millisecond)
+
+	assert.True(t, eventPublished, "Expected event to be published when trade is removed")
 }

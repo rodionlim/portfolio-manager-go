@@ -12,7 +12,7 @@ An application to value stocks, fx, commodities, cash, bonds and cryptocurrencie
 
 ## Installation
 
-1. Install Go version 1.23.4 or higher.
+1. Install Go version <b>1.23.4</b> or higher.
 2. Clone the repository to your local machine.
 3. Run `make` to build and install the application
 4. Run the `portfolio-manager` binary to start the application

@@ -6,21 +6,24 @@ import (
 	"net/http"
 
 	"portfolio-manager/internal/blotter"
+	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
 )
 
 // Server represents the HTTP server.
 type Server struct {
-	Addr    string
-	blotter *blotter.TradeBlotter
+	Addr      string
+	blotter   *blotter.TradeBlotter
+	portfolio *portfolio.Portfolio
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string, blotterSvc *blotter.TradeBlotter) *Server {
+func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio) *Server {
 	return &Server{
-		Addr:    addr,
-		blotter: blotterSvc,
+		Addr:      addr,
+		blotter:   blotterSvc,
+		portfolio: portfolioSvc,
 	}
 }
 
@@ -41,6 +44,7 @@ func (s *Server) Start(ctx context.Context) error {
 		upcheckHandler(w, r.WithContext(ctx))
 	})
 	blotter.RegisterHandlers(mux, s.blotter)
+	portfolio.RegisterHandlers(mux, s.portfolio)
 
 	// Wrap mux with loggingMiddleware
 	loggedMux := loggingMiddleware(mux, logger)

@@ -9,6 +9,7 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/internal/server"
 
 	"portfolio-manager/pkg/logging"
@@ -59,9 +60,16 @@ func main() {
 		logger.Fatalf("Failed to create blotter service: %s", err)
 	}
 
+	// Create a new portfolio service
+	portfolioSvc := portfolio.NewPortfolio(db)
+	err = portfolioSvc.LoadPositions()
+	if err != nil {
+		logger.Fatalf("Failed to create portfolio service: %s", err)
+	}
+
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	srv := server.NewServer(addr, blotterSvc)
+	srv := server.NewServer(addr, blotterSvc, portfolioSvc)
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)
 	}

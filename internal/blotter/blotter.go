@@ -204,11 +204,12 @@ type Trade struct {
 	Price         float64 `json:"Price"`         // Price per unit of the asset
 	Yield         float64 `json:"Yield"`         // Yield of the asset
 	Trader        string  `json:"Trader"`        // Trader who executed the trade
+	Broker        string  `json:"Broker"`        // Broker who executed the trade
 	SeqNum        int     `json:"SeqNum"`        // Sequence number
 }
 
 // NewTrade creates a new Trade instance.
-func NewTrade(side string, quantity float64, assetClass, assetSubClass, ticker, trader string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
+func NewTrade(side string, quantity float64, assetClass, assetSubClass, ticker, trader, broker string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
 	if !isValidAssetClass(assetClass) {
 		return nil, errors.New("unsupported asset class")
 	}
@@ -228,6 +229,7 @@ func NewTrade(side string, quantity float64, assetClass, assetSubClass, ticker, 
 		Price:         price,
 		Yield:         yield,
 		Trader:        trader,
+		Broker:        broker,
 	}, nil
 }
 

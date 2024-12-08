@@ -18,6 +18,7 @@ type TradeRequest struct {
 	Price         float64 `json:"price"`
 	Yield         float64 `json:"yield"`
 	Trader        string  `json:"trader"`
+	Broker        string  `json:"broker"`
 	SeqNum        int     `json:"seqNum"` // Sequence number
 }
 
@@ -37,7 +38,17 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 			return
 		}
 
-		trade, err := NewTrade(tradeRequest.Side, tradeRequest.Quantity, tradeRequest.AssetClass, tradeRequest.AssetSubClass, tradeRequest.Ticker, tradeRequest.Trader, tradeRequest.Price, tradeRequest.Yield, tradeDate)
+		trade, err := NewTrade(
+			tradeRequest.Side,
+			tradeRequest.Quantity,
+			tradeRequest.AssetClass,
+			tradeRequest.AssetSubClass,
+			tradeRequest.Ticker,
+			tradeRequest.Trader,
+			tradeRequest.Broker,
+			tradeRequest.Price,
+			tradeRequest.Yield,
+			tradeDate)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

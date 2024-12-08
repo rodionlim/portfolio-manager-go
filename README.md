@@ -67,6 +67,27 @@ portfolio-manager/
 └── README.md
 ```
 
+## Sample Curl Commands
+
+### Add Asset
+
+```sh
+curl -X POST http://localhost:8080/blotter/trade \
+    -H "Content-Type: application/json" \
+    -d '{
+        "symbol": "AAPL",
+        "quantity": 10,
+        "price": 150.00,
+        "type": "buy"
+    }'
+```
+
+### View Positions
+
+```sh
+curl -X GET http://localhost:8080/portfolio/positions
+```
+
 ## Contributing
 
 Contributions are always welcome! If you have any suggestions or find a bug, please open an issue or submit a pull request.

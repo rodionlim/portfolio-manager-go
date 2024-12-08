@@ -33,34 +33,28 @@ make
 
 ## Key Features
 
-1. Add assets to your portfolio using the add command.
-2. View all assets in your portfolio using the view command.
-3. View detailed information for a specific asset using the info command.
-4. Remove assets from your portfolio using the remove command.
-5. Calculate the total value of your portfolio using the total command.
+1. Add assets to your portfolio using the `/blotter/trade` POST api.
+2. View all assets in your portfolio and their total value using the `/portfolio/positions` GET api.
+3. View detailed information for a specific asset using the `/asset` GET api.
+4. Remove assets from your portfolio using the `/blotter/trade` DELETE api.
 
 ## Project Structure
 
 ```
 portfolio-manager/
 ├── cmd/
-│ └── portfolio/
-│ ├── main.go
+│   └── portfolio/
+│       └── main.go
 ├── internal/
-│ └── portfolio/
-│   ├── portfolio.go
-│   ├── asset.go
-│   ├── add.go
-│   ├── asset.go
-│   ├── info.go
-│   ├── remove.go
-│   ├── total.go
-│   ├── view.go
-│   └── json.go│
-│ └── config/
-│   ├── config.go
-│ └── dal/
-│   ├── leveldb.go
+│   ├── portfolio/
+│   ├── config/
+│   ├── server/
+│   ├── blotter/
+│   └── dal/
+├── pkg/
+│   ├── types/
+│   ├── common/
+│   └── logging/
 ├── .gitignore
 ├── go.mod
 └── README.md

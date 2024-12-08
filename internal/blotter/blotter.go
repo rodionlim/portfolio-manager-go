@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/types"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,22 +33,30 @@ type TradeBlotter struct {
 	tradesByID         map[string]*Trade
 	tradesByTicker     map[string][]Trade
 	tradesByAssetClass map[string][]Trade
+	currentSeqNum      int // used as a pointer to the head of the blotter
 	db                 dal.Database
 }
 
 // NewBlotter creates a new TradeBlotter instance.
 func NewBlotter(db dal.Database) *TradeBlotter {
+	var currentSeqNum int
+	err := db.Get(string(types.HeadSequenceKey), currentSeqNum)
+	if err != nil {
+		currentSeqNum = -1
+	}
+
 	return &TradeBlotter{
 		trades:             []Trade{},
 		tradesByID:         make(map[string]*Trade),
 		tradesByTicker:     make(map[string][]Trade),
 		tradesByAssetClass: make(map[string][]Trade),
+		currentSeqNum:      currentSeqNum,
 		db:                 db,
 	}
 }
 
 func (b *TradeBlotter) LoadFromDB() error {
-	tradeKeys, err := b.db.GetAllKeysWithPrefix("trade:")
+	tradeKeys, err := b.db.GetAllKeysWithPrefix(string(types.TradeKeyPrefix))
 	if err != nil {
 		return err
 	}
@@ -71,6 +80,8 @@ func (b *TradeBlotter) LoadFromDB() error {
 
 // AddTrade adds a new trade to the blotter and writes it to the database.
 func (b *TradeBlotter) AddTrade(trade Trade) error {
+	trade.SeqNum = b.getNextSeqNum()
+
 	// Write trade to the database
 	tradeKey := generateTradeKey(trade)
 	err := b.db.Put(tradeKey, trade)
@@ -155,7 +166,7 @@ func (b *TradeBlotter) GetTradesByTicker(ticker string) ([]Trade, error) {
 
 // generateTradeKey generates a unique key for the trade.
 func generateTradeKey(trade Trade) string {
-	return fmt.Sprintf("trade:%s:%s:%s", trade.AssetClass, trade.Ticker, trade.TradeID)
+	return fmt.Sprintf("%s%s:%s:%s", types.TradeKeyPrefix, trade.AssetClass, trade.Ticker, trade.TradeID)
 }
 
 // removeTradeFromSlice removes a trade from a slice of trades by trade ID.
@@ -166,6 +177,19 @@ func removeTradeFromSlice(trades []Trade, tradeID string) []Trade {
 		}
 	}
 	return trades
+}
+
+// getNextSeqNum returns the next sequence number.
+func (b *TradeBlotter) getNextSeqNum() int {
+	b.currentSeqNum++
+	b.saveSeqNumToDAL(b.currentSeqNum)
+	return b.currentSeqNum
+}
+
+// saveSeqNumToDAL saves the current sequence number to the DAL database.
+func (b *TradeBlotter) saveSeqNumToDAL(seqNum int) {
+	// Implement the logic to save seqNum to the DAL database
+	b.db.Put(string(types.HeadSequenceKey), seqNum)
 }
 
 // Trade represents a trade in the blotter.

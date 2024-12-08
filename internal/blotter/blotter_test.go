@@ -92,3 +92,27 @@ func TestCreateTradeWithInvalidSide(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, trade)
 }
+
+func TestTradeSequenceNumber(t *testing.T) {
+	db, dbPath := setupTempDB(t)
+	defer cleanupTempDB(t, db, dbPath)
+
+	blotter := NewBlotter(db)
+
+	trade1, err := createTestTrade()
+	assert.NoError(t, err)
+
+	err = blotter.AddTrade(*trade1)
+	assert.NoError(t, err)
+
+	trade2, err := createTestTrade()
+	assert.NoError(t, err)
+
+	err = blotter.AddTrade(*trade2)
+	assert.NoError(t, err)
+
+	trades := blotter.GetTrades()
+	assert.Equal(t, 2, len(trades))
+	assert.Equal(t, 0, trades[0].SeqNum)
+	assert.Equal(t, 1, trades[1].SeqNum)
+}

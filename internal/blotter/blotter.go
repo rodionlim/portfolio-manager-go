@@ -7,6 +7,7 @@ import (
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,12 +38,13 @@ type TradeBlotter struct {
 	currentSeqNum      int // used as a pointer to the head of the blotter
 	db                 dal.Database
 	eventBus           *event.EventBus
+	mu                 sync.Mutex
 }
 
 // NewBlotter creates a new TradeBlotter instance.
 func NewBlotter(db dal.Database) *TradeBlotter {
 	var currentSeqNum int
-	err := db.Get(string(types.HeadSequenceKey), currentSeqNum)
+	err := db.Get(string(types.HeadSequenceBlotterKey), currentSeqNum)
 	if err != nil {
 		currentSeqNum = -1
 	}
@@ -70,7 +72,7 @@ func (b *TradeBlotter) LoadFromDB() error {
 		if err != nil {
 			return err
 		}
-		err = b.AddTrade(trade)
+		err = b.AddTradePreloaded(trade)
 		if err != nil {
 			return err
 		}
@@ -83,22 +85,36 @@ func (b *TradeBlotter) LoadFromDB() error {
 
 // AddTrade adds a new trade to the blotter and writes it to the database.
 func (b *TradeBlotter) AddTrade(trade Trade) error {
-	trade.SeqNum = b.getNextSeqNum()
+	return b.addTrade(trade, false)
+}
 
-	// Write trade to the database
-	tradeKey := generateTradeKey(trade)
-	err := b.db.Put(tradeKey, trade)
-	if err != nil {
-		return err
-	}
+// AddTrade adds trade from database to the blotter
+func (b *TradeBlotter) AddTradePreloaded(trade Trade) error {
+	return b.addTrade(trade, true)
+}
 
-	// Check if the trade already exists
-	if existingTrade, exists := b.tradesByID[trade.TradeID]; exists {
-		// Remove the existing trade from the trades slice
-		for i, t := range b.trades {
-			if t.TradeID == existingTrade.TradeID {
-				b.trades = append(b.trades[:i], b.trades[i+1:]...)
-				break
+func (b *TradeBlotter) addTrade(trade Trade, isPreLoadFromDB bool) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if !isPreLoadFromDB {
+		trade.SeqNum = b.getNextSeqNum()
+
+		// Write trade to the database
+		tradeKey := generateTradeKey(trade)
+		err := b.db.Put(tradeKey, trade)
+		if err != nil {
+			return err
+		}
+
+		// Check if the trade already exists
+		if existingTrade, exists := b.tradesByID[trade.TradeID]; exists {
+			// Remove the existing trade from the trades slice
+			for i, t := range b.trades {
+				if t.TradeID == existingTrade.TradeID {
+					b.trades = append(b.trades[:i], b.trades[i+1:]...)
+					break
+				}
 			}
 		}
 	}
@@ -110,13 +126,18 @@ func (b *TradeBlotter) AddTrade(trade Trade) error {
 	b.tradesByAssetClass[trade.AssetClass] = append(b.tradesByAssetClass[trade.AssetClass], trade)
 
 	// Publish a new trade event
-	b.PublishNewTradeEvent(trade)
+	if !isPreLoadFromDB {
+		b.PublishNewTradeEvent(trade)
+	}
 
 	return nil
 }
 
 // RemoveTrade removes a trade from the blotter and deletes it from the database.
 func (b *TradeBlotter) RemoveTrade(tradeID string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	// Check if the trade exists
 	trade, exists := b.tradesByID[tradeID]
 	if !exists {
@@ -154,6 +175,29 @@ func (b *TradeBlotter) GetTrades() []Trade {
 	return b.trades
 }
 
+// GetTradesBySeqNumRange returns all trades within the range provided
+func (b *TradeBlotter) GetTradesBySeqNumRange(startSeqNum, endSeqNum int) []Trade {
+	var trades []Trade
+	for _, trade := range b.trades {
+		if trade.SeqNum >= startSeqNum && trade.SeqNum <= endSeqNum {
+			trades = append(trades, trade)
+		}
+	}
+	return trades
+}
+
+// GetTradesBySeqNumRangeWithCallback allow to get trades within the range provided and call a callback function, locking the blotter to prevent races
+func (b *TradeBlotter) GetTradesBySeqNumRangeWithCallback(startSeqNum, endSeqNum int, callback func(trade Trade)) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	for _, trade := range b.trades {
+		if trade.SeqNum >= startSeqNum && trade.SeqNum <= endSeqNum {
+			callback(trade)
+		}
+	}
+}
+
 // GetTradeByID returns a trade with the given ID.
 func (b *TradeBlotter) GetTradeByID(tradeID string) (*Trade, error) {
 	trade, exists := b.tradesByID[tradeID]
@@ -172,7 +216,13 @@ func (b *TradeBlotter) GetTradesByTicker(ticker string) ([]Trade, error) {
 	return trades, nil
 }
 
+// GetCurrentSeqNum returns the current sequence number.
+func (b *TradeBlotter) GetCurrentSeqNum() int {
+	return b.currentSeqNum
+}
+
 // Subscribe allows other packages to subscribe to blotter events.
+// It returns the current sequence number so that the subscriber can request for older trades if necessary in order to catch up
 func (tb *TradeBlotter) Subscribe(eventName string, handler event.EventHandler) {
 	tb.eventBus.Subscribe(eventName, handler)
 }
@@ -207,7 +257,7 @@ func (b *TradeBlotter) getNextSeqNum() int {
 // saveSeqNumToDAL saves the current sequence number to the DAL database.
 func (b *TradeBlotter) saveSeqNumToDAL(seqNum int) {
 	// Implement the logic to save seqNum to the DAL database
-	b.db.Put(string(types.HeadSequenceKey), seqNum)
+	b.db.Put(string(types.HeadSequenceBlotterKey), seqNum)
 }
 
 // Trade represents a trade in the blotter.

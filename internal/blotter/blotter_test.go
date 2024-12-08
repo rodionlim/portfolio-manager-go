@@ -168,3 +168,38 @@ func TestEventPublishingOnRemoveTrade(t *testing.T) {
 
 	assert.True(t, eventPublished, "Expected event to be published when trade is removed")
 }
+
+func TestGetTradesBySeqNumRange(t *testing.T) {
+	db, dbPath := setupTempDB(t)
+	defer cleanupTempDB(t, db, dbPath)
+
+	blotter := NewBlotter(db)
+
+	// Create and add multiple trades
+	for i := 0; i < 5; i++ {
+		trade, err := createTestTrade()
+		assert.NoError(t, err)
+		err = blotter.AddTrade(*trade)
+		assert.NoError(t, err)
+	}
+
+	// Test valid range
+	trades := blotter.GetTradesBySeqNumRange(1, 3)
+	assert.Equal(t, 3, len(trades))
+	for _, trade := range trades {
+		assert.True(t, trade.SeqNum >= 1 && trade.SeqNum <= 3)
+	}
+
+	// Test empty range
+	trades = blotter.GetTradesBySeqNumRange(10, 15)
+	assert.Empty(t, trades)
+
+	// Test invalid range (start > end)
+	trades = blotter.GetTradesBySeqNumRange(3, 1)
+	assert.Empty(t, trades)
+
+	// Test single sequence number
+	trades = blotter.GetTradesBySeqNumRange(2, 2)
+	assert.Equal(t, 1, len(trades))
+	assert.Equal(t, 2, trades[0].SeqNum)
+}

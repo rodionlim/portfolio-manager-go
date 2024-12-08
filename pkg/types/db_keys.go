@@ -5,7 +5,8 @@ type dbKey string
 
 // Define database keys
 const (
-	HeadSequenceKey dbKey = "HEAD_SEQUENCE_NUM"
+	HeadSequenceBlotterKey   dbKey = "BLOTTER_HEAD_SEQUENCE_NUM"
+	HeadSequencePortfolioKey dbKey = "PORTFOLIO_HEAD_SEQUENCE_NUM"
 
 	TradeKeyPrefix    dbKey = "TRADE:"
 	PositionKeyPrefix dbKey = "POSITION:"

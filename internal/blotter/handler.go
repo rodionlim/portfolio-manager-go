@@ -2,6 +2,7 @@ package blotter
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"portfolio-manager/pkg/logging"
 	"time"
@@ -13,8 +14,8 @@ type TradeRequest struct {
 	Ticker        string  `json:"ticker"`
 	Side          string  `json:"side"`
 	Quantity      float64 `json:"quantity"`
-	AssetClass    string  `json:"assetClass"`
-	AssetSubClass string  `json:"assetSubClass"`
+	AssetClass    string  `json:"assetClass"`    // TODO: shift to ref data in future
+	AssetSubClass string  `json:"assetSubClass"` // TODO: shift to ref data in future
 	Price         float64 `json:"price"`
 	Yield         float64 `json:"yield"`
 	Trader        string  `json:"trader"`
@@ -28,13 +29,13 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 		var tradeRequest TradeRequest
 		err := json.NewDecoder(r.Body).Decode(&tradeRequest)
 		if err != nil {
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			http.Error(w, "ERROR: Invalid request payload", http.StatusBadRequest)
 			return
 		}
 
 		tradeDate, err := time.Parse(time.RFC3339, tradeRequest.TradeDate)
 		if err != nil {
-			http.Error(w, "Invalid trade date format", http.StatusBadRequest)
+			http.Error(w, "ERROR: Invalid trade date format", http.StatusBadRequest)
 			return
 		}
 
@@ -50,14 +51,14 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 			tradeRequest.Yield,
 			tradeDate)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("ERROR: %s", err.Error()), http.StatusBadRequest)
 			return
 		}
 
 		err = blotter.AddTrade(*trade)
 		if err != nil {
 			logging.GetLogger().Error("Failed to add trade", err)
-			http.Error(w, "Failed to add trade", http.StatusInternalServerError)
+			http.Error(w, "ERROR: Failed to add trade", http.StatusInternalServerError)
 			return
 		}
 
@@ -84,7 +85,7 @@ func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 		case http.MethodGet:
 			HandleTradeGet(blotter).ServeHTTP(w, r)
 		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			http.Error(w, "ERROR: Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
 }

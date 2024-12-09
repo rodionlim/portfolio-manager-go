@@ -1,11 +1,12 @@
 # Portfolio Valuation Tool
 
-An application to value stocks, fx, commodities, cash, bonds and cryptocurrencies in your personal portfolio.
+An application to value equities, fx, commodities, cash, bonds and cryptocurrencies in your personal portfolio.
 
 ## Features
 
 - Value assets based on current market prices
-- Store portfolio data in a JSON file for easy access and manipulation
+- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg)
+- Output portfolio data in a CSV file for easy access and manipulation
 - Store portfolio data in leveldb for persistence
 - Calculate total portfolio value based on current prices
 - Display detailed information for individual assets
@@ -75,10 +76,15 @@ portfolio-manager/
 curl -X POST http://localhost:8080/blotter/trade \
     -H "Content-Type: application/json" \
     -d '{
-        "symbol": "AAPL",
+        "ticker": "AAPL",
+        "side": "buy",
+        "assetClass": "eq",
+        "broker": "dbs",
+        "trader": "traderA",
         "quantity": 10,
         "price": 150.00,
-        "type": "buy"
+        "type": "buy",
+        "tradeDate": "2024-12-09T00:00:00Z"
     }'
 ```
 

@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"portfolio-manager/pkg/logging"
 	"time"
@@ -15,9 +17,19 @@ func loggingMiddleware(next http.Handler, logger *logging.Logger) http.Handler {
 		method := r.Method
 		uri := r.RequestURI
 		userAgent := r.UserAgent()
+		query := r.URL.Query().Encode()
+
+		// Read and restore the body
+		var bodyBytes []byte
+		if r.Body != nil {
+			bodyBytes, _ = io.ReadAll(r.Body)
+			r.Body.Close()
+			r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		}
 
 		// Log request details
-		logger.Info(fmt.Sprintf("Received request: method=%s uri=%s client_ip=%s user_agent=%s", method, uri, clientIP, userAgent))
+		logger.Info(fmt.Sprintf("Received request: method=%s uri=%s client_ip=%s user_agent=%s query_params=%s body=%s",
+			method, uri, clientIP, userAgent, query, string(bodyBytes)))
 
 		// Call the next handler
 		next.ServeHTTP(w, r)

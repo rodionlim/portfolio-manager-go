@@ -65,9 +65,12 @@ func (p *Portfolio) LoadPositions() error {
 	return nil
 }
 
+// SubscribeToBlotter subscribes to the blotter service and listens for new trade events.
 func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 	// Check if the currentSeqNum is less than the current sequence number of the blotter, i
 	// if it is, replay the trades from the blotter starting from the currentSeqNum
+	logger := logging.GetLogger()
+
 	blotterSeqNum := blotterSvc.GetCurrentSeqNum()
 	if p.currentSeqNum < blotterSeqNum {
 		blotterSvc.GetTradesBySeqNumRangeWithCallback(p.currentSeqNum+1, blotterSeqNum, func(trade blotter.Trade) { p.updatePosition(&trade) })
@@ -75,9 +78,11 @@ func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 
 	blotterSvc.Subscribe(blotter.NewTradeEvent, event.NewEventHandler(func(e event.Event) {
 		trade := e.Data.(blotter.NewTradeEventPayload).Trade
+		logger.Info("Received new trade event. tradeID:", trade.TradeID)
 		p.updatePosition(&trade)
 	}))
 
+	logger.Info("Subscribed to blotter service")
 }
 
 func (p *Portfolio) updatePositionFromDb(position *Position) error {

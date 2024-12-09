@@ -66,6 +66,7 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Failed to create portfolio service: %s", err)
 	}
+	portfolioSvc.SubscribeToBlotter(blotterSvc)
 
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)

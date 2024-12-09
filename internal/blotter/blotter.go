@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
@@ -257,18 +258,18 @@ func (b *TradeBlotter) saveSeqNumToDAL(seqNum int) {
 
 // Trade represents a trade in the blotter.
 type Trade struct {
-	TradeID       string  `json:"TradeID"`       // Unique identifier for the trade
-	TradeDate     string  `json:"TradeDate"`     // Date and time of the trade
-	Ticker        string  `json:"Ticker"`        // Ticker symbol of the asset
-	Side          string  `json:"Side"`          // Buy or Sell
-	Quantity      float64 `json:"Quantity"`      // Quantity of the asset
-	AssetClass    string  `json:"AssetClass"`    // e.g., Equity, Fixed Income, Commodity
-	AssetSubClass string  `json:"AssetSubclass"` // e.g., Stock, Bond, Gold
-	Price         float64 `json:"Price"`         // Price per unit of the asset
-	Yield         float64 `json:"Yield"`         // Yield of the asset
-	Trader        string  `json:"Trader"`        // Trader who executed the trade
-	Broker        string  `json:"Broker"`        // Broker who executed the trade
-	SeqNum        int     `json:"SeqNum"`        // Sequence number
+	TradeID       string  `json:"TradeID"`                        // Unique identifier for the trade
+	TradeDate     string  `json:"TradeDate" validate:"required"`  // Date and time of the trade
+	Ticker        string  `json:"Ticker" validate:"required"`     // Ticker symbol of the asset
+	Side          string  `json:"Side" validate:"required"`       // Buy or Sell
+	Quantity      float64 `json:"Quantity" validate:"required"`   // Quantity of the asset
+	AssetClass    string  `json:"AssetClass" validate:"required"` // e.g., Equity, Fixed Income, Commodity
+	AssetSubClass string  `json:"AssetSubclass"`                  // e.g., Stock, Bond, Gold
+	Price         float64 `json:"Price" validate:"required"`      // Price per unit of the asset
+	Yield         float64 `json:"Yield"`                          // Yield of the asset
+	Trader        string  `json:"Trader" validate:"required"`     // Trader who executed the trade
+	Broker        string  `json:"Broker" validate:"required"`     // Broker who executed the trade
+	SeqNum        int     `json:"SeqNum"`                         // Sequence number
 }
 
 // NewTrade creates a new Trade instance.
@@ -281,7 +282,7 @@ func NewTrade(side string, quantity float64, assetClass, assetSubClass, ticker, 
 		return nil, errors.New("side must be either 'buy' or 'sell'")
 	}
 
-	return &Trade{
+	trade := Trade{
 		TradeID:       uuid.New().String(),
 		TradeDate:     tradeDate.Format(time.RFC3339),
 		Ticker:        ticker,
@@ -293,7 +294,10 @@ func NewTrade(side string, quantity float64, assetClass, assetSubClass, ticker, 
 		Yield:         yield,
 		Trader:        trader,
 		Broker:        broker,
-	}, nil
+	}
+
+	err := validateTrade(trade)
+	return &trade, err
 }
 
 // isValidAssetClass checks if the provided asset class is supported.
@@ -309,4 +313,10 @@ func isValidAssetClass(assetClass string) bool {
 // isValidSide checks if the provided side is valid.
 func isValidSide(side string) bool {
 	return side == TradeSideBuy || side == TradeSideSell
+}
+
+// validateTrade validates the trade struct according to predefined rules.
+func validateTrade(trade Trade) error {
+	validate := validator.New()
+	return validate.Struct(trade)
 }

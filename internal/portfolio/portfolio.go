@@ -7,6 +7,7 @@ import (
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/types"
 )
 
@@ -24,6 +25,7 @@ type Portfolio struct {
 	positions     map[string]map[string]*Position // map[trader]map[ticker]*Position
 	currentSeqNum int                             // used as a pointer to point to the last blotter trade that was processed
 	db            dal.Database
+	mdata         *mdata.Manager
 	mu            sync.Mutex
 }
 
@@ -34,9 +36,15 @@ func NewPortfolio(db dal.Database) *Portfolio {
 		currentSeqNum = -1
 	}
 
+	mdata, err := mdata.NewManager()
+	if err != nil {
+		logging.GetLogger().Fatalf("Failed to create market data manager")
+	}
+
 	return &Portfolio{
 		positions:     make(map[string]map[string]*Position),
 		currentSeqNum: currentSeqNum,
+		mdata:         mdata,
 		db:            db,
 	}
 }

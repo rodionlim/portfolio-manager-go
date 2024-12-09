@@ -38,6 +38,13 @@ Wipe the entire database
 make clean-db
 ```
 
+Tests
+
+```sh
+make test # unit tests
+make test-integration # integration tests
+```
+
 ## Key Features
 
 1. Add assets to your portfolio using the `/blotter/trade` POST api.

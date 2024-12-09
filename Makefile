@@ -19,6 +19,9 @@ build:
 test: 
 	$(GOTEST) -v ./...
 
+test-integration:
+	$(GOTEST) -v -tags=integration -run Integration ./...
+
 # Clean build files
 clean: 
 	$(GOCLEAN)

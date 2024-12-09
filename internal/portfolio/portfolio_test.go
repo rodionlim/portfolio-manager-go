@@ -76,6 +76,29 @@ func TestUpdatePosition(t *testing.T) {
 	assert.Equal(t, float64(100), position.Qty)
 }
 
+func TestAvgPriceOnUpdatePosition(t *testing.T) {
+	mockDB := new(MockDatabase)
+	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
+
+	p := NewPortfolio(mockDB)
+
+	// Add multiple trades
+	trades := []*blotter.Trade{
+		must(blotter.NewTrade(blotter.TradeSideBuy, 100, blotter.AssetClassEquities, "stock", "AAPL", "trader1", "broker1", 150.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 50, blotter.AssetClassEquities, "stock", "AAPL", "trader1", "broker1", 200.0, 0.0, time.Now())),
+	}
+
+	for _, trade := range trades {
+		err := p.updatePosition(trade)
+		assert.NoError(t, err)
+	}
+
+	position := p.GetPosition("trader1", "AAPL")
+	assert.NotNil(t, position)
+	assert.InDelta(t, 166.67, position.AvgPx, 0.01) // Allowing a small delta of 0.01
+}
+
 func TestGetPositions(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)

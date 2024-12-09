@@ -73,6 +73,11 @@ func (p *Portfolio) LoadPositions() error {
 	return nil
 }
 
+// GetMdataManager returns the market data manager.
+func (p *Portfolio) GetMdataManager() *mdata.Manager {
+	return p.mdata
+}
+
 // SubscribeToBlotter subscribes to the blotter service and listens for new trade events.
 func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 	// Check if the currentSeqNum is less than the current sequence number of the blotter, i

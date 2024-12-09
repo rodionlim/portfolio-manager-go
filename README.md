@@ -7,6 +7,7 @@ An application to value equities, fx, commodities, cash, bonds and cryptocurrenc
 - Value assets based on current market prices
 - Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg)
 - Output portfolio data in a CSV file for easy access and manipulation
+- Import portfolio data from CSV file for easy migration
 - Store portfolio data in leveldb for persistence
 - Calculate total portfolio value based on current prices
 - Display detailed information for individual assets
@@ -45,12 +46,13 @@ make test # unit tests
 make test-integration # integration tests
 ```
 
-## Key Features
+## Endpoints
 
 1. Add assets to your portfolio using the `/blotter/trade` POST api.
 2. View all assets in your portfolio and their total value using the `/portfolio/positions` GET api.
 3. View detailed information for a specific asset using the `/asset` GET api.
 4. Remove assets from your portfolio using the `/blotter/trade` DELETE api.
+5. Fetch market data using the `/mdata/ticker` GET api.
 
 ## Project Structure
 
@@ -101,6 +103,12 @@ curl -X POST http://localhost:8080/blotter/trade \
 curl -X GET http://localhost:8080/portfolio/positions
 ```
 
+### Fetch Stock Prices
+
+```sh
+curl -X GET http://localhost:8080/mdata/ticker/es3.si
+```
+
 ## Contributing
 
 Contributions are always welcome! If you have any suggestions or find a bug, please open an issue or submit a pull request.
@@ -108,3 +116,7 @@ Contributions are always welcome! If you have any suggestions or find a bug, ple
 ## License
 
 This project is licensed under the MIT License - see the [license](./LICENSE) file for details.
+
+```
+
+```

@@ -44,6 +44,8 @@ func (m *Manager) GetStockPrice(ticker string) (*types.StockData, error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
+	logging.GetLogger().Info("Fetching stock price for ticker", ticker)
+
 	// Try Yahoo Finance first
 	if yahoo, ok := m.sources[sources.YahooFinance]; ok {
 		if data, err := yahoo.GetStockPrice(ticker); err == nil {

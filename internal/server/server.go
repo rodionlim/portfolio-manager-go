@@ -8,6 +8,7 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/types"
 )
 
@@ -39,12 +40,14 @@ func upcheckHandler(w http.ResponseWriter, r *http.Request) {
 // Start starts the HTTP server.
 func (s *Server) Start(ctx context.Context) error {
 	logger := ctx.Value(types.LoggerKey).(*logging.Logger)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		upcheckHandler(w, r.WithContext(ctx))
 	})
 	blotter.RegisterHandlers(mux, s.blotter)
 	portfolio.RegisterHandlers(mux, s.portfolio)
+	mdata.RegisterHandlers(mux, s.portfolio.GetMdataManager())
 
 	// Wrap mux with loggingMiddleware
 	loggedMux := loggingMiddleware(mux, logger)

@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Create a new portfolio service
-	portfolioSvc := portfolio.NewPortfolio(db)
+	portfolioSvc := portfolio.NewPortfolio(db, config.RefDataSeedPath)
 	err = portfolioSvc.LoadPositions()
 	if err != nil {
 		logger.Fatalf("Failed to create portfolio service: %s", err)

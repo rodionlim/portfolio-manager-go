@@ -11,12 +11,13 @@ import (
 
 // Config represents the application configuration.
 type Config struct {
-	VerboseLogging bool   `yaml:"verboseLogging"`
-	LogFilePath    string `yaml:"logFilePath"`
-	Host           string `yaml:"host"`
-	Port           string `yaml:"port"`
-	Db             string `yaml:"db"`
-	DbPath         string `yaml:"dbPath"`
+	VerboseLogging  bool   `yaml:"verboseLogging"`
+	LogFilePath     string `yaml:"logFilePath"`
+	Host            string `yaml:"host"`
+	Port            string `yaml:"port"`
+	Db              string `yaml:"db"`
+	DbPath          string `yaml:"dbPath"`
+	RefDataSeedPath string `yaml:"refDataSeedPath"`
 }
 
 // Implement the Stringer interface for Config

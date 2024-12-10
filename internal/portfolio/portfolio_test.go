@@ -41,8 +41,9 @@ func (m *MockDatabase) Close() error { return nil }
 func TestNewPortfolio(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 
-	p := NewPortfolio(mockDB)
+	p := NewPortfolio(mockDB, "")
 	assert.NotNil(t, p)
 	assert.Equal(t, 0, p.currentSeqNum)
 	assert.Empty(t, p.positions)
@@ -51,9 +52,10 @@ func TestNewPortfolio(t *testing.T) {
 func TestUpdatePosition(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	p := NewPortfolio(mockDB)
+	p := NewPortfolio(mockDB, "")
 
 	trade, _ := blotter.NewTrade(
 		blotter.TradeSideBuy,
@@ -77,9 +79,10 @@ func TestUpdatePosition(t *testing.T) {
 func TestAvgPriceOnUpdatePosition(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	p := NewPortfolio(mockDB)
+	p := NewPortfolio(mockDB, "")
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
@@ -100,9 +103,10 @@ func TestAvgPriceOnUpdatePosition(t *testing.T) {
 func TestGetPositions(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	p := NewPortfolio(mockDB)
+	p := NewPortfolio(mockDB, "")
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
@@ -128,6 +132,7 @@ func TestGetPositions(t *testing.T) {
 func TestLoadPositions(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.PositionKeyPrefix)).Return([]string{
 		string(types.PositionKeyPrefix) + ":trader1:AAPL",
 	}, nil)
@@ -145,7 +150,7 @@ func TestLoadPositions(t *testing.T) {
 		*pos = *position
 	})
 
-	p := NewPortfolio(mockDB)
+	p := NewPortfolio(mockDB, "")
 	err := p.LoadPositions()
 	assert.NoError(t, err)
 
@@ -161,9 +166,10 @@ func TestSubscribeToBlotter(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
 	mockDB.On("Get", string(types.HeadSequenceBlotterKey), mock.Anything).Return(nil)
+	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	p := NewPortfolio(mockDB)
+	p := NewPortfolio(mockDB, "")
 	blotterSvc := blotter.NewBlotter(mockDB)
 
 	p.SubscribeToBlotter(blotterSvc)

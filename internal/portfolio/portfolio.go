@@ -6,6 +6,7 @@ import (
 
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/internal/reference"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
@@ -27,10 +28,11 @@ type Portfolio struct {
 	currentSeqNum int                             // used as a pointer to point to the last blotter trade that was processed
 	db            dal.Database
 	mdata         *mdata.Manager
+	rdata         *reference.ReferenceManager
 	mu            sync.Mutex
 }
 
-func NewPortfolio(db dal.Database) *Portfolio {
+func NewPortfolio(db dal.Database, refDataSeedPath string) *Portfolio {
 	var currentSeqNum int
 	err := db.Get(string(types.HeadSequencePortfolioKey), currentSeqNum)
 	if err != nil {
@@ -42,10 +44,16 @@ func NewPortfolio(db dal.Database) *Portfolio {
 		logging.GetLogger().Fatalf("Failed to create market data manager")
 	}
 
+	rdata, err := reference.NewReferenceManager(db, refDataSeedPath)
+	if err != nil {
+		logging.GetLogger().Fatalf("Failed to create reference data manager")
+	}
+
 	return &Portfolio{
 		positions:     make(map[string]map[string]*Position),
 		currentSeqNum: currentSeqNum,
 		mdata:         mdata,
+		rdata:         rdata,
 		db:            db,
 	}
 }
@@ -77,6 +85,11 @@ func (p *Portfolio) LoadPositions() error {
 // GetMdataManager returns the market data manager.
 func (p *Portfolio) GetMdataManager() *mdata.Manager {
 	return p.mdata
+}
+
+// GetRdataManager returns the reference data manager.
+func (p *Portfolio) GetRdataManager() *reference.ReferenceManager {
+	return p.rdata
 }
 
 // SubscribeToBlotter subscribes to the blotter service and listens for new trade events.

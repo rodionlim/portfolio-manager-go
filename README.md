@@ -117,6 +117,12 @@ curl -X GET http://localhost:8080/mdata/price/es3.si
 curl -X GET http://localhost:8080/mdata/dividend/es3
 ```
 
+### Fetch Reference Data
+
+```sh
+curl -X GET http://localhost:8080/refdata
+```
+
 ## Contributing
 
 Contributions are always welcome! If you have any suggestions or find a bug, please open an issue or submit a pull request.

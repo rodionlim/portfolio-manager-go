@@ -4,3 +4,4 @@ host: localhost
 port: 8080
 db: leveldb
 dbPath: ./portfolio-manager.db
+refDataSeedPath: "./seed/refdata.yaml"

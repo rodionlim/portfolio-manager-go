@@ -1,6 +1,7 @@
 package portfolio
 
 import (
+	"fmt"
 	"sync"
 
 	"portfolio-manager/internal/blotter"
@@ -204,5 +205,5 @@ func (p *Portfolio) saveSeqNumToDAL(seqNum int) {
 
 // generatePositionKey generates a unique key for the position.
 func generatePositionKey(trade *blotter.Trade) string {
-	return string(types.PositionKeyPrefix) + trade.Trader + ":" + trade.Ticker
+	return fmt.Sprintf("%s:%s:%s", types.PositionKeyPrefix, trade.Trader, trade.Ticker)
 }

@@ -58,8 +58,6 @@ func TestUpdatePosition(t *testing.T) {
 	trade, _ := blotter.NewTrade(
 		blotter.TradeSideBuy,
 		100,
-		blotter.AssetClassEquities,
-		"stock",
 		"AAPL",
 		"trader1",
 		"broker1",
@@ -85,8 +83,8 @@ func TestAvgPriceOnUpdatePosition(t *testing.T) {
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
-		must(blotter.NewTrade(blotter.TradeSideBuy, 100, blotter.AssetClassEquities, "stock", "AAPL", "trader1", "broker1", 150.0, 0.0, time.Now())),
-		must(blotter.NewTrade(blotter.TradeSideBuy, 50, blotter.AssetClassEquities, "stock", "AAPL", "trader1", "broker1", 200.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "trader1", "broker1", 150.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 50, "AAPL", "trader1", "broker1", 200.0, 0.0, time.Now())),
 	}
 
 	for _, trade := range trades {
@@ -108,9 +106,9 @@ func TestGetPositions(t *testing.T) {
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
-		must(blotter.NewTrade(blotter.TradeSideBuy, 100, blotter.AssetClassEquities, "stock", "AAPL", "trader1", "broker1", 150.0, 0.0, time.Now())),
-		must(blotter.NewTrade(blotter.TradeSideBuy, 50, blotter.AssetClassEquities, "stock", "GOOGL", "trader1", "broker1", 2500.0, 0.0, time.Now())),
-		must(blotter.NewTrade(blotter.TradeSideBuy, 75, blotter.AssetClassEquities, "stock", "MSFT", "trader2", "broker1", 300.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "trader1", "broker1", 150.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 50, "GOOGL", "trader1", "broker1", 2500.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 75, "MSFT", "trader2", "broker1", 300.0, 0.0, time.Now())),
 	}
 
 	for _, trade := range trades {
@@ -131,7 +129,7 @@ func TestLoadPositions(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.PositionKeyPrefix)).Return([]string{
-		string(types.PositionKeyPrefix) + "trader1:AAPL",
+		string(types.PositionKeyPrefix) + ":trader1:AAPL",
 	}, nil)
 
 	position := &Position{
@@ -142,7 +140,7 @@ func TestLoadPositions(t *testing.T) {
 		PnL:    1000,
 		AvgPx:  150.0,
 	}
-	mockDB.On("Get", string(types.PositionKeyPrefix)+"trader1:AAPL", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+	mockDB.On("Get", string(types.PositionKeyPrefix)+":trader1:AAPL", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 		pos := args.Get(1).(*Position)
 		*pos = *position
 	})
@@ -173,8 +171,6 @@ func TestSubscribeToBlotter(t *testing.T) {
 	trade, _ := blotter.NewTrade(
 		blotter.TradeSideBuy,
 		100,
-		blotter.AssetClassEquities,
-		"stock",
 		"AAPL",
 		"trader1",
 		"broker1",

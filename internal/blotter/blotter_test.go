@@ -33,7 +33,7 @@ func cleanupTempDB(t *testing.T, db dal.Database, dbPath string) {
 }
 
 func createTestTrade() (*Trade, error) {
-	return NewTrade("buy", 100, AssetClassEquities, "stock", "AAPL", "traderA", "dbs", 150.0, 0.0, time.Now())
+	return NewTrade("buy", 100, "AAPL", "traderA", "dbs", 150.0, 0.0, time.Now())
 }
 
 func TestAddTrade(t *testing.T) {
@@ -89,7 +89,7 @@ func TestRemoveTrade(t *testing.T) {
 }
 
 func TestCreateTradeWithInvalidSide(t *testing.T) {
-	trade, err := NewTrade("buysell", 100, AssetClassEquities, "stock", "AAPL", "traderA", "dbs", 150.0, 0.0, time.Now())
+	trade, err := NewTrade("buysell", 100, "AAPL", "traderA", "dbs", 150.0, 0.0, time.Now())
 	assert.Error(t, err)
 	assert.Nil(t, trade)
 }

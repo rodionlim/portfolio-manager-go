@@ -10,17 +10,15 @@ import (
 
 // TradeRequest represents the request payload for a trade.
 type TradeRequest struct {
-	TradeDate     string  `json:"tradeDate"`
-	Ticker        string  `json:"ticker"`
-	Side          string  `json:"side"`
-	Quantity      float64 `json:"quantity"`
-	AssetClass    string  `json:"assetClass"`    // TODO: shift to ref data in future
-	AssetSubClass string  `json:"assetSubClass"` // TODO: shift to ref data in future
-	Price         float64 `json:"price"`
-	Yield         float64 `json:"yield"`
-	Trader        string  `json:"trader"`
-	Broker        string  `json:"broker"`
-	SeqNum        int     `json:"seqNum"` // Sequence number
+	TradeDate string  `json:"tradeDate"`
+	Ticker    string  `json:"ticker"`
+	Side      string  `json:"side"`
+	Quantity  float64 `json:"quantity"`
+	Price     float64 `json:"price"`
+	Yield     float64 `json:"yield"`
+	Trader    string  `json:"trader"`
+	Broker    string  `json:"broker"`
+	SeqNum    int     `json:"seqNum"` // Sequence number
 }
 
 // HandleTradePost handles the addition of trades to the blotter service.
@@ -42,8 +40,6 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 		trade, err := NewTrade(
 			tradeRequest.Side,
 			tradeRequest.Quantity,
-			tradeRequest.AssetClass,
-			tradeRequest.AssetSubClass,
 			tradeRequest.Ticker,
 			tradeRequest.Trader,
 			tradeRequest.Broker,

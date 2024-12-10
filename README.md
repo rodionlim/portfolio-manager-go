@@ -8,7 +8,7 @@ An application to value equities, fx, commodities, cash, bonds and cryptocurrenc
 - Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg)
 - Output portfolio data in a CSV file for easy access and manipulation
 - Import portfolio data from CSV file for easy migration
-- Store portfolio data in leveldb for persistence
+- Store portfolio data and reference data in leveldb for persistence
 - Calculate total portfolio value based on current prices
 - Display detailed information for individual assets
 

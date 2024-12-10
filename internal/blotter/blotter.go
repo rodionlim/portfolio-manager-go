@@ -14,16 +14,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// Supported asset classes
-const (
-	AssetClassFX          = "fx"
-	AssetClassEquities    = "eq"
-	AssetClassCrypto      = "crypto"
-	AssetClassCommodities = "cmdty"
-	AssetClassCash        = "cash"
-	AssetClassBonds       = "bond"
-)
-
 // TradeSide represents the side of a trade (buy or sell).
 const (
 	TradeSideBuy  = "buy"
@@ -32,14 +22,13 @@ const (
 
 // TradeBlotter represents a service for managing trades.
 type TradeBlotter struct {
-	trades             []Trade
-	tradesByID         map[string]*Trade
-	tradesByTicker     map[string][]Trade
-	tradesByAssetClass map[string][]Trade
-	currentSeqNum      int // used as a pointer to the head of the blotter
-	db                 dal.Database
-	eventBus           *event.EventBus
-	mu                 sync.Mutex
+	trades         []Trade
+	tradesByID     map[string]*Trade
+	tradesByTicker map[string][]Trade
+	currentSeqNum  int // used as a pointer to the head of the blotter
+	db             dal.Database
+	eventBus       *event.EventBus
+	mu             sync.Mutex
 }
 
 // NewBlotter creates a new TradeBlotter instance.
@@ -51,13 +40,12 @@ func NewBlotter(db dal.Database) *TradeBlotter {
 	}
 
 	return &TradeBlotter{
-		trades:             []Trade{},
-		tradesByID:         make(map[string]*Trade),
-		tradesByTicker:     make(map[string][]Trade),
-		tradesByAssetClass: make(map[string][]Trade),
-		currentSeqNum:      currentSeqNum,
-		db:                 db,
-		eventBus:           event.NewEventBus(),
+		trades:         []Trade{},
+		tradesByID:     make(map[string]*Trade),
+		tradesByTicker: make(map[string][]Trade),
+		currentSeqNum:  currentSeqNum,
+		db:             db,
+		eventBus:       event.NewEventBus(),
 	}
 }
 
@@ -119,7 +107,6 @@ func (b *TradeBlotter) addTrade(trade Trade, isPreLoadFromDB bool) error {
 	b.trades = append(b.trades, trade)
 	b.tradesByID[trade.TradeID] = &trade
 	b.tradesByTicker[trade.Ticker] = append(b.tradesByTicker[trade.Ticker], trade)
-	b.tradesByAssetClass[trade.AssetClass] = append(b.tradesByAssetClass[trade.AssetClass], trade)
 
 	// Publish a new trade event
 	if !isPreLoadFromDB {
@@ -151,7 +138,6 @@ func (b *TradeBlotter) RemoveTrade(tradeID string) error {
 	// Remove trade from the indexes
 	delete(b.tradesByID, tradeID)
 	b.tradesByTicker[trade.Ticker] = removeTradeFromSlice(b.tradesByTicker[trade.Ticker], tradeID)
-	b.tradesByAssetClass[trade.AssetClass] = removeTradeFromSlice(b.tradesByAssetClass[trade.AssetClass], tradeID)
 
 	// Remove trade from the database
 	tradeKey := generateTradeKey(*trade)
@@ -230,7 +216,7 @@ func (tb *TradeBlotter) Unsubscribe(eventName string, corrId uuid.UUID) {
 
 // generateTradeKey generates a unique key for the trade.
 func generateTradeKey(trade Trade) string {
-	return fmt.Sprintf("%s%s:%s:%s", types.TradeKeyPrefix, trade.AssetClass, trade.Ticker, trade.TradeID)
+	return fmt.Sprintf("%s:%s:%s", types.TradeKeyPrefix, trade.Ticker, trade.TradeID)
 }
 
 // removeTradeFromSlice removes a trade from a slice of trades by trade ID.
@@ -258,56 +244,39 @@ func (b *TradeBlotter) saveSeqNumToDAL(seqNum int) {
 
 // Trade represents a trade in the blotter.
 type Trade struct {
-	TradeID       string  `json:"TradeID"`                        // Unique identifier for the trade
-	TradeDate     string  `json:"TradeDate" validate:"required"`  // Date and time of the trade
-	Ticker        string  `json:"Ticker" validate:"required"`     // Ticker symbol of the asset
-	Side          string  `json:"Side" validate:"required"`       // Buy or Sell
-	Quantity      float64 `json:"Quantity" validate:"required"`   // Quantity of the asset
-	AssetClass    string  `json:"AssetClass" validate:"required"` // e.g., Equity, Fixed Income, Commodity
-	AssetSubClass string  `json:"AssetSubclass"`                  // e.g., Stock, Bond, Gold
-	Price         float64 `json:"Price" validate:"required"`      // Price per unit of the asset
-	Yield         float64 `json:"Yield"`                          // Yield of the asset
-	Trader        string  `json:"Trader" validate:"required"`     // Trader who executed the trade
-	Broker        string  `json:"Broker" validate:"required"`     // Broker who executed the trade
-	SeqNum        int     `json:"SeqNum"`                         // Sequence number
+	TradeID   string  `json:"TradeID"`                       // Unique identifier for the trade
+	TradeDate string  `json:"TradeDate" validate:"required"` // Date and time of the trade
+	Ticker    string  `json:"Ticker" validate:"required"`    // Ticker symbol of the asset
+	Side      string  `json:"Side" validate:"required"`      // Buy or Sell
+	Quantity  float64 `json:"Quantity" validate:"required"`  // Quantity of the asset
+	Price     float64 `json:"Price" validate:"required"`     // Price per unit of the asset
+	Yield     float64 `json:"Yield"`                         // Yield of the asset
+	Trader    string  `json:"Trader" validate:"required"`    // Trader who executed the trade
+	Broker    string  `json:"Broker" validate:"required"`    // Broker who executed the trade
+	SeqNum    int     `json:"SeqNum"`                        // Sequence number
 }
 
 // NewTrade creates a new Trade instance.
-func NewTrade(side string, quantity float64, assetClass, assetSubClass, ticker, trader, broker string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
-	if !isValidAssetClass(assetClass) {
-		return nil, errors.New("unsupported asset class")
-	}
+func NewTrade(side string, quantity float64, ticker, trader, broker string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
 
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
 	}
 
 	trade := Trade{
-		TradeID:       uuid.New().String(),
-		TradeDate:     tradeDate.Format(time.RFC3339),
-		Ticker:        ticker,
-		Side:          side,
-		Quantity:      quantity,
-		AssetClass:    assetClass,
-		AssetSubClass: assetSubClass,
-		Price:         price,
-		Yield:         yield,
-		Trader:        trader,
-		Broker:        broker,
+		TradeID:   uuid.New().String(),
+		TradeDate: tradeDate.Format(time.RFC3339),
+		Ticker:    ticker,
+		Side:      side,
+		Quantity:  quantity,
+		Price:     price,
+		Yield:     yield,
+		Trader:    trader,
+		Broker:    broker,
 	}
 
 	err := validateTrade(trade)
 	return &trade, err
-}
-
-// isValidAssetClass checks if the provided asset class is supported.
-func isValidAssetClass(assetClass string) bool {
-	switch assetClass {
-	case AssetClassFX, AssetClassEquities, AssetClassCrypto, AssetClassCommodities, AssetClassCash, AssetClassBonds:
-		return true
-	default:
-		return false
-	}
 }
 
 // isValidSide checks if the provided side is valid.

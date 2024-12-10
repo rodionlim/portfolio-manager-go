@@ -45,9 +45,14 @@ func (s *Server) Start(ctx context.Context) error {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		upcheckHandler(w, r.WithContext(ctx))
 	})
+
+	// Handlers registration
 	blotter.RegisterHandlers(mux, s.blotter)
 	portfolio.RegisterHandlers(mux, s.portfolio)
-	mdata.RegisterHandlers(mux, s.portfolio.GetMdataManager())
+	if s.portfolio != nil {
+		// Register market data service handlers
+		mdata.RegisterHandlers(mux, s.portfolio.GetMdataManager())
+	}
 
 	// Wrap mux with loggingMiddleware
 	loggedMux := loggingMiddleware(mux, logger)

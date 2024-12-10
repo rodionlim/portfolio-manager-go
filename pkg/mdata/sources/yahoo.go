@@ -21,8 +21,13 @@ func NewYahooFinance() types.DataSource {
 	}
 }
 
-func (y *yahooFinance) GetStockPrice(symbol string) (*types.StockData, error) {
-	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s", symbol)
+// GetDividends implements types.DataSource.
+func (y *yahooFinance) GetDividends(ticker string) ([]types.Dividend, error) {
+	panic("unimplemented")
+}
+
+func (y *yahooFinance) GetStockPrice(ticker string) (*types.StockData, error) {
+	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s", ticker)
 
 	resp, err := y.client.Get(url)
 	if err != nil {
@@ -52,7 +57,7 @@ func (y *yahooFinance) GetStockPrice(symbol string) (*types.StockData, error) {
 	}
 
 	if len(response.Chart.Result) == 0 {
-		return nil, fmt.Errorf("no data found for symbol: %s", symbol)
+		return nil, fmt.Errorf("no data found for symbol: %s", ticker)
 	}
 
 	result := response.Chart.Result[0]
@@ -64,9 +69,9 @@ func (y *yahooFinance) GetStockPrice(symbol string) (*types.StockData, error) {
 	}, nil
 }
 
-func (y *yahooFinance) GetHistoricalData(symbol string, fromDate, toDate int64) ([]*types.StockData, error) {
+func (y *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=1d",
-		symbol, fromDate, toDate)
+		ticker, fromDate, toDate)
 
 	resp, err := y.client.Get(url)
 	if err != nil {
@@ -131,7 +136,7 @@ func (y *yahooFinance) GetHistoricalData(symbol string, fromDate, toDate int64) 
 	}
 
 	if len(response.Chart.Result) == 0 {
-		return nil, fmt.Errorf("no historical data found for symbol: %s", symbol)
+		return nil, fmt.Errorf("no historical data found for ticker: %s", ticker)
 	}
 
 	result := response.Chart.Result[0]

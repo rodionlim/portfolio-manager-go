@@ -9,7 +9,7 @@ import (
 // HandleTickerGet handles retrieving market data for a single ticker
 func HandleTickerGet(mdataSvc *Manager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ticker := strings.TrimPrefix(r.URL.Path, "/mdata/ticker/")
+		ticker := strings.TrimPrefix(r.URL.Path, "/mdata/price/")
 		if ticker == "" {
 			http.Error(w, "Ticker is required", http.StatusBadRequest)
 			return
@@ -53,9 +53,29 @@ func HandleTickersGet(mdataSvc *Manager) http.HandlerFunc {
 	}
 }
 
+// HandleDividendsGet handles retrieving dividend data for a ticker
+func HandleDividendsGet(mdataSvc *Manager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ticker := strings.TrimPrefix(r.URL.Path, "/mdata/dividend/")
+		if ticker == "" {
+			http.Error(w, "Ticker is required", http.StatusBadRequest)
+			return
+		}
+
+		data, err := mdataSvc.GetDividends(ticker)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(data)
+	}
+}
+
 // RegisterHandlers registers the handlers for the market data service
 func RegisterHandlers(mux *http.ServeMux, mdataSvc *Manager) {
-	mux.HandleFunc("/mdata/ticker/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/mdata/price/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			HandleTickerGet(mdataSvc).ServeHTTP(w, r)
@@ -64,10 +84,19 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc *Manager) {
 		}
 	})
 
-	mux.HandleFunc("/mdata/tickers", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/mdata/tickers/price", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			HandleTickersGet(mdataSvc).ServeHTTP(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/mdata/dividend/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			HandleDividendsGet(mdataSvc).ServeHTTP(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

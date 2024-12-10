@@ -25,6 +25,11 @@ func NewGoogleFinance() types.DataSource {
 	}
 }
 
+// GetDividends implements types.DataSource.
+func (g *googleFinance) GetDividends(ticker string) ([]types.Dividend, error) {
+	panic("unimplemented")
+}
+
 func (g *googleFinance) GetStockPrice(ticker string) (*types.StockData, error) {
 	// Google Finance URL (note: this might need adjustments as Google doesn't provide an official API)
 	url := fmt.Sprintf("https://www.google.com/finance/quote/%s", ticker)

@@ -2,7 +2,6 @@ package mdata
 
 import (
 	"errors"
-	"sync"
 
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata/sources"
@@ -12,7 +11,6 @@ import (
 // Manager handles multiple data sources with fallback capability
 type Manager struct {
 	sources map[string]types.DataSource
-	mutex   sync.RWMutex
 }
 
 // NewManager creates a new data manager with initialized data sources
@@ -30,20 +28,22 @@ func NewManager() (*Manager, error) {
 	if err != nil {
 		return nil, err
 	}
+	dividendsSg, err := NewDataSource(sources.DividendsSingapore)
+	if err != nil {
+		return nil, err
+	}
 
 	m.sources[sources.GoogleFinance] = google
 	m.sources[sources.YahooFinance] = yahoo
+	m.sources[sources.DividendsSingapore] = dividendsSg
 
-	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance data sources")
+	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance and Dividends.sg data sources")
 
 	return m, nil
 }
 
 // GetStockPrice attempts to fetch stock price from available sources
 func (m *Manager) GetStockPrice(ticker string) (*types.StockData, error) {
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-
 	logging.GetLogger().Info("Fetching stock price for ticker", ticker)
 
 	// Try Yahoo Finance first
@@ -65,9 +65,6 @@ func (m *Manager) GetStockPrice(ticker string) (*types.StockData, error) {
 
 // GetHistoricalData attempts to fetch historical data from available sources
 func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-
 	// Try Yahoo Finance first
 	if yahoo, ok := m.sources[sources.YahooFinance]; ok {
 		if data, err := yahoo.GetHistoricalData(ticker, fromDate, toDate); err == nil {
@@ -85,6 +82,18 @@ func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*t
 	return nil, errors.New("unable to fetch historical data from any source")
 }
 
+// GetDividends attempts to fetch dividends from available sources
+func (m *Manager) GetDividends(ticker string) ([]types.Dividend, error) {
+	// Try Dividends.sg first
+	if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
+		if data, err := dividendsSg.GetDividends(ticker); err == nil {
+			return data, nil
+		}
+	}
+
+	return nil, errors.New("unable to fetch dividends from any source")
+}
+
 // NewDataSource creates a new data source engine based on the source type
 func NewDataSource(sourceType string) (types.DataSource, error) {
 	switch sourceType {
@@ -92,6 +101,8 @@ func NewDataSource(sourceType string) (types.DataSource, error) {
 		return sources.NewGoogleFinance(), nil
 	case sources.YahooFinance:
 		return sources.NewYahooFinance(), nil
+	case sources.DividendsSingapore:
+		return sources.NewDividendsSg(), nil
 	default:
 		return nil, errors.New("unsupported data source")
 	}

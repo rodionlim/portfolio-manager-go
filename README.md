@@ -71,6 +71,8 @@ portfolio-manager/
 │   ├── common/
 │   ├── event/
 │   ├── logging/
+│   ├── mdata/
+│   │   └── sources/
 │   └── types/
 ├── .gitignore
 ├── go.mod
@@ -106,7 +108,13 @@ curl -X GET http://localhost:8080/portfolio/positions
 ### Fetch Stock Prices
 
 ```sh
-curl -X GET http://localhost:8080/mdata/ticker/es3.si
+curl -X GET http://localhost:8080/mdata/price/es3.si
+```
+
+### Fetch Dividends
+
+```sh
+curl -X GET http://localhost:8080/mdata/dividend/es3
 ```
 
 ## Contributing

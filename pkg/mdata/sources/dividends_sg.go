@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/types"
 	"sort"
 	"strconv"
 	"strings"
@@ -12,18 +13,23 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type Dividend struct {
-	Date   string
-	Amount float64
-}
-
 type DividendsSg struct{}
 
 func NewDividendsSg() *DividendsSg {
 	return &DividendsSg{}
 }
 
-func (d *DividendsSg) FetchDividends(ticker string) ([]Dividend, error) {
+// GetHistoricalData implements types.DataSource.
+func (d *DividendsSg) GetHistoricalData(symbol string, fromDate int64, toDate int64) ([]*types.StockData, error) {
+	panic("unimplemented")
+}
+
+// GetStockPrice implements types.DataSource.
+func (d *DividendsSg) GetStockPrice(symbol string) (*types.StockData, error) {
+	panic("unimplemented")
+}
+
+func (d *DividendsSg) GetDividends(ticker string) ([]types.Dividend, error) {
 	logger := logging.GetLogger()
 
 	url := fmt.Sprintf("https://www.dividends.sg/view/%s", ticker)
@@ -33,6 +39,10 @@ func (d *DividendsSg) FetchDividends(ticker string) ([]Dividend, error) {
 		return nil, fmt.Errorf("failed to fetch dividends: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch dividends: status code %d", resp.StatusCode)
+	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
@@ -86,9 +96,9 @@ func (d *DividendsSg) FetchDividends(ticker string) ([]Dividend, error) {
 	})
 
 	// Convert map to sorted slice
-	var dividends []Dividend
+	var dividends []types.Dividend
 	for date, amount := range dividendMap {
-		dividends = append(dividends, Dividend{Date: date, Amount: math.Round(amount*1000) / 1000})
+		dividends = append(dividends, types.Dividend{Date: date, Amount: math.Round(amount*1000) / 1000})
 	}
 
 	// Sort dividends by date string (works because format is yyyy-mm-dd)

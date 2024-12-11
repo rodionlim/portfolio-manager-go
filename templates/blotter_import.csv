@@ -1,0 +1,3 @@
+TradeDate,Ticker,Side,Quantity,Price,Yield,Trader,Broker
+2023-10-12T07:20:50Z,AAPL,buy,100,150.0,,Trader1,Broker1
+2023-10-12T07:20:50Z,GOOG,sell,200,186.53,,Trader2,Broker2

@@ -10,6 +10,10 @@ import (
 	"sync"
 	"time"
 
+	"encoding/csv"
+	"os"
+	"strconv"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -288,4 +292,100 @@ func isValidSide(side string) bool {
 func validateTrade(trade Trade) error {
 	validate := validator.New()
 	return validate.Struct(trade)
+}
+
+// ImportFromCSV imports trades from a CSV file and adds them to the blotter.
+// Expected CSV format: TradeDate,Ticker,Side,Quantity,Price,Yield,Trader,Broker
+func (b *TradeBlotter) ImportFromCSVFile(filepath string) error {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return fmt.Errorf("error opening CSV file: %w", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	return b.ImportFromCSVReader(reader)
+}
+
+func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) error {
+	logging.GetLogger().Info("Importing trades from CSV")
+
+	// Read and validate header
+	header, err := reader.Read()
+	if err != nil {
+		return fmt.Errorf("error reading CSV header: %w", err)
+	}
+
+	expectedHeaders := []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker"}
+	if len(header) != len(expectedHeaders) {
+		return fmt.Errorf("invalid CSV format: expected %d columns, got %d", len(expectedHeaders), len(header))
+	}
+
+	for i, h := range expectedHeaders {
+		if header[i] != h {
+			return fmt.Errorf("invalid CSV header: expected %s at position %d, got %s", h, i, header[i])
+		}
+	}
+
+	// Read all rows and create trades
+	var trades []*Trade
+	lineNum := 1
+	for {
+		row, err := reader.Read()
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			return fmt.Errorf("error reading CSV line %d: %w", lineNum, err)
+		}
+
+		quantity, err := strconv.ParseFloat(row[3], 64)
+		if err != nil {
+			return fmt.Errorf("invalid quantity at line %d: %w", lineNum, err)
+		}
+
+		price, err := strconv.ParseFloat(row[4], 64)
+		if err != nil {
+			return fmt.Errorf("invalid price at line %d: %w", lineNum, err)
+		}
+
+		var yield float64
+		if row[5] != "" {
+			yield, err = strconv.ParseFloat(row[5], 64)
+			if err != nil {
+				return fmt.Errorf("invalid yield at line %d: %w", lineNum, err)
+			}
+		}
+
+		tradeDate, err := time.Parse(time.RFC3339, row[0])
+		if err != nil {
+			return fmt.Errorf("invalid trade date at line %d: %w", lineNum, err)
+		}
+
+		trade, err := NewTrade(
+			row[2], // Side
+			quantity,
+			row[1], // Ticker
+			row[6], // Trader
+			row[7], // Broker
+			price,
+			yield,
+			tradeDate,
+		)
+		if err != nil {
+			return fmt.Errorf("error creating trade at line %d: %w", lineNum, err)
+		}
+
+		trades = append(trades, trade)
+		lineNum++
+	}
+
+	// Add all trades after validation
+	for _, trade := range trades {
+		if err := b.AddTrade(*trade); err != nil {
+			return fmt.Errorf("error adding trades: %w", err)
+		}
+	}
+
+	return nil
 }

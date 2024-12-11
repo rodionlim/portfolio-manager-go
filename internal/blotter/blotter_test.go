@@ -1,11 +1,13 @@
-package blotter
+package blotter_test
 
 import (
+	"encoding/csv"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/event"
 
@@ -32,15 +34,29 @@ func cleanupTempDB(t *testing.T, db dal.Database, dbPath string) {
 	}
 }
 
-func createTestTrade() (*Trade, error) {
-	return NewTrade("buy", 100, "AAPL", "traderA", "dbs", 150.0, 0.0, time.Now())
+func createTestTrade() (*blotter.Trade, error) {
+	return blotter.NewTrade("buy", 100, "AAPL", "traderA", "dbs", 150.0, 0.0, time.Now())
+}
+
+func createMockCSVFile(t *testing.T, content [][]string) string {
+	file, err := os.CreateTemp("", "trades_*.csv")
+	assert.NoError(t, err)
+
+	writer := csv.NewWriter(file)
+	err = writer.WriteAll(content)
+	assert.NoError(t, err)
+
+	writer.Flush()
+	file.Close()
+
+	return file.Name()
 }
 
 func TestAddTrade(t *testing.T) {
 	db, dbPath := setupTempDB(t)
 	defer cleanupTempDB(t, db, dbPath)
 
-	blotter := NewBlotter(db)
+	blotter := blotter.NewBlotter(db)
 
 	trade, err := createTestTrade()
 	assert.NoError(t, err)
@@ -56,7 +72,7 @@ func TestGetTradeByID(t *testing.T) {
 	db, dbPath := setupTempDB(t)
 	defer cleanupTempDB(t, db, dbPath)
 
-	blotter := NewBlotter(db)
+	blotter := blotter.NewBlotter(db)
 
 	trade, err := createTestTrade()
 	assert.NoError(t, err)
@@ -73,7 +89,7 @@ func TestRemoveTrade(t *testing.T) {
 	db, dbPath := setupTempDB(t)
 	defer cleanupTempDB(t, db, dbPath)
 
-	blotter := NewBlotter(db)
+	blotter := blotter.NewBlotter(db)
 
 	trade, err := createTestTrade()
 	assert.NoError(t, err)
@@ -89,7 +105,7 @@ func TestRemoveTrade(t *testing.T) {
 }
 
 func TestCreateTradeWithInvalidSide(t *testing.T) {
-	trade, err := NewTrade("buysell", 100, "AAPL", "traderA", "dbs", 150.0, 0.0, time.Now())
+	trade, err := blotter.NewTrade("buysell", 100, "AAPL", "traderA", "dbs", 150.0, 0.0, time.Now())
 	assert.Error(t, err)
 	assert.Nil(t, trade)
 }
@@ -98,7 +114,7 @@ func TestTradeSequenceNumber(t *testing.T) {
 	db, dbPath := setupTempDB(t)
 	defer cleanupTempDB(t, db, dbPath)
 
-	blotter := NewBlotter(db)
+	blotter := blotter.NewBlotter(db)
 
 	trade1, err := createTestTrade()
 	assert.NoError(t, err)
@@ -122,13 +138,13 @@ func TestEventPublishingOnAddTrade(t *testing.T) {
 	db, dbPath := setupTempDB(t)
 	defer cleanupTempDB(t, db, dbPath)
 
-	blotterSvc := NewBlotter(db)
+	blotterSvc := blotter.NewBlotter(db)
 	trade, err := createTestTrade()
 	assert.NoError(t, err)
 
 	eventPublished := false
-	blotterSvc.Subscribe(NewTradeEvent, event.NewEventHandler(func(handler event.Event) {
-		if handler.Data.(NewTradeEventPayload).Trade.TradeID == trade.TradeID {
+	blotterSvc.Subscribe(blotter.NewTradeEvent, event.NewEventHandler(func(handler event.Event) {
+		if handler.Data.(blotter.NewTradeEventPayload).Trade.TradeID == trade.TradeID {
 			eventPublished = true
 		}
 	}))
@@ -146,7 +162,7 @@ func TestEventPublishingOnRemoveTrade(t *testing.T) {
 	db, dbPath := setupTempDB(t)
 	defer cleanupTempDB(t, db, dbPath)
 
-	blotterSvc := NewBlotter(db)
+	blotterSvc := blotter.NewBlotter(db)
 	trade, err := createTestTrade()
 	assert.NoError(t, err)
 
@@ -154,8 +170,8 @@ func TestEventPublishingOnRemoveTrade(t *testing.T) {
 	assert.NoError(t, err)
 
 	eventPublished := false
-	blotterSvc.Subscribe(RemoveTradeEvent, event.NewEventHandler(func(handler event.Event) {
-		if handler.Data.(NewTradeEventPayload).Trade.TradeID == trade.TradeID {
+	blotterSvc.Subscribe(blotter.RemoveTradeEvent, event.NewEventHandler(func(handler event.Event) {
+		if handler.Data.(blotter.NewTradeEventPayload).Trade.TradeID == trade.TradeID {
 			eventPublished = true
 		}
 	}))
@@ -173,33 +189,83 @@ func TestGetTradesBySeqNumRange(t *testing.T) {
 	db, dbPath := setupTempDB(t)
 	defer cleanupTempDB(t, db, dbPath)
 
-	blotter := NewBlotter(db)
+	blotterSvc := blotter.NewBlotter(db)
 
 	// Create and add multiple trades
 	for i := 0; i < 5; i++ {
 		trade, err := createTestTrade()
 		assert.NoError(t, err)
-		err = blotter.AddTrade(*trade)
+		err = blotterSvc.AddTrade(*trade)
 		assert.NoError(t, err)
 	}
 
 	// Test valid range
-	trades := blotter.GetTradesBySeqNumRange(1, 3)
+	trades := blotterSvc.GetTradesBySeqNumRange(1, 3)
 	assert.Equal(t, 3, len(trades))
 	for _, trade := range trades {
 		assert.True(t, trade.SeqNum >= 1 && trade.SeqNum <= 3)
 	}
 
 	// Test empty range
-	trades = blotter.GetTradesBySeqNumRange(10, 15)
+	trades = blotterSvc.GetTradesBySeqNumRange(10, 15)
 	assert.Empty(t, trades)
 
 	// Test invalid range (start > end)
-	trades = blotter.GetTradesBySeqNumRange(3, 1)
+	trades = blotterSvc.GetTradesBySeqNumRange(3, 1)
 	assert.Empty(t, trades)
 
 	// Test single sequence number
-	trades = blotter.GetTradesBySeqNumRange(2, 2)
+	trades = blotterSvc.GetTradesBySeqNumRange(2, 2)
 	assert.Equal(t, 1, len(trades))
 	assert.Equal(t, 2, trades[0].SeqNum)
+}
+
+func TestImportFromCSVFile(t *testing.T) {
+	db, dbPath := setupTempDB(t)
+	defer cleanupTempDB(t, db, dbPath)
+
+	// Create mock CSV content
+	csvContent := [][]string{
+		{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker"},
+		{"2023-10-12T07:20:50Z", "AAPL", "buy", "100", "150.0", "0.0", "trader1", "broker1"},
+		{"2023-10-12T07:20:50Z", "GOOG", "sell", "200", "186.53", "", "trader2", "broker2"},
+	}
+
+	// Create mock CSV file
+	filePath := createMockCSVFile(t, csvContent)
+	defer os.Remove(filePath)
+
+	// Create mock TradeBlotter
+	blotterSvc := blotter.NewBlotter(db)
+
+	// Call ImportFromCSV
+	err := blotterSvc.ImportFromCSVFile(filePath)
+	assert.NoError(t, err)
+
+	// Verify AddTrade was called with the correct trades
+	expectedTrades := []blotter.Trade{
+		{
+			TradeDate: "2023-10-12T07:20:50Z",
+			Ticker:    "AAPL",
+			Side:      "buy",
+			Quantity:  100,
+			Price:     150.0,
+			Yield:     0.0,
+			Trader:    "trader1",
+			Broker:    "broker1",
+		},
+		{
+			TradeDate: "2023-10-12T07:20:50Z",
+			Ticker:    "GOOG",
+			Side:      "sell",
+			Quantity:  200,
+			Price:     186.53,
+			Yield:     0.0,
+			Trader:    "trader2",
+			Broker:    "broker2",
+		},
+	}
+
+	trades := blotterSvc.GetTrades()
+	assert.Equal(t, len(expectedTrades), len(trades))
 }

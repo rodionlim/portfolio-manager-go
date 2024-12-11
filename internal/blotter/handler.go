@@ -1,6 +1,7 @@
 package blotter
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -72,6 +73,27 @@ func HandleTradeGet(blotter *TradeBlotter) http.HandlerFunc {
 	}
 }
 
+// HandleTradeImportCSV handles importing trades from a CSV file
+func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, "ERROR: Failed to get file from request", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		reader := csv.NewReader(file)
+		err = blotter.ImportFromCSVReader(reader)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("ERROR: %s", err.Error()), http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 // RegisterHandlers registers the handlers for the blotter service.
 func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 	mux.HandleFunc("/blotter/trade", func(w http.ResponseWriter, r *http.Request) {
@@ -83,5 +105,13 @@ func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 		default:
 			http.Error(w, "ERROR: Method not allowed", http.StatusMethodNotAllowed)
 		}
+	})
+
+	mux.HandleFunc("/blotter/import", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "ERROR: Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleTradeImportCSV(blotter).ServeHTTP(w, r)
 	})
 }

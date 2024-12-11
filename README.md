@@ -7,7 +7,8 @@ An application to value equities, fx, commodities, cash, bonds and cryptocurrenc
 - Value assets based on current market prices
 - Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg)
 - Output portfolio data in a CSV file for easy access and manipulation
-- Import portfolio data from CSV file for easy migration
+- Import portfolio data from CSV file for easy migration into portfolio-manager-go
+- Export portfolio data to CSV file for easy migration to another portfolio manager
 - Store portfolio data and reference data in leveldb for persistence
 - Calculate total portfolio value based on current prices
 - Display detailed information for individual assets
@@ -97,6 +98,13 @@ curl -X POST http://localhost:8080/blotter/trade \
         "type": "buy",
         "tradeDate": "2024-12-09T00:00:00Z"
     }'
+```
+
+### Import Trades from CSV
+
+```sh
+curl -X POST http://localhost:8080/blotter/import \
+  -F "file=@templates/blotter_import.csv"
 ```
 
 ### View Positions

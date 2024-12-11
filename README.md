@@ -17,7 +17,7 @@ An application to value equities, fx, commodities, cash, bonds and cryptocurrenc
 1. Install Go version <b>1.23.4</b> or higher.
 2. Clone the repository to your local machine.
 3. Run `make` to build and install the application
-4. Run the `portfolio-manager` binary to start the application
+4. Run the `portfolio-manager` binary to start the application. Pass in config flag `-config custom-config.yaml`
 
 ## Quickstart
 
@@ -123,6 +123,20 @@ curl -X GET http://localhost:8080/mdata/dividend/es3
 curl -X GET http://localhost:8080/refdata
 ```
 
+## Configurations
+
+Sample configurations
+
+```yaml
+verboseLogging: true
+logFilePath: ./portfolio-manager.log
+host: localhost
+port: 8080
+db: leveldb
+dbPath: ./portfolio-manager.db
+refDataSeedPath: "./seed/refdata.yaml"
+```
+
 ## Contributing
 
 Contributions are always welcome! If you have any suggestions or find a bug, please open an issue or submit a pull request.
@@ -130,7 +144,3 @@ Contributions are always welcome! If you have any suggestions or find a bug, ple
 ## License
 
 This project is licensed under the MIT License - see the [license](./LICENSE) file for details.
-
-```
-
-```

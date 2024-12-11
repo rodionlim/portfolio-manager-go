@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -17,8 +18,12 @@ import (
 )
 
 func main() {
+	// Define a command-line flag for the configuration file path
+	configFilePath := flag.String("config", "./config.yaml", "Path to the configuration file")
+	flag.Parse()
+
 	// Load configuration
-	config, err := config.NewConfig("config.yaml")
+	config, err := config.NewConfig(*configFilePath)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %s", err)
 	}
@@ -34,7 +39,7 @@ func main() {
 	ctx := context.WithValue(context.Background(), types.LoggerKey, logger)
 
 	// Log out configurations
-	logger.Info("Starting application with configuration:", config)
+	logger.Info("Starting application with configuration:", *configFilePath, config)
 
 	// Initialize the database
 	var db dal.Database

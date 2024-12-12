@@ -100,11 +100,17 @@ curl -X POST http://localhost:8080/blotter/trade \
     }'
 ```
 
-### Import Trades from CSV
+### Import Trades from CSV (for migrating into portfolio-manager)
 
 ```sh
 curl -X POST http://localhost:8080/blotter/import \
   -F "file=@templates/blotter_import.csv"
+```
+
+### Export Trades to a CSV (for migrating out of portfolio-manager)
+
+```sh
+curl -X GET http://localhost:8080/blotter/export
 ```
 
 ### View Positions

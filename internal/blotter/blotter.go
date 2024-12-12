@@ -1,6 +1,7 @@
 package blotter
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"portfolio-manager/internal/dal"
@@ -388,4 +389,42 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) error {
 	}
 
 	return nil
+}
+
+// ExportToCSVBytes exports all trades to a CSV file in memory and returns it as a byte slice.
+func (b *TradeBlotter) ExportToCSVBytes() ([]byte, error) {
+	logging.GetLogger().Info("Exporting trades to CSV in memory")
+
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	// Write header
+	err := writer.Write([]string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker"})
+	if err != nil {
+		return nil, fmt.Errorf("error writing CSV header: %w", err)
+	}
+
+	// Write trades
+	for _, trade := range b.trades {
+		err = writer.Write([]string{
+			trade.TradeDate,
+			trade.Ticker,
+			trade.Side,
+			strconv.FormatFloat(trade.Quantity, 'f', -1, 64),
+			strconv.FormatFloat(trade.Price, 'f', -1, 64),
+			strconv.FormatFloat(trade.Yield, 'f', -1, 64),
+			trade.Trader,
+			trade.Broker,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error writing trade to CSV: %w", err)
+		}
+	}
+
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return nil, fmt.Errorf("error flushing CSV writer: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }

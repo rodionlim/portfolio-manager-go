@@ -94,6 +94,22 @@ func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 	}
 }
 
+// HandleTradeExportCSV handles exporting trades to a CSV file
+func HandleTradeExportCSV(blotter *TradeBlotter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		trades, err := blotter.ExportToCSVBytes()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("ERROR: %s", err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Content-Disposition", "attachment; filename=trades.csv")
+
+		w.Write(trades)
+	}
+}
+
 // RegisterHandlers registers the handlers for the blotter service.
 func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 	mux.HandleFunc("/blotter/trade", func(w http.ResponseWriter, r *http.Request) {
@@ -113,5 +129,13 @@ func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 			return
 		}
 		HandleTradeImportCSV(blotter).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/blotter/export", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "ERROR: Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleTradeExportCSV(blotter).ServeHTTP(w, r)
 	})
 }

@@ -430,6 +430,9 @@ const docTemplate = `{
                 "assetClass": {
                     "type": "string"
                 },
+                "assetSubClass": {
+                    "type": "string"
+                },
                 "avgPx": {
                     "type": "number"
                 },

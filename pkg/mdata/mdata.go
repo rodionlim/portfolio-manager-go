@@ -82,11 +82,11 @@ func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*t
 	return nil, errors.New("unable to fetch historical data from any source")
 }
 
-// GetDividends attempts to fetch dividends from available sources
-func (m *Manager) GetDividends(ticker string) ([]types.Dividend, error) {
+// GetDividends attempts to fetch dividends metadata from available sources
+func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	// Try Dividends.sg first
 	if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
-		if data, err := dividendsSg.GetDividends(ticker); err == nil {
+		if data, err := dividendsSg.GetDividendsMetadata(ticker); err == nil {
 			return data, nil
 		}
 	}

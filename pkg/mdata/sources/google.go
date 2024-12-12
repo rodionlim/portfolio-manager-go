@@ -26,7 +26,7 @@ func NewGoogleFinance() types.DataSource {
 }
 
 // GetDividends implements types.DataSource.
-func (g *googleFinance) GetDividends(ticker string) ([]types.Dividend, error) {
+func (g *googleFinance) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	panic("unimplemented")
 }
 

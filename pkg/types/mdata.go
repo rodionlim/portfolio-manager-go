@@ -7,14 +7,14 @@ type StockData struct {
 	Timestamp int64
 }
 
-type Dividend struct {
-	Date   string
+type DividendsMetadata struct {
+	ExDate string
 	Amount float64
 }
 
 // DataSource defines the interface for different data source engines
 type DataSource interface {
 	GetStockPrice(symbol string) (*StockData, error)
-	GetDividends(symbol string) ([]Dividend, error)
+	GetDividendsMetadata(symbol string) ([]DividendsMetadata, error)
 	GetHistoricalData(symbol string, fromDate, toDate int64) ([]*StockData, error)
 }

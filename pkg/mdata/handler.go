@@ -70,7 +70,7 @@ func HandleTickersGet(mdataSvc *Manager) http.HandlerFunc {
 	}
 }
 
-// @Summary Get dividend data for a ticker
+// @Summary Get dividend metadata for a ticker
 // @Description Retrieves dividend history data for a specified stock ticker
 // @Tags market-data
 // @Accept json
@@ -88,7 +88,7 @@ func HandleDividendsGet(mdataSvc *Manager) http.HandlerFunc {
 			return
 		}
 
-		data, err := mdataSvc.GetDividends(ticker)
+		data, err := mdataSvc.GetDividendsMetadata(ticker)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

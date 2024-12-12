@@ -22,7 +22,7 @@ func NewYahooFinance() types.DataSource {
 }
 
 // GetDividends implements types.DataSource.
-func (y *yahooFinance) GetDividends(ticker string) ([]types.Dividend, error) {
+func (y *yahooFinance) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	panic("unimplemented")
 }
 

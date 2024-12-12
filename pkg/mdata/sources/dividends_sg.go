@@ -29,7 +29,7 @@ func (d *DividendsSg) GetStockPrice(symbol string) (*types.StockData, error) {
 	panic("unimplemented")
 }
 
-func (d *DividendsSg) GetDividends(ticker string) ([]types.Dividend, error) {
+func (d *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	logger := logging.GetLogger()
 
 	url := fmt.Sprintf("https://www.dividends.sg/view/%s", ticker)
@@ -96,14 +96,14 @@ func (d *DividendsSg) GetDividends(ticker string) ([]types.Dividend, error) {
 	})
 
 	// Convert map to sorted slice
-	var dividends []types.Dividend
+	var dividends []types.DividendsMetadata
 	for date, amount := range dividendMap {
-		dividends = append(dividends, types.Dividend{Date: date, Amount: math.Round(amount*1000) / 1000})
+		dividends = append(dividends, types.DividendsMetadata{ExDate: date, Amount: math.Round(amount*1000) / 1000})
 	}
 
 	// Sort dividends by date string (works because format is yyyy-mm-dd)
 	sort.Slice(dividends, func(i, j int) bool {
-		return dividends[i].Date < dividends[j].Date
+		return dividends[i].ExDate < dividends[j].ExDate
 	})
 
 	return dividends, nil

@@ -73,6 +73,8 @@ definitions:
     properties:
       assetClass:
         type: string
+      assetSubClass:
+        type: string
       avgPx:
         type: number
       ccy:

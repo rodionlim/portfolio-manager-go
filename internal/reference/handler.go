@@ -5,7 +5,13 @@ import (
 	"net/http"
 )
 
-// HandleReferenceDataGet handles retrieving all reference data
+// @Summary Get reference data
+// @Description Retrieves all reference data
+// @Tags Reference
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} error
+// @Router /refdata [get]
 func HandleReferenceDataGet(refSvc *ReferenceManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := refSvc.GetRefData()

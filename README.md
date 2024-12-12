@@ -12,6 +12,7 @@ An application to value equities, fx, commodities, cash, bonds and cryptocurrenc
 - Store portfolio data and reference data in leveldb for persistence
 - Calculate total portfolio value based on current prices
 - Display detailed information for individual assets
+- OpenAPI compliant for easy integration with other systems
 
 ## Installation
 
@@ -54,6 +55,8 @@ portfolio-manager/
 ├── cmd/
 │   └── portfolio/
 │       └── main.go
+├── docs/
+│   └── swagger.json
 ├── internal/
 │   ├── blotter/
 │   ├── config/
@@ -74,6 +77,8 @@ portfolio-manager/
 ```
 
 ## Sample Curl Commands
+
+All API calls are documented (OAS) under `http://localhost:8080/swagger/index.html`
 
 ### Add Asset
 

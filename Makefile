@@ -12,7 +12,7 @@ BINARY_MAC_ARM=$(BINARY_NAME)_mac_arm64
 all: test build
 
 # Build the project
-build: 
+build: swagger
 	$(GOBUILD) -o $(BINARY_NAME) -v ./cmd/portfolio
 
 # Run tests
@@ -49,6 +49,9 @@ deps:
 tidy:
 	$(GOCMD) mod tidy
 
+swagger:
+	swag init -g cmd/portfolio/main.go
+
 # Cross compilation for Linux
 build-linux:
 	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_UNIX) -v
@@ -56,4 +59,4 @@ build-linux:
 # Cross compilation for macOS on ARM64build-mac-arm:
 	GOOS=darwin GOARCH=arm64 $(GOBUILD) -o $(BINARY_MAC_ARM) -v
 
-.PHONY: all build clean test run deps tidy build-linux build-mac-arm
+.PHONY: all build clean clean-db test run deps tidy build-linux build-mac-arm test test-verbose test-integration swagger

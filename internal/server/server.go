@@ -11,6 +11,10 @@ import (
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/types"
+
+	_ "portfolio-manager/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // Server represents the HTTP server.
@@ -47,7 +51,7 @@ func (s *Server) Start(ctx context.Context) error {
 		upcheckHandler(w, r.WithContext(ctx))
 	})
 
-	// Handlers registration
+	// Application handlers registration
 	blotter.RegisterHandlers(mux, s.blotter)
 	portfolio.RegisterHandlers(mux, s.portfolio)
 	if s.portfolio != nil {
@@ -56,9 +60,13 @@ func (s *Server) Start(ctx context.Context) error {
 		reference.RegisterHandlers(mux, s.portfolio.GetRdataManager())
 	}
 
+	// Swagger registration
+	mux.Handle("/swagger/", httpSwagger.WrapHandler)
+
 	// Wrap mux with loggingMiddleware
 	loggedMux := loggingMiddleware(mux, logger)
 
 	logger.Info("Starting server on", fmt.Sprintf("http://%s", s.Addr))
+	logger.Info("Swagger UI available at", fmt.Sprintf("http://%s/swagger/index.html", s.Addr))
 	return http.ListenAndServe(s.Addr, loggedMux)
 }

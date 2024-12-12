@@ -1,3 +1,7 @@
+// Package portfolio provides handlers for managing investment portfolio operations
+// @title Portfolio Manager API
+// @version 1.0
+// @description API for managing investment portfolio positions
 package portfolio
 
 import (
@@ -6,6 +10,12 @@ import (
 )
 
 // HandlePositionsGet handles retrieving all positions from the portfolio service.
+// @Summary Get all portfolio positions
+// @Description Retrieves all positions currently in the portfolio
+// @Tags portfolio
+// @Produce json
+// @Success 200 {array} Position
+// @Router /portfolio/positions [get]
 func HandlePositionsGet(portfolio *Portfolio) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		positions := portfolio.GetAllPositions()

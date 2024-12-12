@@ -24,6 +24,16 @@ type TradeRequest struct {
 }
 
 // HandleTradePost handles the addition of trades to the blotter service.
+// @Summary Add a new trade
+// @Description Add a new trade to the blotter
+// @Tags trades
+// @Accept  json
+// @Produce  json
+// @Param   trade  body  TradeRequest  true  "Trade Request"
+// @Success 201 {object} Trade
+// @Failure 400 {string} string "Invalid request payload"
+// @Failure 500 {string} string "Failed to add trade"
+// @Router /blotter/trade [post]
 func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var tradeRequest TradeRequest
@@ -67,6 +77,12 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 }
 
 // HandleTradeGet handles retrieving trades from the blotter service.
+// @Summary Get all trades
+// @Description Retrieve all trades from the blotter
+// @Tags trades
+// @Produce  json
+// @Success 200 {array} Trade
+// @Router /blotter/trade [get]
 func HandleTradeGet(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		trades := blotter.GetTrades()
@@ -76,6 +92,16 @@ func HandleTradeGet(blotter *TradeBlotter) http.HandlerFunc {
 }
 
 // HandleTradeImportCSV handles importing trades from a CSV file
+// @Summary Import trades from CSV
+// @Description Import trades from a CSV file
+// @Tags trades
+// @Accept  multipart/form-data
+// @Produce  json
+// @Param   file  formData  file  true  "CSV file"
+// @Success 200 {string} string "OK"
+// @Failure 400 {string} string "Failed to get file from request"
+// @Failure 500 {string} string "Failed to import trades"
+// @Router /blotter/import [post]
 func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		file, _, err := r.FormFile("file")
@@ -97,6 +123,13 @@ func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 }
 
 // HandleTradeExportCSV handles exporting trades to a CSV file
+// @Summary Export trades to CSV
+// @Description Export all trades to a CSV file
+// @Tags trades
+// @Produce  text/csv
+// @Success 200 {file} file "trades.csv"
+// @Failure 500 {string} string "Failed to export trades"
+// @Router /blotter/export [get]
 func HandleTradeExportCSV(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		trades, err := blotter.ExportToCSVBytes()

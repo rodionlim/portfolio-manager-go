@@ -1,0 +1,300 @@
+basePath: /
+definitions:
+  blotter.Trade:
+    properties:
+      Account:
+        description: Account associated with the trade (CDP, MIP, Custodian)
+        type: string
+      Broker:
+        description: Broker who executed the trade
+        type: string
+      Price:
+        description: Price per unit of the asset
+        type: number
+      Quantity:
+        description: Quantity of the asset
+        type: number
+      SeqNum:
+        description: Sequence number
+        type: integer
+      Side:
+        description: Buy or Sell
+        type: string
+      Ticker:
+        description: Ticker symbol of the asset
+        type: string
+      TradeDate:
+        description: Date and time of the trade
+        type: string
+      TradeID:
+        description: Unique identifier for the trade
+        type: string
+      Trader:
+        description: Trader who executed the trade
+        type: string
+      Yield:
+        description: Yield of the asset
+        type: number
+    required:
+    - Account
+    - Broker
+    - Price
+    - Quantity
+    - Side
+    - Ticker
+    - TradeDate
+    - Trader
+    type: object
+  blotter.TradeRequest:
+    properties:
+      account:
+        type: string
+      broker:
+        type: string
+      price:
+        type: number
+      quantity:
+        type: number
+      seqNum:
+        description: Sequence number
+        type: integer
+      side:
+        type: string
+      ticker:
+        type: string
+      tradeDate:
+        type: string
+      trader:
+        type: string
+      yield:
+        type: number
+    type: object
+  portfolio.Position:
+    properties:
+      avgPx:
+        type: number
+      dividends:
+        type: number
+      mv:
+        type: number
+      pnL:
+        type: number
+      qty:
+        type: number
+      ticker:
+        type: string
+      trader:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a server for a portfolio manager.
+  title: Portfolio Manager API
+  version: "1.0"
+paths:
+  /blotter/export:
+    get:
+      description: Export all trades to a CSV file
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: trades.csv
+          schema:
+            type: file
+        "500":
+          description: Failed to export trades
+          schema:
+            type: string
+      summary: Export trades to CSV
+      tags:
+      - trades
+  /blotter/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Import trades from a CSV file
+      parameters:
+      - description: CSV file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Failed to get file from request
+          schema:
+            type: string
+        "500":
+          description: Failed to import trades
+          schema:
+            type: string
+      summary: Import trades from CSV
+      tags:
+      - trades
+  /blotter/trade:
+    get:
+      description: Retrieve all trades from the blotter
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/blotter.Trade'
+            type: array
+      summary: Get all trades
+      tags:
+      - trades
+    post:
+      consumes:
+      - application/json
+      description: Add a new trade to the blotter
+      parameters:
+      - description: Trade Request
+        in: body
+        name: trade
+        required: true
+        schema:
+          $ref: '#/definitions/blotter.TradeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/blotter.Trade'
+        "400":
+          description: Invalid request payload
+          schema:
+            type: string
+        "500":
+          description: Failed to add trade
+          schema:
+            type: string
+      summary: Add a new trade
+      tags:
+      - trades
+  /mdata/dividend/{ticker}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves dividend history data for a specified stock ticker
+      parameters:
+      - description: Stock ticker symbol
+        in: path
+        name: ticker
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Dividend data for the ticker
+          schema: {}
+        "400":
+          description: Bad request - Ticker is required
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get dividend data for a ticker
+      tags:
+      - market-data
+  /mdata/price/{ticker}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves current market data for a specified stock ticker
+      parameters:
+      - description: Stock ticker symbol
+        in: path
+        name: ticker
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Market data for the ticker
+          schema: {}
+        "400":
+          description: Bad request - Ticker is required
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get market data for a single ticker
+      tags:
+      - market-data
+  /mdata/tickers/price:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves current market data for multiple stock tickers
+      parameters:
+      - description: Comma-separated list of stock ticker symbols
+        in: query
+        name: tickers
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Market data for all requested tickers
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request - Tickers query parameter is required
+          schema:
+            type: string
+      summary: Get market data for multiple tickers
+      tags:
+      - market-data
+  /portfolio/positions:
+    get:
+      description: Retrieves all positions currently in the portfolio
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/portfolio.Position'
+            type: array
+      summary: Get all portfolio positions
+      tags:
+      - portfolio
+  /refdata:
+    get:
+      description: Retrieves all reference data
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Get reference data
+      tags:
+      - Reference
+swagger: "2.0"

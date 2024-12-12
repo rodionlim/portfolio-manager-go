@@ -6,7 +6,16 @@ import (
 	"strings"
 )
 
-// HandleTickerGet handles retrieving market data for a single ticker
+// @Summary Get market data for a single ticker
+// @Description Retrieves current market data for a specified stock ticker
+// @Tags market-data
+// @Accept json
+// @Produce json
+// @Param ticker path string true "Stock ticker symbol"
+// @Success 200 {object} interface{} "Market data for the ticker"
+// @Failure 400 {string} string "Bad request - Ticker is required"
+// @Failure 500 {string} string "Internal server error"
+// @Router /mdata/price/{ticker} [get]
 func HandleTickerGet(mdataSvc *Manager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ticker := strings.TrimPrefix(r.URL.Path, "/mdata/price/")
@@ -27,7 +36,15 @@ func HandleTickerGet(mdataSvc *Manager) http.HandlerFunc {
 	}
 }
 
-// HandleTickersGet handles retrieving market data for multiple tickers
+// @Summary Get market data for multiple tickers
+// @Description Retrieves current market data for multiple stock tickers
+// @Tags market-data
+// @Accept json
+// @Produce json
+// @Param tickers query string true "Comma-separated list of stock ticker symbols"
+// @Success 200 {object} map[string]interface{} "Market data for all requested tickers"
+// @Failure 400 {string} string "Bad request - Tickers query parameter is required"
+// @Router /mdata/tickers/price [get]
 func HandleTickersGet(mdataSvc *Manager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tickers := r.URL.Query().Get("tickers")
@@ -53,7 +70,16 @@ func HandleTickersGet(mdataSvc *Manager) http.HandlerFunc {
 	}
 }
 
-// HandleDividendsGet handles retrieving dividend data for a ticker
+// @Summary Get dividend data for a ticker
+// @Description Retrieves dividend history data for a specified stock ticker
+// @Tags market-data
+// @Accept json
+// @Produce json
+// @Param ticker path string true "Stock ticker symbol"
+// @Success 200 {object} interface{} "Dividend data for the ticker"
+// @Failure 400 {string} string "Bad request - Ticker is required"
+// @Failure 500 {string} string "Internal server error"
+// @Router /mdata/dividend/{ticker} [get]
 func HandleDividendsGet(mdataSvc *Manager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ticker := strings.TrimPrefix(r.URL.Path, "/mdata/dividend/")

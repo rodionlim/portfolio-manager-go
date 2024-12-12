@@ -17,6 +17,13 @@ import (
 	"portfolio-manager/pkg/types"
 )
 
+// @title Portfolio Manager API
+// @version 1.0
+// @description This is a server for a portfolio manager.
+
+// @host localhost:8080
+// @BasePath /
+
 func main() {
 	// Define a command-line flag for the configuration file path
 	configFilePath := flag.String("config", "./config.yaml", "Path to the configuration file")
@@ -75,6 +82,7 @@ func main() {
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	srv := server.NewServer(addr, blotterSvc, portfolioSvc)
+
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)
 	}

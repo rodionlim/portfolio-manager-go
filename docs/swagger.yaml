@@ -69,6 +69,15 @@ definitions:
       yield:
         type: number
     type: object
+  dividends.Dividends:
+    properties:
+      amount:
+        type: number
+      amountPerShare:
+        type: number
+      exDate:
+        type: string
+    type: object
   portfolio.Position:
     properties:
       assetClass:
@@ -189,6 +198,38 @@ paths:
       summary: Add a new trade
       tags:
       - trades
+  /dividends:
+    post:
+      consumes:
+      - application/json
+      description: Get dividends for a single ticker
+      parameters:
+      - description: Ticker symbol
+        in: body
+        name: ticker
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dividends.Dividends'
+            type: array
+        "400":
+          description: ticker is required
+          schema:
+            type: string
+        "500":
+          description: failed to calculate dividends
+          schema:
+            type: string
+      summary: Get dividends for a single ticker
+      tags:
+      - dividends
   /mdata/dividend/{ticker}:
     get:
       consumes:
@@ -214,7 +255,7 @@ paths:
           description: Internal server error
           schema:
             type: string
-      summary: Get dividend data for a ticker
+      summary: Get dividend metadata for a ticker
       tags:
       - market-data
   /mdata/price/{ticker}:

@@ -152,6 +152,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/dividends": {
+            "post": {
+                "description": "Get dividends for a single ticker",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dividends"
+                ],
+                "summary": "Get dividends for a single ticker",
+                "parameters": [
+                    {
+                        "description": "Ticker symbol",
+                        "name": "ticker",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dividends.Dividends"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ticker is required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "failed to calculate dividends",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/mdata/dividend/{ticker}": {
             "get": {
                 "description": "Retrieves dividend history data for a specified stock ticker",
@@ -164,7 +213,7 @@ const docTemplate = `{
                 "tags": [
                     "market-data"
                 ],
-                "summary": "Get dividend data for a ticker",
+                "summary": "Get dividend metadata for a ticker",
                 "parameters": [
                     {
                         "type": "string",
@@ -421,6 +470,20 @@ const docTemplate = `{
                 },
                 "yield": {
                     "type": "number"
+                }
+            }
+        },
+        "dividends.Dividends": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "amountPerShare": {
+                    "type": "number"
+                },
+                "exDate": {
+                    "type": "string"
                 }
             }
         },

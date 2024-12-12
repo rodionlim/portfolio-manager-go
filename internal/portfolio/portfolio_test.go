@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"portfolio-manager/internal/blotter"
+	"portfolio-manager/internal/dividends"
 	"portfolio-manager/internal/reference"
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/types"
@@ -49,15 +50,17 @@ func createTestPortfolio() *Portfolio {
 
 	mdataMgr, _ := mdata.NewManager()
 	rdataMgr, _ := reference.NewReferenceManager(mockDB, "")
+	dividendsMgr := dividends.NewDividendsManager(mockDB, rdataMgr, nil, mdataMgr)
 
-	return NewPortfolio(mockDB, mdataMgr, rdataMgr)
+	return NewPortfolio(mockDB, mdataMgr, rdataMgr, dividendsMgr)
 }
 
 func createTestPortfolioWithDb(mockDB *MockDatabase) *Portfolio {
 	mdataMgr, _ := mdata.NewManager()
 	rdataMgr, _ := reference.NewReferenceManager(mockDB, "")
+	dividendsMgr := dividends.NewDividendsManager(mockDB, rdataMgr, nil, mdataMgr)
 
-	return NewPortfolio(mockDB, mdataMgr, rdataMgr)
+	return NewPortfolio(mockDB, mdataMgr, rdataMgr, dividendsMgr)
 }
 
 func TestNewPortfolio(t *testing.T) {

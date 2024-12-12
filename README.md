@@ -135,6 +135,12 @@ curl -X GET http://localhost:8080/mdata/dividend/es3
 curl -X GET http://localhost:8080/refdata
 ```
 
+### Force a compute of dividends for a ticker across the entire blotter
+
+```sh
+curl -X POST http://localhost:8080/dividends -H "Content-Type: application/json" -d '{"ticker": "ES3.SI"}'
+```
+
 ## Configurations
 
 Sample configurations

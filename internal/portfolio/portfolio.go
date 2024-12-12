@@ -6,6 +6,7 @@ import (
 
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/internal/dividends"
 	"portfolio-manager/internal/reference"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
@@ -32,10 +33,11 @@ type Portfolio struct {
 	db            dal.Database
 	mdata         *mdata.Manager
 	rdata         *reference.ReferenceManager
+	dividendsMgr  *dividends.DividendsManager
 	mu            sync.Mutex
 }
 
-func NewPortfolio(db dal.Database, mdata *mdata.Manager, rdata *reference.ReferenceManager) *Portfolio {
+func NewPortfolio(db dal.Database, mdata *mdata.Manager, rdata *reference.ReferenceManager, dividendsSvc *dividends.DividendsManager) *Portfolio {
 	var currentSeqNum int
 	err := db.Get(string(types.HeadSequencePortfolioKey), currentSeqNum)
 	if err != nil {
@@ -47,6 +49,7 @@ func NewPortfolio(db dal.Database, mdata *mdata.Manager, rdata *reference.Refere
 		currentSeqNum: currentSeqNum,
 		mdata:         mdata,
 		rdata:         rdata,
+		dividendsMgr:  dividendsSvc,
 		db:            db,
 	}
 }
@@ -83,6 +86,11 @@ func (p *Portfolio) GetMdataManager() *mdata.Manager {
 // GetRdataManager returns the reference data manager.
 func (p *Portfolio) GetRdataManager() *reference.ReferenceManager {
 	return p.rdata
+}
+
+// GetDividendsManager returns the dividends manager.
+func (p *Portfolio) GetDividendsManager() *dividends.DividendsManager {
+	return p.dividendsMgr
 }
 
 // SubscribeToBlotter subscribes to the blotter service and listens for new trade events.

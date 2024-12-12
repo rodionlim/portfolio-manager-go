@@ -10,6 +10,7 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/internal/dividends"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/internal/reference"
 	"portfolio-manager/internal/server"
@@ -85,8 +86,11 @@ func main() {
 		logging.GetLogger().Fatalf("Failed to create reference data manager")
 	}
 
+	// Create a new dividends manager
+	dividendsSvc := dividends.NewDividendsManager(db, rdata, blotterSvc, mdata)
+
 	// Create a new portfolio service
-	portfolioSvc := portfolio.NewPortfolio(db, mdata, rdata)
+	portfolioSvc := portfolio.NewPortfolio(db, mdata, rdata, dividendsSvc)
 	err = portfolioSvc.LoadPositions()
 	if err != nil {
 		logger.Fatalf("Failed to create portfolio service: %s", err)

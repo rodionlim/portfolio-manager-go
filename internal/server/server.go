@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"portfolio-manager/internal/blotter"
+	"portfolio-manager/internal/dividends"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/internal/reference"
 	"portfolio-manager/pkg/logging"
@@ -58,6 +59,7 @@ func (s *Server) Start(ctx context.Context) error {
 		// Register market data service handlers
 		mdata.RegisterHandlers(mux, s.portfolio.GetMdataManager())
 		reference.RegisterHandlers(mux, s.portfolio.GetRdataManager())
+		dividends.RegisterHandlers(mux, s.portfolio.GetDividendsManager())
 	}
 
 	// Swagger registration

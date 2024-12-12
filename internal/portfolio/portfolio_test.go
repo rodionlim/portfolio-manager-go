@@ -52,6 +52,7 @@ func TestNewPortfolio(t *testing.T) {
 func TestUpdatePosition(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
@@ -72,7 +73,8 @@ func TestUpdatePosition(t *testing.T) {
 	err := p.updatePosition(trade)
 	assert.NoError(t, err)
 
-	position := p.GetPosition("trader1", "AAPL")
+	position, err := p.GetPosition("trader1", "AAPL")
+	assert.NoError(t, err)
 	assert.NotNil(t, position)
 	assert.Equal(t, float64(100), position.Qty)
 }
@@ -80,6 +82,7 @@ func TestUpdatePosition(t *testing.T) {
 func TestAvgPriceOnUpdatePosition(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
@@ -96,7 +99,8 @@ func TestAvgPriceOnUpdatePosition(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	position := p.GetPosition("trader1", "AAPL")
+	position, err := p.GetPosition("trader1", "AAPL")
+	assert.NoError(t, err)
 	assert.NotNil(t, position)
 	assert.InDelta(t, 166.67, position.AvgPx, 0.01) // Allowing a small delta of 0.01
 }
@@ -104,6 +108,7 @@ func TestAvgPriceOnUpdatePosition(t *testing.T) {
 func TestUpdateBuyAndSellPosition(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
@@ -120,7 +125,8 @@ func TestUpdateBuyAndSellPosition(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	position := p.GetPosition("trader1", "AAPL")
+	position, err := p.GetPosition("trader1", "AAPL")
+	assert.NoError(t, err)
 	assert.NotNil(t, position)
 	assert.Equal(t, float64(50), position.Qty)
 	assert.InDelta(t, 100, position.AvgPx, 0.01)
@@ -129,6 +135,7 @@ func TestUpdateBuyAndSellPosition(t *testing.T) {
 func TestGetPositions(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
@@ -147,17 +154,20 @@ func TestGetPositions(t *testing.T) {
 	}
 
 	// Test GetPositions for trader1
-	trader1Positions := p.GetPositions("trader1")
+	trader1Positions, err := p.GetPositions("trader1")
+	assert.NoError(t, err)
 	assert.Len(t, trader1Positions, 2)
 
 	// Test GetAllPositions
-	allPositions := p.GetAllPositions()
+	allPositions, err := p.GetAllPositions()
+	assert.NoError(t, err)
 	assert.Len(t, allPositions, 3)
 }
 
 func TestLoadPositions(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.PositionKeyPrefix)).Return([]string{
 		string(types.PositionKeyPrefix) + ":trader1:AAPL",
@@ -180,7 +190,8 @@ func TestLoadPositions(t *testing.T) {
 	err := p.LoadPositions()
 	assert.NoError(t, err)
 
-	loadedPosition := p.GetPosition("trader1", "AAPL")
+	loadedPosition, err := p.GetPosition("trader1", "AAPL")
+	assert.NoError(t, err)
 	assert.NotNil(t, loadedPosition)
 	assert.Equal(t, position.Qty, loadedPosition.Qty)
 	assert.Equal(t, position.Mv, loadedPosition.Mv)
@@ -191,6 +202,7 @@ func TestLoadPositions(t *testing.T) {
 func TestSubscribeToBlotter(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
 	mockDB.On("Get", string(types.HeadSequenceBlotterKey), mock.Anything).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
@@ -218,7 +230,8 @@ func TestSubscribeToBlotter(t *testing.T) {
 	// Give some time for the event to be processed
 	time.Sleep(100 * time.Millisecond)
 
-	position := p.GetPosition("trader1", "AAPL")
+	position, err := p.GetPosition("trader1", "AAPL")
+	assert.NoError(t, err)
 	assert.NotNil(t, position)
 	assert.Equal(t, float64(100), position.Qty)
 }

@@ -88,14 +88,14 @@ func (rm *ReferenceManager) DeleteTicker(id string) error {
 
 func (rm *ReferenceManager) GetTicker(id string) (TickerReference, error) {
 	var ticker TickerReference
-	err := rm.db.Get(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, id), ticker)
+	err := rm.db.Get(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, id), &ticker)
 	if err != nil {
 		return TickerReference{}, err
 	}
 	return ticker, nil
 }
 
-func (rm *ReferenceManager) GetRefData() (map[string]TickerReference, error) {
+func (rm *ReferenceManager) GetAllTickers() (map[string]TickerReference, error) {
 	refKeys, err := rm.db.GetAllKeysWithPrefix(string(types.ReferenceDataKeyPrefix))
 	if err != nil {
 		return nil, err

@@ -15,10 +15,15 @@ import (
 // @Tags portfolio
 // @Produce json
 // @Success 200 {array} Position
+// @Failure 500 {object} error
 // @Router /portfolio/positions [get]
 func HandlePositionsGet(portfolio *Portfolio) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		positions := portfolio.GetAllPositions()
+		positions, err := portfolio.GetAllPositions()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(positions)
 	}

@@ -294,6 +294,10 @@ const docTemplate = `{
                                 "$ref": "#/definitions/portfolio.Position"
                             }
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
                     }
                 }
             }
@@ -423,8 +427,14 @@ const docTemplate = `{
         "portfolio.Position": {
             "type": "object",
             "properties": {
+                "assetClass": {
+                    "type": "string"
+                },
                 "avgPx": {
                     "type": "number"
+                },
+                "ccy": {
+                    "type": "string"
                 },
                 "dividends": {
                     "type": "number"

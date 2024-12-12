@@ -14,7 +14,7 @@ import (
 // @Router /refdata [get]
 func HandleReferenceDataGet(refSvc *ReferenceManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := refSvc.GetRefData()
+		data, err := refSvc.GetAllTickers()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

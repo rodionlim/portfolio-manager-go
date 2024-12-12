@@ -14,13 +14,16 @@ import (
 )
 
 type Position struct {
-	Ticker    string
-	Trader    string
-	Qty       float64
-	Mv        float64
-	PnL       float64
-	Dividends float64
-	AvgPx     float64
+	Ticker        string
+	Trader        string
+	Ccy           string
+	AssetClass    string
+	AssetSubClass string
+	Qty           float64
+	Mv            float64
+	PnL           float64
+	Dividends     float64
+	AvgPx         float64
 }
 
 type Portfolio struct {
@@ -181,19 +184,20 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 	return nil
 }
 
-func (p *Portfolio) GetPosition(trader, ticker string) *Position {
+func (p *Portfolio) GetPosition(trader, ticker string) (*Position, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	if tickers, ok := p.positions[trader]; ok {
 		if position, ok := tickers[ticker]; ok {
-			return position
+			err := p.enrichPosition(position)
+			return position, err
 		}
 	}
-	return nil
+	return nil, fmt.Errorf("position not found for trader %s and ticker %s", trader, ticker)
 }
 
-func (p *Portfolio) GetPositions(trader string) []*Position {
+func (p *Portfolio) GetPositions(trader string) ([]*Position, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -203,20 +207,42 @@ func (p *Portfolio) GetPositions(trader string) []*Position {
 			positions = append(positions, position)
 		}
 	}
-	return positions
+	err := p.enrichPositions(positions)
+	return positions, err
 }
 
-func (p *Portfolio) GetAllPositions() []*Position {
+func (p *Portfolio) GetAllPositions() ([]*Position, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	var positions []*Position
-	for _, tickers := range p.positions {
-		for _, position := range tickers {
+	for _, traders := range p.positions {
+		for _, position := range traders {
 			positions = append(positions, position)
 		}
 	}
-	return positions
+	err := p.enrichPositions(positions)
+	return positions, err
+}
+
+func (p *Portfolio) enrichPositions(positions []*Position) error {
+	for _, position := range positions {
+		if err := p.enrichPosition(position); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Portfolio) enrichPosition(position *Position) error {
+	tickerRef, err := p.rdata.GetTicker(position.Ticker)
+	if err != nil {
+		return err
+	}
+	position.Ccy = tickerRef.Ccy
+	position.AssetClass = tickerRef.AssetClass
+	position.AssetSubClass = tickerRef.AssetSubClass
+	return nil
 }
 
 // saveSeqNumToDAL saves the current sequence number to the DAL database.

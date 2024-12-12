@@ -71,8 +71,12 @@ definitions:
     type: object
   portfolio.Position:
     properties:
+      assetClass:
+        type: string
       avgPx:
         type: number
+      ccy:
+        type: string
       dividends:
         type: number
       mv:
@@ -277,6 +281,9 @@ paths:
             items:
               $ref: '#/definitions/portfolio.Position'
             type: array
+        "500":
+          description: Internal Server Error
+          schema: {}
       summary: Get all portfolio positions
       tags:
       - portfolio

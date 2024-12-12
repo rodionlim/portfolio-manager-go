@@ -16,16 +16,17 @@ func init() {
 }
 
 type TickerReference struct {
-	ID                string  `json:"id" yaml:"id" validate:"required"`
+	ID                string  `json:"id" yaml:"id" validate:"required,uppercase"`
 	Name              string  `json:"name" yaml:"name" validate:"required"`
-	UnderlyingTicker  string  `json:"underlying_ticker" yaml:"underlying_ticker" validate:"required"`
-	YahooTicker       string  `json:"yahoo_ticker" yaml:"yahoo_ticker"`
-	GoogleTicker      string  `json:"google_ticker" yaml:"google_ticker"`
-	DividendsSgTicker string  `json:"dividends_sg_ticker" yaml:"dividends_sg_ticker"`
+	UnderlyingTicker  string  `json:"underlying_ticker" yaml:"underlying_ticker" validate:"required,uppercase"`
+	YahooTicker       string  `json:"yahoo_ticker" yaml:"yahoo_ticker" validate:"uppercase"`
+	GoogleTicker      string  `json:"google_ticker" yaml:"google_ticker" validate:"uppercase"`
+	DividendsSgTicker string  `json:"dividends_sg_ticker" yaml:"dividends_sg_ticker" validate:"uppercase"`
 	AssetClass        string  `json:"asset_class" yaml:"asset_class" validate:"required,asset_class"`
 	AssetSubClass     string  `json:"asset_sub_class" yaml:"asset_sub_class" validate:"asset_sub_class"`
 	Category          string  `json:"category" yaml:"category" validate:"category"`
 	SubCategory       string  `json:"sub_category" yaml:"sub_category"`
+	Ccy               string  `json:"ccy" yaml:"ccy" validate:"required,uppercase"`
 	CouponRate        float64 `json:"coupon_rate" yaml:"coupon_rate"`
 	MaturityDate      string  `json:"maturity_date" yaml:"maturity_date"`
 	StrikePrice       float64 `json:"strike_price" yaml:"strike_price"`
@@ -67,7 +68,7 @@ const (
 )
 
 // NewTickerReference creates a new TickerReference instance.
-func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, dividendsSgTicker, assetClass, assetSubClass, category, subcategory string, couponRate, strikePrice float64, maturityDate, callPut string) (*TickerReference, error) {
+func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, dividendsSgTicker, assetClass, assetSubClass, category, subcategory, ccy string, couponRate, strikePrice float64, maturityDate, callPut string) (*TickerReference, error) {
 	ref := TickerReference{
 		ID:                id,
 		Name:              name,
@@ -79,6 +80,7 @@ func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, d
 		AssetSubClass:     assetSubClass,
 		Category:          category,
 		SubCategory:       subcategory,
+		Ccy:               ccy,
 		CouponRate:        couponRate,
 		MaturityDate:      maturityDate,
 		StrikePrice:       strikePrice,

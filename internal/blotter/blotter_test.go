@@ -35,7 +35,7 @@ func cleanupTempDB(t *testing.T, db dal.Database, dbPath string) {
 }
 
 func createTestTrade() (*blotter.Trade, error) {
-	return blotter.NewTrade("buy", 100, "AAPL", "traderA", "dbs", 150.0, 0.0, time.Now())
+	return blotter.NewTrade("buy", 100, "AAPL", "traderA", "dbs", "cdp", 150.0, 0.0, time.Now())
 }
 
 func createMockCSVFile(t *testing.T, content [][]string) string {
@@ -105,7 +105,7 @@ func TestRemoveTrade(t *testing.T) {
 }
 
 func TestCreateTradeWithInvalidSide(t *testing.T) {
-	trade, err := blotter.NewTrade("buysell", 100, "AAPL", "traderA", "dbs", 150.0, 0.0, time.Now())
+	trade, err := blotter.NewTrade("buysell", 100, "AAPL", "traderA", "dbs", "cdp", 150.0, 0.0, time.Now())
 	assert.Error(t, err)
 	assert.Nil(t, trade)
 }
@@ -226,9 +226,9 @@ func TestImportFromCSVFile(t *testing.T) {
 
 	// Create mock CSV content
 	csvContent := [][]string{
-		{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker"},
-		{"2023-10-12T07:20:50Z", "AAPL", "buy", "100", "150.0", "0.0", "trader1", "broker1"},
-		{"2023-10-12T07:20:50Z", "GOOG", "sell", "200", "186.53", "", "trader2", "broker2"},
+		{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account"},
+		{"2023-10-12T07:20:50Z", "AAPL", "buy", "100", "150.0", "0.0", "trader1", "broker1", "cdp"},
+		{"2023-10-12T07:20:50Z", "GOOG", "sell", "200", "186.53", "", "trader2", "broker2", "cdp"},
 	}
 
 	// Create mock CSV file
@@ -253,6 +253,7 @@ func TestImportFromCSVFile(t *testing.T) {
 			Yield:     0.0,
 			Trader:    "trader1",
 			Broker:    "broker1",
+			Account:   "cdp",
 		},
 		{
 			TradeDate: "2023-10-12T07:20:50Z",
@@ -263,6 +264,7 @@ func TestImportFromCSVFile(t *testing.T) {
 			Yield:     0.0,
 			Trader:    "trader2",
 			Broker:    "broker2",
+			Account:   "cdp",
 		},
 	}
 

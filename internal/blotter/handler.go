@@ -19,6 +19,7 @@ type TradeRequest struct {
 	Yield     float64 `json:"yield"`
 	Trader    string  `json:"trader"`
 	Broker    string  `json:"broker"`
+	Account   string  `json:"account"`
 	SeqNum    int     `json:"seqNum"` // Sequence number
 }
 
@@ -44,6 +45,7 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 			tradeRequest.Ticker,
 			tradeRequest.Trader,
 			tradeRequest.Broker,
+			tradeRequest.Account,
 			tradeRequest.Price,
 			tradeRequest.Yield,
 			tradeDate)

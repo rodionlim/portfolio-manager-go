@@ -47,14 +47,6 @@ make test # unit tests
 make test-integration # integration tests
 ```
 
-## Endpoints
-
-1. Add assets to your portfolio using the `/blotter/trade` POST api.
-2. View all assets in your portfolio and their total value using the `/portfolio/positions` GET api.
-3. View detailed information for a specific asset using the `/asset` GET api.
-4. Remove assets from your portfolio using the `/blotter/trade` DELETE api.
-5. Fetch market data using the `/mdata/ticker` GET api.
-
 ## Project Structure
 
 ```
@@ -67,6 +59,7 @@ portfolio-manager/
 │   ├── config/
 │   ├── dal/
 │   ├── portfolio/
+│   ├── refdata/
 │   └── server/
 ├── pkg/
 │   ├── common/

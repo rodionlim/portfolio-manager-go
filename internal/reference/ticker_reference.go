@@ -50,6 +50,7 @@ const (
 	AssetSubClassOption = "option"
 	AssetSubClassFuture = "future"
 	AssetSubClassCash   = "cash"
+	AssetSubClassBond   = "bond"
 )
 
 // Supported categories
@@ -61,6 +62,8 @@ const (
 	CategoryRealEstate    = "realestate"
 	CategoryConsumerGoods = "consumergoods"
 	CategoryIndustrials   = "industrials"
+	CategoryTravel        = "travel"
+	CategoryFuneral       = "funeral"
 )
 
 // NewTickerReference creates a new TickerReference instance.

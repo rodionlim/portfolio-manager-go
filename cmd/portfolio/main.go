@@ -11,9 +11,11 @@ import (
 	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/portfolio"
+	"portfolio-manager/internal/reference"
 	"portfolio-manager/internal/server"
 
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/types"
 )
 
@@ -71,8 +73,20 @@ func main() {
 		logger.Fatalf("Failed to create blotter service: %s", err)
 	}
 
+	// Create a new market data manager
+	mdata, err := mdata.NewManager()
+	if err != nil {
+		logging.GetLogger().Fatalf("Failed to create market data manager")
+	}
+
+	// Create a new reference data manager
+	rdata, err := reference.NewReferenceManager(db, config.RefDataSeedPath)
+	if err != nil {
+		logging.GetLogger().Fatalf("Failed to create reference data manager")
+	}
+
 	// Create a new portfolio service
-	portfolioSvc := portfolio.NewPortfolio(db, config.RefDataSeedPath)
+	portfolioSvc := portfolio.NewPortfolio(db, mdata, rdata)
 	err = portfolioSvc.LoadPositions()
 	if err != nil {
 		logger.Fatalf("Failed to create portfolio service: %s", err)

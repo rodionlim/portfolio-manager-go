@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"portfolio-manager/internal/blotter"
+	"portfolio-manager/internal/reference"
+	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/types"
 
 	"github.com/stretchr/testify/assert"
@@ -38,12 +40,29 @@ func (m *MockDatabase) GetAllKeysWithPrefix(prefix string) ([]string, error) {
 
 func (m *MockDatabase) Close() error { return nil }
 
-func TestNewPortfolio(t *testing.T) {
+func createTestPortfolio() *Portfolio {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
+	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	p := NewPortfolio(mockDB, "")
+	mdataMgr, _ := mdata.NewManager()
+	rdataMgr, _ := reference.NewReferenceManager(mockDB, "")
+
+	return NewPortfolio(mockDB, mdataMgr, rdataMgr)
+}
+
+func createTestPortfolioWithDb(mockDB *MockDatabase) *Portfolio {
+	mdataMgr, _ := mdata.NewManager()
+	rdataMgr, _ := reference.NewReferenceManager(mockDB, "")
+
+	return NewPortfolio(mockDB, mdataMgr, rdataMgr)
+}
+
+func TestNewPortfolio(t *testing.T) {
+	p := createTestPortfolio()
+
 	assert.NotNil(t, p)
 	assert.Equal(t, 0, p.currentSeqNum)
 	assert.Empty(t, p.positions)
@@ -56,7 +75,7 @@ func TestUpdatePosition(t *testing.T) {
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	p := NewPortfolio(mockDB, "")
+	p := createTestPortfolio()
 
 	trade, _ := blotter.NewTrade(
 		blotter.TradeSideBuy,
@@ -86,7 +105,7 @@ func TestAvgPriceOnUpdatePosition(t *testing.T) {
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	p := NewPortfolio(mockDB, "")
+	p := createTestPortfolio()
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
@@ -112,7 +131,7 @@ func TestUpdateBuyAndSellPosition(t *testing.T) {
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	p := NewPortfolio(mockDB, "")
+	p := createTestPortfolio()
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
@@ -139,7 +158,7 @@ func TestGetPositions(t *testing.T) {
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	p := NewPortfolio(mockDB, "")
+	p := createTestPortfolio()
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
@@ -186,7 +205,7 @@ func TestLoadPositions(t *testing.T) {
 		*pos = *position
 	})
 
-	p := NewPortfolio(mockDB, "")
+	p := createTestPortfolioWithDb(mockDB)
 	err := p.LoadPositions()
 	assert.NoError(t, err)
 
@@ -207,7 +226,7 @@ func TestSubscribeToBlotter(t *testing.T) {
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	p := NewPortfolio(mockDB, "")
+	p := createTestPortfolio()
 	blotterSvc := blotter.NewBlotter(mockDB)
 
 	p.SubscribeToBlotter(blotterSvc)

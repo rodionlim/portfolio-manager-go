@@ -35,21 +35,11 @@ type Portfolio struct {
 	mu            sync.Mutex
 }
 
-func NewPortfolio(db dal.Database, refDataSeedPath string) *Portfolio {
+func NewPortfolio(db dal.Database, mdata *mdata.Manager, rdata *reference.ReferenceManager) *Portfolio {
 	var currentSeqNum int
 	err := db.Get(string(types.HeadSequencePortfolioKey), currentSeqNum)
 	if err != nil {
 		currentSeqNum = -1
-	}
-
-	mdata, err := mdata.NewManager()
-	if err != nil {
-		logging.GetLogger().Fatalf("Failed to create market data manager")
-	}
-
-	rdata, err := reference.NewReferenceManager(db, refDataSeedPath)
-	if err != nil {
-		logging.GetLogger().Fatalf("Failed to create reference data manager")
 	}
 
 	return &Portfolio{

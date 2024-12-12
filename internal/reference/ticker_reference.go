@@ -17,6 +17,7 @@ func init() {
 
 type TickerReference struct {
 	ID                string  `json:"id" yaml:"id" validate:"required"`
+	Name              string  `json:"name" yaml:"name" validate:"required"`
 	UnderlyingTicker  string  `json:"underlying_ticker" yaml:"underlying_ticker" validate:"required"`
 	YahooTicker       string  `json:"yahoo_ticker" yaml:"yahoo_ticker"`
 	GoogleTicker      string  `json:"google_ticker" yaml:"google_ticker"`
@@ -63,9 +64,10 @@ const (
 )
 
 // NewTickerReference creates a new TickerReference instance.
-func NewTickerReference(id, underlyingTicker, yahooTicker, googleTicker, dividendsSgTicker, assetClass, assetSubClass, category, subcategory string, couponRate, strikePrice float64, maturityDate, callPut string) (*TickerReference, error) {
+func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, dividendsSgTicker, assetClass, assetSubClass, category, subcategory string, couponRate, strikePrice float64, maturityDate, callPut string) (*TickerReference, error) {
 	ref := TickerReference{
 		ID:                id,
+		Name:              name,
 		UnderlyingTicker:  underlyingTicker,
 		YahooTicker:       yahooTicker,
 		GoogleTicker:      googleTicker,

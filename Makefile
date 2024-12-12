@@ -17,6 +17,9 @@ build:
 
 # Run tests
 test: 
+	$(GOTEST) ./...
+
+test-verbose: 
 	$(GOTEST) -v ./...
 
 test-integration:

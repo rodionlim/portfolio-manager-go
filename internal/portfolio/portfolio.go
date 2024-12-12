@@ -160,7 +160,12 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 	position := p.positions[trader][ticker]
 	totalPaid := position.AvgPx*position.Qty + trade.Price*qty
 	position.Qty += qty
-	position.AvgPx = totalPaid / position.Qty
+
+	if position.Qty == 0 {
+		position.AvgPx = 0
+	} else {
+		position.AvgPx = totalPaid / position.Qty
+	}
 
 	// Write position to the database
 	positionKey := generatePositionKey(trade)

@@ -143,7 +143,11 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 
 	trader := trade.Trader
 	ticker := trade.Ticker
+
 	qty := trade.Quantity
+	if trade.Side == blotter.TradeSideSell {
+		qty = qty * -1
+	}
 
 	if _, ok := p.positions[trader]; !ok {
 		p.positions[trader] = make(map[string]*Position)

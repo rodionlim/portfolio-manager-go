@@ -101,6 +101,31 @@ func TestAvgPriceOnUpdatePosition(t *testing.T) {
 	assert.InDelta(t, 166.67, position.AvgPx, 0.01) // Allowing a small delta of 0.01
 }
 
+func TestUpdateBuyAndSellPosition(t *testing.T) {
+	mockDB := new(MockDatabase)
+	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
+	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
+
+	p := NewPortfolio(mockDB, "")
+
+	// Add multiple trades
+	trades := []*blotter.Trade{
+		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "trader1", "broker1", "cdp", 150.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideSell, 50, "AAPL", "trader1", "broker1", "cdp", 200.0, 0.0, time.Now())),
+	}
+
+	for _, trade := range trades {
+		err := p.updatePosition(trade)
+		assert.NoError(t, err)
+	}
+
+	position := p.GetPosition("trader1", "AAPL")
+	assert.NotNil(t, position)
+	assert.Equal(t, float64(50), position.Qty)
+	assert.InDelta(t, 100, position.AvgPx, 0.01)
+}
+
 func TestGetPositions(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)

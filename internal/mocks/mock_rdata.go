@@ -15,6 +15,7 @@ func NewMockReferenceManager() *MockReferenceManager {
 	}
 
 	refMgr.AddTicker(rdata.TickerReference{
+		ID:                "AAPL",
 		DividendsSgTicker: "AAPL",
 	})
 

@@ -109,7 +109,11 @@ func (d *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMeta
 	// Convert map to sorted slice
 	var dividends []types.DividendsMetadata
 	for date, amount := range dividendMap {
-		dividends = append(dividends, types.DividendsMetadata{ExDate: date, Amount: math.Round(amount*1000) / 1000, WithholdingTax: d.divWithholdingTax}) // sg dividends have no withholding tax
+		dividends = append(dividends, types.DividendsMetadata{
+			Ticker:         ticker,
+			ExDate:         date,
+			Amount:         math.Round(amount*1000) / 1000,
+			WithholdingTax: d.divWithholdingTax}) // sg dividends have no withholding tax
 	}
 
 	// Sort dividends by date string (works because format is yyyy-mm-dd)

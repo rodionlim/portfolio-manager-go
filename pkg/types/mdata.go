@@ -8,6 +8,7 @@ type StockData struct {
 }
 
 type DividendsMetadata struct {
+	Ticker         string
 	ExDate         string
 	Amount         float64
 	WithholdingTax float64 // in decimal, not percentage

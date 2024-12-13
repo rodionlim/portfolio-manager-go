@@ -42,7 +42,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 	}
 
 	// Fetch dividends data from mdata service
-	dividends, err := dm.mdata.GetDividendsMetadata(tickerRef.DividendsSgTicker)
+	dividends, err := dm.mdata.GetDividendsMetadataFromTickerRef(tickerRef)
 	if err != nil {
 		return nil, err
 	}

@@ -17,6 +17,7 @@ type MarketDataManager interface {
 	GetStockPrice(ticker string) (*types.StockData, error)
 	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error)
 	GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error)
+	GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error)
 }
 
 // Manager handles multiple data sources with fallback capability
@@ -115,13 +116,18 @@ func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*t
 	return nil, errors.New("unable to fetch historical data from any market data sources")
 }
 
-// GetDividends attempts to fetch dividends metadata from available sources
+// GetDividendsMetadata attempts to fetch dividends metadata from available sources
 func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	tickerRef, err := m.getReferenceData(ticker)
 	if err == nil {
 		return nil, err
 	}
 
+	return m.GetDividendsMetadataFromTickerRef(tickerRef)
+}
+
+// GetDividendsMetadataFromTickerRef attempts to fetch dividends metadata from available sources
+func (m *Manager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error) {
 	if tickerRef.DividendsSgTicker != "" {
 		// Try Dividends.sg first
 		if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
@@ -130,7 +136,6 @@ func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata
 			}
 		}
 	}
-
 	return nil, errors.New("unable to fetch dividends from any source")
 }
 

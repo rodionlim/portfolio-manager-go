@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"errors"
+	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 )
 
@@ -48,6 +49,13 @@ func (m *MockMarketDataManager) GetHistoricalData(ticker string, fromDate, toDat
 // GetDividendsMetadata returns mock dividends metadata
 func (m *MockMarketDataManager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	if data, ok := m.DividendsMetadata[ticker]; ok {
+		return data, nil
+	}
+	return nil, errors.New("mock: unable to fetch dividends metadata")
+}
+
+func (m *MockMarketDataManager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error) {
+	if data, ok := m.DividendsMetadata[tickerRef.ID]; ok {
 		return data, nil
 	}
 	return nil, errors.New("mock: unable to fetch dividends metadata")

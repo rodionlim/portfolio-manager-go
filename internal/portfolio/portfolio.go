@@ -36,6 +36,7 @@ type Portfolio struct {
 	rdata         rdata.ReferenceManager
 	dividendsMgr  *dividends.DividendsManager
 	mu            sync.Mutex
+	logger        *logging.Logger
 }
 
 func NewPortfolio(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.ReferenceManager, dividendsSvc *dividends.DividendsManager) *Portfolio {
@@ -52,6 +53,7 @@ func NewPortfolio(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.Re
 		rdata:         rdata,
 		dividendsMgr:  dividendsSvc,
 		db:            db,
+		logger:        logging.GetLogger(),
 	}
 }
 
@@ -74,7 +76,7 @@ func (p *Portfolio) LoadPositions() error {
 		}
 	}
 
-	logging.GetLogger().Infof("Loaded %d positions from database", len(positionKeys))
+	p.logger.Infof("Loaded %d positions from database", len(positionKeys))
 
 	return nil
 }
@@ -98,8 +100,6 @@ func (p *Portfolio) GetDividendsManager() *dividends.DividendsManager {
 func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 	// Check if the currentSeqNum is less than the current sequence number of the blotter, i
 	// if it is, replay the trades from the blotter starting from the currentSeqNum
-	logger := logging.GetLogger()
-
 	blotterSeqNum := blotterSvc.GetCurrentSeqNum()
 	if p.currentSeqNum < blotterSeqNum {
 		blotterSvc.GetTradesBySeqNumRangeWithCallback(p.currentSeqNum+1, blotterSeqNum, func(trade blotter.Trade) { p.updatePosition(&trade) })
@@ -107,11 +107,11 @@ func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 
 	blotterSvc.Subscribe(blotter.NewTradeEvent, event.NewEventHandler(func(e event.Event) {
 		trade := e.Data.(blotter.NewTradeEventPayload).Trade
-		logger.Infof("Received new trade event. tradeID: %s ticker: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.TradeDate)
+		p.logger.Infof("Received new trade event. tradeID: %s ticker: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.TradeDate)
 		p.updatePosition(&trade)
 	}))
 
-	logger.Info("Subscribed to blotter service")
+	p.logger.Info("Subscribed to blotter service")
 }
 
 func (p *Portfolio) updatePositionFromDb(position *Position) error {
@@ -247,6 +247,17 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 	}
 
 	if tickerRef.AssetClass == rdata.AssetClassEquities {
+		// get dividends
+		dividends, err := p.dividendsMgr.CalculateDividendsForSingleTicker(position.Ticker)
+		if err != nil {
+			// we don't exit here, some tickers might have changed their names over time
+			p.logger.Warnf("Failed to get dividends for ticker %s: %v", position.Ticker, err)
+		} else {
+			for _, dividend := range dividends {
+				position.Dividends += dividend.Amount
+			}
+		}
+
 		if position.Qty == 0 {
 			// when the position is closed, the PnL is the total paid + dividends
 			position.PnL = (position.TotalPaid * -1) + position.Dividends

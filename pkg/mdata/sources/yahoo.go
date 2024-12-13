@@ -4,12 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
 	"time"
+
+	"github.com/patrickmn/go-cache"
 )
 
 type yahooFinance struct {
 	client *http.Client
+	cache  *cache.Cache
+	logger *logging.Logger
 }
 
 // NewYahooFinance creates a new Yahoo Finance data source
@@ -18,6 +23,8 @@ func NewYahooFinance() types.DataSource {
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		cache:  cache.New(5*time.Minute, 10*time.Minute),
+		logger: logging.GetLogger(),
 	}
 }
 
@@ -27,6 +34,11 @@ func (y *yahooFinance) GetDividendsMetadata(ticker string) ([]types.DividendsMet
 }
 
 func (y *yahooFinance) GetStockPrice(ticker string) (*types.StockData, error) {
+	if cachedData, found := y.cache.Get(ticker); found {
+		y.logger.Infof("Returning cached data for ticker: %s", ticker)
+		return cachedData.(*types.StockData), nil
+	}
+
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s", ticker)
 
 	resp, err := y.client.Get(url)
@@ -61,12 +73,16 @@ func (y *yahooFinance) GetStockPrice(ticker string) (*types.StockData, error) {
 	}
 
 	result := response.Chart.Result[0]
-	return &types.StockData{
+	stockData := &types.StockData{
 		Ticker:    result.Meta.Symbol,
 		Price:     result.Meta.Price,
 		Currency:  result.Meta.Currency,
 		Timestamp: time.Now().Unix(),
-	}, nil
+	}
+
+	y.cache.Set(ticker, stockData, cache.DefaultExpiration)
+
+	return stockData, nil
 }
 
 func (y *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {

@@ -5,7 +5,7 @@ An application to value equities, fx, commodities, cash, bonds and cryptocurrenc
 ## Features
 
 - Value assets based on current market prices
-- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg)
+- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg) with local cache
 - Output portfolio data in a CSV file for easy access and manipulation
 - Import / Export portfolio data from CSV file for easy migration to other portfolio maangers
 - Store portfolio, reference and dividends data in leveldb for persistence

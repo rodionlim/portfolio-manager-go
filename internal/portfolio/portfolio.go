@@ -7,10 +7,10 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/dividends"
-	"portfolio-manager/internal/reference"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
+	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 )
 
@@ -32,12 +32,12 @@ type Portfolio struct {
 	currentSeqNum int                             // used as a pointer to point to the last blotter trade that was processed
 	db            dal.Database
 	mdata         *mdata.Manager
-	rdata         *reference.ReferenceManager
+	rdata         rdata.ReferenceManager
 	dividendsMgr  *dividends.DividendsManager
 	mu            sync.Mutex
 }
 
-func NewPortfolio(db dal.Database, mdata *mdata.Manager, rdata *reference.ReferenceManager, dividendsSvc *dividends.DividendsManager) *Portfolio {
+func NewPortfolio(db dal.Database, mdata *mdata.Manager, rdata rdata.ReferenceManager, dividendsSvc *dividends.DividendsManager) *Portfolio {
 	var currentSeqNum int
 	err := db.Get(string(types.HeadSequencePortfolioKey), currentSeqNum)
 	if err != nil {
@@ -84,7 +84,7 @@ func (p *Portfolio) GetMdataManager() *mdata.Manager {
 }
 
 // GetRdataManager returns the reference data manager.
-func (p *Portfolio) GetRdataManager() *reference.ReferenceManager {
+func (p *Portfolio) GetRdataManager() rdata.ReferenceManager {
 	return p.rdata
 }
 

@@ -1,4 +1,4 @@
-package reference
+package rdata
 
 import (
 	"github.com/go-playground/validator/v10"

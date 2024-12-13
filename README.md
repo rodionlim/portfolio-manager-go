@@ -61,8 +61,9 @@ portfolio-manager/
 │   ├── blotter/
 │   ├── config/
 │   ├── dal/
+│   ├── dividends/
+│   ├── mocks/
 │   ├── portfolio/
-│   ├── refdata/
 │   └── server/
 ├── pkg/
 │   ├── common/
@@ -70,6 +71,7 @@ portfolio-manager/
 │   ├── logging/
 │   ├── mdata/
 │   │   └── sources/
+│   ├── rdata/
 │   └── types/
 ├── .gitignore
 ├── go.mod

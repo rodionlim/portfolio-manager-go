@@ -12,11 +12,11 @@ import (
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/dividends"
 	"portfolio-manager/internal/portfolio"
-	"portfolio-manager/internal/reference"
 	"portfolio-manager/internal/server"
 
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
+	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 )
 
@@ -81,7 +81,7 @@ func main() {
 	}
 
 	// Create a new reference data manager
-	rdata, err := reference.NewReferenceManager(db, config.RefDataSeedPath)
+	rdata, err := rdata.NewManager(db, config.RefDataSeedPath)
 	if err != nil {
 		logging.GetLogger().Fatalf("Failed to create reference data manager")
 	}

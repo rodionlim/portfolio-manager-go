@@ -1,10 +1,10 @@
-package reference_test
+package rdata_test
 
 import (
 	"errors"
 	"testing"
 
-	"portfolio-manager/internal/reference"
+	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 
 	"github.com/stretchr/testify/assert"
@@ -39,33 +39,33 @@ func (m *MockDatabase) Close() error { return nil }
 
 var seedFilePath = "../../seed/refdata.yaml"
 
-func TestNewReferenceManager_DatabaseEmpty(t *testing.T) {
+func TestNewManager_DatabaseEmpty(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix)).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	rm, err := reference.NewReferenceManager(mockDB, seedFilePath)
+	rm, err := rdata.NewManager(mockDB, seedFilePath)
 	assert.NoError(t, err)
 	assert.NotNil(t, rm)
 	mockDB.AssertExpectations(t)
 }
 
-func TestNewReferenceManager_DatabaseNotEmpty(t *testing.T) {
+func TestNewManager_DatabaseNotEmpty(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix)).Return([]string{"key1"}, nil)
 
-	rm, err := reference.NewReferenceManager(mockDB, seedFilePath)
+	rm, err := rdata.NewManager(mockDB, seedFilePath)
 	assert.NoError(t, err)
 	assert.NotNil(t, rm)
 	mockDB.AssertExpectations(t)
 }
 
-func TestNewReferenceManager_ErrorSeedingDatabase(t *testing.T) {
+func TestNewManager_ErrorSeedingDatabase(t *testing.T) {
 	mockDB := new(MockDatabase)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix)).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(errors.New("db error"))
 
-	rm, err := reference.NewReferenceManager(mockDB, seedFilePath)
+	rm, err := rdata.NewManager(mockDB, seedFilePath)
 	assert.Error(t, err)
 	assert.Nil(t, rm)
 	mockDB.AssertExpectations(t)

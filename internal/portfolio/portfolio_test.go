@@ -6,65 +6,41 @@ import (
 
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dividends"
-	"portfolio-manager/internal/reference"
+	"portfolio-manager/internal/mocks"
 	"portfolio-manager/pkg/mdata"
+	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-// MockDatabase implements dal.Database for testing
-type MockDatabase struct {
-	mock.Mock
-}
-
-func (m *MockDatabase) Put(key string, value interface{}) error {
-	args := m.Called(key, value)
-	return args.Error(0)
-}
-
-func (m *MockDatabase) Get(key string, value interface{}) error {
-	args := m.Called(key, value)
-	return args.Error(0)
-}
-
-func (m *MockDatabase) Delete(key string) error {
-	args := m.Called(key)
-	return args.Error(0)
-}
-
-func (m *MockDatabase) GetAllKeysWithPrefix(prefix string) ([]string, error) {
-	args := m.Called(prefix)
-	return args.Get(0).([]string), args.Error(1)
-}
-
-func (m *MockDatabase) Close() error { return nil }
-
-func createTestPortfolio() *Portfolio {
-	mockDB := new(MockDatabase)
+func createTestPortfolio() (*Portfolio, *mocks.MockDatabase) {
+	mockDB := new(mocks.MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
-	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
+	mockDB.On("Get", string(types.HeadSequenceBlotterKey), mock.Anything).Return(nil)
+
+	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*rdata.TickerReference")).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
 	mdataMgr, _ := mdata.NewManager()
-	rdataMgr, _ := reference.NewReferenceManager(mockDB, "")
+	rdataMgr, _ := rdata.NewManager(mockDB, "")
 	dividendsMgr := dividends.NewDividendsManager(mockDB, rdataMgr, nil, mdataMgr)
 
-	return NewPortfolio(mockDB, mdataMgr, rdataMgr, dividendsMgr)
+	return NewPortfolio(mockDB, mdataMgr, rdataMgr, dividendsMgr), mockDB
 }
 
-func createTestPortfolioWithDb(mockDB *MockDatabase) *Portfolio {
+func createTestPortfolioWithDb(mockDB *mocks.MockDatabase) *Portfolio {
 	mdataMgr, _ := mdata.NewManager()
-	rdataMgr, _ := reference.NewReferenceManager(mockDB, "")
+	rdataMgr, _ := rdata.NewManager(mockDB, "")
 	dividendsMgr := dividends.NewDividendsManager(mockDB, rdataMgr, nil, mdataMgr)
 
 	return NewPortfolio(mockDB, mdataMgr, rdataMgr, dividendsMgr)
 }
 
 func TestNewPortfolio(t *testing.T) {
-	p := createTestPortfolio()
+	p, _ := createTestPortfolio()
 
 	assert.NotNil(t, p)
 	assert.Equal(t, 0, p.currentSeqNum)
@@ -72,13 +48,7 @@ func TestNewPortfolio(t *testing.T) {
 }
 
 func TestUpdatePosition(t *testing.T) {
-	mockDB := new(MockDatabase)
-	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
-	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
-	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
-	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
-
-	p := createTestPortfolio()
+	p, _ := createTestPortfolio()
 
 	trade, _ := blotter.NewTrade(
 		blotter.TradeSideBuy,
@@ -102,13 +72,7 @@ func TestUpdatePosition(t *testing.T) {
 }
 
 func TestAvgPriceOnUpdatePosition(t *testing.T) {
-	mockDB := new(MockDatabase)
-	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
-	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
-	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
-	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
-
-	p := createTestPortfolio()
+	p, _ := createTestPortfolio()
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
@@ -128,13 +92,7 @@ func TestAvgPriceOnUpdatePosition(t *testing.T) {
 }
 
 func TestUpdateBuyAndSellPosition(t *testing.T) {
-	mockDB := new(MockDatabase)
-	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
-	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
-	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
-	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
-
-	p := createTestPortfolio()
+	p, _ := createTestPortfolio()
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
@@ -155,13 +113,7 @@ func TestUpdateBuyAndSellPosition(t *testing.T) {
 }
 
 func TestGetPositions(t *testing.T) {
-	mockDB := new(MockDatabase)
-	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
-	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
-	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
-	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
-
-	p := createTestPortfolio()
+	p, _ := createTestPortfolio()
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
@@ -187,9 +139,9 @@ func TestGetPositions(t *testing.T) {
 }
 
 func TestLoadPositions(t *testing.T) {
-	mockDB := new(MockDatabase)
+	mockDB := new(mocks.MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
-	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
+	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*rdata.TickerReference")).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.PositionKeyPrefix)).Return([]string{
 		string(types.PositionKeyPrefix) + ":trader1:AAPL",
@@ -222,14 +174,7 @@ func TestLoadPositions(t *testing.T) {
 }
 
 func TestSubscribeToBlotter(t *testing.T) {
-	mockDB := new(MockDatabase)
-	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
-	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*reference.TickerReference")).Return(nil)
-	mockDB.On("Get", string(types.HeadSequenceBlotterKey), mock.Anything).Return(nil)
-	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
-	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
-
-	p := createTestPortfolio()
+	p, mockDB := createTestPortfolio()
 	blotterSvc := blotter.NewBlotter(mockDB)
 
 	p.SubscribeToBlotter(blotterSvc)

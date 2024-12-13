@@ -1,4 +1,4 @@
-package reference
+package rdata
 
 import (
 	"errors"
@@ -11,12 +11,20 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type ReferenceManager struct {
+type ReferenceManager interface {
+	AddTicker(ticker TickerReference) (string, error)
+	UpdateTicker(ticker *TickerReference) error
+	DeleteTicker(id string) error
+	GetTicker(id string) (TickerReference, error)
+	GetAllTickers() (map[string]TickerReference, error)
+}
+
+type Manager struct {
 	db dal.Database
 }
 
-func NewReferenceManager(db dal.Database, filePath string) (*ReferenceManager, error) {
-	rm := &ReferenceManager{db: db}
+func NewManager(db dal.Database, filePath string) (*Manager, error) {
+	rm := &Manager{db: db}
 
 	// Check if the database is empty and seed it if necessary
 	isEmpty, err := rm.isDatabaseEmpty()
@@ -33,7 +41,7 @@ func NewReferenceManager(db dal.Database, filePath string) (*ReferenceManager, e
 	return rm, nil
 }
 
-func (rm *ReferenceManager) isDatabaseEmpty() (bool, error) {
+func (rm *Manager) isDatabaseEmpty() (bool, error) {
 	refKeys, err := rm.db.GetAllKeysWithPrefix(string(types.ReferenceDataKeyPrefix))
 	if err != nil {
 		return false, err
@@ -41,7 +49,7 @@ func (rm *ReferenceManager) isDatabaseEmpty() (bool, error) {
 	return len(refKeys) == 0, nil
 }
 
-func (rm *ReferenceManager) seedReferenceData(filePath string) error {
+func (rm *Manager) seedReferenceData(filePath string) error {
 	if filePath == "" {
 		return nil // no seed file provided
 	}
@@ -67,7 +75,7 @@ func (rm *ReferenceManager) seedReferenceData(filePath string) error {
 	return nil
 }
 
-func (rm *ReferenceManager) AddTicker(ticker TickerReference) (string, error) {
+func (rm *Manager) AddTicker(ticker TickerReference) (string, error) {
 	err := rm.db.Put(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, ticker.ID), ticker)
 	if err != nil {
 		return "", err
@@ -75,18 +83,18 @@ func (rm *ReferenceManager) AddTicker(ticker TickerReference) (string, error) {
 	return ticker.ID, nil
 }
 
-func (rm *ReferenceManager) UpdateTicker(ticker *TickerReference) error {
+func (rm *Manager) UpdateTicker(ticker *TickerReference) error {
 	if ticker.ID == "" {
 		return errors.New("ticker ID is required")
 	}
 	return rm.db.Put(ticker.ID, ticker)
 }
 
-func (rm *ReferenceManager) DeleteTicker(id string) error {
+func (rm *Manager) DeleteTicker(id string) error {
 	return rm.db.Delete(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, id))
 }
 
-func (rm *ReferenceManager) GetTicker(id string) (TickerReference, error) {
+func (rm *Manager) GetTicker(id string) (TickerReference, error) {
 	var ticker TickerReference
 	err := rm.db.Get(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, id), &ticker)
 	if err != nil {
@@ -95,7 +103,7 @@ func (rm *ReferenceManager) GetTicker(id string) (TickerReference, error) {
 	return ticker, nil
 }
 
-func (rm *ReferenceManager) GetAllTickers() (map[string]TickerReference, error) {
+func (rm *Manager) GetAllTickers() (map[string]TickerReference, error) {
 	refKeys, err := rm.db.GetAllKeysWithPrefix(string(types.ReferenceDataKeyPrefix))
 	if err != nil {
 		return nil, err

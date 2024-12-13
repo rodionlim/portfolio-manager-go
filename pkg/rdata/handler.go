@@ -1,4 +1,4 @@
-package reference
+package rdata
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} error
 // @Router /refdata [get]
-func HandleReferenceDataGet(refSvc *ReferenceManager) http.HandlerFunc {
+func HandleReferenceDataGet(refSvc ReferenceManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := refSvc.GetAllTickers()
 		if err != nil {
@@ -26,7 +26,7 @@ func HandleReferenceDataGet(refSvc *ReferenceManager) http.HandlerFunc {
 }
 
 // RegisterHandlers registers the handlers for the reference data service
-func RegisterHandlers(mux *http.ServeMux, refSvc *ReferenceManager) {
+func RegisterHandlers(mux *http.ServeMux, refSvc ReferenceManager) {
 	mux.HandleFunc("/refdata", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:

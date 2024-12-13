@@ -8,9 +8,9 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dividends"
 	"portfolio-manager/internal/portfolio"
-	"portfolio-manager/internal/reference"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
+	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 
 	_ "portfolio-manager/docs"
@@ -58,7 +58,7 @@ func (s *Server) Start(ctx context.Context) error {
 	if s.portfolio != nil {
 		// Register market data service handlers
 		mdata.RegisterHandlers(mux, s.portfolio.GetMdataManager())
-		reference.RegisterHandlers(mux, s.portfolio.GetRdataManager())
+		rdata.RegisterHandlers(mux, s.portfolio.GetRdataManager())
 		dividends.RegisterHandlers(mux, s.portfolio.GetDividendsManager())
 	}
 

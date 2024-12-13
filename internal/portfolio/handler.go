@@ -7,6 +7,7 @@ package portfolio
 import (
 	"encoding/json"
 	"net/http"
+	"portfolio-manager/pkg/logging"
 )
 
 // HandlePositionsGet handles retrieving all positions from the portfolio service.
@@ -21,8 +22,7 @@ func HandlePositionsGet(portfolio *Portfolio) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		positions, err := portfolio.GetAllPositions()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			logging.GetLogger().Errorf("Failed to get positions: %v", err)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(positions)

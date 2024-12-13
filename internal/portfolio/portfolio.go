@@ -25,6 +25,7 @@ type Position struct {
 	PnL           float64
 	Dividends     float64
 	AvgPx         float64
+	TotalPaid     float64
 }
 
 type Portfolio struct {
@@ -134,6 +135,7 @@ func (p *Portfolio) updatePositionFromDb(position *Position) error {
 	positionToUpdate.PnL = position.PnL
 	positionToUpdate.Dividends = position.Dividends
 	positionToUpdate.AvgPx = position.AvgPx
+	positionToUpdate.TotalPaid = position.TotalPaid
 
 	return nil
 }
@@ -159,7 +161,8 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 	}
 
 	position := p.positions[trader][ticker]
-	totalPaid := position.AvgPx*position.Qty + trade.Price*qty
+	totalPaid := position.AvgPx*position.Qty + trade.Price*qty // qty is negative for sell trades
+	position.TotalPaid = totalPaid
 	position.Qty += qty
 
 	if position.Qty == 0 {
@@ -224,10 +227,14 @@ func (p *Portfolio) GetAllPositions() ([]*Position, error) {
 }
 
 func (p *Portfolio) enrichPositions(positions []*Position) error {
+	var errs []error
 	for _, position := range positions {
 		if err := p.enrichPosition(position); err != nil {
-			return err
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("multiple errors: %v", errs)
 	}
 	return nil
 }
@@ -240,11 +247,18 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 	}
 
 	if tickerRef.AssetClass == rdata.AssetClassEquities {
-		stockData, err := p.mdata.GetStockPrice(position.Ticker)
-		if err != nil {
-			return err
+		if position.Qty == 0 {
+			// when the position is closed, the PnL is the total paid + dividends
+			position.PnL = (position.TotalPaid * -1) + position.Dividends
+		} else {
+			stockData, err := p.mdata.GetStockPrice(position.Ticker)
+			if err != nil {
+				return err
+			}
+
+			position.Mv = position.Qty * stockData.Price
+			position.PnL = (stockData.Price-position.AvgPx)*position.Qty + position.Dividends
 		}
-		position.Mv = position.Qty * stockData.Price
 	}
 
 	position.Ccy = tickerRef.Ccy

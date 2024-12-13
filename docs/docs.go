@@ -517,6 +517,9 @@ const docTemplate = `{
                 "ticker": {
                     "type": "string"
                 },
+                "totalPaid": {
+                    "type": "number"
+                },
                 "trader": {
                     "type": "string"
                 }

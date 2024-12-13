@@ -2,6 +2,7 @@ package mdata
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"portfolio-manager/internal/dal"
@@ -81,7 +82,7 @@ func (m *Manager) GetStockPrice(ticker string) (*types.StockData, error) {
 		}
 	}
 
-	return nil, errors.New("unable to fetch stock price from any market data sources")
+	return nil, fmt.Errorf("unable to fetch stock price %s from any market data sources", ticker)
 }
 
 // GetHistoricalData attempts to fetch historical data from available sources

@@ -98,6 +98,8 @@ definitions:
         type: number
       ticker:
         type: string
+      totalPaid:
+        type: number
       trader:
         type: string
     type: object

@@ -84,7 +84,7 @@
   asset_class: "eq"
   asset_sub_class: "etf"
   ccy: "USD"
-  domicile: "IE" # irelenad
+  domicile: "IE" # ireland
 - id: "ES3.SI"
   name: "STI ETF"
   underlying_ticker: "ES3.SI"

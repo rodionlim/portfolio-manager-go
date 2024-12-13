@@ -22,6 +22,7 @@ type Config struct {
 	DivWitholdingTaxSG float64 `yaml:"divWitholdingTaxSG"`
 	DivWitholdingTaxUS float64 `yaml:"divWitholdingTaxUS"`
 	DivWitholdingTaxHK float64 `yaml:"divWitholdingTaxHK"`
+	DivWitholdingTaxIE float64 `yaml:"divWitholdingTaxIE"`
 }
 
 // Implement the Stringer interface for Config

@@ -2,10 +2,12 @@ package mdata
 
 import (
 	"errors"
+	"strings"
 
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata/sources"
+	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 )
 
@@ -19,12 +21,14 @@ type MarketDataManager interface {
 // Manager handles multiple data sources with fallback capability
 type Manager struct {
 	sources map[string]types.DataSource
+	rdata   rdata.ReferenceManager
 }
 
 // NewManager creates a new data manager with initialized data sources
-func NewManager(db dal.Database) (*Manager, error) {
+func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error) {
 	m := &Manager{
 		sources: make(map[string]types.DataSource),
+		rdata:   rdata,
 	}
 
 	// Initialize default data sources
@@ -54,48 +58,75 @@ func NewManager(db dal.Database) (*Manager, error) {
 func (m *Manager) GetStockPrice(ticker string) (*types.StockData, error) {
 	logging.GetLogger().Info("Fetching stock price for ticker", ticker)
 
-	// Try Yahoo Finance first
-	if yahoo, ok := m.sources[sources.YahooFinance]; ok {
-		if data, err := yahoo.GetStockPrice(ticker); err == nil {
-			return data, nil
+	tickerRef, err := m.getReferenceData(ticker)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try Yahoo Finance first if ticker is available in ref data
+	if tickerRef.YahooTicker != "" {
+		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
+			if data, err := yahoo.GetStockPrice(tickerRef.YahooTicker); err == nil {
+				return data, nil
+			}
 		}
 	}
 
 	// Fallback to Google Finance
-	if google, ok := m.sources[sources.GoogleFinance]; ok {
-		if data, err := google.GetStockPrice(ticker); err == nil {
-			return data, nil
+	if tickerRef.GoogleTicker != "" {
+		if google, ok := m.sources[sources.GoogleFinance]; ok {
+			if data, err := google.GetStockPrice(tickerRef.GoogleTicker); err == nil {
+				return data, nil
+			}
 		}
 	}
 
-	return nil, errors.New("unable to fetch stock price from any source")
+	return nil, errors.New("unable to fetch stock price from any market data sources")
 }
 
 // GetHistoricalData attempts to fetch historical data from available sources
 func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
-	// Try Yahoo Finance first
-	if yahoo, ok := m.sources[sources.YahooFinance]; ok {
-		if data, err := yahoo.GetHistoricalData(ticker, fromDate, toDate); err == nil {
-			return data, nil
+	logging.GetLogger().Info("Fetching historical data for ticker", ticker)
+
+	tickerRef, err := m.getReferenceData(ticker)
+	if err == nil {
+		return nil, err
+	}
+
+	// Try Yahoo Finance first if ticker is available in ref data
+	if tickerRef.YahooTicker != "" {
+		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
+			if data, err := yahoo.GetHistoricalData(tickerRef.YahooTicker, fromDate, toDate); err == nil {
+				return data, nil
+			}
 		}
 	}
 
 	// Fallback to Google Finance
-	if google, ok := m.sources[sources.GoogleFinance]; ok {
-		if data, err := google.GetHistoricalData(ticker, fromDate, toDate); err == nil {
-			return data, nil
+	if tickerRef.GoogleTicker != "" {
+		if google, ok := m.sources[sources.GoogleFinance]; ok {
+			if data, err := google.GetHistoricalData(tickerRef.GoogleTicker, fromDate, toDate); err == nil {
+				return data, nil
+			}
 		}
 	}
 
-	return nil, errors.New("unable to fetch historical data from any source")
+	return nil, errors.New("unable to fetch historical data from any market data sources")
 }
 
 // GetDividends attempts to fetch dividends metadata from available sources
 func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
-	// Try Dividends.sg first
-	if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
-		if data, err := dividendsSg.GetDividendsMetadata(ticker); err == nil {
-			return data, nil
+	tickerRef, err := m.getReferenceData(ticker)
+	if err == nil {
+		return nil, err
+	}
+
+	if tickerRef.DividendsSgTicker != "" {
+		// Try Dividends.sg first
+		if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
+			if data, err := dividendsSg.GetDividendsMetadata(tickerRef.DividendsSgTicker); err == nil {
+				return data, nil
+			}
 		}
 	}
 
@@ -114,4 +145,13 @@ func NewDataSource(sourceType string, db dal.Database) (types.DataSource, error)
 	default:
 		return nil, errors.New("unsupported data source")
 	}
+}
+
+func (m *Manager) getReferenceData(ticker string) (rdata.TickerReference, error) {
+	refData, err := m.rdata.GetTicker(strings.ToUpper(ticker))
+	if err != nil {
+		return rdata.TickerReference{}, err
+	}
+
+	return refData, nil
 }

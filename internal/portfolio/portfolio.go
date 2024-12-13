@@ -73,7 +73,7 @@ func (p *Portfolio) LoadPositions() error {
 		}
 	}
 
-	logging.GetLogger().Info("Loaded positions from database")
+	logging.GetLogger().Infof("Loaded %d positions from database", len(positionKeys))
 
 	return nil
 }
@@ -232,11 +232,21 @@ func (p *Portfolio) enrichPositions(positions []*Position) error {
 	return nil
 }
 
+// enrichPosition enriches the position with reference data and market data.
 func (p *Portfolio) enrichPosition(position *Position) error {
 	tickerRef, err := p.rdata.GetTicker(position.Ticker)
 	if err != nil {
 		return err
 	}
+
+	if tickerRef.AssetClass == rdata.AssetClassEquities {
+		stockData, err := p.mdata.GetStockPrice(position.Ticker)
+		if err != nil {
+			return err
+		}
+		position.Mv = position.Qty * stockData.Price
+	}
+
 	position.Ccy = tickerRef.Ccy
 	position.AssetClass = tickerRef.AssetClass
 	position.AssetSubClass = tickerRef.AssetSubClass

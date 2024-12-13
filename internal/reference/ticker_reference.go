@@ -27,6 +27,7 @@ type TickerReference struct {
 	Category          string  `json:"category" yaml:"category" validate:"category"`
 	SubCategory       string  `json:"sub_category" yaml:"sub_category"`
 	Ccy               string  `json:"ccy" yaml:"ccy" validate:"required,uppercase"`
+	Domicile          string  `json:"domicile" yaml:"domicile" validate:"required,uppercase"`
 	CouponRate        float64 `json:"coupon_rate" yaml:"coupon_rate"`
 	MaturityDate      string  `json:"maturity_date" yaml:"maturity_date"`
 	StrikePrice       float64 `json:"strike_price" yaml:"strike_price"`
@@ -68,7 +69,7 @@ const (
 )
 
 // NewTickerReference creates a new TickerReference instance.
-func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, dividendsSgTicker, assetClass, assetSubClass, category, subcategory, ccy string, couponRate, strikePrice float64, maturityDate, callPut string) (*TickerReference, error) {
+func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, dividendsSgTicker, assetClass, assetSubClass, category, subcategory, ccy, domicile string, couponRate, strikePrice float64, maturityDate, callPut string) (*TickerReference, error) {
 	ref := TickerReference{
 		ID:                id,
 		Name:              name,
@@ -81,6 +82,7 @@ func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, d
 		Category:          category,
 		SubCategory:       subcategory,
 		Ccy:               ccy,
+		Domicile:          domicile,
 		CouponRate:        couponRate,
 		MaturityDate:      maturityDate,
 		StrikePrice:       strikePrice,

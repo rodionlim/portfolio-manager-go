@@ -20,8 +20,13 @@ type DividendsSg struct {
 
 func NewDividendsSg() *DividendsSg {
 	cfg, _ := config.GetOrCreateConfig("")
+	divWitholdingTax := 0.0
+	if cfg != nil {
+		divWitholdingTax = cfg.DivWitholdingTaxSG
+	}
+
 	return &DividendsSg{
-		divWithholdingTax: cfg.DivWitholdingTaxSG,
+		divWithholdingTax: divWitholdingTax,
 	}
 }
 

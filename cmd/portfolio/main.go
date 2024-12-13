@@ -75,7 +75,7 @@ func main() {
 	}
 
 	// Create a new market data manager
-	mdata, err := mdata.NewManager()
+	mdata, err := mdata.NewManager(db)
 	if err != nil {
 		logging.GetLogger().Fatalf("Failed to create market data manager")
 	}

@@ -7,9 +7,8 @@ An application to value equities, fx, commodities, cash, bonds and cryptocurrenc
 - Value assets based on current market prices
 - Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg)
 - Output portfolio data in a CSV file for easy access and manipulation
-- Import portfolio data from CSV file for easy migration into portfolio-manager-go
-- Export portfolio data to CSV file for easy migration to another portfolio manager
-- Store portfolio data and reference data in leveldb for persistence
+- Import / Export portfolio data from CSV file for easy migration to other portfolio maangers
+- Store portfolio, reference and dividends data in leveldb for persistence
 - Calculate total portfolio value based on current prices
 - Display detailed information for individual assets
 - OpenAPI compliant for easy integration with other systems

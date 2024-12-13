@@ -24,7 +24,7 @@ func createTestPortfolio() (*Portfolio, *mocks.MockDatabase) {
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
 
-	mdataMgr, _ := mdata.NewManager()
+	mdataMgr, _ := mdata.NewManager(mockDB)
 	rdataMgr, _ := rdata.NewManager(mockDB, "")
 	dividendsMgr := dividends.NewDividendsManager(mockDB, mdataMgr, rdataMgr, nil)
 
@@ -32,7 +32,7 @@ func createTestPortfolio() (*Portfolio, *mocks.MockDatabase) {
 }
 
 func createTestPortfolioWithDb(mockDB *mocks.MockDatabase) *Portfolio {
-	mdataMgr, _ := mdata.NewManager()
+	mdataMgr, _ := mdata.NewManager(mockDB)
 	rdataMgr, _ := rdata.NewManager(mockDB, "")
 	dividendsMgr := dividends.NewDividendsManager(mockDB, mdataMgr, rdataMgr, nil)
 

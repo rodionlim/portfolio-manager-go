@@ -5,20 +5,25 @@ import (
 	"math"
 	"net/http"
 	"portfolio-manager/internal/config"
+	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/patrickmn/go-cache"
 )
 
 type DividendsSg struct {
 	divWithholdingTax float64
+	db                dal.Database
+	cache             *cache.Cache
 }
 
-func NewDividendsSg() *DividendsSg {
+func NewDividendsSg(db dal.Database) *DividendsSg {
 	cfg, _ := config.GetOrCreateConfig("")
 	divWitholdingTax := 0.0
 	if cfg != nil {
@@ -27,6 +32,8 @@ func NewDividendsSg() *DividendsSg {
 
 	return &DividendsSg{
 		divWithholdingTax: divWitholdingTax,
+		db:                db,
+		cache:             cache.New(24*time.Hour, 1*time.Hour),
 	}
 }
 
@@ -42,6 +49,19 @@ func (d *DividendsSg) GetStockPrice(symbol string) (*types.StockData, error) {
 
 func (d *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	logger := logging.GetLogger()
+
+	// Check cache first
+	if cachedData, found := d.cache.Get(ticker); found {
+		logger.Info("Returning cached dividends data for ticker:", ticker)
+		return cachedData.([]types.DividendsMetadata), nil
+	}
+
+	dbDividendCount := 0
+	if d.db != nil {
+		var dividends []types.DividendsMetadata
+		d.db.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), &dividends)
+		dbDividendCount = len(dividends)
+	}
 
 	url := fmt.Sprintf("https://www.dividends.sg/view/%s", ticker)
 
@@ -120,6 +140,17 @@ func (d *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMeta
 	sort.Slice(dividends, func(i, j int) bool {
 		return dividends[i].ExDate < dividends[j].ExDate
 	})
+
+	if d.db != nil {
+		// Store in database if we have new data
+		if len(dividends) > dbDividendCount {
+			logger.Infof("New dividends for ticker %s, storing into database", ticker)
+			d.db.Put(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends)
+		}
+	}
+
+	// Store in cache
+	d.cache.Set(ticker, dividends, cache.DefaultExpiration)
 
 	return dividends, nil
 }

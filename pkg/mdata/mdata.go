@@ -3,6 +3,7 @@ package mdata
 import (
 	"errors"
 
+	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata/sources"
 	"portfolio-manager/pkg/types"
@@ -21,21 +22,21 @@ type Manager struct {
 }
 
 // NewManager creates a new data manager with initialized data sources
-func NewManager() (*Manager, error) {
+func NewManager(db dal.Database) (*Manager, error) {
 	m := &Manager{
 		sources: make(map[string]types.DataSource),
 	}
 
 	// Initialize default data sources
-	google, err := NewDataSource(sources.GoogleFinance)
+	google, err := NewDataSource(sources.GoogleFinance, db)
 	if err != nil {
 		return nil, err
 	}
-	yahoo, err := NewDataSource(sources.YahooFinance)
+	yahoo, err := NewDataSource(sources.YahooFinance, db)
 	if err != nil {
 		return nil, err
 	}
-	dividendsSg, err := NewDataSource(sources.DividendsSingapore)
+	dividendsSg, err := NewDataSource(sources.DividendsSingapore, db)
 	if err != nil {
 		return nil, err
 	}
@@ -102,14 +103,14 @@ func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata
 }
 
 // NewDataSource creates a new data source engine based on the source type
-func NewDataSource(sourceType string) (types.DataSource, error) {
+func NewDataSource(sourceType string, db dal.Database) (types.DataSource, error) {
 	switch sourceType {
 	case sources.GoogleFinance:
 		return sources.NewGoogleFinance(), nil
 	case sources.YahooFinance:
 		return sources.NewYahooFinance(), nil
 	case sources.DividendsSingapore:
-		return sources.NewDividendsSg(), nil
+		return sources.NewDividendsSg(db), nil
 	default:
 		return nil, errors.New("unsupported data source")
 	}

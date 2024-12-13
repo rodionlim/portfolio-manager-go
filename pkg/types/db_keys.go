@@ -11,4 +11,5 @@ const (
 	TradeKeyPrefix         dbKey = "TRADE"
 	PositionKeyPrefix      dbKey = "POSITION"
 	ReferenceDataKeyPrefix dbKey = "REFDATA"
+	DividendsKeyPrefix     dbKey = "DIVIDENDS"
 )

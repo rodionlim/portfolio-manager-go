@@ -10,9 +10,15 @@ type MockReferenceManager struct {
 }
 
 func NewMockReferenceManager() *MockReferenceManager {
-	return &MockReferenceManager{
+	refMgr := &MockReferenceManager{
 		Tickers: make(map[string]rdata.TickerReference),
 	}
+
+	refMgr.AddTicker(rdata.TickerReference{
+		DividendsSgTicker: "AAPL",
+	})
+
+	return refMgr
 }
 
 func (m *MockReferenceManager) AddTicker(ticker rdata.TickerReference) (string, error) {

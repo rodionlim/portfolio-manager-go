@@ -16,7 +16,7 @@ import (
 // @Failure 400 {string} string "Bad request - Ticker is required"
 // @Failure 500 {string} string "Internal server error"
 // @Router /mdata/price/{ticker} [get]
-func HandleTickerGet(mdataSvc *Manager) http.HandlerFunc {
+func HandleTickerGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ticker := strings.TrimPrefix(r.URL.Path, "/mdata/price/")
 		if ticker == "" {
@@ -45,7 +45,7 @@ func HandleTickerGet(mdataSvc *Manager) http.HandlerFunc {
 // @Success 200 {object} map[string]interface{} "Market data for all requested tickers"
 // @Failure 400 {string} string "Bad request - Tickers query parameter is required"
 // @Router /mdata/tickers/price [get]
-func HandleTickersGet(mdataSvc *Manager) http.HandlerFunc {
+func HandleTickersGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tickers := r.URL.Query().Get("tickers")
 		if tickers == "" {
@@ -80,7 +80,7 @@ func HandleTickersGet(mdataSvc *Manager) http.HandlerFunc {
 // @Failure 400 {string} string "Bad request - Ticker is required"
 // @Failure 500 {string} string "Internal server error"
 // @Router /mdata/dividend/{ticker} [get]
-func HandleDividendsGet(mdataSvc *Manager) http.HandlerFunc {
+func HandleDividendsGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ticker := strings.TrimPrefix(r.URL.Path, "/mdata/dividend/")
 		if ticker == "" {
@@ -100,7 +100,7 @@ func HandleDividendsGet(mdataSvc *Manager) http.HandlerFunc {
 }
 
 // RegisterHandlers registers the handlers for the market data service
-func RegisterHandlers(mux *http.ServeMux, mdataSvc *Manager) {
+func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 	mux.HandleFunc("/mdata/price/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:

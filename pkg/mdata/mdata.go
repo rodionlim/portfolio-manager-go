@@ -8,6 +8,13 @@ import (
 	"portfolio-manager/pkg/types"
 )
 
+// MarketDataManager defines the interface for market data management
+type MarketDataManager interface {
+	GetStockPrice(ticker string) (*types.StockData, error)
+	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error)
+	GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error)
+}
+
 // Manager handles multiple data sources with fallback capability
 type Manager struct {
 	sources map[string]types.DataSource

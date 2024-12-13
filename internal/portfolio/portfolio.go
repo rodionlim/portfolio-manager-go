@@ -31,13 +31,13 @@ type Portfolio struct {
 	positions     map[string]map[string]*Position // map[trader]map[ticker]*Position
 	currentSeqNum int                             // used as a pointer to point to the last blotter trade that was processed
 	db            dal.Database
-	mdata         *mdata.Manager
+	mdata         mdata.MarketDataManager
 	rdata         rdata.ReferenceManager
 	dividendsMgr  *dividends.DividendsManager
 	mu            sync.Mutex
 }
 
-func NewPortfolio(db dal.Database, mdata *mdata.Manager, rdata rdata.ReferenceManager, dividendsSvc *dividends.DividendsManager) *Portfolio {
+func NewPortfolio(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.ReferenceManager, dividendsSvc *dividends.DividendsManager) *Portfolio {
 	var currentSeqNum int
 	err := db.Get(string(types.HeadSequencePortfolioKey), currentSeqNum)
 	if err != nil {
@@ -79,7 +79,7 @@ func (p *Portfolio) LoadPositions() error {
 }
 
 // GetMdataManager returns the market data manager.
-func (p *Portfolio) GetMdataManager() *mdata.Manager {
+func (p *Portfolio) GetMdataManager() mdata.MarketDataManager {
 	return p.mdata
 }
 

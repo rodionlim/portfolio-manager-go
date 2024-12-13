@@ -26,7 +26,7 @@ func createTestPortfolio() (*Portfolio, *mocks.MockDatabase) {
 
 	mdataMgr, _ := mdata.NewManager()
 	rdataMgr, _ := rdata.NewManager(mockDB, "")
-	dividendsMgr := dividends.NewDividendsManager(mockDB, rdataMgr, nil, mdataMgr)
+	dividendsMgr := dividends.NewDividendsManager(mockDB, mdataMgr, rdataMgr, nil)
 
 	return NewPortfolio(mockDB, mdataMgr, rdataMgr, dividendsMgr), mockDB
 }
@@ -34,7 +34,7 @@ func createTestPortfolio() (*Portfolio, *mocks.MockDatabase) {
 func createTestPortfolioWithDb(mockDB *mocks.MockDatabase) *Portfolio {
 	mdataMgr, _ := mdata.NewManager()
 	rdataMgr, _ := rdata.NewManager(mockDB, "")
-	dividendsMgr := dividends.NewDividendsManager(mockDB, rdataMgr, nil, mdataMgr)
+	dividendsMgr := dividends.NewDividendsManager(mockDB, mdataMgr, rdataMgr, nil)
 
 	return NewPortfolio(mockDB, mdataMgr, rdataMgr, dividendsMgr)
 }

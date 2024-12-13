@@ -87,7 +87,7 @@ func main() {
 	}
 
 	// Create a new dividends manager
-	dividendsSvc := dividends.NewDividendsManager(db, rdata, blotterSvc, mdata)
+	dividendsSvc := dividends.NewDividendsManager(db, mdata, rdata, blotterSvc)
 
 	// Create a new portfolio service
 	portfolioSvc := portfolio.NewPortfolio(db, mdata, rdata, dividendsSvc)

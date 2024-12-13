@@ -60,7 +60,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 			if trade.TradeDate <= dividend.ExDate {
 				allDividends = append(allDividends, Dividends{
 					ExDate:         dividend.ExDate,
-					Amount:         trade.Quantity * dividend.Amount,
+					Amount:         trade.Quantity * dividend.Amount * (1 - dividend.WithholdingTax),
 					AmountPerShare: dividend.Amount,
 				})
 			}

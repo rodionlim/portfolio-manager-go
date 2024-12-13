@@ -8,8 +8,9 @@ type StockData struct {
 }
 
 type DividendsMetadata struct {
-	ExDate string
-	Amount float64
+	ExDate         string
+	Amount         float64
+	WithholdingTax float64 // in decimal, not percentage
 }
 
 // DataSource defines the interface for different data source engines

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"portfolio-manager/internal/config"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
 	"sort"
@@ -13,10 +14,15 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type DividendsSg struct{}
+type DividendsSg struct {
+	divWithholdingTax float64
+}
 
 func NewDividendsSg() *DividendsSg {
-	return &DividendsSg{}
+	cfg, _ := config.GetOrCreateConfig("")
+	return &DividendsSg{
+		divWithholdingTax: cfg.DivWitholdingTaxSG,
+	}
 }
 
 // GetHistoricalData implements types.DataSource.
@@ -98,7 +104,7 @@ func (d *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMeta
 	// Convert map to sorted slice
 	var dividends []types.DividendsMetadata
 	for date, amount := range dividendMap {
-		dividends = append(dividends, types.DividendsMetadata{ExDate: date, Amount: math.Round(amount*1000) / 1000})
+		dividends = append(dividends, types.DividendsMetadata{ExDate: date, Amount: math.Round(amount*1000) / 1000, WithholdingTax: d.divWithholdingTax}) // sg dividends have no withholding tax
 	}
 
 	// Sort dividends by date string (works because format is yyyy-mm-dd)

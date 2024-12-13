@@ -153,6 +153,9 @@ port: 8080
 db: leveldb
 dbPath: ./portfolio-manager.db
 refDataSeedPath: "./seed/refdata.yaml"
+divWitholdingTaxSG: 0
+divWitholdingTaxUS: 0.3
+divWitholdingTaxHK: 0
 ```
 
 ## Contributing

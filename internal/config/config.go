@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"portfolio-manager/internal/dal"
+	"sync"
 
 	"gopkg.in/yaml.v2"
 )
@@ -26,34 +27,46 @@ func (c Config) String() string {
 	return string(jConfig)
 }
 
-// NewConfig reads the configuration file at the given path and returns a Config object.
-func NewConfig(path string) (*Config, error) {
-	file, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
+var (
+	instance *Config
+	once     sync.Once
+	err      error
+)
 
-	config := Config{}
-	err = yaml.Unmarshal(file, &config)
-	if err != nil {
-		return nil, err
-	}
+// GetOrCreateConfig returns the singleton Config instance, and instantiates it if it hasn't already been done so.
+func GetOrCreateConfig(path string) (*Config, error) {
+	once.Do(func() {
+		var file []byte
+		file, err = os.ReadFile(path)
+		if err != nil {
+			return
+		}
 
-	// Set default value for Host if not provided
-	if config.Host == "" {
-		config.Host = "localhost"
-	}
+		config := Config{}
+		err = yaml.Unmarshal(file, &config)
+		if err != nil {
+			return
+		}
 
-	// Validate the database field
-	if config.Db == "" {
-		config.Db = dal.LDB
-	}
-	if config.Db != dal.LDB && config.Db != dal.RDB {
-		return nil, errors.New("invalid db type: must be 'leveldb' or 'rocksdb'")
-	}
-	if config.DbPath == "" {
-		config.DbPath = "./portfolio-manager.db"
-	}
+		// Set default value for Host if not provided
+		if config.Host == "" {
+			config.Host = "localhost"
+		}
 
-	return &config, nil
+		// Validate the database field
+		if config.Db == "" {
+			config.Db = dal.LDB
+		}
+		if config.Db != dal.LDB && config.Db != dal.RDB {
+			err = errors.New("invalid db type: must be 'leveldb' or 'rocksdb'")
+			return
+		}
+		if config.DbPath == "" {
+			config.DbPath = "./portfolio-manager.db"
+		}
+
+		instance = &config
+	})
+
+	return instance, err
 }

@@ -33,7 +33,7 @@ func main() {
 	flag.Parse()
 
 	// Load configuration
-	config, err := config.NewConfig(*configFilePath)
+	config, err := config.GetOrCreateConfig(*configFilePath)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %s", err)
 	}

@@ -7,22 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// type mockTradeBlotter struct{}
-
-// func (m *mockTradeBlotter) GetTradesByTicker(ticker string) ([]blotter.Trade, error) {
-// 	return []blotter.Trade{
-// 		{TradeDate: "2022-12-31", Quantity: 100},
-// 		{TradeDate: "2023-01-15", Quantity: 200},
-// 	}, nil
-// }
-
 func TestCalculateDividendsForSingleTicker(t *testing.T) {
-	db := &mocks.MockDatabase{}
-	rdata := &mocks.MockReferenceManager{}
-	// blotter := &mockTradeBlotter{}
-	mdata := &mocks.MockMarketDataManager{}
+	db := mocks.NewMockDatabase()
+	rdata := mocks.NewMockReferenceManager()
+	blotterTradeGetter := mocks.NewMockTradeGetterBlotter(db)
+	mdata := mocks.NewMockMarketDataManager()
 
-	dm := NewDividendsManager(db, mdata, rdata, nil)
+	dm := NewDividendsManager(db, mdata, rdata, blotterTradeGetter)
 
 	dividends, err := dm.CalculateDividendsForSingleTicker("AAPL")
 	assert.NoError(t, err)

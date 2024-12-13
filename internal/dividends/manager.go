@@ -14,7 +14,7 @@ type DividendsManager struct {
 	db      dal.Database
 	mdata   mdata.MarketDataManager
 	rdata   rdata.ReferenceManager
-	blotter *blotter.TradeBlotter
+	blotter blotter.TradeGetter
 }
 
 type Dividends struct {
@@ -23,7 +23,7 @@ type Dividends struct {
 	AmountPerShare float64
 }
 
-func NewDividendsManager(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.ReferenceManager, blotter *blotter.TradeBlotter) *DividendsManager {
+func NewDividendsManager(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.ReferenceManager, blotter blotter.TradeGetter) *DividendsManager {
 	return &DividendsManager{
 		db:      db,
 		mdata:   mdata,

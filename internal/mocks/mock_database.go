@@ -7,6 +7,10 @@ type MockDatabase struct {
 	mock.Mock
 }
 
+func NewMockDatabase() *MockDatabase {
+	return &MockDatabase{}
+}
+
 func (m *MockDatabase) Put(key string, value interface{}) error {
 	args := m.Called(key, value)
 	return args.Error(0)

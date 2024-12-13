@@ -90,7 +90,6 @@ curl -X POST http://localhost:8080/blotter/trade \
     -d '{
         "ticker": "AAPL",
         "side": "buy",
-        "assetClass": "eq",
         "broker": "dbs",
         "trader": "traderA",
         "quantity": 10,

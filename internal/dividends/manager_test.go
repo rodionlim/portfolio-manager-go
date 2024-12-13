@@ -27,8 +27,8 @@ func setup() (*DividendsManager, error) {
 	})
 
 	blotterMgr.SetTrades("AAPL", []blotter.Trade{
-		{Ticker: "AAPL", TradeDate: "2022-12-31", Quantity: 100, TradeID: "1"},
-		{Ticker: "AAPL", TradeDate: "2023-01-15", Quantity: 200, TradeID: "2"},
+		{Ticker: "AAPL", TradeDate: "2022-12-31", Quantity: 100, TradeID: "1", Side: blotter.TradeSideBuy},
+		{Ticker: "AAPL", TradeDate: "2023-01-15", Quantity: 200, TradeID: "2", Side: blotter.TradeSideBuy},
 	})
 
 	dm := NewDividendsManager(db, mdataMgr, rdataMgr, blotterMgr)

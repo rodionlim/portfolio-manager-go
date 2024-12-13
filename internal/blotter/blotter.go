@@ -8,6 +8,7 @@ import (
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
+	"sort"
 	"sync"
 	"time"
 
@@ -72,9 +73,28 @@ func (b *TradeBlotter) LoadFromDB() error {
 		}
 	}
 
-	logging.GetLogger().Info("Loaded trades from database")
+	b.sortTrades()
+
+	logging.GetLogger().Infof("Loaded %d trades from database", len(tradeKeys))
 
 	return nil
+}
+
+// SortTrades sorts the trades and tradesByTicker by TradeDate.
+func (b *TradeBlotter) sortTrades() {
+	logging.GetLogger().Info("Sorting trades (ascending) within the blotter")
+	// Sort the trades slice
+	sort.Slice(b.trades, func(i, j int) bool {
+		return b.trades[i].TradeDate < b.trades[j].TradeDate
+	})
+
+	// Sort the tradesByTicker map
+	for ticker, trades := range b.tradesByTicker {
+		sort.Slice(trades, func(i, j int) bool {
+			return trades[i].TradeDate < trades[j].TradeDate
+		})
+		b.tradesByTicker[ticker] = trades
+	}
 }
 
 // AddTrade adds a new trade to the blotter and writes it to the database.
@@ -221,7 +241,7 @@ func (tb *TradeBlotter) Unsubscribe(eventName string, corrId uuid.UUID) {
 
 // generateTradeKey generates a unique key for the trade.
 func generateTradeKey(trade Trade) string {
-	return fmt.Sprintf("%s:%s:%s", types.TradeKeyPrefix, trade.Ticker, trade.TradeID)
+	return fmt.Sprintf("%s:%s:%d:%s", types.TradeKeyPrefix, trade.Ticker, trade.SeqNum, trade.TradeID)
 }
 
 // removeTradeFromSlice removes a trade from a slice of trades by trade ID.
@@ -390,6 +410,8 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) error {
 			return fmt.Errorf("error adding trades: %w", err)
 		}
 	}
+
+	b.sortTrades()
 
 	return nil
 }

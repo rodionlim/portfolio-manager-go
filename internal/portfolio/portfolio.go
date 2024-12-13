@@ -106,7 +106,7 @@ func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 
 	blotterSvc.Subscribe(blotter.NewTradeEvent, event.NewEventHandler(func(e event.Event) {
 		trade := e.Data.(blotter.NewTradeEventPayload).Trade
-		logger.Info("Received new trade event. tradeID:", trade.TradeID)
+		logger.Infof("Received new trade event. tradeID: %s ticker: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.TradeDate)
 		p.updatePosition(&trade)
 	}))
 

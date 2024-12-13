@@ -59,13 +59,25 @@ func GetLogger() *Logger {
 // Debug logs a debug message
 func (l *Logger) Debug(v ...interface{}) {
 	if l.verbose {
-		log.Output(2, fmt.Sprintln(v...))
+		log.Output(2, fmt.Sprintf("DEBUG: %s", fmt.Sprintln(v...)))
+	}
+}
+
+// Debugf logs a debug message with formatting
+func (l *Logger) Debugf(format string, v ...interface{}) {
+	if l.verbose {
+		log.Output(2, fmt.Sprintf("DEBUG: "+format, v...))
 	}
 }
 
 // Info logs an info message
 func (l *Logger) Info(v ...interface{}) {
-	log.Output(2, fmt.Sprintln(v...))
+	log.Output(2, fmt.Sprintf("INFO: %s", fmt.Sprintln(v...)))
+}
+
+// Infof logs an info message with formatting
+func (l *Logger) Infof(format string, v ...interface{}) {
+	log.Output(2, fmt.Sprintf("INFO: "+format, v...))
 }
 
 // Warn logs a warning message
@@ -73,9 +85,19 @@ func (l *Logger) Warn(v ...interface{}) {
 	log.Output(2, fmt.Sprintf("WARN: %s", fmt.Sprintln(v...)))
 }
 
+// Warnf logs a warning message with formatting
+func (l *Logger) Warnf(format string, v ...interface{}) {
+	log.Output(2, fmt.Sprintf("WARN: "+format, v...))
+}
+
 // Error logs an error message
 func (l *Logger) Error(v ...interface{}) {
 	log.Output(2, fmt.Sprintf("ERROR: %s", fmt.Sprintln(v...)))
+}
+
+// Errorf logs an error message with formatting
+func (l *Logger) Errorf(format string, v ...interface{}) {
+	log.Output(2, fmt.Sprintf("ERROR: "+format, v...))
 }
 
 // Fatalf logs a fatal error message and exits the application

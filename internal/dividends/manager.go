@@ -6,8 +6,6 @@ import (
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
-	"sort"
-	"time"
 )
 
 type DividendsManager struct {
@@ -58,23 +56,20 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 	// Calculate total dividends based on trades and dividends data
 	var allDividends []Dividends
 	for _, dividend := range dividends {
-		exDate, err := time.Parse("2006-01-02", dividend.ExDate)
-		if err != nil {
-			return nil, err
-		}
-
 		// Use binary search to find the first trade with TradeDate >= ExDate
-		idx := sort.Search(len(trades), func(i int) bool {
-			tradeDate, _ := time.Parse("2006-01-02", trades[i].TradeDate)
-			return tradeDate.After(exDate) || tradeDate.Equal(exDate)
-		})
+		idx := SearchEarliestTradeIndexAfterExDate(trades, dividend.ExDate)
 
-		// Calculate total amount for trades with TradeDate < ExDate
-		totalAmount := 0.0
+		// Calculate total dividend amount for trades with TradeDate < ExDate
+		totalQty := 0.0
 		for i := 0; i < idx; i++ {
-			totalAmount += trades[i].Quantity * dividend.Amount * (1 - dividend.WithholdingTax)
+			if trades[i].Side == blotter.TradeSideBuy {
+				totalQty += trades[i].Quantity
+			} else {
+				totalQty -= trades[i].Quantity
+			}
 		}
 
+		totalAmount := totalQty * dividend.Amount * (1 - dividend.WithholdingTax)
 		if totalAmount > 0 {
 			allDividends = append(allDividends, Dividends{
 				ExDate:         dividend.ExDate,

@@ -119,7 +119,7 @@ func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*t
 // GetDividendsMetadata attempts to fetch dividends metadata from available sources
 func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	tickerRef, err := m.getReferenceData(ticker)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 

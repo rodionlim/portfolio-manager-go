@@ -126,7 +126,7 @@ curl -X GET http://localhost:8080/mdata/price/es3.si
 ### Fetch Dividends
 
 ```sh
-curl -X GET http://localhost:8080/mdata/dividend/es3
+curl -X GET http://localhost:8080/mdata/dividend/es3.si
 ```
 
 ### Fetch Reference Data
@@ -156,6 +156,7 @@ refDataSeedPath: "./seed/refdata.yaml"
 divWitholdingTaxSG: 0
 divWitholdingTaxUS: 0.3
 divWitholdingTaxHK: 0
+divWitholdingTaxIE: 0.15
 ```
 
 ## Contributing

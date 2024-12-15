@@ -34,13 +34,34 @@ func NewILoveSsb(db dal.Database) *ILoveSsb {
 }
 
 // GetHistoricalData implements types.DataSource. SSB is always traded at par value.
-func (src *ILoveSsb) GetHistoricalData(symbol string, fromDate int64, toDate int64) ([]*types.AssetData, error) {
-	panic("unimplemented")
+func (src *ILoveSsb) GetHistoricalData(ticker string, fromDate int64, toDate int64) ([]*types.AssetData, error) {
+	// SSB is always traded at par value
+	var historicalData []*types.AssetData
+	startDate := time.Unix(fromDate, 0)
+	endDate := time.Unix(toDate, 0)
+
+	for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
+		if d.Weekday() != time.Saturday && d.Weekday() != time.Sunday {
+			historicalData = append(historicalData, &types.AssetData{
+				Ticker:    ticker,
+				Price:     100.0,
+				Currency:  "SGD",
+				Timestamp: d.Unix(),
+			})
+		}
+	}
+
+	return historicalData, nil
 }
 
 // GetAssetPrice implements types.DataSource. SSB is always traded at par value.
-func (src *ILoveSsb) GetAssetPrice(symbol string) (*types.AssetData, error) {
-	panic("unimplemented")
+func (src *ILoveSsb) GetAssetPrice(ticker string) (*types.AssetData, error) {
+	return &types.AssetData{
+		Ticker:    ticker,
+		Price:     100.0,
+		Currency:  "SGD",
+		Timestamp: time.Now().Unix(),
+	}, nil
 }
 
 func (src *ILoveSsb) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {

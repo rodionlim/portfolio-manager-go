@@ -66,6 +66,14 @@ func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error)
 func (m *Manager) GetAssetPrice(ticker string) (*types.AssetData, error) {
 	logging.GetLogger().Info("Fetching asset price for ticker", ticker)
 
+	// for SSB, tickers are standardized against the following convention, e.g. SBJAN25
+	if common.IsSSB(ticker) {
+		if iLoveSsb, ok := m.sources[sources.SSB]; ok {
+			data, err := iLoveSsb.GetAssetPrice(ticker)
+			return data, err
+		}
+	}
+
 	tickerRef, err := m.getReferenceData(ticker)
 	if err != nil {
 		return nil, err
@@ -95,6 +103,14 @@ func (m *Manager) GetAssetPrice(ticker string) (*types.AssetData, error) {
 // GetHistoricalData attempts to fetch historical data from available sources
 func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error) {
 	logging.GetLogger().Info("Fetching historical data for ticker", ticker)
+
+	// for SSB, tickers are standardized against the following convention, e.g. SBJAN25
+	if common.IsSSB(ticker) {
+		if iLoveSsb, ok := m.sources[sources.SSB]; ok {
+			data, err := iLoveSsb.GetHistoricalData(ticker, fromDate, toDate)
+			return data, err
+		}
+	}
 
 	tickerRef, err := m.getReferenceData(ticker)
 	if err == nil {

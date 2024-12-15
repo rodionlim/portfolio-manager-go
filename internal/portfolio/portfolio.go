@@ -7,7 +7,6 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/dividends"
-	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
@@ -264,12 +263,7 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 			// when the position is closed, the PnL is the total paid + dividends
 			position.PnL = (position.TotalPaid * -1) + position.Dividends
 		} else {
-			var assetData *types.AssetData
-			if common.IsSSB(position.Ticker) {
-				assetData = &types.AssetData{Price: 100.0}
-			} else {
-				assetData, err = p.mdata.GetAssetPrice(position.Ticker)
-			}
+			assetData, err := p.mdata.GetAssetPrice(position.Ticker)
 			if err != nil {
 				return err
 			}

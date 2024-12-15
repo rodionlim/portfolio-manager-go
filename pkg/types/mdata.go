@@ -18,7 +18,7 @@ type DividendsMetadata struct {
 
 // DataSource defines the interface for different data source engines
 type DataSource interface {
-	GetAssetPrice(symbol string) (*AssetData, error)
-	GetDividendsMetadata(symbol string) ([]DividendsMetadata, error)
-	GetHistoricalData(symbol string, fromDate, toDate int64) ([]*AssetData, error)
+	GetAssetPrice(ticker string) (*AssetData, error)
+	GetDividendsMetadata(ticker string) ([]DividendsMetadata, error)
+	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*AssetData, error)
 }

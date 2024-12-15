@@ -116,10 +116,11 @@ curl -X GET http://localhost:8080/blotter/export
 curl -X GET http://localhost:8080/portfolio/positions
 ```
 
-### Fetch Stock Prices
+### Fetch Asset Prices
 
 ```sh
 curl -X GET http://localhost:8080/mdata/price/es3.si
+curl -X GET http://localhost:8080/mdata/price/eth-usd
 ```
 
 ### Fetch Dividends
@@ -166,7 +167,7 @@ divWitholdingTaxIE: 0.15
 
 1. Support USD dividends
 2. Support MAS TBills
-3. Support Crypto market data
+3. Support Crypto market data (Implemented)
 4. Support FX market data
 5. Support exporting/importing of leveldb for backup
 6. Add UI and convert to a monorepo

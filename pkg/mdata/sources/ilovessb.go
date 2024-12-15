@@ -173,7 +173,7 @@ func (src *ILoveSsb) GetDividendsMetadata(ticker string) ([]types.DividendsMetad
 			dividends = append(dividends, types.DividendsMetadata{
 				Ticker:      issuanceName,
 				ExDate:      data.CouponDates[i],
-				Amount:      data.InterestRates[i],        // interest per $100 notional
+				Amount:      data.InterestRates[i] / 2,    // interest per $100 notional (bi-annual dividends)
 				Interest:    data.InterestRates[i],        // interest in percentage
 				AvgInterest: data.AverageReturnPerYear[i], // average interest in percentage
 			})

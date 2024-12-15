@@ -57,6 +57,11 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 	// Calculate total dividends based on trades and dividends data
 	var allDividends []Dividends
 	for _, dividend := range dividends {
+		// If dividend.ExDate is in the future (after today), skip
+		if common.IsFutureDate(dividend.ExDate) {
+			continue
+		}
+
 		// Use binary search to find the first trade with TradeDate >= ExDate
 		idx := SearchEarliestTradeIndexAfterExDate(trades, dividend.ExDate)
 

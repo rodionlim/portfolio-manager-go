@@ -34,12 +34,12 @@ func NewILoveSsb(db dal.Database) *ILoveSsb {
 }
 
 // GetHistoricalData implements types.DataSource. SSB is always traded at par value.
-func (src *ILoveSsb) GetHistoricalData(symbol string, fromDate int64, toDate int64) ([]*types.StockData, error) {
+func (src *ILoveSsb) GetHistoricalData(symbol string, fromDate int64, toDate int64) ([]*types.AssetData, error) {
 	panic("unimplemented")
 }
 
-// GetStockPrice implements types.DataSource. SSB is always traded at par value.
-func (src *ILoveSsb) GetStockPrice(symbol string) (*types.StockData, error) {
+// GetAssetPrice implements types.DataSource. SSB is always traded at par value.
+func (src *ILoveSsb) GetAssetPrice(symbol string) (*types.AssetData, error) {
 	panic("unimplemented")
 }
 

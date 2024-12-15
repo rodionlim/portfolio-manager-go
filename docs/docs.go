@@ -217,7 +217,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Stock ticker symbol",
+                        "description": "Asset ticker symbol",
                         "name": "ticker",
                         "in": "path",
                         "required": true
@@ -245,7 +245,7 @@ const docTemplate = `{
         },
         "/mdata/price/{ticker}": {
             "get": {
-                "description": "Retrieves current market data for a specified stock ticker",
+                "description": "Retrieves current market data for a specified ticker",
                 "consumes": [
                     "application/json"
                 ],
@@ -259,7 +259,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Stock ticker symbol",
+                        "description": "Ticker symbol (see reference data)",
                         "name": "ticker",
                         "in": "path",
                         "required": true
@@ -287,7 +287,7 @@ const docTemplate = `{
         },
         "/mdata/tickers/price": {
             "get": {
-                "description": "Retrieves current market data for multiple stock tickers",
+                "description": "Retrieves current market data for multiple asset tickers",
                 "consumes": [
                     "application/json"
                 ],
@@ -301,7 +301,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Comma-separated list of stock ticker symbols",
+                        "description": "Comma-separated list of asset ticker symbols",
                         "name": "tickers",
                         "in": "query",
                         "required": true

@@ -14,7 +14,7 @@ import (
 func TestYahooFinance_GetQuoteNasdaq_Integration(t *testing.T) {
 	yf := sources.NewYahooFinance()
 
-	quote, err := yf.GetStockPrice("AAPL")
+	quote, err := yf.GetAssetPrice("AAPL")
 	assert.NoError(t, err)
 	assert.NotZero(t, quote.Price)
 	assert.NotEmpty(t, quote.Ticker)
@@ -23,7 +23,7 @@ func TestYahooFinance_GetQuoteNasdaq_Integration(t *testing.T) {
 func TestYahooFinance_GetQuoteSGX_Integration(t *testing.T) {
 	yf := sources.NewYahooFinance()
 
-	quote, err := yf.GetStockPrice("ES3.SI")
+	quote, err := yf.GetAssetPrice("ES3.SI")
 	assert.NoError(t, err)
 	assert.NotZero(t, quote.Price)
 	assert.NotEmpty(t, quote.Ticker)

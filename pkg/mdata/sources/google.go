@@ -30,7 +30,7 @@ func (src *googleFinance) GetDividendsMetadata(ticker string) ([]types.Dividends
 	panic("unimplemented")
 }
 
-func (src *googleFinance) GetStockPrice(ticker string) (*types.StockData, error) {
+func (src *googleFinance) GetAssetPrice(ticker string) (*types.AssetData, error) {
 	// Google Finance URL (note: this might need adjustments as Google doesn't provide an official API)
 	url := fmt.Sprintf("https://www.google.com/finance/quote/%s", ticker)
 
@@ -58,7 +58,7 @@ func (src *googleFinance) GetStockPrice(ticker string) (*types.StockData, error)
 		return nil, fmt.Errorf("failed to extract price: %w", err)
 	}
 
-	return &types.StockData{
+	return &types.AssetData{
 		Ticker:    ticker,
 		Price:     price,
 		Currency:  "USD",
@@ -66,7 +66,7 @@ func (src *googleFinance) GetStockPrice(ticker string) (*types.StockData, error)
 	}, nil
 }
 
-func (src *googleFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
+func (src *googleFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error) {
 	return nil, errors.New("historical data not yet implemented for google data source")
 }
 

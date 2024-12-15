@@ -15,8 +15,8 @@ import (
 
 // MarketDataManager defines the interface for market data management
 type MarketDataManager interface {
-	GetStockPrice(ticker string) (*types.StockData, error)
-	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error)
+	GetAssetPrice(ticker string) (*types.AssetData, error)
+	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error)
 	GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error)
 	GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error)
 }
@@ -62,9 +62,9 @@ func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error)
 	return m, nil
 }
 
-// GetStockPrice attempts to fetch stock price from available sources
-func (m *Manager) GetStockPrice(ticker string) (*types.StockData, error) {
-	logging.GetLogger().Info("Fetching stock price for ticker", ticker)
+// GetAssetPrice attempts to fetch asset price from available sources
+func (m *Manager) GetAssetPrice(ticker string) (*types.AssetData, error) {
+	logging.GetLogger().Info("Fetching asset price for ticker", ticker)
 
 	tickerRef, err := m.getReferenceData(ticker)
 	if err != nil {
@@ -74,7 +74,7 @@ func (m *Manager) GetStockPrice(ticker string) (*types.StockData, error) {
 	// Try Yahoo Finance first if ticker is available in ref data
 	if tickerRef.YahooTicker != "" {
 		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
-			if data, err := yahoo.GetStockPrice(tickerRef.YahooTicker); err == nil {
+			if data, err := yahoo.GetAssetPrice(tickerRef.YahooTicker); err == nil {
 				return data, nil
 			}
 		}
@@ -83,17 +83,17 @@ func (m *Manager) GetStockPrice(ticker string) (*types.StockData, error) {
 	// Fallback to Google Finance
 	if tickerRef.GoogleTicker != "" {
 		if google, ok := m.sources[sources.GoogleFinance]; ok {
-			if data, err := google.GetStockPrice(tickerRef.GoogleTicker); err == nil {
+			if data, err := google.GetAssetPrice(tickerRef.GoogleTicker); err == nil {
 				return data, nil
 			}
 		}
 	}
 
-	return nil, fmt.Errorf("unable to fetch stock price %s from any market data sources", ticker)
+	return nil, fmt.Errorf("unable to fetch asset price %s from any market data sources", ticker)
 }
 
 // GetHistoricalData attempts to fetch historical data from available sources
-func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
+func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error) {
 	logging.GetLogger().Info("Fetching historical data for ticker", ticker)
 
 	tickerRef, err := m.getReferenceData(ticker)

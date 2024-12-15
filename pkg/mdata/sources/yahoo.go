@@ -33,10 +33,10 @@ func (src *yahooFinance) GetDividendsMetadata(ticker string) ([]types.DividendsM
 	panic("unimplemented")
 }
 
-func (src *yahooFinance) GetStockPrice(ticker string) (*types.StockData, error) {
+func (src *yahooFinance) GetAssetPrice(ticker string) (*types.AssetData, error) {
 	if cachedData, found := src.cache.Get(ticker); found {
 		src.logger.Infof("Returning cached data for ticker: %s", ticker)
-		return cachedData.(*types.StockData), nil
+		return cachedData.(*types.AssetData), nil
 	}
 
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s", ticker)
@@ -73,7 +73,7 @@ func (src *yahooFinance) GetStockPrice(ticker string) (*types.StockData, error) 
 	}
 
 	result := response.Chart.Result[0]
-	stockData := &types.StockData{
+	stockData := &types.AssetData{
 		Ticker:    result.Meta.Symbol,
 		Price:     result.Meta.Price,
 		Currency:  result.Meta.Currency,
@@ -85,7 +85,7 @@ func (src *yahooFinance) GetStockPrice(ticker string) (*types.StockData, error) 
 	return stockData, nil
 }
 
-func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
+func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error) {
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=1d",
 		ticker, fromDate, toDate)
 
@@ -156,10 +156,10 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 	}
 
 	result := response.Chart.Result[0]
-	data := make([]*types.StockData, len(result.Timestamp))
+	data := make([]*types.AssetData, len(result.Timestamp))
 
 	for i := range result.Timestamp {
-		data[i] = &types.StockData{
+		data[i] = &types.AssetData{
 			Ticker:    result.Meta.Symbol,
 			Price:     result.Indicators.Quote[0].Close[i],
 			Currency:  result.Meta.Currency,

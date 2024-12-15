@@ -13,7 +13,7 @@ import (
 func TestGoogleFinance_GetQuoteNasdaq_Integration(t *testing.T) {
 	gf := sources.NewGoogleFinance()
 
-	quote, err := gf.GetStockPrice("AAPL:NASDAQ")
+	quote, err := gf.GetAssetPrice("AAPL:NASDAQ")
 	assert.NoError(t, err)
 	assert.NotZero(t, quote.Price)
 	assert.NotEmpty(t, quote.Ticker)
@@ -22,7 +22,7 @@ func TestGoogleFinance_GetQuoteNasdaq_Integration(t *testing.T) {
 func TestGoogleFinance_GetQuoteSGX_Integration(t *testing.T) {
 	gf := sources.NewGoogleFinance()
 
-	quote, err := gf.GetStockPrice("D05:SGX")
+	quote, err := gf.GetAssetPrice("D05:SGX")
 	assert.NoError(t, err)
 	assert.NotZero(t, quote.Price)
 	assert.NotEmpty(t, quote.Ticker)

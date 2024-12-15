@@ -238,7 +238,7 @@ paths:
       - application/json
       description: Retrieves dividend history data for a specified stock ticker
       parameters:
-      - description: Stock ticker symbol
+      - description: Asset ticker symbol
         in: path
         name: ticker
         required: true
@@ -264,9 +264,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieves current market data for a specified stock ticker
+      description: Retrieves current market data for a specified ticker
       parameters:
-      - description: Stock ticker symbol
+      - description: Ticker symbol (see reference data)
         in: path
         name: ticker
         required: true
@@ -292,9 +292,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieves current market data for multiple stock tickers
+      description: Retrieves current market data for multiple asset tickers
       parameters:
-      - description: Comma-separated list of stock ticker symbols
+      - description: Comma-separated list of asset ticker symbols
         in: query
         name: tickers
         required: true

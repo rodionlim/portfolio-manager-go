@@ -38,12 +38,12 @@ func NewDividendsSg(db dal.Database) *DividendsSg {
 }
 
 // GetHistoricalData implements types.DataSource.
-func (src *DividendsSg) GetHistoricalData(symbol string, fromDate int64, toDate int64) ([]*types.StockData, error) {
+func (src *DividendsSg) GetHistoricalData(symbol string, fromDate int64, toDate int64) ([]*types.AssetData, error) {
 	panic("unimplemented")
 }
 
-// GetStockPrice implements types.DataSource.
-func (src *DividendsSg) GetStockPrice(symbol string) (*types.StockData, error) {
+// GetAssetPrice implements types.DataSource.
+func (src *DividendsSg) GetAssetPrice(symbol string) (*types.AssetData, error) {
 	panic("unimplemented")
 }
 

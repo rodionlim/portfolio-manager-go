@@ -1,6 +1,6 @@
 package types
 
-type StockData struct {
+type AssetData struct {
 	Ticker    string
 	Price     float64
 	Currency  string
@@ -18,7 +18,7 @@ type DividendsMetadata struct {
 
 // DataSource defines the interface for different data source engines
 type DataSource interface {
-	GetStockPrice(symbol string) (*StockData, error)
+	GetAssetPrice(symbol string) (*AssetData, error)
 	GetDividendsMetadata(symbol string) ([]DividendsMetadata, error)
-	GetHistoricalData(symbol string, fromDate, toDate int64) ([]*StockData, error)
+	GetHistoricalData(symbol string, fromDate, toDate int64) ([]*AssetData, error)
 }

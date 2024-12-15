@@ -7,11 +7,11 @@ import (
 )
 
 // @Summary Get market data for a single ticker
-// @Description Retrieves current market data for a specified stock ticker
+// @Description Retrieves current market data for a specified ticker
 // @Tags market-data
 // @Accept json
 // @Produce json
-// @Param ticker path string true "Stock ticker symbol"
+// @Param ticker path string true "Ticker symbol (see reference data)"
 // @Success 200 {object} interface{} "Market data for the ticker"
 // @Failure 400 {string} string "Bad request - Ticker is required"
 // @Failure 500 {string} string "Internal server error"
@@ -24,8 +24,7 @@ func HandleTickerGet(mdataSvc MarketDataManager) http.HandlerFunc {
 			return
 		}
 
-		// TODO: make generic across different asset class
-		data, err := mdataSvc.GetStockPrice(ticker)
+		data, err := mdataSvc.GetAssetPrice(ticker)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -37,11 +36,11 @@ func HandleTickerGet(mdataSvc MarketDataManager) http.HandlerFunc {
 }
 
 // @Summary Get market data for multiple tickers
-// @Description Retrieves current market data for multiple stock tickers
+// @Description Retrieves current market data for multiple asset tickers
 // @Tags market-data
 // @Accept json
 // @Produce json
-// @Param tickers query string true "Comma-separated list of stock ticker symbols"
+// @Param tickers query string true "Comma-separated list of asset ticker symbols"
 // @Success 200 {object} map[string]interface{} "Market data for all requested tickers"
 // @Failure 400 {string} string "Bad request - Tickers query parameter is required"
 // @Router /mdata/tickers/price [get]
@@ -57,7 +56,7 @@ func HandleTickersGet(mdataSvc MarketDataManager) http.HandlerFunc {
 		data := make(map[string]interface{})
 
 		for _, ticker := range tickerList {
-			mdata, err := mdataSvc.GetStockPrice(ticker)
+			mdata, err := mdataSvc.GetAssetPrice(ticker)
 			if err != nil {
 				data[ticker] = err.Error()
 				continue
@@ -75,7 +74,7 @@ func HandleTickersGet(mdataSvc MarketDataManager) http.HandlerFunc {
 // @Tags market-data
 // @Accept json
 // @Produce json
-// @Param ticker path string true "Stock ticker symbol"
+// @Param ticker path string true "Asset ticker symbol"
 // @Success 200 {object} interface{} "Dividend data for the ticker"
 // @Failure 400 {string} string "Bad request - Ticker is required"
 // @Failure 500 {string} string "Internal server error"

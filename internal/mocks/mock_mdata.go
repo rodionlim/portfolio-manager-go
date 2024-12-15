@@ -8,16 +8,16 @@ import (
 
 // MockMarketDataManager is a mock implementation of the MarketDataManager interface
 type MockMarketDataManager struct {
-	StockPriceData    map[string]*types.StockData
-	HistoricalData    map[string][]*types.StockData
+	AssetPriceData    map[string]*types.AssetData
+	HistoricalData    map[string][]*types.AssetData
 	DividendsMetadata map[string][]types.DividendsMetadata
 }
 
 // NewMockMarketDataManager creates a new instance of MockMarketDataManager
 func NewMockMarketDataManager() *MockMarketDataManager {
 	mgr := &MockMarketDataManager{
-		StockPriceData:    make(map[string]*types.StockData),
-		HistoricalData:    make(map[string][]*types.StockData),
+		AssetPriceData:    make(map[string]*types.AssetData),
+		HistoricalData:    make(map[string][]*types.AssetData),
 		DividendsMetadata: make(map[string][]types.DividendsMetadata),
 	}
 
@@ -30,16 +30,16 @@ func NewMockMarketDataManager() *MockMarketDataManager {
 	return mgr
 }
 
-// GetStockPrice returns mock stock price data
-func (m *MockMarketDataManager) GetStockPrice(ticker string) (*types.StockData, error) {
-	if data, ok := m.StockPriceData[ticker]; ok {
+// GetAssetPrice returns mock asset price data
+func (m *MockMarketDataManager) GetAssetPrice(ticker string) (*types.AssetData, error) {
+	if data, ok := m.AssetPriceData[ticker]; ok {
 		return data, nil
 	}
 	return nil, errors.New("mock: unable to fetch stock price")
 }
 
 // GetHistoricalData returns mock historical data
-func (m *MockMarketDataManager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
+func (m *MockMarketDataManager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error) {
 	if data, ok := m.HistoricalData[ticker]; ok {
 		return data, nil
 	}
@@ -66,7 +66,7 @@ func (m *MockMarketDataManager) SetDividendMetadata(ticker string, data []types.
 	m.DividendsMetadata[ticker] = data
 }
 
-// SetStockPrice sets mock stock price data
-func (m *MockMarketDataManager) SetStockPrice(ticker string, data *types.StockData) {
-	m.StockPriceData[ticker] = data
+// SetAssetkPrice sets mock asset price data
+func (m *MockMarketDataManager) SetAssetPrice(ticker string, data *types.AssetData) {
+	m.AssetPriceData[ticker] = data
 }

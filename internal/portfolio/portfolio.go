@@ -264,19 +264,24 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 			// when the position is closed, the PnL is the total paid + dividends
 			position.PnL = (position.TotalPaid * -1) + position.Dividends
 		} else {
-			var stockData *types.StockData
+			var assetData *types.AssetData
 			if common.IsSSB(position.Ticker) {
-				stockData = &types.StockData{Price: 100.0}
+				assetData = &types.AssetData{Price: 100.0}
 			} else {
-				stockData, err = p.mdata.GetStockPrice(position.Ticker)
+				assetData, err = p.mdata.GetAssetPrice(position.Ticker)
 			}
 			if err != nil {
 				return err
 			}
 
-			position.Mv = position.Qty * stockData.Price
-			position.PnL = (stockData.Price-position.AvgPx)*position.Qty + position.Dividends
+			position.Mv = position.Qty * assetData.Price
+			position.PnL = (assetData.Price-position.AvgPx)*position.Qty + position.Dividends
 		}
+	case "":
+		// we allow this since we want somethimes want tests to skip position computation,
+		// but leave a warning anyway, in case this happens in production
+		p.logger.Warnf("Asset class not found for ticker %s", position.Ticker)
+		return nil
 	default:
 		return fmt.Errorf("asset class %s not supported", tickerRef.AssetClass)
 	}

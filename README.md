@@ -1,16 +1,15 @@
 # Portfolio Valuation Tool
 
-An application to value equities, fx, commodities, cash, bonds, govies and cryptocurrencies in your personal portfolio.
+An application to value equities, fx, commodities, cash, bonds (corps / gov), and cryptocurrencies in your personal portfolio.
 
 ## Features
 
 - Value assets based on current market prices
 - Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com) with local cache
-- Output portfolio data in a CSV file for easy access and manipulation
-- Import / Export portfolio data from CSV file for easy migration to other portfolio systems
+- Output portfolio blotter data in a CSV file for easy access and manipulation
+- Import / Export portfolio blotter data from CSV file for easy migration to other portfolio systems
 - Store portfolio, reference, dividends and coupon data in leveldb for persistence
-- Calculate total portfolio value based on current prices
-- Display detailed information for individual assets
+- Display detailed information for individual and aggregated assets
 - OpenAPI compliant for easy integration with other systems
 
 ## Installation
@@ -162,6 +161,16 @@ divWitholdingTaxUS: 0.3
 divWitholdingTaxHK: 0
 divWitholdingTaxIE: 0.15
 ```
+
+## Roadmap
+
+1. Support USD dividends
+2. Support MAS TBills
+3. Support Crypto market data
+4. Support FX market data
+5. Support exporting/importing of leveldb for backup
+6. Add UI and convert to a monorepo
+7. Refactor configuration to have sections
 
 ## Contributing
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
 )
@@ -37,7 +38,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 		return nil, err
 	}
 
-	if tickerRef.DividendsSgTicker == "" {
+	if tickerRef.DividendsSgTicker == "" && !common.IsSSB(ticker) {
 		return nil, fmt.Errorf("no dividends.sg ticker found for the given ticker %s", ticker)
 	}
 

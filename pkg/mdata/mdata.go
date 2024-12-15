@@ -160,6 +160,13 @@ func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata
 
 // GetDividendsMetadataFromTickerRef attempts to fetch dividends metadata from available sources
 func (m *Manager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error) {
+	// for SSB, tickers are standardized against the following convention, e.g. SBJAN25
+	if common.IsSSB(tickerRef.ID) {
+		if iLoveSsb, ok := m.sources[sources.SSB]; ok {
+			return iLoveSsb.GetDividendsMetadata(tickerRef.ID)
+		}
+	}
+
 	if tickerRef.DividendsSgTicker != "" {
 		// Try Dividends.sg first
 		if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
@@ -168,6 +175,7 @@ func (m *Manager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerRefere
 			}
 		}
 	}
+
 	return nil, errors.New("unable to fetch dividends from any source")
 }
 

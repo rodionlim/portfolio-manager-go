@@ -185,7 +185,7 @@ func (src *ILoveSsb) GetDividendsMetadata(ticker string) ([]types.DividendsMetad
 		if src.db != nil {
 			err := src.db.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, issuanceName), &dividends)
 			if err != nil {
-				src.logger.Infof("New coupons for ticker %s, storing into database", ticker)
+				src.logger.Infof("New coupons for ticker %s, storing into database", issuanceName)
 				src.db.Put(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, issuanceName), dividends)
 			}
 		}

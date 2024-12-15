@@ -38,28 +38,28 @@ func NewDividendsSg(db dal.Database) *DividendsSg {
 }
 
 // GetHistoricalData implements types.DataSource.
-func (d *DividendsSg) GetHistoricalData(symbol string, fromDate int64, toDate int64) ([]*types.StockData, error) {
+func (src *DividendsSg) GetHistoricalData(symbol string, fromDate int64, toDate int64) ([]*types.StockData, error) {
 	panic("unimplemented")
 }
 
 // GetStockPrice implements types.DataSource.
-func (d *DividendsSg) GetStockPrice(symbol string) (*types.StockData, error) {
+func (src *DividendsSg) GetStockPrice(symbol string) (*types.StockData, error) {
 	panic("unimplemented")
 }
 
-func (d *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
+func (src *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	logger := logging.GetLogger()
 
 	// Check cache first
-	if cachedData, found := d.cache.Get(ticker); found {
+	if cachedData, found := src.cache.Get(ticker); found {
 		logger.Info("Returning cached dividends data for ticker:", ticker)
 		return cachedData.([]types.DividendsMetadata), nil
 	}
 
 	dbDividendCount := 0
-	if d.db != nil {
+	if src.db != nil {
 		var dividends []types.DividendsMetadata
-		d.db.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), &dividends)
+		src.db.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), &dividends)
 		dbDividendCount = len(dividends)
 	}
 
@@ -133,7 +133,7 @@ func (d *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMeta
 			Ticker:         ticker,
 			ExDate:         date,
 			Amount:         math.Round(amount*1000) / 1000,
-			WithholdingTax: d.divWithholdingTax}) // sg dividends have no withholding tax
+			WithholdingTax: src.divWithholdingTax}) // sg dividends have no withholding tax
 	}
 
 	// Sort dividends by date string (works because format is yyyy-mm-dd)
@@ -141,16 +141,16 @@ func (d *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMeta
 		return dividends[i].ExDate < dividends[j].ExDate
 	})
 
-	if d.db != nil {
+	if src.db != nil {
 		// Store in database if we have new data
 		if len(dividends) > dbDividendCount {
 			logger.Infof("New dividends for ticker %s, storing into database", ticker)
-			d.db.Put(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends)
+			src.db.Put(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends)
 		}
 	}
 
 	// Store in cache
-	d.cache.Set(ticker, dividends, cache.DefaultExpiration)
+	src.cache.Set(ticker, dividends, cache.DefaultExpiration)
 
 	return dividends, nil
 }

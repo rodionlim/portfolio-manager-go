@@ -1,14 +1,14 @@
 # Portfolio Valuation Tool
 
-An application to value equities, fx, commodities, cash, bonds and cryptocurrencies in your personal portfolio.
+An application to value equities, fx, commodities, cash, bonds, govies and cryptocurrencies in your personal portfolio.
 
 ## Features
 
 - Value assets based on current market prices
-- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg) with local cache
+- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com) with local cache
 - Output portfolio data in a CSV file for easy access and manipulation
-- Import / Export portfolio data from CSV file for easy migration to other portfolio maangers
-- Store portfolio, reference and dividends data in leveldb for persistence
+- Import / Export portfolio data from CSV file for easy migration to other portfolio systems
+- Store portfolio, reference, dividends and coupon data in leveldb for persistence
 - Calculate total portfolio value based on current prices
 - Display detailed information for individual assets
 - OpenAPI compliant for easy integration with other systems
@@ -126,7 +126,11 @@ curl -X GET http://localhost:8080/mdata/price/es3.si
 ### Fetch Dividends
 
 ```sh
+# equity - refer to ticker reference for identifier
 curl -X GET http://localhost:8080/mdata/dividend/es3.si
+
+# ssb - format SBMMMYY
+curl -X GET http://localhost:8080/mdata/dividend/sbjul24
 ```
 
 ### Fetch Reference Data

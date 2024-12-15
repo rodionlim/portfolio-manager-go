@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata/sources"
 	"portfolio-manager/pkg/rdata"
@@ -46,10 +47,15 @@ func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error)
 	if err != nil {
 		return nil, err
 	}
+	iLoveSsb, err := NewDataSource(sources.SSB, db)
+	if err != nil {
+		return nil, err
+	}
 
 	m.sources[sources.GoogleFinance] = google
 	m.sources[sources.YahooFinance] = yahoo
 	m.sources[sources.DividendsSingapore] = dividendsSg
+	m.sources[sources.SSB] = iLoveSsb
 
 	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance and Dividends.sg data sources")
 
@@ -118,6 +124,16 @@ func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*t
 
 // GetDividendsMetadata attempts to fetch dividends metadata from available sources
 func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
+	ticker = strings.ToUpper(ticker)
+
+	// for SSB, tickers are standardized against the following convention, e.g. SBJAN25
+	if common.IsSSB(ticker) {
+		if iLoveSsb, ok := m.sources[sources.SSB]; ok {
+			return iLoveSsb.GetDividendsMetadata(ticker)
+		}
+	}
+
+	// All other tickers go through normalization via reference data
 	tickerRef, err := m.getReferenceData(ticker)
 	if err != nil {
 		return nil, err
@@ -148,6 +164,8 @@ func NewDataSource(sourceType string, db dal.Database) (types.DataSource, error)
 		return sources.NewYahooFinance(), nil
 	case sources.DividendsSingapore:
 		return sources.NewDividendsSg(db), nil
+	case sources.SSB:
+		return sources.NewILoveSsb(db), nil
 	default:
 		return nil, errors.New("unsupported data source")
 	}

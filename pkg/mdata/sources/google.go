@@ -26,11 +26,11 @@ func NewGoogleFinance() types.DataSource {
 }
 
 // GetDividends implements types.DataSource.
-func (g *googleFinance) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
+func (src *googleFinance) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	panic("unimplemented")
 }
 
-func (g *googleFinance) GetStockPrice(ticker string) (*types.StockData, error) {
+func (src *googleFinance) GetStockPrice(ticker string) (*types.StockData, error) {
 	// Google Finance URL (note: this might need adjustments as Google doesn't provide an official API)
 	url := fmt.Sprintf("https://www.google.com/finance/quote/%s", ticker)
 
@@ -42,7 +42,7 @@ func (g *googleFinance) GetStockPrice(ticker string) (*types.StockData, error) {
 	// Add headers to mimic browser request
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
-	resp, err := g.client.Do(req)
+	resp, err := src.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch data: %w", err)
 	}
@@ -66,7 +66,7 @@ func (g *googleFinance) GetStockPrice(ticker string) (*types.StockData, error) {
 	}, nil
 }
 
-func (g *googleFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
+func (src *googleFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
 	return nil, errors.New("historical data not yet implemented for google data source")
 }
 

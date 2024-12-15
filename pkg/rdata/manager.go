@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
 
@@ -98,6 +99,22 @@ func (rm *Manager) GetTicker(id string) (TickerReference, error) {
 	var ticker TickerReference
 	err := rm.db.Get(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, id), &ticker)
 	if err != nil {
+		// if ticker is a ssb ticker, create the ticker reference and insert into db
+		if common.IsSSB(id) {
+			ticker = TickerReference{
+				ID:            id,
+				Name:          id,
+				Domicile:      "SG",
+				Ccy:           "SGD",
+				AssetClass:    AssetClassBonds,
+				AssetSubClass: AssetSubClassGovies,
+			}
+			_, err := rm.AddTicker(ticker)
+			if err != nil {
+				return TickerReference{}, err
+			}
+			return ticker, nil
+		}
 		return TickerReference{}, err
 	}
 	return ticker, nil

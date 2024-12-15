@@ -29,19 +29,19 @@ func NewYahooFinance() types.DataSource {
 }
 
 // GetDividends implements types.DataSource.
-func (y *yahooFinance) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
+func (src *yahooFinance) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	panic("unimplemented")
 }
 
-func (y *yahooFinance) GetStockPrice(ticker string) (*types.StockData, error) {
-	if cachedData, found := y.cache.Get(ticker); found {
-		y.logger.Infof("Returning cached data for ticker: %s", ticker)
+func (src *yahooFinance) GetStockPrice(ticker string) (*types.StockData, error) {
+	if cachedData, found := src.cache.Get(ticker); found {
+		src.logger.Infof("Returning cached data for ticker: %s", ticker)
 		return cachedData.(*types.StockData), nil
 	}
 
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s", ticker)
 
-	resp, err := y.client.Get(url)
+	resp, err := src.client.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch data: %w", err)
 	}
@@ -80,16 +80,16 @@ func (y *yahooFinance) GetStockPrice(ticker string) (*types.StockData, error) {
 		Timestamp: time.Now().Unix(),
 	}
 
-	y.cache.Set(ticker, stockData, cache.DefaultExpiration)
+	src.cache.Set(ticker, stockData, cache.DefaultExpiration)
 
 	return stockData, nil
 }
 
-func (y *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
+func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.StockData, error) {
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=1d",
 		ticker, fromDate, toDate)
 
-	resp, err := y.client.Get(url)
+	resp, err := src.client.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch historical data: %w", err)
 	}

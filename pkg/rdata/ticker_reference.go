@@ -53,6 +53,7 @@ const (
 	AssetSubClassFuture = "future"
 	AssetSubClassCash   = "cash"
 	AssetSubClassBond   = "bond"
+	AssetSubClassGovies = "govies"
 )
 
 // Supported categories
@@ -108,7 +109,7 @@ func validateAssetSubClass(fl validator.FieldLevel) bool {
 	asc := fl.Field().String()
 
 	switch asc {
-	case AssetSubClassStock, AssetSubClassETF, AssetSubClassReit, AssetSubClassOption, AssetSubClassFuture, AssetSubClassCash:
+	case AssetSubClassStock, AssetSubClassETF, AssetSubClassReit, AssetSubClassOption, AssetSubClassFuture, AssetSubClassCash, AssetSubClassGovies:
 		return true
 	default:
 		return false

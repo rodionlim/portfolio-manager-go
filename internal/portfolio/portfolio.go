@@ -7,6 +7,7 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/dividends"
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
@@ -246,7 +247,7 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 		return err
 	}
 
-	if tickerRef.AssetClass == rdata.AssetClassEquities {
+	if tickerRef.AssetClass == rdata.AssetClassEquities || tickerRef.AssetClass == rdata.AssetClassBonds {
 		// get dividends
 		dividends, err := p.dividendsMgr.CalculateDividendsForSingleTicker(position.Ticker)
 		if err != nil {
@@ -262,7 +263,12 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 			// when the position is closed, the PnL is the total paid + dividends
 			position.PnL = (position.TotalPaid * -1) + position.Dividends
 		} else {
-			stockData, err := p.mdata.GetStockPrice(position.Ticker)
+			var stockData *types.StockData
+			if common.IsSSB(position.Ticker) {
+				stockData = &types.StockData{Price: 100.0}
+			} else {
+				stockData, err = p.mdata.GetStockPrice(position.Ticker)
+			}
 			if err != nil {
 				return err
 			}

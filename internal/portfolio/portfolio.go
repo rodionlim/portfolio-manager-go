@@ -247,7 +247,8 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 		return err
 	}
 
-	if tickerRef.AssetClass == rdata.AssetClassEquities || tickerRef.AssetClass == rdata.AssetClassBonds {
+	switch tickerRef.AssetClass {
+	case rdata.AssetClassEquities, rdata.AssetClassBonds:
 		// get dividends
 		dividends, err := p.dividendsMgr.CalculateDividendsForSingleTicker(position.Ticker)
 		if err != nil {
@@ -276,6 +277,8 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 			position.Mv = position.Qty * stockData.Price
 			position.PnL = (stockData.Price-position.AvgPx)*position.Qty + position.Dividends
 		}
+	default:
+		return fmt.Errorf("asset class %s not supported", tickerRef.AssetClass)
 	}
 
 	position.Ccy = tickerRef.Ccy

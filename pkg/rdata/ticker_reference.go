@@ -36,37 +36,39 @@ type TickerReference struct {
 
 // Supported asset classes
 const (
-	AssetClassFX          = "fx"
-	AssetClassEquities    = "eq"
-	AssetClassCrypto      = "crypto"
-	AssetClassCommodities = "cmdty"
-	AssetClassCash        = "cash"
 	AssetClassBonds       = "bond"
+	AssetClassCash        = "cash"
+	AssetClassCommodities = "cmdty"
+	AssetClassCrypto      = "crypto"
+	AssetClassEquities    = "eq"
+	AssetClassFX          = "fx"
 )
 
 // Supported asset sub classes
 const (
-	AssetSubClassStock  = "stock"
-	AssetSubClassETF    = "etf"
-	AssetSubClassReit   = "reit"
-	AssetSubClassOption = "option"
-	AssetSubClassFuture = "future"
-	AssetSubClassCash   = "cash"
 	AssetSubClassBond   = "bond"
+	AssetSubClassCash   = "cash"
+	AssetSubClassETF    = "etf"
+	AssetSubClassFuture = "future"
 	AssetSubClassGovies = "govies"
+	AssetSubClassOption = "option"
+	AssetSubClassReit   = "reit"
+	AssetSubClassSpot   = "spot"
+	AssetSubClassStock  = "stock"
 )
 
 // Supported categories
 const (
-	CategoryTechnology    = "technology"
-	CategoryFinance       = "finance"
-	CategoryHealthcare    = "healthcare"
-	CategoryEnergy        = "energy"
-	CategoryRealEstate    = "realestate"
 	CategoryConsumerGoods = "consumergoods"
-	CategoryIndustrials   = "industrials"
-	CategoryTravel        = "travel"
+	CategoryCrypto        = "crypto"
+	CategoryEnergy        = "energy"
+	CategoryFinance       = "finance"
 	CategoryFuneral       = "funeral"
+	CategoryHealthcare    = "healthcare"
+	CategoryIndustrials   = "industrials"
+	CategoryRealEstate    = "realestate"
+	CategoryTechnology    = "technology"
+	CategoryTravel        = "travel"
 )
 
 // NewTickerReference creates a new TickerReference instance.
@@ -98,7 +100,7 @@ func validateAssetClass(fl validator.FieldLevel) bool {
 	ac := fl.Field().String()
 
 	switch ac {
-	case AssetClassFX, AssetClassEquities, AssetClassCrypto, AssetClassCommodities, AssetClassCash, AssetClassBonds:
+	case AssetClassBonds, AssetClassCash, AssetClassCommodities, AssetClassCrypto, AssetClassEquities, AssetClassFX:
 		return true
 	default:
 		return false
@@ -109,7 +111,7 @@ func validateAssetSubClass(fl validator.FieldLevel) bool {
 	asc := fl.Field().String()
 
 	switch asc {
-	case AssetSubClassStock, AssetSubClassETF, AssetSubClassReit, AssetSubClassOption, AssetSubClassFuture, AssetSubClassCash, AssetSubClassGovies:
+	case AssetSubClassCash, AssetSubClassETF, AssetSubClassFuture, AssetSubClassGovies, AssetSubClassOption, AssetSubClassReit, AssetSubClassSpot, AssetSubClassStock:
 		return true
 	default:
 		return false
@@ -120,7 +122,7 @@ func validateCategory(fl validator.FieldLevel) bool {
 	cat := fl.Field().String()
 
 	switch cat {
-	case CategoryTechnology, CategoryFinance, CategoryConsumerGoods, CategoryEnergy, CategoryHealthcare, CategoryIndustrials, CategoryRealEstate:
+	case CategoryConsumerGoods, CategoryCrypto, CategoryEnergy, CategoryFinance, CategoryHealthcare, CategoryIndustrials, CategoryRealEstate, CategoryTechnology:
 		return true
 	default:
 		return false

@@ -3,6 +3,7 @@ package dividends
 import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/mocks"
+	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 	"testing"
@@ -10,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setup() (*DividendsManager, error) {
+func setup() (*DividendsManager, mdata.MarketDataManager, *mocks.MockTradeGetterBlotter, error) {
 	db := mocks.NewMockDatabase()
 	mdataMgr := mocks.NewMockMarketDataManager()
 	rdataMgr := mocks.NewMockReferenceManager()
@@ -32,11 +33,11 @@ func setup() (*DividendsManager, error) {
 	})
 
 	dm := NewDividendsManager(db, mdataMgr, rdataMgr, blotterMgr)
-	return dm, nil
+	return dm, mdataMgr, blotterMgr, nil
 }
 
-func TestCalculateDividendsForSingleTicker(t *testing.T) {
-	dm, err := setup()
+func TestCalculateDividendsForSingleTickerOnlyBuys(t *testing.T) {
+	dm, _, _, err := setup()
 	assert.NoError(t, err)
 
 	dividends, err := dm.CalculateDividendsForSingleTicker("AAPL")
@@ -46,6 +47,28 @@ func TestCalculateDividendsForSingleTicker(t *testing.T) {
 	expectedDividends := []Dividends{
 		{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0},
 		{ExDate: "2023-02-01", Amount: 420.0, AmountPerShare: 2.0},
+	}
+
+	assert.Equal(t, expectedDividends, dividends)
+}
+
+func TestCalculateDividendsForSingleTickerBuysAndSells(t *testing.T) {
+	dm, _, blotterMgr, err := setup()
+
+	blotterMgr.SetTrades("AAPL", []blotter.Trade{
+		{Ticker: "AAPL", TradeDate: "2022-12-31", Quantity: 100, TradeID: "1", Side: blotter.TradeSideBuy},
+		{Ticker: "AAPL", TradeDate: "2023-01-15", Quantity: 200, TradeID: "2", Side: blotter.TradeSideBuy},
+		{Ticker: "AAPL", TradeDate: "2023-01-16", Quantity: 300, TradeID: "3", Side: blotter.TradeSideSell},
+	})
+
+	assert.NoError(t, err)
+
+	dividends, err := dm.CalculateDividendsForSingleTicker("AAPL")
+	assert.NoError(t, err)
+	assert.Len(t, dividends, 1)
+
+	expectedDividends := []Dividends{
+		{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0},
 	}
 
 	assert.Equal(t, expectedDividends, dividends)

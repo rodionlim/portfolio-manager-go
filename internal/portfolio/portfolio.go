@@ -254,6 +254,7 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 			// we don't exit here, some tickers might have changed their names over time
 			p.logger.Warnf("Failed to get dividends for ticker %s: %v", position.Ticker, err)
 		} else {
+			position.Dividends = 0 // reset dividends
 			for _, dividend := range dividends {
 				position.Dividends += dividend.Amount
 			}

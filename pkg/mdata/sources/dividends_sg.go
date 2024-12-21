@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
@@ -18,22 +17,14 @@ import (
 )
 
 type DividendsSg struct {
-	divWithholdingTax float64
-	db                dal.Database
-	cache             *cache.Cache
+	db    dal.Database
+	cache *cache.Cache
 }
 
 func NewDividendsSg(db dal.Database) *DividendsSg {
-	cfg, _ := config.GetOrCreateConfig("")
-	divWitholdingTax := 0.0
-	if cfg != nil {
-		divWitholdingTax = cfg.DivWitholdingTaxSG
-	}
-
 	return &DividendsSg{
-		divWithholdingTax: divWitholdingTax,
-		db:                db,
-		cache:             cache.New(24*time.Hour, 1*time.Hour),
+		db:    db,
+		cache: cache.New(24*time.Hour, 1*time.Hour),
 	}
 }
 
@@ -47,7 +38,7 @@ func (src *DividendsSg) GetAssetPrice(symbol string) (*types.AssetData, error) {
 	panic("unimplemented")
 }
 
-func (src *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
+func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float64) ([]types.DividendsMetadata, error) {
 	logger := logging.GetLogger()
 
 	// Check cache first
@@ -133,7 +124,7 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string) ([]types.DividendsMe
 			Ticker:         ticker,
 			ExDate:         date,
 			Amount:         math.Round(amount*1000) / 1000,
-			WithholdingTax: src.divWithholdingTax}) // sg dividends have no withholding tax
+			WithholdingTax: withholdingTax}) // sg dividends have no withholding tax
 	}
 
 	// Sort dividends by date string (works because format is yyyy-mm-dd)

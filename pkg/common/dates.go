@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
@@ -14,4 +15,13 @@ func IsFutureDate(date string) bool {
 		return false
 	}
 	return parsedDate.After(time.Now())
+}
+
+// ConvertDateFormat converts a date string from one format to another.
+func ConvertDateFormat(dateStr, fromFormat, toFormat string) (string, error) {
+	date, err := time.Parse(fromFormat, dateStr)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse date: %w", err)
+	}
+	return date.Format(toFormat), nil
 }

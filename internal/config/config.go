@@ -37,39 +37,46 @@ var (
 	err      error
 )
 
+// SetConfig sets the singleton Config instance, for testing purposes. Else, config is usually read from a file and created via GetOrCreateConfig.
+func SetConfig(cfg *Config) {
+	instance = cfg
+}
+
 // GetOrCreateConfig returns the singleton Config instance, and instantiates it if it hasn't already been done so.
 func GetOrCreateConfig(path string) (*Config, error) {
 	once.Do(func() {
-		var file []byte
-		file, err = os.ReadFile(path)
-		if err != nil {
-			return
-		}
+		if instance == nil {
+			var file []byte
+			file, err = os.ReadFile(path)
+			if err != nil {
+				return
+			}
 
-		config := Config{}
-		err = yaml.Unmarshal(file, &config)
-		if err != nil {
-			return
-		}
+			config := Config{}
+			err = yaml.Unmarshal(file, &config)
+			if err != nil {
+				return
+			}
 
-		// Set default value for Host if not provided
-		if config.Host == "" {
-			config.Host = "localhost"
-		}
+			// Set default value for Host if not provided
+			if config.Host == "" {
+				config.Host = "localhost"
+			}
 
-		// Validate the database field
-		if config.Db == "" {
-			config.Db = dal.LDB
-		}
-		if config.Db != dal.LDB && config.Db != dal.RDB {
-			err = errors.New("invalid db type: must be 'leveldb' or 'rocksdb'")
-			return
-		}
-		if config.DbPath == "" {
-			config.DbPath = "./portfolio-manager.db"
-		}
+			// Validate the database field
+			if config.Db == "" {
+				config.Db = dal.LDB
+			}
+			if config.Db != dal.LDB && config.Db != dal.RDB {
+				err = errors.New("invalid db type: must be 'leveldb' or 'rocksdb'")
+				return
+			}
+			if config.DbPath == "" {
+				config.DbPath = "./portfolio-manager.db"
+			}
 
-		instance = &config
+			instance = &config
+		}
 	})
 
 	return instance, err

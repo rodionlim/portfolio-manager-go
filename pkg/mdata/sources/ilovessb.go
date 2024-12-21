@@ -64,7 +64,7 @@ func (src *ILoveSsb) GetAssetPrice(ticker string) (*types.AssetData, error) {
 	}, nil
 }
 
-func (src *ILoveSsb) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
+func (src *ILoveSsb) GetDividendsMetadata(ticker string, withholdingTax float64) ([]types.DividendsMetadata, error) {
 	if !common.IsSSB(ticker) {
 		return nil, fmt.Errorf("invalid SSB ticker: %s", ticker)
 	}
@@ -171,11 +171,12 @@ func (src *ILoveSsb) GetDividendsMetadata(ticker string) ([]types.DividendsMetad
 	for issuanceName, data := range ssbDataMap {
 		for i := 0; i < totalCoupons; i++ {
 			dividends = append(dividends, types.DividendsMetadata{
-				Ticker:      issuanceName,
-				ExDate:      data.CouponDates[i],
-				Amount:      data.InterestRates[i] / 2,    // interest per $100 notional (bi-annual dividends)
-				Interest:    data.InterestRates[i],        // interest in percentage
-				AvgInterest: data.AverageReturnPerYear[i], // average interest in percentage
+				Ticker:         issuanceName,
+				ExDate:         data.CouponDates[i],
+				Amount:         data.InterestRates[i] / 2,    // interest per $100 notional (bi-annual dividends)
+				Interest:       data.InterestRates[i],        // interest in percentage
+				AvgInterest:    data.AverageReturnPerYear[i], // average interest in percentage
+				WithholdingTax: withholdingTax,
 			})
 		}
 		if ticker == issuanceName {

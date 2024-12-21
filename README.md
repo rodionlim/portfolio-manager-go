@@ -129,6 +129,7 @@ curl -X GET http://localhost:8080/mdata/price/usd-sgd
 ```sh
 # equity - refer to ticker reference for identifier
 curl -X GET http://localhost:8080/mdata/dividend/es3.si
+curl -X GET http://localhost:8080/mdata/dividend/aapl
 
 # ssb - format SBMMMYY
 curl -X GET http://localhost:8080/mdata/dividend/sbjul24
@@ -166,7 +167,7 @@ divWitholdingTaxIE: 0.15
 
 ## Roadmap
 
-1. Support USD dividends
+1. Support non SGD dividends (Implemented)
 2. Support MAS TBills
 3. Support Crypto market data (Implemented)
 4. Support FX market data (Implemented)

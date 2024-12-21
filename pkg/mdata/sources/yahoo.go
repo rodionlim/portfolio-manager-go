@@ -4,33 +4,115 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
+	"strconv"
+	"strings"
 	"time"
 
+	"portfolio-manager/pkg/common"
+
+	"github.com/PuerkitoBio/goquery"
 	"github.com/patrickmn/go-cache"
 )
 
 type yahooFinance struct {
 	client *http.Client
+	db     dal.Database
 	cache  *cache.Cache
 	logger *logging.Logger
 }
 
 // NewYahooFinance creates a new Yahoo Finance data source
-func NewYahooFinance() types.DataSource {
+func NewYahooFinance(db dal.Database) types.DataSource {
 	return &yahooFinance{
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		db:     db,
 		cache:  cache.New(5*time.Minute, 10*time.Minute),
 		logger: logging.GetLogger(),
 	}
 }
 
+func (src *yahooFinance) newRequest(method, url string) (*http.Request, error) {
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+	return req, nil
+}
+
 // GetDividends implements types.DataSource.
-func (src *yahooFinance) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
-	panic("unimplemented")
+func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax float64) ([]types.DividendsMetadata, error) {
+	// Check cache first
+	if cachedData, found := src.cache.Get(ticker); found {
+		src.logger.Info("Returning cached dividends data for ticker:", ticker)
+		return cachedData.([]types.DividendsMetadata), nil
+	}
+
+	// Fetch dividends from Yahoo Finance
+	url := fmt.Sprintf("https://finance.yahoo.com/quote/%s/history/?period1=511108200&period2=%d&filter=div", ticker, time.Now().Unix())
+	req, err := src.newRequest("GET", url)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := src.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch data: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("yahoo finance API returned status code: %d", resp.StatusCode)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	var dividends []types.DividendsMetadata
+	doc.Find("table tbody tr").Each(func(i int, s *goquery.Selection) {
+		date := s.Find("td").Eq(0).Text()
+		dividend := s.Find("td").Eq(1).Text()
+		if dividend != "" && strings.Contains(dividend, "Dividend") {
+			amount, err := strconv.ParseFloat(strings.TrimSpace(strings.Replace(dividend, "Dividend", "", -1)), 64)
+			if err != nil {
+				src.logger.Errorf("failed to parse dividend amount: %v", err)
+				return
+			}
+			date, err = common.ConvertDateFormat(date, "Jan 2, 2006", "2006-01-02")
+			if err != nil {
+				src.logger.Errorf("failed to convert dividend date: %v", err)
+				return
+			}
+			dividends = append(dividends, types.DividendsMetadata{
+				Ticker:         ticker,
+				ExDate:         date,
+				Amount:         amount,
+				WithholdingTax: withholdingTax,
+			})
+		}
+	})
+
+	// Store in cache
+	src.cache.Set(ticker, dividends, 24*time.Hour)
+
+	// Store in database if we have new data
+	if src.db != nil {
+		var existingDividends []types.DividendsMetadata
+		src.db.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), &existingDividends)
+		if len(dividends) > len(existingDividends) {
+			src.logger.Infof("New dividends for ticker %s, storing into database", ticker)
+			src.db.Put(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends)
+		}
+	}
+
+	return dividends, nil
 }
 
 func (src *yahooFinance) GetAssetPrice(ticker string) (*types.AssetData, error) {
@@ -41,7 +123,12 @@ func (src *yahooFinance) GetAssetPrice(ticker string) (*types.AssetData, error) 
 
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s", ticker)
 
-	resp, err := src.client.Get(url)
+	req, err := src.newRequest("GET", url)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := src.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch data: %w", err)
 	}
@@ -89,7 +176,12 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=1d",
 		ticker, fromDate, toDate)
 
-	resp, err := src.client.Get(url)
+	req, err := src.newRequest("GET", url)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := src.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch historical data: %w", err)
 	}

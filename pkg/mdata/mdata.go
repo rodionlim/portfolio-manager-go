@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
@@ -145,7 +146,7 @@ func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata
 	// for SSB, tickers are standardized against the following convention, e.g. SBJAN25
 	if common.IsSSB(ticker) {
 		if iLoveSsb, ok := m.sources[sources.SSB]; ok {
-			return iLoveSsb.GetDividendsMetadata(ticker)
+			return iLoveSsb.GetDividendsMetadata(ticker, 0.0)
 		}
 	}
 
@@ -160,17 +161,28 @@ func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata
 
 // GetDividendsMetadataFromTickerRef attempts to fetch dividends metadata from available sources
 func (m *Manager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error) {
+	witholdingTax := m.MapDomicileToWitholdingTax(tickerRef.Domicile)
+
 	// for SSB, tickers are standardized against the following convention, e.g. SBJAN25
 	if common.IsSSB(tickerRef.ID) {
 		if iLoveSsb, ok := m.sources[sources.SSB]; ok {
-			return iLoveSsb.GetDividendsMetadata(tickerRef.ID)
+			return iLoveSsb.GetDividendsMetadata(tickerRef.ID, witholdingTax)
 		}
 	}
 
+	// Try Dividends.sg first
 	if tickerRef.DividendsSgTicker != "" {
-		// Try Dividends.sg first
 		if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
-			if data, err := dividendsSg.GetDividendsMetadata(tickerRef.DividendsSgTicker); err == nil {
+			if data, err := dividendsSg.GetDividendsMetadata(tickerRef.DividendsSgTicker, witholdingTax); err == nil {
+				return data, nil
+			}
+		}
+	}
+
+	// Fallback to Yahoo Finance
+	if tickerRef.YahooTicker != "" {
+		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
+			if data, err := yahoo.GetDividendsMetadata(tickerRef.YahooTicker, witholdingTax); err == nil {
 				return data, nil
 			}
 		}
@@ -185,7 +197,7 @@ func NewDataSource(sourceType string, db dal.Database) (types.DataSource, error)
 	case sources.GoogleFinance:
 		return sources.NewGoogleFinance(), nil
 	case sources.YahooFinance:
-		return sources.NewYahooFinance(), nil
+		return sources.NewYahooFinance(db), nil
 	case sources.DividendsSingapore:
 		return sources.NewDividendsSg(db), nil
 	case sources.SSB:
@@ -202,4 +214,24 @@ func (m *Manager) getReferenceData(ticker string) (rdata.TickerReference, error)
 	}
 
 	return refData, nil
+}
+
+func (m *Manager) MapDomicileToWitholdingTax(domicile string) float64 {
+	cfg, err := config.GetOrCreateConfig("")
+	if err != nil {
+		return 0.0
+	}
+
+	switch domicile {
+	case "SG":
+		return cfg.DivWitholdingTaxSG
+	case "US":
+		return cfg.DivWitholdingTaxUS
+	case "HK":
+		return cfg.DivWitholdingTaxHK
+	case "IE":
+		return cfg.DivWitholdingTaxIE
+	default:
+		return 0.0
+	}
 }

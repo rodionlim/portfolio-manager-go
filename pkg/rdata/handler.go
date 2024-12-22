@@ -11,7 +11,7 @@ import (
 // @Produce json
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} error
-// @Router /refdata [get]
+// @Router /api/v1/refdata [get]
 func HandleReferenceDataGet(refSvc ReferenceManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := refSvc.GetAllTickers()
@@ -27,7 +27,7 @@ func HandleReferenceDataGet(refSvc ReferenceManager) http.HandlerFunc {
 
 // RegisterHandlers registers the handlers for the reference data service
 func RegisterHandlers(mux *http.ServeMux, refSvc ReferenceManager) {
-	mux.HandleFunc("/refdata", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/refdata", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			HandleReferenceDataGet(refSvc).ServeHTTP(w, r)

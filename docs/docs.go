@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/blotter/export": {
+        "/api/v1/blotter/export": {
             "get": {
                 "description": "Export all trades to a CSV file",
                 "produces": [
@@ -41,7 +41,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/blotter/import": {
+        "/api/v1/blotter/import": {
             "post": {
                 "description": "Import trades from a CSV file",
                 "consumes": [
@@ -85,7 +85,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/blotter/trade": {
+        "/api/v1/blotter/trade": {
             "get": {
                 "description": "Retrieve all trades from the blotter",
                 "produces": [
@@ -152,7 +152,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/dividends": {
+        "/api/v1/dividends": {
             "post": {
                 "description": "Get dividends for a single ticker",
                 "consumes": [
@@ -201,7 +201,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/mdata/dividend/{ticker}": {
+        "/api/v1/mdata/dividend/{ticker}": {
             "get": {
                 "description": "Retrieves dividend history data for a specified stock ticker",
                 "consumes": [
@@ -243,7 +243,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/mdata/price/{ticker}": {
+        "/api/v1/mdata/price/{ticker}": {
             "get": {
                 "description": "Retrieves current market data for a specified ticker",
                 "consumes": [
@@ -285,7 +285,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/mdata/tickers/price": {
+        "/api/v1/mdata/tickers/price": {
             "get": {
                 "description": "Retrieves current market data for multiple asset tickers",
                 "consumes": [
@@ -324,7 +324,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/portfolio/positions": {
+        "/api/v1/portfolio/positions": {
             "get": {
                 "description": "Retrieves all positions currently in the portfolio",
                 "produces": [
@@ -351,7 +351,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/refdata": {
+        "/api/v1/refdata": {
             "get": {
                 "description": "Retrieves all reference data",
                 "produces": [

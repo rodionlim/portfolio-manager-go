@@ -110,7 +110,7 @@ info:
   title: Portfolio Manager API
   version: "1.0"
 paths:
-  /blotter/export:
+  /api/v1/blotter/export:
     get:
       description: Export all trades to a CSV file
       produces:
@@ -127,7 +127,7 @@ paths:
       summary: Export trades to CSV
       tags:
       - trades
-  /blotter/import:
+  /api/v1/blotter/import:
     post:
       consumes:
       - multipart/form-data
@@ -156,7 +156,7 @@ paths:
       summary: Import trades from CSV
       tags:
       - trades
-  /blotter/trade:
+  /api/v1/blotter/trade:
     get:
       description: Retrieve all trades from the blotter
       produces:
@@ -200,7 +200,7 @@ paths:
       summary: Add a new trade
       tags:
       - trades
-  /dividends:
+  /api/v1/dividends:
     post:
       consumes:
       - application/json
@@ -232,7 +232,7 @@ paths:
       summary: Get dividends for a single ticker
       tags:
       - dividends
-  /mdata/dividend/{ticker}:
+  /api/v1/mdata/dividend/{ticker}:
     get:
       consumes:
       - application/json
@@ -260,7 +260,7 @@ paths:
       summary: Get dividend metadata for a ticker
       tags:
       - market-data
-  /mdata/price/{ticker}:
+  /api/v1/mdata/price/{ticker}:
     get:
       consumes:
       - application/json
@@ -288,7 +288,7 @@ paths:
       summary: Get market data for a single ticker
       tags:
       - market-data
-  /mdata/tickers/price:
+  /api/v1/mdata/tickers/price:
     get:
       consumes:
       - application/json
@@ -314,7 +314,7 @@ paths:
       summary: Get market data for multiple tickers
       tags:
       - market-data
-  /portfolio/positions:
+  /api/v1/portfolio/positions:
     get:
       description: Retrieves all positions currently in the portfolio
       produces:
@@ -332,7 +332,7 @@ paths:
       summary: Get all portfolio positions
       tags:
       - portfolio
-  /refdata:
+  /api/v1/refdata:
     get:
       description: Retrieves all reference data
       produces:

@@ -33,7 +33,7 @@ type TradeRequest struct {
 // @Success 201 {object} Trade
 // @Failure 400 {string} string "Invalid request payload"
 // @Failure 500 {string} string "Failed to add trade"
-// @Router /blotter/trade [post]
+// @Router /api/v1/blotter/trade [post]
 func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var tradeRequest TradeRequest
@@ -82,7 +82,7 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 // @Tags trades
 // @Produce  json
 // @Success 200 {array} Trade
-// @Router /blotter/trade [get]
+// @Router /api/v1/blotter/trade [get]
 func HandleTradeGet(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		trades := blotter.GetTrades()
@@ -101,7 +101,7 @@ func HandleTradeGet(blotter *TradeBlotter) http.HandlerFunc {
 // @Success 200 {string} string "OK"
 // @Failure 400 {string} string "Failed to get file from request"
 // @Failure 500 {string} string "Failed to import trades"
-// @Router /blotter/import [post]
+// @Router /api/v1/blotter/import [post]
 func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		file, _, err := r.FormFile("file")
@@ -129,7 +129,7 @@ func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 // @Produce  text/csv
 // @Success 200 {file} file "trades.csv"
 // @Failure 500 {string} string "Failed to export trades"
-// @Router /blotter/export [get]
+// @Router /api/v1/blotter/export [get]
 func HandleTradeExportCSV(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		trades, err := blotter.ExportToCSVBytes()
@@ -147,7 +147,7 @@ func HandleTradeExportCSV(blotter *TradeBlotter) http.HandlerFunc {
 
 // RegisterHandlers registers the handlers for the blotter service.
 func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
-	mux.HandleFunc("/blotter/trade", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/blotter/trade", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
 			HandleTradePost(blotter).ServeHTTP(w, r)
@@ -158,7 +158,7 @@ func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 		}
 	})
 
-	mux.HandleFunc("/blotter/import", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/blotter/import", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "ERROR: Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -166,7 +166,7 @@ func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 		HandleTradeImportCSV(blotter).ServeHTTP(w, r)
 	})
 
-	mux.HandleFunc("/blotter/export", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/blotter/export", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "ERROR: Method not allowed", http.StatusMethodNotAllowed)
 			return

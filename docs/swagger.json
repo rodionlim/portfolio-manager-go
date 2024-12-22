@@ -9,7 +9,7 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
-        "/blotter/export": {
+        "/api/v1/blotter/export": {
             "get": {
                 "description": "Export all trades to a CSV file",
                 "produces": [
@@ -35,7 +35,7 @@
                 }
             }
         },
-        "/blotter/import": {
+        "/api/v1/blotter/import": {
             "post": {
                 "description": "Import trades from a CSV file",
                 "consumes": [
@@ -79,7 +79,7 @@
                 }
             }
         },
-        "/blotter/trade": {
+        "/api/v1/blotter/trade": {
             "get": {
                 "description": "Retrieve all trades from the blotter",
                 "produces": [
@@ -146,7 +146,7 @@
                 }
             }
         },
-        "/dividends": {
+        "/api/v1/dividends": {
             "post": {
                 "description": "Get dividends for a single ticker",
                 "consumes": [
@@ -195,7 +195,7 @@
                 }
             }
         },
-        "/mdata/dividend/{ticker}": {
+        "/api/v1/mdata/dividend/{ticker}": {
             "get": {
                 "description": "Retrieves dividend history data for a specified stock ticker",
                 "consumes": [
@@ -237,7 +237,7 @@
                 }
             }
         },
-        "/mdata/price/{ticker}": {
+        "/api/v1/mdata/price/{ticker}": {
             "get": {
                 "description": "Retrieves current market data for a specified ticker",
                 "consumes": [
@@ -279,7 +279,7 @@
                 }
             }
         },
-        "/mdata/tickers/price": {
+        "/api/v1/mdata/tickers/price": {
             "get": {
                 "description": "Retrieves current market data for multiple asset tickers",
                 "consumes": [
@@ -318,7 +318,7 @@
                 }
             }
         },
-        "/portfolio/positions": {
+        "/api/v1/portfolio/positions": {
             "get": {
                 "description": "Retrieves all positions currently in the portfolio",
                 "produces": [
@@ -345,7 +345,7 @@
                 }
             }
         },
-        "/refdata": {
+        "/api/v1/refdata": {
             "get": {
                 "description": "Retrieves all reference data",
                 "produces": [

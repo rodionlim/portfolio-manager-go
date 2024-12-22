@@ -83,7 +83,7 @@ All API calls are documented (OAS) under `http://localhost:8080/swagger/index.ht
 ### Add Asset
 
 ```sh
-curl -X POST http://localhost:8080/blotter/trade \
+curl -X POST http://localhost:8080/api/v1/blotter/trade \
     -H "Content-Type: application/json" \
     -d '{
         "ticker": "AAPL",
@@ -100,54 +100,54 @@ curl -X POST http://localhost:8080/blotter/trade \
 ### Import Trades from CSV (for migrating into portfolio-manager)
 
 ```sh
-curl -X POST http://localhost:8080/blotter/import \
+curl -X POST http://localhost:8080/api/v1/blotter/import \
   -F "file=@templates/blotter_import.csv"
 ```
 
 ### Export Trades to a CSV (for migrating out of portfolio-manager)
 
 ```sh
-curl -X GET http://localhost:8080/blotter/export
+curl -X GET http://localhost:8080/api/v1/blotter/export
 ```
 
 ### View Positions
 
 ```sh
-curl -X GET http://localhost:8080/portfolio/positions
+curl -X GET http://localhost:8080/api/v1/portfolio/positions
 ```
 
 ### Fetch Asset Prices
 
 ```sh
-curl -X GET http://localhost:8080/mdata/price/es3.si
-curl -X GET http://localhost:8080/mdata/price/eth-usd
-curl -X GET http://localhost:8080/mdata/price/usd-sgd
+curl -X GET http://localhost:8080/api/v1/mdata/price/es3.si
+curl -X GET http://localhost:8080/api/v1/mdata/price/eth-usd
+curl -X GET http://localhost:8080/api/v1/mdata/price/usd-sgd
 ```
 
 ### Fetch Dividends
 
 ```sh
 # equity - refer to ticker reference for identifier
-curl -X GET http://localhost:8080/mdata/dividend/es3.si
-curl -X GET http://localhost:8080/mdata/dividend/aapl
+curl -X GET http://localhost:8080/api/v1/mdata/dividend/es3.si
+curl -X GET http://localhost:8080/api/v1/mdata/dividend/aapl
 
 # ssb - format SBMMMYY
-curl -X GET http://localhost:8080/mdata/dividend/sbjul24
+curl -X GET http://localhost:8080/api/v1/mdata/dividend/sbjul24
 
 # mas bill
-curl -X GET http://localhost:8080/mdata/dividend/bs24124z
+curl -X GET http://localhost:8080/api/v1/mdata/dividend/bs24124z
 ```
 
 ### Fetch Reference Data
 
 ```sh
-curl -X GET http://localhost:8080/refdata
+curl -X GET http://localhost:8080/api/v1/refdata
 ```
 
 ### Force a compute of dividends for a ticker across the entire blotter
 
 ```sh
-curl -X POST http://localhost:8080/dividends -H "Content-Type: application/json" -d '{"ticker": "ES3.SI"}'
+curl -X POST http://localhost:8080/api/v1/dividends -H "Content-Type: application/json" -d '{"ticker": "ES3.SI"}'
 ```
 
 ## Configurations

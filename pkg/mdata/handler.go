@@ -15,10 +15,10 @@ import (
 // @Success 200 {object} interface{} "Market data for the ticker"
 // @Failure 400 {string} string "Bad request - Ticker is required"
 // @Failure 500 {string} string "Internal server error"
-// @Router /mdata/price/{ticker} [get]
+// @Router /api/v1/mdata/price/{ticker} [get]
 func HandleTickerGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ticker := strings.TrimPrefix(r.URL.Path, "/mdata/price/")
+		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/price/")
 		if ticker == "" {
 			http.Error(w, "Ticker is required", http.StatusBadRequest)
 			return
@@ -43,7 +43,7 @@ func HandleTickerGet(mdataSvc MarketDataManager) http.HandlerFunc {
 // @Param tickers query string true "Comma-separated list of asset ticker symbols"
 // @Success 200 {object} map[string]interface{} "Market data for all requested tickers"
 // @Failure 400 {string} string "Bad request - Tickers query parameter is required"
-// @Router /mdata/tickers/price [get]
+// @Router /api/v1/mdata/tickers/price [get]
 func HandleTickersGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tickers := r.URL.Query().Get("tickers")
@@ -78,10 +78,10 @@ func HandleTickersGet(mdataSvc MarketDataManager) http.HandlerFunc {
 // @Success 200 {object} interface{} "Dividend data for the ticker"
 // @Failure 400 {string} string "Bad request - Ticker is required"
 // @Failure 500 {string} string "Internal server error"
-// @Router /mdata/dividend/{ticker} [get]
+// @Router /api/v1/mdata/dividend/{ticker} [get]
 func HandleDividendsGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ticker := strings.TrimPrefix(r.URL.Path, "/mdata/dividend/")
+		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/dividend/")
 		if ticker == "" {
 			http.Error(w, "Ticker is required", http.StatusBadRequest)
 			return
@@ -100,7 +100,7 @@ func HandleDividendsGet(mdataSvc MarketDataManager) http.HandlerFunc {
 
 // RegisterHandlers registers the handlers for the market data service
 func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
-	mux.HandleFunc("/mdata/price/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/mdata/price/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			HandleTickerGet(mdataSvc).ServeHTTP(w, r)
@@ -109,7 +109,7 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 		}
 	})
 
-	mux.HandleFunc("/mdata/tickers/price", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/mdata/tickers/price", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			HandleTickersGet(mdataSvc).ServeHTTP(w, r)
@@ -118,7 +118,7 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 		}
 	})
 
-	mux.HandleFunc("/mdata/dividend/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/mdata/dividend/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			HandleDividendsGet(mdataSvc).ServeHTTP(w, r)

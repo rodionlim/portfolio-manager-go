@@ -17,7 +17,7 @@ import (
 // @Produce json
 // @Success 200 {array} Position
 // @Failure 500 {object} error
-// @Router /portfolio/positions [get]
+// @Router /api/v1/portfolio/positions [get]
 func HandlePositionsGet(portfolio *Portfolio) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		positions, err := portfolio.GetAllPositions()
@@ -31,7 +31,7 @@ func HandlePositionsGet(portfolio *Portfolio) http.HandlerFunc {
 
 // RegisterHandlers registers the handlers for the portfolio service.
 func RegisterHandlers(mux *http.ServeMux, portfolio *Portfolio) {
-	mux.HandleFunc("/portfolio/positions", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/portfolio/positions", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			HandlePositionsGet(portfolio).ServeHTTP(w, r)

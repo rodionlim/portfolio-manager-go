@@ -16,7 +16,7 @@ import (
 // @Success 200 {array} Dividends
 // @Failure 400 {string} string "ticker is required"
 // @Failure 500 {string} string "failed to calculate dividends"
-// @Router /dividends [post]
+// @Router /api/v1/dividends [post]
 func HandlePostDividends(manager *DividendsManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request struct {
@@ -46,7 +46,7 @@ func HandlePostDividends(manager *DividendsManager) http.HandlerFunc {
 
 // RegisterHandlers registers the handlers for the dividends service.
 func RegisterHandlers(mux *http.ServeMux, manager *DividendsManager) {
-	mux.HandleFunc("/dividends", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/dividends", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
 			HandlePostDividends(manager).ServeHTTP(w, r)

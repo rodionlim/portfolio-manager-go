@@ -52,13 +52,18 @@ func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error)
 	if err != nil {
 		return nil, err
 	}
+	mas, err := NewDataSource(sources.MAS, db)
+	if err != nil {
+		return nil, err
+	}
 
 	m.sources[sources.GoogleFinance] = google
 	m.sources[sources.YahooFinance] = yahoo
 	m.sources[sources.DividendsSingapore] = dividendsSg
 	m.sources[sources.SSB] = iLoveSsb
+	m.sources[sources.MAS] = mas
 
-	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance and Dividends.sg data sources")
+	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance, Dividends.sg, ILoveSsb and MAS data sources")
 
 	return m, nil
 }
@@ -143,13 +148,6 @@ func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*t
 func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	ticker = strings.ToUpper(ticker)
 
-	// for SSB, tickers are standardized against the following convention, e.g. SBJAN25
-	if common.IsSSB(ticker) {
-		if iLoveSsb, ok := m.sources[sources.SSB]; ok {
-			return iLoveSsb.GetDividendsMetadata(ticker, 0.0)
-		}
-	}
-
 	// All other tickers go through normalization via reference data
 	tickerRef, err := m.getReferenceData(ticker)
 	if err != nil {
@@ -167,6 +165,13 @@ func (m *Manager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerRefere
 	if common.IsSSB(tickerRef.ID) {
 		if iLoveSsb, ok := m.sources[sources.SSB]; ok {
 			return iLoveSsb.GetDividendsMetadata(tickerRef.ID, witholdingTax)
+		}
+	}
+
+	// for SG MAS Bills, tickers are standardized against the following convention, e.g. BS24124Z
+	if common.IsSgTBill(tickerRef.ID) {
+		if mas, ok := m.sources[sources.MAS]; ok {
+			return mas.GetDividendsMetadata(tickerRef.ID, witholdingTax)
 		}
 	}
 
@@ -202,6 +207,8 @@ func NewDataSource(sourceType string, db dal.Database) (types.DataSource, error)
 		return sources.NewDividendsSg(db), nil
 	case sources.SSB:
 		return sources.NewILoveSsb(db), nil
+	case sources.MAS:
+		return sources.NewMas(db), nil
 	default:
 		return nil, errors.New("unsupported data source")
 	}

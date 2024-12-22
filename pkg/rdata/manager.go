@@ -99,8 +99,8 @@ func (rm *Manager) GetTicker(id string) (TickerReference, error) {
 	var ticker TickerReference
 	err := rm.db.Get(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, id), &ticker)
 	if err != nil {
-		// if ticker is a ssb ticker, create the ticker reference and insert into db
-		if common.IsSSB(id) {
+		// if ticker is a ssb or mas bill ticker, create the ticker reference and insert into db
+		if common.IsSSB(id) || common.IsSgTBill(id) {
 			ticker = TickerReference{
 				ID:            id,
 				Name:          id,

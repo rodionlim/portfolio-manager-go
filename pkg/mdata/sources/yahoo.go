@@ -36,15 +36,6 @@ func NewYahooFinance(db dal.Database) types.DataSource {
 	}
 }
 
-func (src *yahooFinance) newRequest(method, url string) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
-	return req, nil
-}
-
 // GetDividends implements types.DataSource.
 func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax float64) ([]types.DividendsMetadata, error) {
 	// Check cache first
@@ -55,7 +46,7 @@ func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax floa
 
 	// Fetch dividends from Yahoo Finance
 	url := fmt.Sprintf("https://finance.yahoo.com/quote/%s/history/?period1=511108200&period2=%d&filter=div", ticker, time.Now().Unix())
-	req, err := src.newRequest("GET", url)
+	req, err := common.NewHttpRequestWithUserAgent("GET", url)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +114,7 @@ func (src *yahooFinance) GetAssetPrice(ticker string) (*types.AssetData, error) 
 
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s", ticker)
 
-	req, err := src.newRequest("GET", url)
+	req, err := common.NewHttpRequestWithUserAgent("GET", url)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +167,7 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=1d",
 		ticker, fromDate, toDate)
 
-	req, err := src.newRequest("GET", url)
+	req, err := common.NewHttpRequestWithUserAgent("GET", url)
 	if err != nil {
 		return nil, err
 	}

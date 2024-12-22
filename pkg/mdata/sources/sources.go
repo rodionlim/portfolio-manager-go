@@ -6,4 +6,5 @@ const (
 	YahooFinance       = "yahoo"
 	DividendsSingapore = "dividends_sg"
 	SSB                = "i_love_ssb"
+	MAS                = "mas"
 )

@@ -11,8 +11,8 @@ type DividendsMetadata struct {
 	Ticker         string
 	ExDate         string
 	Amount         float64
-	Interest       float64 // SSB and Bonds only
-	AvgInterest    float64 // SSB and Bonds only
+	Interest       float64 // SSB, TBills and Bonds only, in percentage
+	AvgInterest    float64 // SSB, TBills and Bonds only, in percentage
 	WithholdingTax float64 // in decimal, not percentage
 }
 

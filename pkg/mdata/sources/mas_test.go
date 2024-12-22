@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestILoveSsb_GetDividendsMetadata_Integration(t *testing.T) {
-	src := sources.NewILoveSsb(nil)
+func TestMas_GetDividendsMetadata_Integration(t *testing.T) {
+	src := sources.NewMas(nil)
 
-	coupons, err := src.GetDividendsMetadata("SBMAR24", 0.0)
+	coupons, err := src.GetDividendsMetadata("BS24124Z", 0.0)
 	require.NoError(t, err)
 	require.NotEmpty(t, coupons)
-	assert.Equal(t, 20, len(coupons))
+	assert.Equal(t, 1, len(coupons))
 }

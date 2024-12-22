@@ -13,7 +13,7 @@ import (
 
 func TestDividendsSg_FetchDividends(t *testing.T) {
 	ds := sources.NewDividendsSg(nil)
-	dividends, err := ds.GetDividendsMetadata("ES3")
+	dividends, err := ds.GetDividendsMetadata("ES3", 0.0)
 	require.NoError(t, err)
 
 	// Verify we got some dividend data

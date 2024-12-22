@@ -133,6 +133,9 @@ curl -X GET http://localhost:8080/mdata/dividend/aapl
 
 # ssb - format SBMMMYY
 curl -X GET http://localhost:8080/mdata/dividend/sbjul24
+
+# mas bill
+curl -X GET http://localhost:8080/mdata/dividend/bs24124z
 ```
 
 ### Fetch Reference Data
@@ -168,7 +171,7 @@ divWitholdingTaxIE: 0.15
 ## Roadmap
 
 1. Support non SGD dividends (Implemented)
-2. Support MAS TBills
+2. Support MAS TBills (Implemented)
 3. Support Crypto market data (Implemented)
 4. Support FX market data (Implemented)
 5. Support exporting/importing of leveldb for backup

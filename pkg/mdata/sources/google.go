@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/types"
 	"strconv"
 	"time"
@@ -33,14 +34,10 @@ func (src *googleFinance) GetDividendsMetadata(ticker string, witholdingTax floa
 func (src *googleFinance) GetAssetPrice(ticker string) (*types.AssetData, error) {
 	// Google Finance URL (note: this might need adjustments as Google doesn't provide an official API)
 	url := fmt.Sprintf("https://www.google.com/finance/quote/%s", ticker)
-
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := common.NewHttpRequestWithUserAgent("GET", url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-
-	// Add headers to mimic browser request
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
 	resp, err := src.client.Do(req)
 	if err != nil {

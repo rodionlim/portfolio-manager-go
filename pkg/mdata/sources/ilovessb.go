@@ -74,6 +74,7 @@ func (src *ILoveSsb) GetDividendsMetadata(ticker string, withholdingTax float64)
 		var dividends []types.DividendsMetadata
 		src.db.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), &dividends)
 		if len(dividends) > 0 {
+			src.logger.Infof("Found SSB interest rates for ticker %s in database", ticker)
 			return dividends, nil
 		}
 	}

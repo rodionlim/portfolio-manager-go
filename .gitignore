@@ -5,3 +5,5 @@ portfolio-manager
 
 # db files
 portfolio-manager.db
+
+node_modules

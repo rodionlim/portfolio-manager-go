@@ -71,6 +71,7 @@ portfolio-manager/
 │   │   └── sources/
 │   ├── rdata/
 │   └── types/
+├── web/
 ├── .gitignore
 ├── go.mod
 └── README.md

@@ -19,7 +19,7 @@ const items = [
     initiallyOpened: true,
     links: [
       { label: "Fetch trades", link: "/" },
-      { label: "Add trade", link: "/" },
+      { label: "Add trade", link: "/add_trade" },
       { label: "Update trade", link: "/" },
     ],
   },

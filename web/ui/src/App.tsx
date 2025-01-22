@@ -14,7 +14,7 @@ import { theme } from "./theme";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavbarNested } from "./components/NavbarNested/NavbarNested";
 import { ColorSchemeToggle } from "./components/ColorSchemeToggle/ColorSchemeToggle";
-import BlotterTable from "./Blotter/BlotterTable";
+import Controller from "./Controller/controller";
 
 const queryClient = new QueryClient();
 
@@ -27,7 +27,7 @@ export default function App() {
             <NavbarNested />
           </AppShellNavbar>
           <AppShellMain>
-            <BlotterTable />
+            <Controller navigationLinksGroup="" />
           </AppShellMain>
           <ColorSchemeToggle />
         </AppShell>

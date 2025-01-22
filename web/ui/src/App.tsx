@@ -1,5 +1,9 @@
 // filepath: /Users/rodionlim/workspace/portfolio-manager-go/web/ui/src/App.tsx
+
 import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css"; // mantine date picker styles
+import "mantine-react-table/styles.css";
+
 import {
   MantineProvider,
   AppShellNavbar,
@@ -22,7 +26,9 @@ export default function App() {
           <AppShellNavbar>
             <NavbarNested />
           </AppShellNavbar>
-          <AppShellMain>PLACE HOLDER</AppShellMain>
+          <AppShellMain>
+            <BlotterTable />
+          </AppShellMain>
           <ColorSchemeToggle />
         </AppShell>
       </MantineProvider>

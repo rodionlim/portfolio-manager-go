@@ -1,7 +1,11 @@
 // filepath: /Users/rodionlim/workspace/portfolio-manager-go/web/ui/src/components/BlotterTable.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Button } from "@mantine/core";
-import { MantineReactTable, MRT_ColumnDef } from "mantine-react-table";
+import {
+  MantineReactTable,
+  useMantineReactTable,
+  MRT_ColumnDef,
+} from "mantine-react-table";
 import { useQuery } from "@tanstack/react-query";
 
 interface Trade {
@@ -41,6 +45,13 @@ const BlotterTable: React.FC = () => {
     []
   );
 
+  const table = useMantineReactTable({
+    columns,
+    data: trades,
+    enableRowSelection: true,
+    initialState: { density: "xs" },
+  });
+
   const handleAddTrade = () => {
     refetch();
   };
@@ -50,8 +61,10 @@ const BlotterTable: React.FC = () => {
 
   return (
     <div>
-      <Button onClick={handleAddTrade}>Add Trade</Button>
-      <MantineReactTable columns={columns} data={trades} />
+      <Button mb="16" onClick={handleAddTrade}>
+        Add Trade
+      </Button>
+      <MantineReactTable table={table} />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import {
   IconAdjustments,
+  IconBook,
   IconCalendarStats,
   IconCoin,
   IconDeviceLaptop,
@@ -17,15 +18,23 @@ const items = [
     icon: IconDeviceLaptop,
     initiallyOpened: true,
     links: [
-      { label: "Get trades", link: "/" },
+      { label: "Fetch trades", link: "/" },
       { label: "Add trade", link: "/" },
-      { label: "Delete trade", link: "/" },
       { label: "Update trade", link: "/" },
     ],
   },
   {
     label: "Dividends",
     icon: IconCalendarStats,
+  },
+  {
+    label: "Reference Data",
+    icon: IconBook,
+    initiallyOpened: false,
+    links: [
+      { label: "Fetch", link: "/" },
+      { label: "Add / Update", link: "/" },
+    ],
   },
   { label: "Settings", icon: IconAdjustments },
 ];

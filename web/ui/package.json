@@ -1,5 +1,5 @@
 {
-  "name": "vite-min-template",
+  "name": "portfolio-manager-ui",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,25 +12,25 @@
     "@mantine/core": "^7.15.2",
     "@mantine/dates": "^7.15.2",
     "@mantine/hooks": "^7.15.2",
-    "@mantine/vanilla-extract": "7.15.2",
-    "@tabler/icons-react": "^3.26.0",
-    "@vanilla-extract/css": "^1.16.1",
+    "@mantine/vanilla-extract": "^7.15.2",
+    "@tabler/icons-react": "^3.29.0",
+    "@tanstack/react-query": "^5.64.2",
+    "@vanilla-extract/css": "^1.17.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "mantine-react-table": "^2.0.0-beta.7",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^18.2",
+    "react-dom": "^18.2"
   },
   "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vanilla-extract/vite-plugin": "^4.0.18",
+    "@types/react": "^18.2",
+    "@types/react-dom": "^18.2",
+    "@vanilla-extract/vite-plugin": "^4.0.19",
     "@vitejs/plugin-react": "^4.3.4",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.1",
     "postcss-preset-mantine": "1.17.0",
     "postcss-simple-vars": "^7.0.1",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.1"
-  },
-  "packageManager": "yarn@4.5.3"
+    "typescript": "^5.7.3",
+    "vite": "^5.0.0"
+  }
 }

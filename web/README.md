@@ -32,7 +32,7 @@ To start the React development server, run:
 npm run dev
 ```
 
-This will start the development server on `http://localhost:3000`.
+This will start the development server on `http://localhost:5173`.
 
 ### Build the React Application
 

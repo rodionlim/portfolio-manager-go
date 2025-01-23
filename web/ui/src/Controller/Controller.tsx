@@ -2,13 +2,15 @@ import React from "react";
 import BlotterTable from "../Blotter/BlotterTable";
 
 interface ControllerProps {
-  navigationLinksGroup: string;
+  currentTab: string;
 }
 
-const Controller: React.FC<ControllerProps> = ({ navigationLinksGroup }) => {
+const Controller: React.FC<ControllerProps> = ({ currentTab }) => {
   const renderComponent = () => {
-    switch (navigationLinksGroup) {
-      case "blotter":
+    switch (currentTab) {
+      case "/blotter":
+        return <BlotterTable />;
+      case "/add_trade":
         return <BlotterTable />;
       default:
         return <div>Select a valid action on the left navigation bar</div>;

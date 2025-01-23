@@ -10,6 +10,11 @@ import { LinksGroup } from "../NavbarLinksGroup/NavbarLinksGroup";
 import { UserButton } from "../UserButton/UserButton";
 import { Logo } from "./Logo";
 import classes from "./NavbarNested.module.css";
+import React from "react";
+
+interface NavbarNestedProps {
+  setCurrentTab: (value: string) => void;
+}
 
 const items = [
   { label: "Positions", icon: IconCoin },
@@ -39,8 +44,10 @@ const items = [
   { label: "Settings", icon: IconAdjustments },
 ];
 
-export function NavbarNested() {
-  const links = items.map((item) => <LinksGroup {...item} key={item.label} />);
+const NavbarNested: React.FC<NavbarNestedProps> = ({ setCurrentTab }) => {
+  const links = items.map((item) => (
+    <LinksGroup {...item} key={item.label} setCurrentTab={setCurrentTab} />
+  ));
 
   return (
     <nav className={classes.navbar}>
@@ -60,4 +67,6 @@ export function NavbarNested() {
       </div>
     </nav>
   );
-}
+};
+
+export default NavbarNested;

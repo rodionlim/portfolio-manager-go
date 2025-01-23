@@ -15,6 +15,7 @@ interface LinksGroupProps {
   label: string;
   initiallyOpened?: boolean;
   links?: { label: string; link: string }[];
+  setCurrentTab: (value: string) => void;
 }
 
 export function LinksGroup({
@@ -22,6 +23,7 @@ export function LinksGroup({
   label,
   initiallyOpened,
   links,
+  setCurrentTab,
 }: LinksGroupProps) {
   const hasLinks = Array.isArray(links);
   const [opened, setOpened] = useState(initiallyOpened || false);
@@ -34,6 +36,7 @@ export function LinksGroup({
       onClick={(event) => {
         console.log(link.link);
         event.preventDefault();
+        setCurrentTab(link.link);
       }}
     >
       {link.label}

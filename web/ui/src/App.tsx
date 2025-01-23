@@ -12,22 +12,25 @@ import {
 } from "@mantine/core";
 import { theme } from "./theme";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { NavbarNested } from "./components/NavbarNested/NavbarNested";
+import NavbarNested from "./components/NavbarNested/NavbarNested";
 import { ColorSchemeToggle } from "./components/ColorSchemeToggle/ColorSchemeToggle";
 import Controller from "./Controller/controller";
+import { useState } from "react";
 
 const queryClient = new QueryClient();
 
 export default function App() {
+  const [currentTab, setCurrentTab] = useState("");
+
   return (
     <QueryClientProvider client={queryClient}>
       <MantineProvider theme={theme}>
         <AppShell navbar={{ width: 300, breakpoint: "sm" }} padding="md">
           <AppShellNavbar>
-            <NavbarNested />
+            <NavbarNested setCurrentTab={setCurrentTab} />
           </AppShellNavbar>
           <AppShellMain>
-            <Controller navigationLinksGroup="" />
+            <Controller currentTab={currentTab} />
           </AppShellMain>
           <ColorSchemeToggle />
         </AppShell>

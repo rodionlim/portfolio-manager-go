@@ -39,3 +39,22 @@ func loggingMiddleware(next http.Handler, logger *logging.Logger) http.Handler {
 		logger.Info(fmt.Sprintf("Completed request: method=%s uri=%s client_ip=%s duration=%s", method, uri, clientIP, duration))
 	})
 }
+
+// corsMiddleware to add CORS headers
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight requests
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		// Call the next handler
+		next.ServeHTTP(w, r)
+	})
+}

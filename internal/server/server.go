@@ -65,10 +65,10 @@ func (s *Server) Start(ctx context.Context) error {
 	// Swagger registration
 	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
-	// Wrap mux with loggingMiddleware
-	loggedMux := loggingMiddleware(mux, logger)
+	// Wrap mux with loggingMiddleware and corsMiddleware
+	loggedCorsMux := loggingMiddleware(corsMiddleware(mux), logger)
 
 	logger.Info("Starting server on", fmt.Sprintf("http://%s", s.Addr))
 	logger.Info("Swagger UI available at", fmt.Sprintf("http://%s/swagger/index.html", s.Addr))
-	return http.ListenAndServe(s.Addr, loggedMux)
+	return http.ListenAndServe(s.Addr, loggedCorsMux)
 }

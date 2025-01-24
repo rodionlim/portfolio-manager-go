@@ -34,7 +34,6 @@ export function LinksGroup({
       href={link.link}
       key={link.label}
       onClick={(event) => {
-        console.log(link.link);
         event.preventDefault();
         setCurrentTab(link.link);
       }}

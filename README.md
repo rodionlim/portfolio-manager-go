@@ -111,6 +111,12 @@ curl -X POST http://localhost:8080/api/v1/blotter/import \
 curl -X GET http://localhost:8080/api/v1/blotter/export
 ```
 
+### View Blotter Trades
+
+```sh
+curl -X GET http://localhost:8080/api/v1/blotter/trade
+```
+
 ### View Positions
 
 ```sh
@@ -176,7 +182,7 @@ divWitholdingTaxIE: 0.15
 3. Support Crypto market data (Implemented)
 4. Support FX market data (Implemented)
 5. Support exporting/importing of leveldb for backup
-6. Add UI and convert to a monorepo
+6. Add UI component
 7. Refactor configuration to have sections
 
 ## Contributing

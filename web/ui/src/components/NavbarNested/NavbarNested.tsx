@@ -17,31 +17,33 @@ interface NavbarNestedProps {
 }
 
 const items = [
-  { label: "Positions", icon: IconCoin },
+  { label: "Positions", icon: IconCoin, link: "/positions" },
   {
     label: "Blotter",
     icon: IconDeviceLaptop,
     initiallyOpened: true,
     links: [
-      { label: "Fetch trades", link: "/" },
-      { label: "Add trade", link: "/add_trade" },
-      { label: "Update trade", link: "/" },
+      { label: "Fetch trades", link: "/blotter" },
+      { label: "Add trade", link: "/blotter/add_trade" },
+      { label: "Update trade", link: "/blotter/update_trades" },
     ],
   },
   {
     label: "Dividends",
     icon: IconCalendarStats,
+    link: "/dividends",
   },
   {
     label: "Reference Data",
     icon: IconBook,
     initiallyOpened: false,
     links: [
-      { label: "Fetch", link: "/" },
-      { label: "Add / Update", link: "/" },
+      { label: "Fetch", link: "/refdata" },
+      { label: "Add", link: "/refdata/add" },
+      { label: "UpdateAdd", link: "/refdata/update" },
     ],
   },
-  { label: "Settings", icon: IconAdjustments },
+  { label: "Settings", icon: IconAdjustments, link: "/settings" },
 ];
 
 const NavbarNested: React.FC<NavbarNestedProps> = ({ setCurrentTab }) => {

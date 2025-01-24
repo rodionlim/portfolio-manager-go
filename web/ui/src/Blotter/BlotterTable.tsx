@@ -55,8 +55,15 @@ const BlotterTable: React.FC = () => {
 
   return (
     <div>
-      <Button onClick={handleAddTrade}>Add Trade</Button>
-      <MantineReactTable columns={columns} data={trades} />
+      <Button mb="sm" onClick={handleAddTrade}>
+        Add Trade
+      </Button>
+      <MantineReactTable
+        columns={columns}
+        data={trades}
+        initialState={{ showGlobalFilter: true }}
+        state={{ density: "xs" }}
+      />
     </div>
   );
 };

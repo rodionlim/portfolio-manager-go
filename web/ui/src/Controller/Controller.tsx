@@ -1,5 +1,6 @@
 import React from "react";
 import BlotterTable from "../Blotter/BlotterTable";
+import BlotterForm from "../Blotter/BlotterForm";
 
 interface ControllerProps {
   currentTab: string;
@@ -10,8 +11,8 @@ const Controller: React.FC<ControllerProps> = ({ currentTab }) => {
     switch (currentTab) {
       case "/blotter":
         return <BlotterTable />;
-      case "/add_trade":
-        return <BlotterTable />;
+      case "/blotter/add_trade":
+        return <BlotterForm />;
       default:
         return <div>Select a valid action on the left navigation bar</div>;
     }

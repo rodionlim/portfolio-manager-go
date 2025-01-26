@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { ReferenceData } from "../types";
 
 interface ReferenceDataState {
-  data: any;
+  data: ReferenceData | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }

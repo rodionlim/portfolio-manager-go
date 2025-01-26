@@ -23,7 +23,8 @@
     "mantine-react-table": "^2.0.0-beta.7",
     "react": "^18.2",
     "react-dom": "^18.2",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^6.28.2"
   },
   "devDependencies": {
     "@types/react": "^18.2",

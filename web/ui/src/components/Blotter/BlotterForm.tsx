@@ -11,7 +11,6 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { DatePickerInput } from "@mantine/dates";
-import { useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { refDataByAssetClass } from "../../utils/referenceData";

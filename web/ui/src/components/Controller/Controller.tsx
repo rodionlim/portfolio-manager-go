@@ -1,24 +1,20 @@
 import React from "react";
+import { Routes, Route } from "react-router-dom";
+
 import BlotterTable from "../Blotter/BlotterTable";
 import BlotterForm from "../Blotter/BlotterForm";
 
-interface ControllerProps {
-  currentTab: string;
-}
-
-const Controller: React.FC<ControllerProps> = ({ currentTab }) => {
-  const renderComponent = () => {
-    switch (currentTab) {
-      case "/blotter":
-        return <BlotterTable />;
-      case "/blotter/add_trade":
-        return <BlotterForm />;
-      default:
-        return <div>Select a valid action on the left navigation bar</div>;
-    }
-  };
-
-  return <div>{renderComponent()}</div>;
+const Controller: React.FC = () => {
+  return (
+    <Routes>
+      <Route path="/blotter/add_trade" element={<BlotterForm />} />
+      <Route path="/blotter" element={<BlotterTable />} />
+      <Route
+        path="/*"
+        element={<div>Select a valid action on the left navigation bar</div>}
+      />
+    </Routes>
+  );
 };
 
 export default Controller;

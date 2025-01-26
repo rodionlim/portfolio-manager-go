@@ -12,10 +12,6 @@ import { Logo } from "./Logo";
 import classes from "./NavbarNested.module.css";
 import React from "react";
 
-interface NavbarNestedProps {
-  setCurrentTab: (value: string) => void;
-}
-
 const items = [
   { label: "Positions", icon: IconCoin, link: "/positions" },
   {
@@ -46,10 +42,8 @@ const items = [
   { label: "Settings", icon: IconAdjustments, link: "/settings" },
 ];
 
-const NavbarNested: React.FC<NavbarNestedProps> = ({ setCurrentTab }) => {
-  const links = items.map((item) => (
-    <LinksGroup {...item} key={item.label} setCurrentTab={setCurrentTab} />
-  ));
+const NavbarNested: React.FC = () => {
+  const links = items.map((item) => <LinksGroup {...item} key={item.label} />);
 
   return (
     <nav className={classes.navbar}>

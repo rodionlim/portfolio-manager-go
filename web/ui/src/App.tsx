@@ -4,7 +4,8 @@ import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css"; // mantine date picker styles
 import "mantine-react-table/styles.css";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { BrowserRouter as Router } from "react-router-dom";
 import { Provider, useDispatch } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -26,13 +27,14 @@ const queryClient = new QueryClient();
 export default function AppWrapper() {
   return (
     <Provider store={store}>
-      <App />
+      <Router>
+        <App />
+      </Router>
     </Provider>
   );
 }
 
 function App() {
-  const [currentTab, setCurrentTab] = useState("");
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
@@ -45,10 +47,10 @@ function App() {
         <MantineProvider theme={theme}>
           <AppShell navbar={{ width: 300, breakpoint: "sm" }} padding="md">
             <AppShellNavbar>
-              <NavbarNested setCurrentTab={setCurrentTab} />
+              <NavbarNested />
             </AppShellNavbar>
             <AppShellMain>
-              <Controller currentTab={currentTab} />
+              <Controller />
             </AppShellMain>
             <ColorSchemeToggle />
           </AppShell>

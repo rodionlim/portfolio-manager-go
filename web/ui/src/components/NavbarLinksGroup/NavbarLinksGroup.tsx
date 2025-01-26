@@ -1,21 +1,14 @@
 import { useState } from "react";
 import { IconChevronRight } from "@tabler/icons-react";
-import {
-  Box,
-  Collapse,
-  Group,
-  Text,
-  ThemeIcon,
-  UnstyledButton,
-} from "@mantine/core";
+import { Box, Collapse, Group, ThemeIcon, UnstyledButton } from "@mantine/core";
 import classes from "./NavbarLinksGroup.module.css";
+import { Link } from "react-router-dom";
 
 interface LinksGroupProps {
   icon: React.FC<any>;
   label: string;
   initiallyOpened?: boolean;
   links?: { label: string; link: string }[];
-  setCurrentTab: (value: string) => void;
 }
 
 export function LinksGroup({
@@ -23,23 +16,13 @@ export function LinksGroup({
   label,
   initiallyOpened,
   links,
-  setCurrentTab,
 }: LinksGroupProps) {
   const hasLinks = Array.isArray(links);
   const [opened, setOpened] = useState(initiallyOpened || false);
   const items = (hasLinks ? links : []).map((link) => (
-    <Text<"a">
-      component="a"
-      className={classes.link}
-      href={link.link}
-      key={link.label}
-      onClick={(event) => {
-        event.preventDefault();
-        setCurrentTab(link.link);
-      }}
-    >
+    <Link className={classes.link} to={link.link} key={link.label}>
       {link.label}
-    </Text>
+    </Link>
   ));
 
   return (

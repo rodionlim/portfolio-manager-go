@@ -5,7 +5,7 @@ import "@mantine/dates/styles.css"; // mantine date picker styles
 import "mantine-react-table/styles.css";
 
 import { useEffect, useState } from "react";
-import { Provider, useDispatch, useSelector } from "react-redux";
+import { Provider, useDispatch } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   MantineProvider,
@@ -15,7 +15,7 @@ import {
 } from "@mantine/core";
 
 import { theme } from "./theme";
-import store, { RootState, AppDispatch } from "./store";
+import store, { AppDispatch } from "./store";
 import { fetchReferenceData } from "./slices/referenceDataSlice";
 import NavbarNested from "./components/NavbarNested/NavbarNested";
 import { ColorSchemeToggle } from "./components/ColorSchemeToggle/ColorSchemeToggle";
@@ -34,15 +34,10 @@ export default function AppWrapper() {
 function App() {
   const [currentTab, setCurrentTab] = useState("");
   const dispatch = useDispatch<AppDispatch>();
-  const referenceData = useSelector(
-    (state: RootState) => state.referenceData.data
-  );
 
   useEffect(() => {
-    if (!referenceData) {
-      dispatch(fetchReferenceData());
-    }
-  }, [dispatch, referenceData]);
+    dispatch(fetchReferenceData());
+  }, [dispatch]);
 
   return (
     <Provider store={store}>

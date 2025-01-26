@@ -19,7 +19,7 @@ import store, { RootState, AppDispatch } from "./store";
 import { fetchReferenceData } from "./slices/referenceDataSlice";
 import NavbarNested from "./components/NavbarNested/NavbarNested";
 import { ColorSchemeToggle } from "./components/ColorSchemeToggle/ColorSchemeToggle";
-import Controller from "./Controller/Controller";
+import Controller from "./components/Controller/Controller";
 
 const queryClient = new QueryClient();
 

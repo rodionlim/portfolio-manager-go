@@ -65,6 +65,7 @@ const BlotterTable: React.FC = () => {
         data={trades}
         initialState={{ showGlobalFilter: true }}
         state={{ density: "xs" }}
+        enableRowSelection={true}
       />
     </div>
   );

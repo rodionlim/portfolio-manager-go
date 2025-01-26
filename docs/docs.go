@@ -35,7 +35,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Failed to export trades",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/blotter.ErrorResponse"
                         }
                     }
                 }
@@ -73,13 +73,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Failed to get file from request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/blotter.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to import trades",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/blotter.ErrorResponse"
                         }
                     }
                 }
@@ -140,13 +140,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request payload",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/blotter.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to add trade",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/blotter.ErrorResponse"
                         }
                     }
                 }
@@ -378,6 +378,14 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "blotter.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "blotter.Trade": {
             "type": "object",
             "required": [

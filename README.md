@@ -81,7 +81,7 @@ portfolio-manager/
 
 All API calls are documented (OAS) under `http://localhost:8080/swagger/index.html`
 
-### Add Asset
+### Add Asset to Blotter
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/blotter/trade \

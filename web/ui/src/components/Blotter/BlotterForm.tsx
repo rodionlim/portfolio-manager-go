@@ -41,6 +41,7 @@ export default function BlotterForm() {
     },
     transformValues: (values) => ({
       ...values,
+      ticker: values.ticker.toUpperCase(),
       date: values.date.toISOString().split(".")[0] + "Z",
     }),
   });
@@ -63,39 +64,29 @@ export default function BlotterForm() {
         side: values.tradeType ? "sell" : "buy",
       }),
     })
-      .then(
-        (resp) => resp.json(),
-        (error) => {
-          console.error("error", error);
-          notifications.show({
-            color: "red",
-            title: "Error",
-            message: "Unable to add trade to the blotter",
+      .then((resp) => {
+        if (!resp.ok) {
+          return resp.json().then((error) => {
+            throw new Error(error.message || "An error occurred");
           });
-          throw new Error(
-            "An error occurred while submitting trade to blotter"
-          );
         }
-      )
-      .then(
-        (data) => {
-          notifications.show({
-            title: "Trade successfully added",
-            message: `Trade [${data.TradeID}] was successfully added to the blotter`,
-          });
-        },
-        (error) => {
-          console.error("error", error);
-          notifications.show({
-            color: "red",
-            title: "Error",
-            message: "Unable to add trade to the blotter",
-          });
-          throw new Error(
-            "An error occurred while submitting trade to blotter"
-          );
-        }
-      );
+        return resp.json();
+      })
+      .then((data) => {
+        notifications.show({
+          title: "Trade successfully added",
+          message: `Trade [${data.TradeID}] was successfully added to the blotter`,
+        });
+      })
+      .catch((error) => {
+        console.error(error);
+        notifications.show({
+          color: "red",
+          title: "Error",
+          message: `Unable to add trade to the blotter\n ${error}`,
+        });
+        throw new Error("An error occurred while submitting trade to blotter");
+      });
   }
 
   const handleSubmit = (
@@ -103,7 +94,7 @@ export default function BlotterForm() {
   ) => {
     localStorage.setItem("defaultTrader", values.trader);
     localStorage.setItem("defaultBroker", values.broker);
-    addTrade(values);
+    addTrade(values); // TODO: add error handling
   };
 
   return (

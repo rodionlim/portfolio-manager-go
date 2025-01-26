@@ -1,5 +1,10 @@
 basePath: /
 definitions:
+  blotter.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
   blotter.Trade:
     properties:
       Account:
@@ -123,7 +128,7 @@ paths:
         "500":
           description: Failed to export trades
           schema:
-            type: string
+            $ref: '#/definitions/blotter.ErrorResponse'
       summary: Export trades to CSV
       tags:
       - trades
@@ -148,11 +153,11 @@ paths:
         "400":
           description: Failed to get file from request
           schema:
-            type: string
+            $ref: '#/definitions/blotter.ErrorResponse'
         "500":
           description: Failed to import trades
           schema:
-            type: string
+            $ref: '#/definitions/blotter.ErrorResponse'
       summary: Import trades from CSV
       tags:
       - trades
@@ -192,11 +197,11 @@ paths:
         "400":
           description: Invalid request payload
           schema:
-            type: string
+            $ref: '#/definitions/blotter.ErrorResponse'
         "500":
           description: Failed to add trade
           schema:
-            type: string
+            $ref: '#/definitions/blotter.ErrorResponse'
       summary: Add a new trade
       tags:
       - trades

@@ -2,6 +2,7 @@
 
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css"; // mantine date picker styles
+import "@mantine/notifications/styles.css";
 import "mantine-react-table/styles.css";
 
 import { useEffect } from "react";
@@ -21,6 +22,7 @@ import { fetchReferenceData } from "./slices/referenceDataSlice";
 import NavbarNested from "./components/NavbarNested/NavbarNested";
 import { ColorSchemeToggle } from "./components/ColorSchemeToggle/ColorSchemeToggle";
 import Controller from "./components/Controller/Controller";
+import { Notifications } from "@mantine/notifications";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +47,7 @@ function App() {
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <MantineProvider theme={theme}>
+          <Notifications />
           <AppShell navbar={{ width: 300, breakpoint: "sm" }} padding="md">
             <AppShellNavbar>
               <NavbarNested />

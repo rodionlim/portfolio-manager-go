@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 
 interface Trade {
   TradeID: number;
+  TradeDate: string;
   Ticker: string;
   Account: string;
   // assetClass: string; // to add back reference data
@@ -38,6 +39,7 @@ const BlotterTable: React.FC = () => {
   const columns = useMemo<MRT_ColumnDef<Trade>[]>(
     () => [
       { accessorKey: "TradeID", header: "Trade ID" },
+      { accessorKey: "TradeDate", header: "Date" },
       { accessorKey: "Ticker", header: "Ticker" },
       { accessorKey: "Account", header: "Account" },
       { accessorKey: "Quantity", header: "Quantity" },

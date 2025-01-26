@@ -38,9 +38,9 @@ const items = [
     icon: IconBook,
     initiallyOpened: false,
     links: [
-      { label: "Fetch", link: "/refdata" },
-      { label: "Add", link: "/refdata/add" },
-      { label: "UpdateAdd", link: "/refdata/update" },
+      { label: "Fetch data", link: "/refdata" },
+      { label: "Add data", link: "/refdata/add" },
+      { label: "Update data", link: "/refdata/update" },
     ],
   },
   { label: "Settings", icon: IconAdjustments, link: "/settings" },

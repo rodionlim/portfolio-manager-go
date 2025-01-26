@@ -17,8 +17,9 @@ import { RootState } from "../../store";
 import { refDataByAssetClass } from "../../utils/referenceData";
 
 export default function BlotterForm() {
-  const defaultTrader = localStorage.getItem("defaultTrader") || "traderA";
-  const defaultBroker = localStorage.getItem("defaultBroker") || "dbs";
+  const defaultTrader = localStorage.getItem("defaultTrader") || "TraderA";
+  const defaultBroker = localStorage.getItem("defaultBroker") || "DBS";
+  const defaultAccount = localStorage.getItem("defaultAccount") || "CDP";
 
   const refData = useSelector((state: RootState) => state.referenceData.data);
 
@@ -29,6 +30,7 @@ export default function BlotterForm() {
       ticker: "",
       trader: defaultTrader,
       broker: defaultBroker,
+      account: defaultAccount,
       qty: 0,
       price: 0,
       tradeType: false, // false for BUY, true for SELL
@@ -36,6 +38,7 @@ export default function BlotterForm() {
     validate: {
       date: (value) => !value && "Date is required",
       ticker: (value) => value.length < 1 && "Ticker is required",
+      account: (value) => value.length < 1 && "Account is required",
       qty: (value) => value <= 0 && "Quantity must be greater than 0",
       price: (value) => value <= 0 && "Price must be greater than 0",
     },
@@ -59,6 +62,7 @@ export default function BlotterForm() {
         ticker: values.ticker,
         trader: values.trader,
         broker: values.broker,
+        account: values.account,
         quantity: values.qty,
         price: values.price,
         side: values.tradeType ? "sell" : "buy",
@@ -76,6 +80,7 @@ export default function BlotterForm() {
         notifications.show({
           title: "Trade successfully added",
           message: `Trade [${data.TradeID}] was successfully added to the blotter`,
+          autoClose: 10000,
         });
       })
       .catch((error) => {
@@ -123,16 +128,23 @@ export default function BlotterForm() {
           <TextInput
             withAsterisk
             label="Trader"
-            placeholder="trader to be added, e.g. trader A"
+            placeholder="trader to be added, e.g. Trader A"
             key={form.key("trader")}
             {...form.getInputProps("trader")}
           />
           <TextInput
             withAsterisk
             label="Broker"
-            placeholder="broker to be added, e.g. dbs"
+            placeholder="broker to be added, e.g. DBS"
             key={form.key("broker")}
             {...form.getInputProps("broker")}
+          />
+          <TextInput
+            withAsterisk
+            label="Account"
+            placeholder="account to be added, e.g. CDP"
+            key={form.key("account")}
+            {...form.getInputProps("account")}
           />
           <NumberInput
             withAsterisk

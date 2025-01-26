@@ -89,8 +89,9 @@ curl -X POST http://localhost:8080/api/v1/blotter/trade \
     -d '{
         "ticker": "AAPL",
         "side": "buy",
-        "broker": "dbs",
-        "trader": "traderA",
+        "broker": "DBS",
+        "trader": "TraderA",
+        "account": "CDP",
         "quantity": 10,
         "price": 150.00,
         "type": "buy",

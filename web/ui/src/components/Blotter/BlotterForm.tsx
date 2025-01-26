@@ -9,6 +9,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import { DatePickerInput } from "@mantine/dates";
 import { useSelector } from "react-redux";
@@ -38,12 +39,71 @@ export default function BlotterForm() {
       qty: (value) => value <= 0 && "Quantity must be greater than 0",
       price: (value) => value <= 0 && "Price must be greater than 0",
     },
+    transformValues: (values) => ({
+      ...values,
+      date: values.date.toISOString().split(".")[0] + "Z",
+    }),
   });
 
-  const handleSubmit = (values: typeof form.values) => {
+  function addTrade(
+    values: Omit<typeof form.values, "date"> & { date: string }
+  ) {
+    return fetch("http://localhost:8080/api/v1/blotter/trade", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        tradeDate: values.date, // need to convert to 2024-12-09T00:00:00Z
+        ticker: values.ticker,
+        trader: values.trader,
+        broker: values.broker,
+        quantity: values.qty,
+        price: values.price,
+        side: values.tradeType ? "sell" : "buy",
+      }),
+    })
+      .then(
+        (resp) => resp.json(),
+        (error) => {
+          console.error("error", error);
+          notifications.show({
+            color: "red",
+            title: "Error",
+            message: "Unable to add trade to the blotter",
+          });
+          throw new Error(
+            "An error occurred while submitting trade to blotter"
+          );
+        }
+      )
+      .then(
+        (data) => {
+          notifications.show({
+            title: "Trade successfully added",
+            message: `Trade [${data.TradeID}] was successfully added to the blotter`,
+          });
+        },
+        (error) => {
+          console.error("error", error);
+          notifications.show({
+            color: "red",
+            title: "Error",
+            message: "Unable to add trade to the blotter",
+          });
+          throw new Error(
+            "An error occurred while submitting trade to blotter"
+          );
+        }
+      );
+  }
+
+  const handleSubmit = (
+    values: Omit<typeof form.values, "date"> & { date: string }
+  ) => {
     localStorage.setItem("defaultTrader", values.trader);
     localStorage.setItem("defaultBroker", values.broker);
-    console.log(values);
+    addTrade(values);
   };
 
   return (

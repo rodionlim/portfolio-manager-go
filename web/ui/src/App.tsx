@@ -48,7 +48,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <MantineProvider theme={theme}>
           <Notifications />
-          <AppShell navbar={{ width: 300, breakpoint: "sm" }} padding="md">
+          <AppShell navbar={{ width: 300, breakpoint: "sm" }} padding="lg">
             <AppShellNavbar>
               <NavbarNested />
             </AppShellNavbar>

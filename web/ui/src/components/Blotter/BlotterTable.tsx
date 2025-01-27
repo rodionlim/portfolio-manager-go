@@ -1,7 +1,11 @@
 // filepath: /Users/rodionlim/workspace/portfolio-manager-go/web/ui/src/components/BlotterTable.tsx
 import React, { useMemo } from "react";
-import { Button } from "@mantine/core";
-import { MantineReactTable, MRT_ColumnDef } from "mantine-react-table";
+import { Box, Button } from "@mantine/core";
+import {
+  MantineReactTable,
+  MRT_ColumnDef,
+  useMantineReactTable,
+} from "mantine-react-table";
 import { useQuery } from "@tanstack/react-query";
 
 interface Trade {
@@ -48,7 +52,37 @@ const BlotterTable: React.FC = () => {
     []
   );
 
+  const table = useMantineReactTable({
+    columns,
+    data: trades,
+    initialState: { showGlobalFilter: true },
+    state: { density: "xs" },
+    enableRowSelection: true,
+    positionToolbarAlertBanner: "bottom",
+    renderTopToolbarCustomActions: ({ table }) => (
+      <Box style={{ display: "flex", gap: "16px", padding: "4px" }}>
+        <Button color="teal" onClick={handleAddTrade} variant="filled">
+          Add Trade
+        </Button>
+        <Button
+          color="red"
+          disabled={!table.getIsSomeRowsSelected()}
+          onClick={handleDeleteTrades}
+          variant="filled"
+        >
+          Delete Selected Trades
+        </Button>
+      </Box>
+    ),
+  });
+
   const handleAddTrade = () => {
+    alert("Add Trade");
+    refetch();
+  };
+
+  const handleDeleteTrades = () => {
+    alert("Delete Selected Trades");
     refetch();
   };
 
@@ -57,16 +91,7 @@ const BlotterTable: React.FC = () => {
 
   return (
     <div>
-      <Button mb="sm" onClick={handleAddTrade}>
-        Add Trade
-      </Button>
-      <MantineReactTable
-        columns={columns}
-        data={trades}
-        initialState={{ showGlobalFilter: true }}
-        state={{ density: "xs" }}
-        enableRowSelection={true}
-      />
+      <MantineReactTable table={table} />
     </div>
   );
 };

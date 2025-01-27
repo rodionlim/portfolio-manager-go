@@ -6,8 +6,8 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 
 - Value assets based on current market prices
 - Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com) with local cache
-- Output portfolio blotter data in a CSV file for easy access and manipulation
-- Import / Export portfolio blotter data from CSV file for easy migration to other portfolio systems
+- Import / Export portfolio blotter data using CSV file for easy migration to other portfolio systems, local access and manipulation outside of the UI
+- Export ticker reference data in yaml format
 - Store portfolio, reference, dividends and coupon data in leveldb for persistence
 - Display detailed information for individual and aggregated assets
 - OpenAPI compliant for easy integration with other systems
@@ -97,6 +97,32 @@ curl -X POST http://localhost:8080/api/v1/blotter/trade \
         "type": "buy",
         "tradeDate": "2024-12-09T00:00:00Z"
     }'
+```
+
+### Update Asset in Blotter
+
+```sh
+curl -X PUT http://localhost:8080/api/v1/blotter/trade \
+    -H "Content-Type: application/json" \
+    -d '{
+        "ticker": "AAPL",
+        "side": "buy",
+        "broker": "DBS",
+        "trader": "TraderA",
+        "account": "CDP",
+        "quantity": 10,
+        "price": 200.00,
+        "type": "buy",
+        "tradeDate": "2024-12-09T00:00:00Z"
+    }'
+```
+
+### Delete Assets from Blotter
+
+```sh
+curl -X DELETE http://localhost:8080/api/v1/blotter/trade \
+    -H "Content-Type: application/json" \
+    -d '["61570b49-2adb-4b99-be20-d14001e761a9"]'
 ```
 
 ### Import Trades from CSV (for migrating into portfolio-manager)

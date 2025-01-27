@@ -144,6 +144,53 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "description": "Delete all trades by ids from the blotter",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "trades"
+                ],
+                "summary": "Delete all trades by ids",
+                "parameters": [
+                    {
+                        "description": "Trade IDs",
+                        "name": "ids",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/blotter.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete trades",
+                        "schema": {
+                            "$ref": "#/definitions/blotter.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/dividends": {

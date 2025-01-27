@@ -10,6 +10,7 @@ import (
 
 // TradeRequest represents the request payload for a trade.
 type TradeRequest struct {
+	Id        string  `json:"id"`
 	TradeDate string  `json:"tradeDate"`
 	Ticker    string  `json:"ticker"`
 	Side      string  `json:"side"`
@@ -77,6 +78,91 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(trade)
+	}
+}
+
+// HandleTradeUpdate handles the updating of trades in the blotter service.
+// @Summary Update a trade
+// @Description Update a trade in the blotter
+// @Tags trades
+// @Accept  json
+// @Produce  json
+// @Param   trade  body  TradeRequest  true  "Trade Request"
+// @Success 201 {object} Trade
+// @Failure 400 {object} ErrorResponse "Invalid request payload"
+// @Failure 500 {object} ErrorResponse "Failed to update trade"
+// @Router /api/v1/blotter/trade [put]
+func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var tradeRequest TradeRequest
+		err := json.NewDecoder(r.Body).Decode(&tradeRequest)
+		if err != nil {
+			writeJSONError(w, "Invalid request payload", http.StatusBadRequest)
+			return
+		}
+
+		tradeDate, err := time.Parse(time.RFC3339, tradeRequest.TradeDate)
+		if err != nil {
+			writeJSONError(w, "Invalid trade date format", http.StatusBadRequest)
+			return
+		}
+
+		trade, err := NewTradeWithID(
+			tradeRequest.Id,
+			tradeRequest.Side,
+			tradeRequest.Quantity,
+			tradeRequest.Ticker,
+			tradeRequest.Trader,
+			tradeRequest.Broker,
+			tradeRequest.Account,
+			tradeRequest.Price,
+			tradeRequest.Yield,
+			tradeDate)
+		if err != nil {
+			writeJSONError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		err = blotter.UpdateTrade(*trade)
+		if err != nil {
+			logging.GetLogger().Error("Failed to update trade", err)
+			writeJSONError(w, "Failed to update trade", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(trade)
+	}
+}
+
+// HandleTradeDelete handles the deletion of trades from the blotter service
+// @Summary Delete all trades by ids
+// @Description Delete all trades by ids from the blotter
+// @Tags trades
+// @Accept  json
+// @Produce  json
+// @Param   ids  body  []int  true  "Trade IDs"
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} ErrorResponse "Invalid request payload"
+// @Failure 500 {object} ErrorResponse "Failed to delete trades"
+// @Router /api/v1/blotter/trade [delete]
+func HandleTradeDelete(blotter *TradeBlotter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var ids []string
+		err := json.NewDecoder(r.Body).Decode(&ids)
+		if err != nil {
+			writeJSONError(w, "Invalid request payload", http.StatusBadRequest)
+			return
+		}
+
+		err = blotter.RemoveTrades(ids)
+		if err != nil {
+			logging.GetLogger().Error("Failed to delete trades", err)
+			writeJSONError(w, "Failed to delete trades", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -164,6 +250,10 @@ func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 			HandleTradePost(blotter).ServeHTTP(w, r)
 		case http.MethodGet:
 			HandleTradeGet(blotter).ServeHTTP(w, r)
+		case http.MethodDelete:
+			HandleTradeDelete(blotter).ServeHTTP(w, r)
+		case http.MethodPut:
+			HandleTradeUpdate(blotter).ServeHTTP(w, r)
 		default:
 			writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

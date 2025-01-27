@@ -9,6 +9,7 @@ import (
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -139,6 +140,61 @@ func (b *TradeBlotter) addTrade(trade Trade, isPreLoadFromDB bool) error {
 	}
 
 	return nil
+}
+
+func (b *TradeBlotter) UpdateTrade(trade Trade) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	// Check if the trade exists
+	t, exists := b.tradesByID[trade.TradeID]
+	originalTrade := *t // will be deleted, copy it out first
+
+	if !exists {
+		return errors.New("trade not found")
+	}
+
+	// Remove trade from the trades slice
+	for i, t := range b.trades {
+		if t.TradeID == trade.TradeID {
+			b.trades = append(b.trades[:i], b.trades[i+1:]...)
+			break
+		}
+	}
+
+	// Remove trade from the indexes
+	delete(b.tradesByID, trade.TradeID)
+	b.tradesByTicker[trade.Ticker] = removeTradeFromSlice(b.tradesByTicker[trade.Ticker], trade.TradeID)
+
+	// Add trade to the trades slice and indexes
+	b.trades = append(b.trades, trade)
+	b.tradesByID[trade.TradeID] = &trade
+	b.tradesByTicker[trade.Ticker] = append(b.tradesByTicker[trade.Ticker], trade)
+
+	// Publish an update trade event
+	b.PublishUpdateTradeEvent(trade, originalTrade)
+
+	return nil
+}
+
+func (b *TradeBlotter) RemoveTrades(tradeIDs []string) error {
+	var err error
+	errorCount := 0
+	var failedTradeIDs []string
+
+	for _, tradeID := range tradeIDs {
+		if e := b.RemoveTrade(tradeID); e != nil {
+			logging.GetLogger().Errorf("Failed to remove trade with ID %s, err %v", tradeID, e)
+			errorCount++
+			failedTradeIDs = append(failedTradeIDs, tradeID)
+		}
+	}
+
+	if errorCount > 0 {
+		return fmt.Errorf("failed to remove %d trades: %s", errorCount, strings.Join(failedTradeIDs, ", "))
+	}
+
+	return err
 }
 
 // RemoveTrade removes a trade from the blotter and deletes it from the database.
@@ -291,6 +347,30 @@ func NewTrade(side string, quantity float64, ticker, trader, broker, account str
 
 	trade := Trade{
 		TradeID:   uuid.New().String(),
+		TradeDate: tradeDate.Format(time.RFC3339),
+		Ticker:    ticker,
+		Side:      side,
+		Quantity:  quantity,
+		Price:     price,
+		Yield:     yield,
+		Trader:    trader,
+		Broker:    broker,
+		Account:   account,
+	}
+
+	err := validateTrade(trade)
+	return &trade, err
+}
+
+// NewTradeWithID creates a new Trade instance with a given trade ID, mainly for updating purposes
+func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trader, broker, account string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
+
+	if !isValidSide(side) {
+		return nil, errors.New("side must be either 'buy' or 'sell'")
+	}
+
+	trade := Trade{
+		TradeID:   tradeID,
 		TradeDate: tradeDate.Format(time.RFC3339),
 		Ticker:    ticker,
 		Side:      side,

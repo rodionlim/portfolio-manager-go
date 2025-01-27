@@ -144,7 +144,7 @@ func TestEventPublishingOnAddTrade(t *testing.T) {
 
 	eventPublished := false
 	blotterSvc.Subscribe(blotter.NewTradeEvent, event.NewEventHandler(func(handler event.Event) {
-		if handler.Data.(blotter.NewTradeEventPayload).Trade.TradeID == trade.TradeID {
+		if handler.Data.(blotter.TradeEventPayload).Trade.TradeID == trade.TradeID {
 			eventPublished = true
 		}
 	}))
@@ -171,7 +171,7 @@ func TestEventPublishingOnRemoveTrade(t *testing.T) {
 
 	eventPublished := false
 	blotterSvc.Subscribe(blotter.RemoveTradeEvent, event.NewEventHandler(func(handler event.Event) {
-		if handler.Data.(blotter.NewTradeEventPayload).Trade.TradeID == trade.TradeID {
+		if handler.Data.(blotter.TradeEventPayload).Trade.TradeID == trade.TradeID {
 			eventPublished = true
 		}
 	}))

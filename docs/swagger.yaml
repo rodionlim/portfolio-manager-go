@@ -162,6 +162,37 @@ paths:
       tags:
       - trades
   /api/v1/blotter/trade:
+    delete:
+      consumes:
+      - application/json
+      description: Delete all trades by ids from the blotter
+      parameters:
+      - description: Trade IDs
+        in: body
+        name: ids
+        required: true
+        schema:
+          items:
+            type: integer
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/blotter.ErrorResponse'
+        "500":
+          description: Failed to delete trades
+          schema:
+            $ref: '#/definitions/blotter.ErrorResponse'
+      summary: Delete all trades by ids
+      tags:
+      - trades
     get:
       description: Retrieve all trades from the blotter
       produces:

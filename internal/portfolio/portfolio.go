@@ -106,12 +106,42 @@ func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 	}
 
 	blotterSvc.Subscribe(blotter.NewTradeEvent, event.NewEventHandler(func(e event.Event) {
-		trade := e.Data.(blotter.NewTradeEventPayload).Trade
-		p.logger.Infof("Received new trade event. tradeID: %s ticker: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.TradeDate)
+		trade := e.Data.(blotter.TradeEventPayload).Trade
+		p.logger.Infof("Received 'NEW' trade event. tradeID: %s ticker: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.TradeDate)
+		p.updatePosition(&trade)
+	}))
+
+	blotterSvc.Subscribe(blotter.RemoveTradeEvent, event.NewEventHandler(func(e event.Event) {
+		trade := e.Data.(blotter.TradeEventPayload).Trade
+		p.logger.Infof("Received 'REMOVE' trade event. tradeID: %s ticker: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.TradeDate)
+
+		reverseTradeSide(&trade)
+
+		p.updatePosition(&trade)
+	}))
+
+	blotterSvc.Subscribe(blotter.UpdateTradeEvent, event.NewEventHandler(func(e event.Event) {
+		trade := e.Data.(blotter.TradeEventPayload).Trade
+		originalTrade := e.Data.(blotter.TradeEventPayload).OriginalTrade
+		p.logger.Infof("Received 'UPDATE' trade event. tradeID: %s ticker: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.TradeDate)
+
+		reverseTradeSide(&originalTrade)
+
+		p.updatePosition(&originalTrade)
 		p.updatePosition(&trade)
 	}))
 
 	p.logger.Info("Subscribed to blotter service")
+}
+
+// reverseTradeSide reverses the trade side in preparation for a trade revert
+// (there is an implicit assumption that all removal events have been validated before that the original trade exists, implemented in blotter svc)
+func reverseTradeSide(trade *blotter.Trade) {
+	if trade.Side == blotter.TradeSideSell {
+		trade.Side = blotter.TradeSideBuy
+	} else {
+		trade.Side = blotter.TradeSideSell
+	}
 }
 
 func (p *Portfolio) updatePositionFromDb(position *Position) error {

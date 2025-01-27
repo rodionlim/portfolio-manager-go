@@ -23,6 +23,7 @@ func createTestPortfolio() (*Portfolio, *mocks.MockDatabase) {
 	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*rdata.TickerReference")).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
+	mockDB.On("Delete", mock.Anything, mock.Anything).Return(nil)
 
 	rdataMgr, _ := rdata.NewManager(mockDB, "")
 	mdataMgr, _ := mdata.NewManager(mockDB, rdataMgr)
@@ -200,7 +201,86 @@ func TestSubscribeToBlotter(t *testing.T) {
 	position, err := p.GetPosition("trader1", "AAPL")
 	assert.NoError(t, err)
 	assert.NotNil(t, position)
-	assert.Equal(t, float64(100), position.Qty)
+	assert.Equal(t, 100.0, position.Qty)
+}
+
+func TestSubscribeToBlotterWithTradeDeletion(t *testing.T) {
+	p, mockDB := createTestPortfolio()
+	blotterSvc := blotter.NewBlotter(mockDB)
+
+	p.SubscribeToBlotter(blotterSvc)
+
+	trade, _ := blotter.NewTrade(
+		blotter.TradeSideBuy,
+		100,
+		"AAPL",
+		"trader1",
+		"broker1",
+		"cdp",
+		150.0,
+		0.0,
+		time.Now(),
+	)
+
+	err := blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	err = blotterSvc.RemoveTrades([]string{trade.TradeID})
+	assert.NoError(t, err)
+
+	// Give some time for the event to be processed
+	time.Sleep(100 * time.Millisecond)
+
+	position, err := p.GetPosition("trader1", "AAPL")
+	assert.NoError(t, err)
+	assert.Equal(t, float64(0), position.Qty)
+	assert.Equal(t, float64(0), position.AvgPx)
+}
+
+func TestSubscribeToBlotterWithTradeUpdate(t *testing.T) {
+	p, mockDB := createTestPortfolio()
+	blotterSvc := blotter.NewBlotter(mockDB)
+
+	p.SubscribeToBlotter(blotterSvc)
+
+	trade, _ := blotter.NewTrade(
+		blotter.TradeSideBuy,
+		100,
+		"AAPL",
+		"trader1",
+		"broker1",
+		"cdp",
+		150.0,
+		0.0,
+		time.Now(),
+	)
+
+	err := blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	trade, _ = blotter.NewTradeWithID(
+		trade.TradeID,
+		blotter.TradeSideBuy,
+		200,
+		"AAPL",
+		"trader1",
+		"broker1",
+		"cdp",
+		150.0,
+		0.0,
+		time.Now(),
+	)
+
+	err = blotterSvc.UpdateTrade(*trade)
+	assert.NoError(t, err)
+
+	// Give some time for the event to be processed
+	time.Sleep(100 * time.Millisecond)
+
+	position, err := p.GetPosition("trader1", "AAPL")
+	assert.NoError(t, err)
+	assert.Equal(t, 200.0, position.Qty)
+	assert.Equal(t, 150.0, position.AvgPx)
 }
 
 // Helper function to handle error in test data setup

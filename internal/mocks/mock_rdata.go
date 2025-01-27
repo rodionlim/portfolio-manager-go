@@ -54,3 +54,7 @@ func (m *MockReferenceManager) GetTicker(id string) (rdata.TickerReference, erro
 func (m *MockReferenceManager) GetAllTickers() (map[string]rdata.TickerReference, error) {
 	return m.Tickers, nil
 }
+
+func (m *MockReferenceManager) ExportToYamlBytes() ([]byte, error) {
+	return []byte{}, nil
+}

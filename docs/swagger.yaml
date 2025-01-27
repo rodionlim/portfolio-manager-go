@@ -56,6 +56,8 @@ definitions:
         type: string
       broker:
         type: string
+      id:
+        type: string
       price:
         type: number
       quantity:
@@ -236,6 +238,35 @@ paths:
       summary: Add a new trade
       tags:
       - trades
+    put:
+      consumes:
+      - application/json
+      description: Update a trade in the blotter
+      parameters:
+      - description: Trade Request
+        in: body
+        name: trade
+        required: true
+        schema:
+          $ref: '#/definitions/blotter.TradeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/blotter.Trade'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/blotter.ErrorResponse'
+        "500":
+          description: Failed to update trade
+          schema:
+            $ref: '#/definitions/blotter.ErrorResponse'
+      summary: Update a trade
+      tags:
+      - trades
   /api/v1/dividends:
     post:
       consumes:
@@ -383,6 +414,22 @@ paths:
           description: Internal Server Error
           schema: {}
       summary: Get reference data
+      tags:
+      - Reference
+  /api/v1/refdata/export:
+    get:
+      description: Exports reference data in yaml format
+      produces:
+      - application/x-yaml
+      responses:
+        "200":
+          description: refdata.yaml
+          schema:
+            type: file
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Export reference data
       tags:
       - Reference
 swagger: "2.0"

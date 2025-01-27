@@ -180,6 +180,12 @@ curl -X GET http://localhost:8080/api/v1/mdata/dividend/bs24124z
 curl -X GET http://localhost:8080/api/v1/refdata
 ```
 
+### Export Reference Data
+
+```sh
+curl -X GET http://localhost:8080/api/v1/refdata/export
+```
+
 ### Force a compute of dividends for a ticker across the entire blotter
 
 ```sh

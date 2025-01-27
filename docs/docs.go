@@ -107,6 +107,50 @@ const docTemplate = `{
                     }
                 }
             },
+            "put": {
+                "description": "Update a trade in the blotter",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "trades"
+                ],
+                "summary": "Update a trade",
+                "parameters": [
+                    {
+                        "description": "Trade Request",
+                        "name": "trade",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/blotter.TradeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/blotter.Trade"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/blotter.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update trade",
+                        "schema": {
+                            "$ref": "#/definitions/blotter.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Add a new trade to the blotter",
                 "consumes": [
@@ -422,6 +466,30 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/refdata/export": {
+            "get": {
+                "description": "Exports reference data in yaml format",
+                "produces": [
+                    "application/x-yaml"
+                ],
+                "tags": [
+                    "Reference"
+                ],
+                "summary": "Export reference data",
+                "responses": {
+                    "200": {
+                        "description": "refdata.yaml",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -499,6 +567,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "broker": {
+                    "type": "string"
+                },
+                "id": {
                     "type": "string"
                 },
                 "price": {

@@ -18,6 +18,7 @@ type ReferenceManager interface {
 	DeleteTicker(id string) error
 	GetTicker(id string) (TickerReference, error)
 	GetAllTickers() (map[string]TickerReference, error)
+	ExportToYamlBytes() ([]byte, error)
 }
 
 type Manager struct {
@@ -139,4 +140,20 @@ func (rm *Manager) GetAllTickers() (map[string]TickerReference, error) {
 	logging.GetLogger().Info("Loaded ticker references from database")
 
 	return refs, nil
+}
+
+func (rm *Manager) ExportToYamlBytes() ([]byte, error) {
+	tickers, err := rm.GetAllTickers()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := yaml.Marshal(tickers)
+	if err != nil {
+		return nil, err
+	}
+
+	logging.GetLogger().Info("Exported reference data to YAML format")
+
+	return data, nil
 }

@@ -79,7 +79,15 @@ portfolio-manager/
 └── README.md
 ```
 
-## Sample Curl Commands
+## UI
+
+### Blotter Table
+
+User can add, delete and update trades via the blotter component in the user interface.
+
+![Blotter Table](docs/Blotter.png)
+
+## Backend API - Sample Curl Commands
 
 All API calls are documented (OAS) under `http://localhost:8080/swagger/index.html`
 

@@ -4,6 +4,7 @@ import { Box, Button } from "@mantine/core";
 import {
   MantineReactTable,
   MRT_ColumnDef,
+  MRT_TableInstance,
   useMantineReactTable,
 } from "mantine-react-table";
 import { useQuery } from "@tanstack/react-query";
@@ -67,7 +68,7 @@ const BlotterTable: React.FC = () => {
         <Button
           color="red"
           disabled={!table.getIsSomeRowsSelected()}
-          onClick={handleDeleteTrades}
+          onClick={handleDeleteTrades(table)}
           variant="filled"
         >
           Delete Selected Trades
@@ -77,13 +78,22 @@ const BlotterTable: React.FC = () => {
   });
 
   const handleAddTrade = () => {
+    // TODO: Route to add trade form
     alert("Add Trade");
     refetch();
   };
 
-  const handleDeleteTrades = () => {
-    alert("Delete Selected Trades");
-    refetch();
+  const handleDeleteTrades = (
+    table: MRT_TableInstance<Trade>
+  ): (() => void) => {
+    return () => {
+      const deletionTrades = table
+        .getSelectedRowModel()
+        .rows.map((trade) => trade.original.TradeID);
+      // TODO: call backend api to delete trades with mutation
+      alert("Delete Selected Trades " + deletionTrades);
+      refetch();
+    };
   };
 
   if (isLoading) return <div>Loading...</div>;

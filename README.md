@@ -188,6 +188,32 @@ curl -X GET http://localhost:8080/api/v1/mdata/dividend/bs24124z
 curl -X GET http://localhost:8080/api/v1/refdata
 ```
 
+### Add Reference Data
+
+```sh
+curl -X POST http://localhost:8080/api/v1/refdata \
+  -H "Content-Type: application/json" \
+  -d '{
+        "id": "ES3.SI",
+        "name": "STI ETF",
+        "underlying_ticker": "ES3.SI",
+        "yahoo_ticker": "ES3.SI",
+        "dividends_sg_ticker": "ES3",
+        "asset_class": "eq",
+        "asset_sub_class": "etf",
+        "ccy": "SGD",
+        "domicile": "SG"
+      }'
+```
+
+### Delete Reference Data
+
+```sh
+curl -X DELETE http://localhost:8080/api/v1/refdata \
+    -H "Content-Type: application/json" \
+    -d '["ES3.SI"]'
+```
+
 ### Export Reference Data
 
 ```sh

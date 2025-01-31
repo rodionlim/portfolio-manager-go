@@ -49,12 +49,14 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 		var tradeRequest TradeRequest
 		err := json.NewDecoder(r.Body).Decode(&tradeRequest)
 		if err != nil {
+			logging.GetLogger().Error(err)
 			writeJSONError(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
 
 		tradeDate, err := time.Parse(time.RFC3339, tradeRequest.TradeDate)
 		if err != nil {
+			logging.GetLogger().Error(err)
 			writeJSONError(w, "Invalid trade date format", http.StatusBadRequest)
 			return
 		}
@@ -102,12 +104,14 @@ func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 		var tradeRequest TradeRequest
 		err := json.NewDecoder(r.Body).Decode(&tradeRequest)
 		if err != nil {
+			logging.GetLogger().Error(err)
 			writeJSONError(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
 
 		tradeDate, err := time.Parse(time.RFC3339, tradeRequest.TradeDate)
 		if err != nil {
+			logging.GetLogger().Error(err)
 			writeJSONError(w, "Invalid trade date format", http.StatusBadRequest)
 			return
 		}
@@ -157,6 +161,7 @@ func HandleTradeDelete(blotter *TradeBlotter) http.HandlerFunc {
 		var ids []string
 		err := json.NewDecoder(r.Body).Decode(&ids)
 		if err != nil {
+			logging.GetLogger().Error(err)
 			writeJSONError(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
@@ -203,6 +208,7 @@ func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		file, _, err := r.FormFile("file")
 		if err != nil {
+			logging.GetLogger().Error(err)
 			writeJSONError(w, "Failed to get file from request", http.StatusBadRequest)
 			return
 		}
@@ -211,6 +217,7 @@ func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 		reader := csv.NewReader(file)
 		err = blotter.ImportFromCSVReader(reader)
 		if err != nil {
+			logging.GetLogger().Error(err)
 			writeJSONError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -231,6 +238,7 @@ func HandleTradeExportCSV(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		trades, err := blotter.ExportToCSVBytes()
 		if err != nil {
+			logging.GetLogger().Error(err)
 			writeJSONError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

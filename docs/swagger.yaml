@@ -115,6 +115,56 @@ definitions:
       trader:
         type: string
     type: object
+  rdata.SuccessResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  rdata.TickerReference:
+    properties:
+      asset_class:
+        type: string
+      asset_sub_class:
+        type: string
+      call_put:
+        enum:
+        - call
+        - put
+        type: string
+      category:
+        type: string
+      ccy:
+        type: string
+      coupon_rate:
+        type: number
+      dividends_sg_ticker:
+        type: string
+      domicile:
+        type: string
+      google_ticker:
+        type: string
+      id:
+        type: string
+      maturity_date:
+        type: string
+      name:
+        type: string
+      strike_price:
+        type: number
+      sub_category:
+        type: string
+      underlying_ticker:
+        type: string
+      yahoo_ticker:
+        type: string
+    required:
+    - asset_class
+    - ccy
+    - domicile
+    - id
+    - name
+    - underlying_ticker
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -405,6 +455,35 @@ paths:
       tags:
       - portfolio
   /api/v1/refdata:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes reference data by id
+      parameters:
+      - description: Reference data ids (underlying tickers)
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rdata.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Delete reference data
+      tags:
+      - Reference
     get:
       description: Retrieves all reference data
       produces:
@@ -419,6 +498,60 @@ paths:
           description: Internal Server Error
           schema: {}
       summary: Get reference data
+      tags:
+      - Reference
+    post:
+      consumes:
+      - application/json
+      description: Adds reference data
+      parameters:
+      - description: Reference data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/rdata.TickerReference'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Add reference data
+      tags:
+      - Reference
+    put:
+      consumes:
+      - application/json
+      description: Updates reference data
+      parameters:
+      - description: Reference data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/rdata.TickerReference'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rdata.TickerReference'
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Update reference data
       tags:
       - Reference
   /api/v1/refdata/export:

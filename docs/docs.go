@@ -465,6 +465,129 @@ const docTemplate = `{
                         "schema": {}
                     }
                 }
+            },
+            "put": {
+                "description": "Updates reference data",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reference"
+                ],
+                "summary": "Update reference data",
+                "parameters": [
+                    {
+                        "description": "Reference data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rdata.TickerReference"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/rdata.TickerReference"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            },
+            "post": {
+                "description": "Adds reference data",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reference"
+                ],
+                "summary": "Add reference data",
+                "parameters": [
+                    {
+                        "description": "Reference data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rdata.TickerReference"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes reference data by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reference"
+                ],
+                "summary": "Delete reference data",
+                "parameters": [
+                    {
+                        "description": "Reference data ids (underlying tickers)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rdata.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
             }
         },
         "/api/v1/refdata/export": {
@@ -655,6 +778,79 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "trader": {
+                    "type": "string"
+                }
+            }
+        },
+        "rdata.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "rdata.TickerReference": {
+            "type": "object",
+            "required": [
+                "asset_class",
+                "ccy",
+                "domicile",
+                "id",
+                "name",
+                "underlying_ticker"
+            ],
+            "properties": {
+                "asset_class": {
+                    "type": "string"
+                },
+                "asset_sub_class": {
+                    "type": "string"
+                },
+                "call_put": {
+                    "type": "string",
+                    "enum": [
+                        "call",
+                        "put"
+                    ]
+                },
+                "category": {
+                    "type": "string"
+                },
+                "ccy": {
+                    "type": "string"
+                },
+                "coupon_rate": {
+                    "type": "number"
+                },
+                "dividends_sg_ticker": {
+                    "type": "string"
+                },
+                "domicile": {
+                    "type": "string"
+                },
+                "google_ticker": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "maturity_date": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "strike_price": {
+                    "type": "number"
+                },
+                "sub_category": {
+                    "type": "string"
+                },
+                "underlying_ticker": {
+                    "type": "string"
+                },
+                "yahoo_ticker": {
                     "type": "string"
                 }
             }

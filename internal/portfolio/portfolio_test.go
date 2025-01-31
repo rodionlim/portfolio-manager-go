@@ -268,6 +268,7 @@ func TestSubscribeToBlotterWithTradeUpdate(t *testing.T) {
 		"cdp",
 		150.0,
 		0.0,
+		1,
 		time.Now(),
 	)
 

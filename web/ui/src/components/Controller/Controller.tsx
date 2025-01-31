@@ -8,6 +8,7 @@ const Controller: React.FC = () => {
   return (
     <Routes>
       <Route path="/blotter/add_trade" element={<BlotterForm />} />
+      <Route path="/blotter/update_trade" element={<BlotterForm />} />
       <Route path="/blotter" element={<BlotterTable />} />
       <Route
         path="/*"

@@ -15,9 +15,13 @@ interface Trade {
   TradeID: string;
   TradeDate: string;
   Ticker: string;
+  Trader: string;
+  Broker: string;
   Account: string;
   Quantity: number;
   Price: number;
+  TradeType: boolean;
+  SeqNum: number;
 }
 
 const fetchTrades = async (): Promise<Trade[]> => {
@@ -25,6 +29,7 @@ const fetchTrades = async (): Promise<Trade[]> => {
     .then((resp) => resp.json())
     .then(
       (data) => {
+        console.log(data);
         return data;
       },
       (error) => {
@@ -71,9 +76,13 @@ const BlotterTable: React.FC = () => {
       { accessorKey: "TradeID", header: "Trade ID" },
       { accessorKey: "TradeDate", header: "Date" },
       { accessorKey: "Ticker", header: "Ticker" },
+      // { accessorKey: "Trader", header: "Trader" },
+      // { accessorKey: "Broker", header: "Broker" },
       { accessorKey: "Account", header: "Account" },
       { accessorKey: "Quantity", header: "Quantity" },
       { accessorKey: "Price", header: "Price" },
+      // { accessorKey: "TradeType", header: "Trade Type" },
+      // { accessorKey: "SeqNum", header: "Seq Num" },
     ],
     []
   );
@@ -97,6 +106,14 @@ const BlotterTable: React.FC = () => {
           variant="filled"
         >
           Delete Selected Trades
+        </Button>
+        <Button
+          color="blue"
+          disabled={!(table.getSelectedRowModel().rows.length === 1)}
+          onClick={handleUpdateTrade(table)}
+          variant="filled"
+        >
+          Update Trade
         </Button>
       </Box>
     ),
@@ -146,6 +163,30 @@ const BlotterTable: React.FC = () => {
         .finally(() => {
           refetch();
         });
+    };
+  };
+
+  // handle add trade allows routing to the update trade page
+  const handleUpdateTrade = (table: MRT_TableInstance<Trade>): (() => void) => {
+    return () => {
+      // first check if there is any selections
+      const selection = table
+        .getSelectedRowModel()
+        .rows.map((trade) => trade.original)[0];
+      navigate("/blotter/update_trade", {
+        state: {
+          tradeId: selection.TradeID,
+          date: new Date(selection.TradeDate),
+          ticker: selection.Ticker,
+          trader: selection.Trader,
+          broker: selection.Broker,
+          account: selection.Account,
+          qty: selection.Quantity,
+          price: selection.Price,
+          tradeType: selection.TradeType,
+          seqNum: selection.SeqNum,
+        },
+      });
     };
   };
 

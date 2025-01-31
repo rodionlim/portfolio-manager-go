@@ -19,9 +19,8 @@ const items = [
     icon: IconDeviceLaptop,
     initiallyOpened: true,
     links: [
-      { label: "Fetch trades", link: "/blotter" },
+      { label: "Fetch or Update trades", link: "/blotter" },
       { label: "Add trade", link: "/blotter/add_trade" },
-      { label: "Update trade", link: "/blotter/update_trades" },
     ],
   },
   {
@@ -34,9 +33,8 @@ const items = [
     icon: IconBook,
     initiallyOpened: false,
     links: [
-      { label: "Fetch data", link: "/refdata" },
+      { label: "Fetch or Update data", link: "/refdata" },
       { label: "Add data", link: "/refdata/add" },
-      { label: "Update data", link: "/refdata/update" },
     ],
   },
   { label: "Settings", icon: IconAdjustments, link: "/settings" },

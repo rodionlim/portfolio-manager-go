@@ -122,6 +122,7 @@ func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 			tradeRequest.Account,
 			tradeRequest.Price,
 			tradeRequest.Yield,
+			tradeRequest.SeqNum,
 			tradeDate)
 		if err != nil {
 			writeJSONError(w, err.Error(), http.StatusBadRequest)

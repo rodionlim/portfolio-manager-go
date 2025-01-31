@@ -363,7 +363,7 @@ func NewTrade(side string, quantity float64, ticker, trader, broker, account str
 }
 
 // NewTradeWithID creates a new Trade instance with a given trade ID, mainly for updating purposes
-func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trader, broker, account string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
+func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trader, broker, account string, price float64, yield float64, seqNum int, tradeDate time.Time) (*Trade, error) {
 
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
@@ -380,6 +380,7 @@ func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trade
 		Trader:    trader,
 		Broker:    broker,
 		Account:   account,
+		SeqNum:    seqNum,
 	}
 
 	err := validateTrade(trade)

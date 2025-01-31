@@ -29,15 +29,17 @@ export default function BlotterForm() {
   const form = useForm({
     mode: "uncontrolled",
     initialValues: {
-      date: new Date(),
+      tradeId: location.state?.tradeId || "",
+      date: location.state?.date || new Date(),
       ticker: location.state?.ticker || "",
-      trader: defaultTrader,
-      broker: defaultBroker,
-      account: defaultAccount,
-      qty: 0,
-      price: 0,
+      trader: location.state?.trader || defaultTrader,
+      broker: location.state?.broker || defaultBroker,
+      account: location.state?.account || defaultAccount,
+      qty: location.state?.qty || 0,
+      price: location.state?.price || 0,
       value: 0, // either value or price must be specified
-      tradeType: false, // false for BUY, true for SELL
+      tradeType: location.state?.tradeType || false, // false for BUY, true for SELL
+      seqNum: location.state?.seqNum || 0,
     },
     validate: {
       date: (value) => !value && "Date is required",
@@ -70,24 +72,30 @@ export default function BlotterForm() {
     }),
   });
 
-  function addTrade(
+  function upsertTrade(
     values: Omit<typeof form.values, "date"> & { date: string }
   ) {
+    const tradeTypeAction = !values.tradeId ? "add" : "update";
+    const tradeTypeActionPastTense = !values.tradeId ? "added" : "updated";
+    const body = {
+      id: values.tradeId,
+      tradeDate: values.date, // need to convert to 2024-12-09T00:00:00Z
+      ticker: values.ticker,
+      trader: values.trader,
+      broker: values.broker,
+      account: values.account,
+      quantity: values.qty,
+      price: values.price,
+      side: values.tradeType ? "sell" : "buy",
+      seqNUm: values.seqNum,
+    };
+
     return fetch("http://localhost:8080/api/v1/blotter/trade", {
-      method: "POST",
+      method: values.tradeId ? "PUT" : "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        tradeDate: values.date, // need to convert to 2024-12-09T00:00:00Z
-        ticker: values.ticker,
-        trader: values.trader,
-        broker: values.broker,
-        account: values.account,
-        quantity: values.qty,
-        price: values.price,
-        side: values.tradeType ? "sell" : "buy",
-      }),
+      body: JSON.stringify(body),
     })
       .then((resp) => {
         if (!resp.ok) {
@@ -100,8 +108,8 @@ export default function BlotterForm() {
       .then((data) => {
         notifications.show({
           title: "Trade successfully added",
-          message: `Trade [${data.TradeID}] was successfully added to the blotter`,
-          autoClose: 10000,
+          message: `Trade [${data.TradeID}] was successfully ${tradeTypeActionPastTense} in the blotter`,
+          autoClose: 6000,
         });
       })
       .catch((error) => {
@@ -109,7 +117,7 @@ export default function BlotterForm() {
         notifications.show({
           color: "red",
           title: "Error",
-          message: `Unable to add trade to the blotter\n ${error}`,
+          message: `Unable to ${tradeTypeAction} trade to the blotter\n ${error}`,
         });
         throw new Error("An error occurred while submitting trade to blotter");
       });
@@ -120,16 +128,26 @@ export default function BlotterForm() {
   ) => {
     localStorage.setItem("defaultTrader", values.trader);
     localStorage.setItem("defaultBroker", values.broker);
-    addTrade(values); // TODO: add error handling
+    upsertTrade(values); // TODO: add error handling
   };
 
   return (
     <Container size="sm">
       <Title order={2} mb="lg">
-        Add Trade to Blotter
+        {form.getValues().tradeId ? "Update" : "Add"} Trade to Blotter
       </Title>
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="md">
+          {form.getValues().tradeId && (
+            <TextInput
+              withAsterisk
+              label="Trade ID"
+              placeholder="trade id to be updated"
+              disabled={true}
+              key={form.key("tradeId")}
+              {...form.getInputProps("tradeId")}
+            />
+          )}
           <DatePickerInput
             withAsterisk
             clearable
@@ -187,7 +205,7 @@ export default function BlotterForm() {
           />
           <NumberInput
             withAsterisk
-            label="Value"
+            label="Value (Either Price or Value must be specified, not both)"
             placeholder="Value"
             allowDecimal={true}
             decimalScale={4}

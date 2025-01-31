@@ -223,9 +223,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "message",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/blotter.SuccessResponse"
                         }
                     },
                     "400": {
@@ -494,6 +494,14 @@ const docTemplate = `{
     },
     "definitions": {
         "blotter.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "blotter.SuccessResponse": {
             "type": "object",
             "properties": {
                 "message": {

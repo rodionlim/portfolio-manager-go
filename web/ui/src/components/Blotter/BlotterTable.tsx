@@ -8,13 +8,14 @@ import {
   useMantineReactTable,
 } from "mantine-react-table";
 import { useQuery } from "@tanstack/react-query";
+import { notifications } from "@mantine/notifications";
+import { useNavigate } from "react-router-dom";
 
 interface Trade {
-  TradeID: number;
+  TradeID: string;
   TradeDate: string;
   Ticker: string;
   Account: string;
-  // assetClass: string; // to add back reference data
   Quantity: number;
   Price: number;
 }
@@ -28,12 +29,36 @@ const fetchTrades = async (): Promise<Trade[]> => {
       },
       (error) => {
         console.error("error", error);
+        throw new Error(
+          `An error occurred while fetching trades ${error.message}`
+        );
+      }
+    );
+};
+
+const deleteTrades = async (trades: string[]): Promise<{ message: string }> => {
+  return fetch("http://localhost:8080/api/v1/blotter/trade", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(trades),
+  })
+    .then((resp) => resp.json())
+    .then(
+      (data) => {
+        return data;
+      },
+      (error) => {
+        console.error("error", error);
         throw new Error("An error occurred while fetching trades");
       }
     );
 };
 
 const BlotterTable: React.FC = () => {
+  const navigate = useNavigate();
+
   const {
     data: trades = [],
     isLoading,
@@ -62,7 +87,7 @@ const BlotterTable: React.FC = () => {
     positionToolbarAlertBanner: "bottom",
     renderTopToolbarCustomActions: ({ table }) => (
       <Box style={{ display: "flex", gap: "16px", padding: "4px" }}>
-        <Button color="teal" onClick={handleAddTrade} variant="filled">
+        <Button color="teal" onClick={handleAddTrade(table)} variant="filled">
           Add Trade
         </Button>
         <Button
@@ -77,10 +102,20 @@ const BlotterTable: React.FC = () => {
     ),
   });
 
-  const handleAddTrade = () => {
-    // TODO: Route to add trade form
-    alert("Add Trade");
-    refetch();
+  // handle add trade allows routing to the add trade page
+  const handleAddTrade = (table: MRT_TableInstance<Trade>): (() => void) => {
+    return () => {
+      // first check if there is any selections
+      const selection = table
+        .getSelectedRowModel()
+        .rows.map((trade) => trade.original.Ticker);
+      if (selection.length > 0) {
+        const ticker = selection[0];
+        navigate("/blotter/add_trade", { state: { ticker } });
+      } else {
+        navigate("/blotter/add_trade");
+      }
+    };
   };
 
   const handleDeleteTrades = (
@@ -90,9 +125,27 @@ const BlotterTable: React.FC = () => {
       const deletionTrades = table
         .getSelectedRowModel()
         .rows.map((trade) => trade.original.TradeID);
-      // TODO: call backend api to delete trades with mutation
-      alert("Delete Selected Trades " + deletionTrades);
-      refetch();
+
+      deleteTrades(deletionTrades)
+        .then(
+          (resp: { message: string }) => {
+            notifications.show({
+              title: "Trades successfully deleted",
+              message: `${resp.message}`,
+              autoClose: 10000,
+            });
+          },
+          (error) => {
+            notifications.show({
+              color: "red",
+              title: "Error",
+              message: `Unable to delete trades from the blotter\n ${error}`,
+            });
+          }
+        )
+        .finally(() => {
+          refetch();
+        });
     };
   };
 

@@ -28,6 +28,11 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// SuccessResponse represents the success response payload.
+type SuccessResponse struct {
+	Message string `json:"message"`
+}
+
 // HandleTradePost handles the addition of trades to the blotter service.
 // @Summary Add a new trade
 // @Description Add a new trade to the blotter
@@ -142,7 +147,7 @@ func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 // @Accept  json
 // @Produce  json
 // @Param   ids  body  []int  true  "Trade IDs"
-// @Success 200 {string} string "OK"
+// @Success 200 {object} SuccessResponse "message"
 // @Failure 400 {object} ErrorResponse "Invalid request payload"
 // @Failure 500 {object} ErrorResponse "Failed to delete trades"
 // @Router /api/v1/blotter/trade [delete]
@@ -163,6 +168,7 @@ func HandleTradeDelete(blotter *TradeBlotter) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(SuccessResponse{Message: "Trades deleted successfully"})
 	}
 }
 

@@ -15,8 +15,11 @@ import { DatePickerInput } from "@mantine/dates";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { refDataByAssetClass } from "../../utils/referenceData";
+import { useLocation } from "react-router-dom";
 
 export default function BlotterForm() {
+  const location = useLocation();
+
   const defaultTrader = localStorage.getItem("defaultTrader") || "TraderA";
   const defaultBroker = localStorage.getItem("defaultBroker") || "DBS";
   const defaultAccount = localStorage.getItem("defaultAccount") || "CDP";
@@ -27,7 +30,7 @@ export default function BlotterForm() {
     mode: "uncontrolled",
     initialValues: {
       date: new Date(),
-      ticker: "",
+      ticker: location.state?.ticker || "",
       trader: defaultTrader,
       broker: defaultBroker,
       account: defaultAccount,

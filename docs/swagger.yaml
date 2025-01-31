@@ -5,6 +5,11 @@ definitions:
       message:
         type: string
     type: object
+  blotter.SuccessResponse:
+    properties:
+      message:
+        type: string
+    type: object
   blotter.Trade:
     properties:
       Account:
@@ -181,9 +186,9 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: message
           schema:
-            type: string
+            $ref: '#/definitions/blotter.SuccessResponse'
         "400":
           description: Invalid request payload
           schema:

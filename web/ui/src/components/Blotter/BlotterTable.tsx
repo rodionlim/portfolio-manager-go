@@ -29,7 +29,6 @@ const fetchTrades = async (): Promise<Trade[]> => {
     .then((resp) => resp.json())
     .then(
       (data) => {
-        console.log(data);
         return data;
       },
       (error) => {
@@ -56,7 +55,7 @@ const deleteTrades = async (trades: string[]): Promise<{ message: string }> => {
       },
       (error) => {
         console.error("error", error);
-        throw new Error("An error occurred while fetching trades");
+        throw new Error("An error occurred while deleting trades");
       }
     );
 };

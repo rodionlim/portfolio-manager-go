@@ -33,6 +33,7 @@ export default function BlotterForm() {
       account: defaultAccount,
       qty: 0,
       price: 0,
+      value: 0, // either value or price must be specified
       tradeType: false, // false for BUY, true for SELL
     },
     validate: {
@@ -40,7 +41,24 @@ export default function BlotterForm() {
       ticker: (value) => value.length < 1 && "Ticker is required",
       account: (value) => value.length < 1 && "Account is required",
       qty: (value) => value <= 0 && "Quantity must be greater than 0",
-      price: (value) => value <= 0 && "Price must be greater than 0",
+      price: (value, values) => {
+        if (value <= 0 && values.value <= 0) {
+          return "Either Price or Value must be specified";
+        }
+        if (value > 0 && values.value > 0) {
+          return "Either Price or Value must be specified, not both";
+        }
+        return null;
+      },
+      value: (value, values) => {
+        if (value <= 0 && values.price <= 0) {
+          return "Either Price or Value must be specified";
+        }
+        if (value > 0 && values.price > 0) {
+          return "Either Price or Value must be specified, not both";
+        }
+        return null;
+      },
     },
     transformValues: (values) => ({
       ...values,
@@ -163,6 +181,15 @@ export default function BlotterForm() {
             decimalScale={4}
             key={form.key("price")}
             {...form.getInputProps("price")}
+          />
+          <NumberInput
+            withAsterisk
+            label="Value"
+            placeholder="Value"
+            allowDecimal={true}
+            decimalScale={4}
+            key={form.key("value")}
+            {...form.getInputProps("value")}
           />
 
           <Group justify="flex-end">

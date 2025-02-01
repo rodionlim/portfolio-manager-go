@@ -8,12 +8,58 @@ BINARY_NAME=portfolio-manager
 BINARY_UNIX=$(BINARY_NAME)_unix
 BINARY_MAC_ARM=$(BINARY_NAME)_mac_arm64
 
+UI_PATH = web/ui
+UI_NODE_MODULES_PATH = $(UI_PATH)/node_modules
+REACT_APP_NPM_LICENSES_TARBALL = "npm_licenses.tar.bz2"
+
+# Only build UI if PREBUILT_ASSETS_STATIC_DIR is not set
+ifdef PREBUILT_ASSETS_STATIC_DIR
+  SKIP_UI_BUILD = true
+endif
+
 # All target
 all: test build
 
 # Build the project
 build: swagger
 	$(GOBUILD) -o $(BINARY_NAME) -v ./cmd/portfolio
+
+.PHONY: ui-install
+ui-install:
+	cd $(UI_PATH) && npm install
+
+.PHONY: ui-build
+ui-build:
+	cd $(UI_PATH) && CI="" npm run build
+
+.PHONY: assets
+ifndef SKIP_UI_BUILD
+assets: ui-install ui-build
+
+.PHONY: npm_licenses
+npm_licenses: ui-install
+	@echo ">> bundling npm licenses"
+	rm -f $(REACT_APP_NPM_LICENSES_TARBALL) npm_licenses
+	ln -s . npm_licenses
+	find npm_licenses/$(UI_NODE_MODULES_PATH) -iname "license*" | tar cfj $(REACT_APP_NPM_LICENSES_TARBALL) --files-from=-
+	rm -f npm_licenses
+else
+assets:
+	@echo '>> skipping assets build, pre-built assets provided'
+
+npm_licenses:
+	@echo '>> skipping assets npm licenses, pre-built assets provided'
+endif
+
+.PHONY: assets-compress
+assets-compress: assets
+	@echo '>> compressing assets'
+	scripts/compress_assets.sh
+
+.PHONY: assets-tarball
+assets-tarball: assets
+	@echo '>> packaging assets'
+	scripts/package_assets.sh
 
 # Run tests
 test: 

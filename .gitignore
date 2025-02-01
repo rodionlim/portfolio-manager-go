@@ -7,3 +7,9 @@ portfolio-manager
 portfolio-manager.db
 
 node_modules
+
+npm_licenses.tar.bz2
+/web/ui/static
+
+.#*
+.tarballs/*

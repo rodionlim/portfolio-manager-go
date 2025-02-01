@@ -69,6 +69,7 @@ export default function BlotterForm() {
       ...values,
       ticker: values.ticker.toUpperCase(),
       date: values.date.toISOString().split(".")[0] + "Z",
+      price: values.price > 0 ? values.price : values.value / values.qty,
     }),
   });
 
@@ -77,6 +78,7 @@ export default function BlotterForm() {
   ) {
     const tradeTypeAction = !values.tradeId ? "add" : "update";
     const tradeTypeActionPastTense = !values.tradeId ? "added" : "updated";
+    console.log(values);
     const body = {
       id: values.tradeId,
       tradeDate: values.date, // need to convert to 2024-12-09T00:00:00Z
@@ -87,7 +89,7 @@ export default function BlotterForm() {
       quantity: values.qty,
       price: values.price,
       side: values.tradeType ? "sell" : "buy",
-      seqNUm: values.seqNum,
+      seqNum: values.seqNum,
     };
 
     return fetch("http://localhost:8080/api/v1/blotter/trade", {
@@ -195,7 +197,6 @@ export default function BlotterForm() {
             {...form.getInputProps("qty")}
           />
           <NumberInput
-            withAsterisk
             label="Price"
             placeholder="Price"
             allowDecimal={true}
@@ -204,7 +205,6 @@ export default function BlotterForm() {
             {...form.getInputProps("price")}
           />
           <NumberInput
-            withAsterisk
             label="Value (Either Price or Value must be specified, not both)"
             placeholder="Value"
             allowDecimal={true}

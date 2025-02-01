@@ -17,12 +17,21 @@ ifdef PREBUILT_ASSETS_STATIC_DIR
   SKIP_UI_BUILD = true
 endif
 
+# Set up conditional build tag for builtinassets.
+# To build with embedded assets, run:
+#   make build BUILTIN_ASSETS=1
+ifneq ($(BUILTIN_ASSETS),)
+    BUILD_TAGS=-tags "builtinassets"
+else
+    BUILD_TAGS=
+endif
+
 # All target
 all: test build
 
 # Build the project
 build: swagger
-	$(GOBUILD) -o $(BINARY_NAME) -v ./cmd/portfolio
+	$(GOBUILD) $(BUILD_TAGS) -o $(BINARY_NAME) -v ./cmd/portfolio
 
 .PHONY: ui-install
 ui-install:
@@ -96,7 +105,7 @@ tidy:
 	$(GOCMD) mod tidy
 
 swagger:
-	swag init -g cmd/portfolio/main.go
+	swag init --quiet -g cmd/portfolio/main.go
 
 # Cross compilation for Linux
 build-linux:

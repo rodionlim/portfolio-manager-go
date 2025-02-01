@@ -12,6 +12,7 @@ import (
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
+	"portfolio-manager/web/ui"
 
 	_ "portfolio-manager/docs"
 
@@ -34,13 +35,14 @@ func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *port
 	}
 }
 
-// health check handler
+// @Summary Health check
+// @Description Returns a simple message to indicate that the server is up and running
+// @Tags health
+// @Produce plain
+// @Success 200 {string} string "I'm up!"
+// @Router /healthz [get]
 func upcheckHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/" || r.URL.Path == "/actuator/health" {
-		fmt.Fprint(w, "I'm up!")
-		return
-	}
-	http.NotFound(w, r)
+	fmt.Fprintf(w, "I'm up!\n")
 }
 
 // Start starts the HTTP server.
@@ -48,7 +50,12 @@ func (s *Server) Start(ctx context.Context) error {
 	logger := ctx.Value(types.LoggerKey).(*logging.Logger)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+
+	// Serve embed assets. If the build tag builtinassets is set,
+	// ui.AssetsHandler() will serve files; otherwise it will return a dummy handler.
+	mux.Handle("/", ui.AssetsHandler())
+
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		upcheckHandler(w, r.WithContext(ctx))
 	})
 

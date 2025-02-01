@@ -570,4 +570,18 @@ paths:
       summary: Export reference data
       tags:
       - Reference
+  /healthz:
+    get:
+      description: Returns a simple message to indicate that the server is up and
+        running
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: I'm up!
+          schema:
+            type: string
+      summary: Health check
+      tags:
+      - health
 swagger: "2.0"

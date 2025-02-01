@@ -1,2 +1,4 @@
 *.gz
 embed.go
+
+.DS_STORE

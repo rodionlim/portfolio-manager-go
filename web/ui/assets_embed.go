@@ -27,6 +27,7 @@ import (
 	"io"
 	"net/http"
 	"portfolio-manager/web/assets"
+	"portfolio-manager/web/server"
 )
 
 // AssetsHandler returns a handler that serves the embedded static files.
@@ -34,48 +35,35 @@ func AssetsHandler() http.Handler {
 
 	reactAssetsRoot := "/static"
 	assetsFS := http.FS(assets.New(EmbedFS))
-	fileServer := http.FileServer(assetsFS)
+	fileServer := server.StaticFileServer(assetsFS)
 
 	serveReactApp := func(w http.ResponseWriter, r *http.Request) {
 		route := r.URL.Path
 
-		// Check specific asset routes and rewrite the URL.Path.
-		for _, p := range []string{"/favicon.svg", "/favicon.ico", "/manifest.json"} {
-			if route == p {
-				// Prepend the reactAssetsRoot to get the correct asset location.
-				r.URL.Path = reactAssetsRoot + p
-				fileServer.ServeHTTP(w, r)
-				return
-			}
-		}
-
 		// If the route is "/" serve the React index.
 		if route == "/" {
 			r.URL.Path = reactAssetsRoot + "/index.html"
+			f, err := assetsFS.Open(r.URL.Path)
+
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w, "Error opening file %s: %v", r.URL.Path, err)
+				return
+			}
+			defer f.Close()
+
+			data, err := io.ReadAll(f)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w, "Error reading file %s: %v", r.URL.Path, err)
+				return
+			}
+			w.Write(data)
 		} else {
 			// For any other route, assume it's a static asset under reactAssetsRoot.
 			r.URL.Path = reactAssetsRoot + route
+			fileServer.ServeHTTP(w, r)
 		}
-
-		f, err := assetsFS.Open(r.URL.Path)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Error opening file %s: %v", r.URL.Path, err)
-			return
-		}
-		defer f.Close()
-
-		data, err := io.ReadAll(f)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Error reading file %s: %v", r.URL.Path, err)
-			return
-		}
-
-		// Optionally, add caching headers or content type based on file extension.
-		w.Header().Set("Content-Type", http.DetectContentType(data))
-		// Serve the file content
-		w.Write(data)
 	}
 
 	return http.HandlerFunc(serveReactApp)

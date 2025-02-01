@@ -78,7 +78,6 @@ export default function BlotterForm() {
   ) {
     const tradeTypeAction = !values.tradeId ? "add" : "update";
     const tradeTypeActionPastTense = !values.tradeId ? "added" : "updated";
-    console.log(values);
     const body = {
       id: values.tradeId,
       tradeDate: values.date, // need to convert to 2024-12-09T00:00:00Z

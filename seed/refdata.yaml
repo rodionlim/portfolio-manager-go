@@ -225,6 +225,7 @@
   dividends_sg_ticker: "G3B"
   asset_class: "eq"
   asset_sub_class: "etf"
+  ccy: "SGD"
   domicile: "SG"
 - id: "MBH.SI"
   name: "Nikko AM SGD IG Bond ETF"

@@ -34,7 +34,7 @@ const items = [
     initiallyOpened: false,
     links: [
       { label: "Fetch data", link: "/refdata" },
-      { label: "Add data", link: "/refdata/add" },
+      { label: "Add data", link: "/refdata/add_ref_data" },
     ],
   },
   { label: "Settings", icon: IconAdjustments, link: "/settings" },

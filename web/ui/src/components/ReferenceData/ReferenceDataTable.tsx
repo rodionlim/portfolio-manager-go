@@ -108,7 +108,12 @@ const ReferenceDataTable: React.FC = () => {
     positionToolbarAlertBanner: "bottom",
     renderTopToolbarCustomActions: ({ table }) => (
       <Box style={{ display: "flex", gap: "16px", padding: "4px" }}>
-        <Button color="teal" onClick={handleAddRefData(table)} variant="filled">
+        <Button
+          color="teal"
+          onClick={handleAddRefData()}
+          disabled={table.getIsSomeRowsSelected()}
+          variant="filled"
+        >
           Add Reference Data
         </Button>
         <Button
@@ -132,9 +137,7 @@ const ReferenceDataTable: React.FC = () => {
   });
 
   // handle add reference data allows routing to the add reference data page
-  const handleAddRefData = (
-    table: MRT_TableInstance<RefData>
-  ): (() => void) => {
+  const handleAddRefData = (): (() => void) => {
     return () => {
       navigate("/refdata/add_ref_data");
     };
@@ -184,6 +187,7 @@ const ReferenceDataTable: React.FC = () => {
         state: {
           id: selection.id,
           name: selection.name,
+          underlying_ticker: selection.underlying_ticker,
           yahoo_ticker: selection.yahoo_ticker,
           google_ticker: selection.google_ticker,
           dividends_sg_ticker: selection.dividends_sg_ticker,
@@ -193,6 +197,10 @@ const ReferenceDataTable: React.FC = () => {
           sub_category: selection.sub_category,
           ccy: selection.ccy,
           domicile: selection.domicile,
+          coupon_rate: selection.coupon_rate,
+          maturity_date: selection.maturity_date,
+          strike_price: selection.strike_price,
+          call_put: selection.call_put,
         },
       });
     };

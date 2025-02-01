@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import BlotterTable from "../Blotter/BlotterTable";
 import BlotterForm from "../Blotter/BlotterForm";
 import ReferenceDataTable from "../ReferenceData/ReferenceDataTable";
+import ReferenceDataForm from "../ReferenceData/ReferenceDataForm";
 
 const Controller: React.FC = () => {
   return (
@@ -11,6 +12,8 @@ const Controller: React.FC = () => {
       <Route path="/blotter/add_trade" element={<BlotterForm />} />
       <Route path="/blotter/update_trade" element={<BlotterForm />} />
       <Route path="/blotter" element={<BlotterTable />} />
+      <Route path="/refdata/add_ref_data" element={<ReferenceDataForm />} />
+      <Route path="/refdata/update_ref_data" element={<ReferenceDataForm />} />
       <Route path="/refdata" element={<ReferenceDataTable />} />
       <Route
         path="/*"

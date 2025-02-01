@@ -89,7 +89,7 @@ const BlotterTable: React.FC = () => {
   const table = useMantineReactTable({
     columns,
     data: trades,
-    initialState: { showGlobalFilter: true },
+    initialState: { showGlobalFilter: true, showColumnFilters: true },
     state: { density: "xs" },
     enableRowSelection: true,
     positionToolbarAlertBanner: "bottom",

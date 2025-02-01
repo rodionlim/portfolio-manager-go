@@ -53,7 +53,9 @@ export default function ReferenceDataForm() {
     const actionPastTense = !values.id ? "added" : "updated";
     const body = {
       ...values,
-      maturity_date: values.maturity_date.toISOString().split(".")[0] + "Z",
+      maturity_date: values.maturity_date
+        ? values.maturity_date.toISOString().split(".")[0] + "Z"
+        : null,
     };
 
     return fetch("http://localhost:8080/api/v1/refdata", {

@@ -89,7 +89,7 @@ func (rm *Manager) UpdateTicker(ticker *TickerReference) error {
 	if ticker.ID == "" {
 		return errors.New("ticker ID is required")
 	}
-	return rm.db.Put(ticker.ID, ticker)
+	return rm.db.Put(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, ticker.ID), ticker)
 }
 
 func (rm *Manager) DeleteTicker(id string) error {

@@ -91,6 +91,18 @@ const PositionTable: React.FC = () => {
     error,
   } = useQuery({ queryKey: ["positions"], queryFn: fetchPosition });
 
+  const totals = useMemo(() => {
+    return positions.reduce(
+      (acc, row) => {
+        acc.Mv += row.Mv;
+        acc.Pnl += row.PnL;
+        acc.Dividends += row.Dividends;
+        return acc;
+      },
+      { Mv: 0, Pnl: 0, Dividends: 0 }
+    );
+  }, [positions]);
+
   const columns = useMemo<MRT_ColumnDef<Position>[]>(
     () => [
       { accessorKey: "Ticker", header: "Ticker" },
@@ -111,10 +123,28 @@ const PositionTable: React.FC = () => {
             </span>
           );
         },
+        Footer: () => (
+          <div>
+            {"$" +
+              totals.Mv.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+          </div>
+        ),
       },
       {
         accessorKey: "PnL",
         header: "PnL",
+        Footer: () => (
+          <div>
+            {"$" +
+              totals.Pnl.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+          </div>
+        ),
         Cell: ({ cell }) => {
           const value = cell.getValue<number>();
           const color = value < 0 ? "red" : "green";
@@ -143,6 +173,15 @@ const PositionTable: React.FC = () => {
             </span>
           );
         },
+        Footer: () => (
+          <div>
+            {"$" +
+              totals.Dividends.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+          </div>
+        ),
       },
       {
         accessorKey: "AvgPx",

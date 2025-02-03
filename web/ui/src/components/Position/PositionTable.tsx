@@ -15,7 +15,7 @@ interface Position {
   Trader: string;
   Ccy: string;
   AssetClass: string;
-  AssetSubClass: number;
+  AssetSubClass: string;
   Qty: number;
   Mv: number;
   PnL: number;
@@ -97,9 +97,14 @@ const PositionTable: React.FC = () => {
         acc.Mv += row.Mv;
         acc.Pnl += row.PnL;
         acc.Dividends += row.Dividends;
+
+        if (row.AssetSubClass !== "govies") {
+          acc.MvLessGovies += row.Mv;
+        }
+
         return acc;
       },
-      { Mv: 0, Pnl: 0, Dividends: 0 }
+      { Mv: 0, MvLessGovies: 0, Pnl: 0, Dividends: 0 }
     );
   }, [positions]);
 
@@ -125,11 +130,20 @@ const PositionTable: React.FC = () => {
         },
         Footer: () => (
           <div>
-            {"$" +
-              totals.Mv.toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              })}
+            <div>
+              {"All: $" +
+                totals.Mv.toLocaleString(undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}
+            </div>
+            <div>
+              {"Ex. govies: $" +
+                totals.MvLessGovies.toLocaleString(undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}
+            </div>
           </div>
         ),
       },

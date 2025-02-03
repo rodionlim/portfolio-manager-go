@@ -42,7 +42,7 @@ func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *port
 // @Success 200 {string} string "I'm up!"
 // @Router /healthz [get]
 func upcheckHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "I'm up!\n")
+	fmt.Fprintf(w, "I'm up!")
 }
 
 // Start starts the HTTP server.

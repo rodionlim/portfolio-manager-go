@@ -6,9 +6,12 @@ import {
   useMantineReactTable,
 } from "mantine-react-table";
 import { useQuery } from "@tanstack/react-query";
+// import { useSelector } from "react-redux";
+// import { RootState } from "../../store";
 
 interface Position {
   Ticker: string;
+  //   Name: string;
   Trader: string;
   Ccy: string;
   AssetClass: string;
@@ -20,55 +23,68 @@ interface Position {
   AvgPx: number;
 }
 
-const fetchPosition = async (): Promise<Position[]> => {
-  return fetch("http://localhost:8080/api/v1/portfolio/positions")
-    .then((resp) => resp.json())
-    .then(
-      (data: Position[]) => {
-        // collapse SSB and Mas Bills in data to a single position
-        // TODO: allow fully uncollapsed positions
-        const aggregatedPositions = Object.values(
-          data.reduce((acc: Record<string, Position>, curr: Position) => {
-            let tickerKey = curr.Ticker;
-
-            // If it's a mas tbill (8 characters, first two and last are letters), set key to "TBill".
-            if (
-              tickerKey.length === 8 &&
-              /^[A-Za-z]$/.test(tickerKey[0]) &&
-              /^[A-Za-z]$/.test(tickerKey[1]) &&
-              /^[A-Za-z]$/.test(tickerKey[tickerKey.length - 1])
-            ) {
-              tickerKey = "TBill";
-            } else if (tickerKey.startsWith("SB") && tickerKey.length === 7) {
-              // If ticker starts with "SB" and has 7 characters, set key to "SSB".
-              tickerKey = "SSB";
-            }
-
-            // If the key already exists, sum the values.
-            if (acc[tickerKey]) {
-              acc[tickerKey].Qty += curr.Qty;
-              acc[tickerKey].Mv += curr.Mv;
-              acc[tickerKey].PnL += curr.PnL;
-              acc[tickerKey].Dividends += curr.Dividends;
-            } else {
-              // Create a new entry with the updated tickerKey.
-              acc[tickerKey] = { ...curr, Ticker: tickerKey };
-            }
-            return acc;
-          }, {} as Record<string, Position>)
-        );
-        return aggregatedPositions;
-      },
-      (error) => {
-        console.error("error", error);
-        throw new Error(
-          `An error occurred while fetching positions ${error.message}`
-        );
-      }
-    );
-};
-
 const PositionTable: React.FC = () => {
+  //   const refData = useSelector((state: RootState) => state.referenceData.data);
+
+  const fetchPosition = async (): Promise<Position[]> => {
+    return fetch("http://localhost:8080/api/v1/portfolio/positions")
+      .then((resp) => resp.json())
+      .then(
+        (data: Position[]) => {
+          // collapse SSB and Mas Bills in data to a single position
+          // TODO: allow fully uncollapsed positions
+          const aggregatedPositions = Object.values(
+            data.reduce((acc: Record<string, Position>, curr: Position) => {
+              let tickerKey = curr.Ticker;
+              let tickerName: string;
+
+              // If it's a mas tbill (8 characters, first two and last are letters), set key to "TBill".
+              if (
+                tickerKey.length === 8 &&
+                /^[A-Za-z]$/.test(tickerKey[0]) &&
+                /^[A-Za-z]$/.test(tickerKey[1]) &&
+                /^[A-Za-z]$/.test(tickerKey[tickerKey.length - 1])
+              ) {
+                tickerKey = "TBill";
+                tickerName = "MAS Bills";
+              } else if (tickerKey.startsWith("SB") && tickerKey.length === 7) {
+                // If ticker starts with "SB" and has 7 characters, set key to "SSB".
+                tickerKey = "SSB";
+                tickerName = "SSB";
+              } else {
+                // If it's not a mas tbill or SSB, set key to the original ticker.
+                // tickerName = refData?.[tickerKey]?.name ?? "";
+              }
+
+              // If the key already exists, sum the values.
+              if (acc[tickerKey]) {
+                acc[tickerKey].Qty += curr.Qty;
+                acc[tickerKey].Mv += curr.Mv;
+                acc[tickerKey].PnL += curr.PnL;
+                acc[tickerKey].Dividends += curr.Dividends;
+                // acc[tickerKey].Name = tickerName;
+              } else {
+                // Create a new entry with the updated tickerKey.
+                acc[tickerKey] = {
+                  ...curr,
+                  Ticker: tickerKey,
+                  //   Name: tickerName,
+                };
+              }
+              return acc;
+            }, {} as Record<string, Position>)
+          );
+          return aggregatedPositions;
+        },
+        (error) => {
+          console.error("error", error);
+          throw new Error(
+            `An error occurred while fetching positions ${error.message}`
+          );
+        }
+      );
+  };
+
   const {
     data: positions = [],
     isLoading,
@@ -78,6 +94,7 @@ const PositionTable: React.FC = () => {
   const columns = useMemo<MRT_ColumnDef<Position>[]>(
     () => [
       { accessorKey: "Ticker", header: "Ticker" },
+      //   { accessorKey: "Name", header: "Name" },
       { accessorKey: "Ccy", header: "Ccy" },
       { accessorKey: "Qty", header: "Qty" },
       {

@@ -24,8 +24,40 @@ const fetchPosition = async (): Promise<Position[]> => {
   return fetch("http://localhost:8080/api/v1/portfolio/positions")
     .then((resp) => resp.json())
     .then(
-      (data) => {
-        return data;
+      (data: Position[]) => {
+        // collapse SSB and Mas Bills in data to a single position
+        // TODO: allow fully uncollapsed positions
+        const aggregatedPositions = Object.values(
+          data.reduce((acc: Record<string, Position>, curr: Position) => {
+            let tickerKey = curr.Ticker;
+
+            // If it's a mas tbill (8 characters, first two and last are letters), set key to "TBill".
+            if (
+              tickerKey.length === 8 &&
+              /^[A-Za-z]$/.test(tickerKey[0]) &&
+              /^[A-Za-z]$/.test(tickerKey[1]) &&
+              /^[A-Za-z]$/.test(tickerKey[tickerKey.length - 1])
+            ) {
+              tickerKey = "TBill";
+            } else if (tickerKey.startsWith("SB") && tickerKey.length === 7) {
+              // If ticker starts with "SB" and has 7 characters, set key to "SSB".
+              tickerKey = "SSB";
+            }
+
+            // If the key already exists, sum the values.
+            if (acc[tickerKey]) {
+              acc[tickerKey].Qty += curr.Qty;
+              acc[tickerKey].Mv += curr.Mv;
+              acc[tickerKey].PnL += curr.PnL;
+              acc[tickerKey].Dividends += curr.Dividends;
+            } else {
+              // Create a new entry with the updated tickerKey.
+              acc[tickerKey] = { ...curr, Ticker: tickerKey };
+            }
+            return acc;
+          }, {} as Record<string, Position>)
+        );
+        return aggregatedPositions;
       },
       (error) => {
         console.error("error", error);
@@ -117,7 +149,11 @@ const PositionTable: React.FC = () => {
   const table = useMantineReactTable({
     columns,
     data: positions,
-    initialState: { showGlobalFilter: true, showColumnFilters: true },
+    initialState: {
+      showGlobalFilter: true,
+      showColumnFilters: true,
+      sorting: [{ id: "Mv", desc: true }],
+    },
     state: { density: "xs" },
     enableRowSelection: true,
     positionToolbarAlertBanner: "bottom",

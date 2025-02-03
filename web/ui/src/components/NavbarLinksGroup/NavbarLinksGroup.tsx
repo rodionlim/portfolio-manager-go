@@ -2,13 +2,14 @@ import { useState } from "react";
 import { IconChevronRight } from "@tabler/icons-react";
 import { Box, Collapse, Group, ThemeIcon, UnstyledButton } from "@mantine/core";
 import classes from "./NavbarLinksGroup.module.css";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface LinksGroupProps {
   icon: React.FC<any>;
   label: string;
   initiallyOpened?: boolean;
   links?: { label: string; link: string }[];
+  link?: string;
 }
 
 export function LinksGroup({
@@ -16,6 +17,7 @@ export function LinksGroup({
   label,
   initiallyOpened,
   links,
+  link,
 }: LinksGroupProps) {
   const hasLinks = Array.isArray(links);
   const [opened, setOpened] = useState(initiallyOpened || false);
@@ -24,11 +26,14 @@ export function LinksGroup({
       {link.label}
     </Link>
   ));
+  const navigate = useNavigate();
 
   return (
     <>
       <UnstyledButton
-        onClick={() => setOpened((o) => !o)}
+        onClick={() => {
+          hasLinks ? setOpened((o) => !o) : navigate(link!);
+        }}
         className={classes.control}
       >
         <Group justify="space-between" gap={0}>

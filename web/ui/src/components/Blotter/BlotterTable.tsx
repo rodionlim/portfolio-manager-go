@@ -21,6 +21,7 @@ interface Trade {
   Quantity: number;
   Price: number;
   TradeType: boolean;
+  Side: string;
   SeqNum: number;
 }
 
@@ -75,6 +76,7 @@ const BlotterTable: React.FC = () => {
       { accessorKey: "TradeID", header: "Trade ID" },
       { accessorKey: "TradeDate", header: "Date" },
       { accessorKey: "Ticker", header: "Ticker" },
+      { accessorKey: "Side", header: "Side" },
       // { accessorKey: "Trader", header: "Trader" },
       // { accessorKey: "Broker", header: "Broker" },
       { accessorKey: "Account", header: "Account" },

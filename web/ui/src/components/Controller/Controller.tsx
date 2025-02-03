@@ -5,6 +5,7 @@ import BlotterTable from "../Blotter/BlotterTable";
 import BlotterForm from "../Blotter/BlotterForm";
 import ReferenceDataTable from "../ReferenceData/ReferenceDataTable";
 import ReferenceDataForm from "../ReferenceData/ReferenceDataForm";
+import PositionTable from "../Position/PositionTable";
 
 const Controller: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ const Controller: React.FC = () => {
       <Route path="/refdata/add_ref_data" element={<ReferenceDataForm />} />
       <Route path="/refdata/update_ref_data" element={<ReferenceDataForm />} />
       <Route path="/refdata" element={<ReferenceDataTable />} />
+      <Route path="/positions" element={<PositionTable />} />
       <Route
         path="/*"
         element={<div>Select a valid action on the left navigation bar</div>}

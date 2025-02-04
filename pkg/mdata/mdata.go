@@ -80,6 +80,14 @@ func (m *Manager) GetAssetPrice(ticker string) (*types.AssetData, error) {
 		}
 	}
 
+	// for SG MAS Bills, tickers are standardized against the following convention, e.g. BS24124Z, BY24124Z etc.
+	if common.IsSgTBill(ticker) {
+		if mas, ok := m.sources[sources.MAS]; ok {
+			data, err := mas.GetAssetPrice(ticker)
+			return data, err
+		}
+	}
+
 	tickerRef, err := m.getReferenceData(ticker)
 	if err != nil {
 		return nil, err

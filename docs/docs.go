@@ -673,6 +673,10 @@ const docTemplate = `{
                     "description": "Broker who executed the trade",
                     "type": "string"
                 },
+                "OrigTradeID": {
+                    "description": "Original trade ID to link auto closed trades to the original trade",
+                    "type": "string"
+                },
                 "Price": {
                     "description": "Price per unit of the asset",
                     "type": "number"
@@ -687,6 +691,10 @@ const docTemplate = `{
                 },
                 "Side": {
                     "description": "Buy or Sell",
+                    "type": "string"
+                },
+                "Status": {
+                    "description": "Status of the trade (e.g. Open, AutoClosed, Closed), autoclosed if the trade is closed by the system automatically upon expiry (e.g. MAS Bills), closed if the trade is closed manually",
                     "type": "string"
                 },
                 "Ticker": {
@@ -723,6 +731,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "origTradeID": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number"
                 },
@@ -734,6 +745,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "side": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 },
                 "ticker": {

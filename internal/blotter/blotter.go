@@ -27,6 +27,12 @@ const (
 	TradeSideSell = "sell"
 )
 
+const (
+	StatusOpen      = "open"
+	StatusAutoClose = "autoclosed"
+	StatusClosed    = "closed"
+)
+
 // TradeBlotter represents a service for managing trades.
 type TradeBlotter struct {
 	trades         []Trade
@@ -325,37 +331,45 @@ func (b *TradeBlotter) saveSeqNumToDAL(seqNum int) {
 
 // Trade represents a trade in the blotter.
 type Trade struct {
-	TradeID   string  `json:"TradeID"`                       // Unique identifier for the trade
-	TradeDate string  `json:"TradeDate" validate:"required"` // Date and time of the trade
-	Ticker    string  `json:"Ticker" validate:"required"`    // Ticker symbol of the asset
-	Side      string  `json:"Side" validate:"required"`      // Buy or Sell
-	Quantity  float64 `json:"Quantity" validate:"required"`  // Quantity of the asset
-	Price     float64 `json:"Price" validate:"required"`     // Price per unit of the asset
-	Yield     float64 `json:"Yield"`                         // Yield of the asset
-	Trader    string  `json:"Trader" validate:"required"`    // Trader who executed the trade
-	Broker    string  `json:"Broker" validate:"required"`    // Broker who executed the trade
-	Account   string  `json:"Account" validate:"required"`   // Account associated with the trade (CDP, MIP, Custodian)
-	SeqNum    int     `json:"SeqNum"`                        // Sequence number
+	TradeID     string  `json:"TradeID"`                       // Unique identifier for the trade
+	TradeDate   string  `json:"TradeDate" validate:"required"` // Date and time of the trade
+	Ticker      string  `json:"Ticker" validate:"required"`    // Ticker symbol of the asset
+	Side        string  `json:"Side" validate:"required"`      // Buy or Sell
+	Quantity    float64 `json:"Quantity" validate:"required"`  // Quantity of the asset
+	Price       float64 `json:"Price" validate:"required"`     // Price per unit of the asset
+	Yield       float64 `json:"Yield"`                         // Yield of the asset
+	Trader      string  `json:"Trader" validate:"required"`    // Trader who executed the trade
+	Broker      string  `json:"Broker" validate:"required"`    // Broker who executed the trade
+	Account     string  `json:"Account" validate:"required"`   // Account associated with the trade (CDP, MIP, Custodian)
+	Status      string  `json:"Status"`                        // Status of the trade (e.g. Open, AutoClosed, Closed), autoclosed if the trade is closed by the system automatically upon expiry (e.g. MAS Bills), closed if the trade is closed manually
+	OrigTradeID string  `json:"OrigTradeID"`                   // Original trade ID to link auto closed trades to the original trade
+	SeqNum      int     `json:"SeqNum"`                        // Sequence number
 }
 
 // NewTrade creates a new Trade instance.
-func NewTrade(side string, quantity float64, ticker, trader, broker, account string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
+func NewTrade(side string, quantity float64, ticker, trader, broker, account, status, origTradeId string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
 
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
 	}
 
+	if !isValidStatus(status) {
+		return nil, fmt.Errorf("status must be either '%s', '%s' or '%s'", StatusOpen, StatusAutoClose, StatusClosed)
+	}
+
 	trade := Trade{
-		TradeID:   uuid.New().String(),
-		TradeDate: tradeDate.Format(time.RFC3339),
-		Ticker:    ticker,
-		Side:      side,
-		Quantity:  quantity,
-		Price:     price,
-		Yield:     yield,
-		Trader:    trader,
-		Broker:    broker,
-		Account:   account,
+		TradeID:     uuid.New().String(),
+		TradeDate:   tradeDate.Format(time.RFC3339),
+		Ticker:      ticker,
+		Side:        side,
+		Quantity:    quantity,
+		Price:       price,
+		Yield:       yield,
+		Trader:      trader,
+		Broker:      broker,
+		Account:     account,
+		Status:      status,
+		OrigTradeID: origTradeId,
 	}
 
 	err := validateTrade(trade)
@@ -363,24 +377,30 @@ func NewTrade(side string, quantity float64, ticker, trader, broker, account str
 }
 
 // NewTradeWithID creates a new Trade instance with a given trade ID, mainly for updating purposes
-func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trader, broker, account string, price float64, yield float64, seqNum int, tradeDate time.Time) (*Trade, error) {
+func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trader, broker, account, status, origTradeId string, price float64, yield float64, seqNum int, tradeDate time.Time) (*Trade, error) {
 
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
 	}
 
+	if !isValidStatus(status) {
+		return nil, fmt.Errorf("status must be either '%s', '%s' or '%s'", StatusOpen, StatusAutoClose, StatusClosed)
+	}
+
 	trade := Trade{
-		TradeID:   tradeID,
-		TradeDate: tradeDate.Format(time.RFC3339),
-		Ticker:    ticker,
-		Side:      side,
-		Quantity:  quantity,
-		Price:     price,
-		Yield:     yield,
-		Trader:    trader,
-		Broker:    broker,
-		Account:   account,
-		SeqNum:    seqNum,
+		TradeID:     tradeID,
+		TradeDate:   tradeDate.Format(time.RFC3339),
+		Ticker:      ticker,
+		Side:        side,
+		Quantity:    quantity,
+		Price:       price,
+		Yield:       yield,
+		Trader:      trader,
+		Broker:      broker,
+		Account:     account,
+		Status:      status,
+		OrigTradeID: origTradeId,
+		SeqNum:      seqNum,
 	}
 
 	err := validateTrade(trade)
@@ -392,11 +412,20 @@ func isValidSide(side string) bool {
 	return side == TradeSideBuy || side == TradeSideSell
 }
 
+// isValidStatus checks if the provided status is valid.
+func isValidStatus(status string) bool {
+	return status == StatusOpen || status == StatusAutoClose || status == StatusClosed
+}
+
 // validateTrade validates the trade struct according to predefined rules.
 func validateTrade(trade Trade) error {
 	validate := validator.New()
 	return validate.Struct(trade)
 }
+
+// ** Import / Export CSV Section **
+// All import and export functionalities for CSV has no concept of autoclosed nor an original trade id, since assumption is for migrating to a different system
+// For backup purposes without intention of migrating to a different system, the author suggests to backup the leveldb instead of migrating via csv files
 
 // ImportFromCSV imports trades from a CSV file and adds them to the blotter.
 // Expected CSV format: TradeDate,Ticker,Side,Quantity,Price,Yield,Trader,Broker
@@ -411,6 +440,7 @@ func (b *TradeBlotter) ImportFromCSVFile(filepath string) error {
 	return b.ImportFromCSVReader(reader)
 }
 
+// ImportFromCSVReader imports trades from a CSV reader and adds them to the blotter.
 func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) error {
 	logging.GetLogger().Info("Importing trades from CSV")
 
@@ -473,6 +503,8 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) error {
 			row[6], // Trader
 			row[7], // Broker
 			row[8], // Account
+			StatusOpen,
+			"", // OrigTradeID
 			price,
 			yield,
 			tradeDate,

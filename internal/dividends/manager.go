@@ -38,7 +38,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 		return nil, err
 	}
 
-	if tickerRef.DividendsSgTicker == "" && !common.IsSSB(ticker) {
+	if tickerRef.DividendsSgTicker == "" && (!common.IsSSB(ticker) && !common.IsSgTBill(ticker)) {
 		return nil, fmt.Errorf("no dividends.sg ticker found for the given ticker %s", ticker)
 	}
 

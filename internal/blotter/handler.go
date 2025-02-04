@@ -10,17 +10,19 @@ import (
 
 // TradeRequest represents the request payload for a trade.
 type TradeRequest struct {
-	Id        string  `json:"id"`
-	TradeDate string  `json:"tradeDate"`
-	Ticker    string  `json:"ticker"`
-	Side      string  `json:"side"`
-	Quantity  float64 `json:"quantity"`
-	Price     float64 `json:"price"`
-	Yield     float64 `json:"yield"`
-	Trader    string  `json:"trader"`
-	Broker    string  `json:"broker"`
-	Account   string  `json:"account"`
-	SeqNum    int     `json:"seqNum"` // Sequence number
+	ID          string  `json:"id"`
+	TradeDate   string  `json:"tradeDate"`
+	Ticker      string  `json:"ticker"`
+	Side        string  `json:"side"`
+	Quantity    float64 `json:"quantity"`
+	Price       float64 `json:"price"`
+	Yield       float64 `json:"yield"`
+	Trader      string  `json:"trader"`
+	Broker      string  `json:"broker"`
+	Account     string  `json:"account"`
+	Status      string  `json:"status"`
+	OrigTradeID string  `json:"origTradeID"`
+	SeqNum      int     `json:"seqNum"` // Sequence number
 }
 
 // ErrorResponse represents the error response payload.
@@ -68,6 +70,8 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 			tradeRequest.Trader,
 			tradeRequest.Broker,
 			tradeRequest.Account,
+			tradeRequest.Status,
+			tradeRequest.OrigTradeID,
 			tradeRequest.Price,
 			tradeRequest.Yield,
 			tradeDate)
@@ -117,13 +121,15 @@ func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 		}
 
 		trade, err := NewTradeWithID(
-			tradeRequest.Id,
+			tradeRequest.ID,
 			tradeRequest.Side,
 			tradeRequest.Quantity,
 			tradeRequest.Ticker,
 			tradeRequest.Trader,
 			tradeRequest.Broker,
 			tradeRequest.Account,
+			tradeRequest.Status,
+			tradeRequest.OrigTradeID,
 			tradeRequest.Price,
 			tradeRequest.Yield,
 			tradeRequest.SeqNum,

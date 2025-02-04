@@ -58,6 +58,8 @@ func TestUpdatePosition(t *testing.T) {
 		"trader1",
 		"broker1",
 		"cdp",
+		blotter.StatusOpen,
+		"",
 		150.0,
 		0.0,
 		time.Now(),
@@ -77,8 +79,8 @@ func TestAvgPriceOnUpdatePosition(t *testing.T) {
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
-		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "trader1", "broker1", "cdp", 150.0, 0.0, time.Now())),
-		must(blotter.NewTrade(blotter.TradeSideBuy, 50, "AAPL", "trader1", "broker1", "cdp", 200.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "trader1", "broker1", "cdp", blotter.StatusOpen, "", 150.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 50, "AAPL", "trader1", "broker1", "cdp", blotter.StatusOpen, "", 200.0, 0.0, time.Now())),
 	}
 
 	for _, trade := range trades {
@@ -97,8 +99,8 @@ func TestUpdateBuyAndSellPosition(t *testing.T) {
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
-		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "trader1", "broker1", "cdp", 150.0, 0.0, time.Now())),
-		must(blotter.NewTrade(blotter.TradeSideSell, 50, "AAPL", "trader1", "broker1", "cdp", 200.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "trader1", "broker1", "cdp", blotter.StatusOpen, "", 150.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideSell, 50, "AAPL", "trader1", "broker1", "cdp", blotter.StatusOpen, "", 200.0, 0.0, time.Now())),
 	}
 
 	for _, trade := range trades {
@@ -118,9 +120,9 @@ func TestGetPositions(t *testing.T) {
 
 	// Add multiple trades
 	trades := []*blotter.Trade{
-		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "trader1", "broker1", "cdp", 150.0, 0.0, time.Now())),
-		must(blotter.NewTrade(blotter.TradeSideBuy, 50, "GOOGL", "trader1", "broker1", "cdp", 2500.0, 0.0, time.Now())),
-		must(blotter.NewTrade(blotter.TradeSideBuy, 75, "MSFT", "trader2", "broker1", "cdp", 300.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "trader1", "broker1", "cdp", blotter.StatusOpen, "", 150.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 50, "GOOGL", "trader1", "broker1", "cdp", blotter.StatusOpen, "", 2500.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 75, "MSFT", "trader2", "broker1", "cdp", blotter.StatusOpen, "", 300.0, 0.0, time.Now())),
 	}
 
 	for _, trade := range trades {
@@ -187,6 +189,8 @@ func TestSubscribeToBlotter(t *testing.T) {
 		"trader1",
 		"broker1",
 		"cdp",
+		blotter.StatusOpen,
+		"",
 		150.0,
 		0.0,
 		time.Now(),
@@ -217,6 +221,8 @@ func TestSubscribeToBlotterWithTradeDeletion(t *testing.T) {
 		"trader1",
 		"broker1",
 		"cdp",
+		blotter.StatusOpen,
+		"",
 		150.0,
 		0.0,
 		time.Now(),
@@ -250,6 +256,8 @@ func TestSubscribeToBlotterWithTradeUpdate(t *testing.T) {
 		"trader1",
 		"broker1",
 		"cdp",
+		blotter.StatusOpen,
+		"",
 		150.0,
 		0.0,
 		time.Now(),
@@ -266,6 +274,8 @@ func TestSubscribeToBlotterWithTradeUpdate(t *testing.T) {
 		"trader1",
 		"broker1",
 		"cdp",
+		blotter.StatusOpen,
+		"",
 		150.0,
 		0.0,
 		1,

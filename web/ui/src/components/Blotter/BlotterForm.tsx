@@ -4,7 +4,7 @@ import {
   Container,
   Group,
   NumberInput,
-  Stack,
+  SimpleGrid,
   Switch,
   TextInput,
   Title,
@@ -35,6 +35,8 @@ export default function BlotterForm() {
       trader: location.state?.trader || defaultTrader,
       broker: location.state?.broker || defaultBroker,
       account: location.state?.account || defaultAccount,
+      status: location.state?.status || "open",
+      originalTradeId: location.state?.originalTradeId || "",
       qty: location.state?.qty || 0,
       price: location.state?.price || 0,
       value: 0, // either value or price must be specified
@@ -45,6 +47,9 @@ export default function BlotterForm() {
       date: (value) => !value && "Date is required",
       ticker: (value) => value.length < 1 && "Ticker is required",
       account: (value) => value.length < 1 && "Account is required",
+      status: (value) =>
+        ["open", "autoclosed", "closed"].includes(value) &&
+        "Status is required, and must be either open, autoclosed, or closed",
       qty: (value) => value <= 0 && "Quantity must be greater than 0",
       price: (value, values) => {
         if (value <= 0 && values.value <= 0) {
@@ -85,6 +90,8 @@ export default function BlotterForm() {
       trader: values.trader,
       broker: values.broker,
       account: values.account,
+      status: values.status,
+      originalTradeId: values.originalTradeId,
       quantity: values.qty,
       price: values.price,
       side: values.tradeType ? "sell" : "buy",
@@ -133,12 +140,12 @@ export default function BlotterForm() {
   };
 
   return (
-    <Container size="sm">
+    <Container size="md">
       <Title order={2} mb="lg">
         {form.getValues().tradeId ? "Update" : "Add"} Trade to Blotter
       </Title>
       <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack gap="md">
+        <SimpleGrid cols={2}>
           {form.getValues().tradeId && (
             <TextInput
               withAsterisk
@@ -186,6 +193,20 @@ export default function BlotterForm() {
             key={form.key("account")}
             {...form.getInputProps("account")}
           />
+          <Autocomplete
+            withAsterisk
+            label="Status"
+            placeholder="status to be added, e.g. open"
+            data={["open", "autoclosed", "closed"]}
+            key={form.key("status")}
+            {...form.getInputProps("status")}
+          />
+          <TextInput
+            label="Original Trade ID"
+            placeholder="original trade id"
+            key={form.key("originalTradeId")}
+            {...form.getInputProps("originalTradeId")}
+          />
           <NumberInput
             withAsterisk
             label="Quantity"
@@ -204,7 +225,7 @@ export default function BlotterForm() {
             {...form.getInputProps("price")}
           />
           <NumberInput
-            label="Value (Either Price or Value must be specified, not both)"
+            label="Value (Only specify either Price or Value)"
             placeholder="Value"
             allowDecimal={true}
             decimalScale={4}
@@ -212,6 +233,7 @@ export default function BlotterForm() {
             {...form.getInputProps("value")}
           />
 
+          <div />
           <Group justify="flex-end">
             <Switch
               size="xl"
@@ -223,7 +245,7 @@ export default function BlotterForm() {
 
             <Button type="submit">Submit</Button>
           </Group>
-        </Stack>
+        </SimpleGrid>
       </form>
     </Container>
   );

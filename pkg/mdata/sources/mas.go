@@ -50,7 +50,7 @@ func (src *Mas) GetHistoricalData(ticker string, fromDate int64, toDate int64) (
 	return historicalData, nil
 }
 
-// GetAssetPrice implements types.DataSource. SSB is always traded at par value.
+// GetAssetPrice implements types.DataSource. MAS Bills are always traded at par value.
 func (src *Mas) GetAssetPrice(ticker string) (*types.AssetData, error) {
 	return &types.AssetData{
 		Ticker:    ticker,

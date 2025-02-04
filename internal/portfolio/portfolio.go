@@ -7,6 +7,7 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/dividends"
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
@@ -33,6 +34,7 @@ type Portfolio struct {
 	positions     map[string]map[string]*Position // map[trader]map[ticker]*Position
 	currentSeqNum int                             // used as a pointer to point to the last blotter trade that was processed
 	db            dal.Database
+	blotter       *blotter.TradeBlotter
 	mdata         mdata.MarketDataManager
 	rdata         rdata.ReferenceManager
 	dividendsMgr  *dividends.DividendsManager
@@ -97,8 +99,10 @@ func (p *Portfolio) GetDividendsManager() *dividends.DividendsManager {
 	return p.dividendsMgr
 }
 
-// SubscribeToBlotter subscribes to the blotter service and listens for new trade events.
+// SubscribeToBlotter subscribes to the blotter service, adds a reference to the svc and listens for new trade events.
 func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
+	p.blotter = blotterSvc
+
 	// Check if the currentSeqNum is less than the current sequence number of the blotter, i
 	// if it is, replay the trades from the blotter starting from the currentSeqNum
 	blotterSeqNum := blotterSvc.GetCurrentSeqNum()
@@ -133,6 +137,56 @@ func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 	}))
 
 	p.logger.Info("Subscribed to blotter service")
+}
+
+func (p *Portfolio) AutoCloseTrades() error {
+	// If blotter svc reference is nil, return an error since we need the blotter service to get the trades
+	if p.blotter == nil {
+		return fmt.Errorf("blotter service reference is nil")
+	}
+
+	// Get all the trades from the blotter
+	trades := p.blotter.GetTrades()
+
+	// Get reference data for all tickers
+	rdata, err := p.rdata.GetAllTickers()
+	if err != nil {
+		return err
+	}
+
+	for _, trade := range trades {
+		if trade.Status == blotter.StatusOpen && common.IsSgTBill(trade.Ticker) && trade.Side == blotter.TradeSideBuy {
+			// Check maturity date and compare it against today, if it is less than today, close the trade
+			tickerRef, ok := rdata[trade.Ticker]
+			if !ok {
+				return fmt.Errorf("ticker reference not found for ticker %s", trade.Ticker)
+			}
+
+			if !common.IsFutureDate(tickerRef.MaturityDate) {
+
+				p.logger.Infof("Auto closing trade %s for ticker %s", trade.TradeID, trade.Ticker)
+
+				// close the original trade
+				trade.Status = blotter.StatusClosed
+				err := p.blotter.UpdateTrade(trade)
+				if err != nil {
+					return err
+				}
+
+				// make a reversal trade
+				trade.Side = blotter.TradeSideSell
+				trade.OrigTradeID = trade.TradeID
+				trade.TradeID = common.GenerateTradeID()
+				err = p.blotter.AddTrade(trade)
+				if err != nil {
+					return err
+				}
+			}
+
+		}
+	}
+
+	return nil
 }
 
 // reverseTradeSide reverses the trade side in preparation for a trade revert

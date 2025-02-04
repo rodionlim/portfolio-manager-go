@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
@@ -358,7 +359,7 @@ func NewTrade(side string, quantity float64, ticker, trader, broker, account, st
 	}
 
 	trade := Trade{
-		TradeID:     uuid.New().String(),
+		TradeID:     common.GenerateTradeID(),
 		TradeDate:   tradeDate.Format(time.RFC3339),
 		Ticker:      ticker,
 		Side:        side,

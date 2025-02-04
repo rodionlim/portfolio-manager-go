@@ -8,7 +8,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
-import { Tooltip } from "@mantine/core";
+import { Text, Tooltip } from "@mantine/core";
 
 interface Position {
   Ticker: string;
@@ -145,13 +145,18 @@ const PositionTable: React.FC = () => {
         accessorKey: "Mv",
         header: "Mv",
         Cell: ({ cell }) => {
+          const value = cell.getValue<number>();
+          const percentage = totals.Mv ? (value / totals.Mv) * 100 : 0;
           return (
             <span>
               $
-              {cell.getValue<number>().toLocaleString(undefined, {
+              {value.toLocaleString(undefined, {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0,
-              })}
+              })}{" "}
+              <Text size="sm" c="dimmed" component="span">
+                ({percentage.toFixed(0)}%)
+              </Text>
             </span>
           );
         },

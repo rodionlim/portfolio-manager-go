@@ -6,12 +6,13 @@ import {
   useMantineReactTable,
 } from "mantine-react-table";
 import { useQuery } from "@tanstack/react-query";
-// import { useSelector } from "react-redux";
-// import { RootState } from "../../store";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
+import { Tooltip } from "@mantine/core";
 
 interface Position {
   Ticker: string;
-  //   Name: string;
+  Name: string;
   Trader: string;
   Ccy: string;
   AssetClass: string;
@@ -24,75 +25,65 @@ interface Position {
 }
 
 const PositionTable: React.FC = () => {
-  //   const refData = useSelector((state: RootState) => state.referenceData.data);
-
-  const fetchPosition = async (): Promise<Position[]> => {
-    return fetch("http://localhost:8080/api/v1/portfolio/positions")
-      .then((resp) => resp.json())
-      .then(
-        (data: Position[]) => {
-          // collapse SSB and Mas Bills in data to a single position
-          // TODO: allow fully uncollapsed positions
-          const aggregatedPositions = Object.values(
-            data.reduce((acc: Record<string, Position>, curr: Position) => {
-              let tickerKey = curr.Ticker;
-              let tickerName: string;
-
-              // If it's a mas tbill (8 characters, first two and last are letters), set key to "TBill".
-              if (
-                tickerKey.length === 8 &&
-                /^[A-Za-z]$/.test(tickerKey[0]) &&
-                /^[A-Za-z]$/.test(tickerKey[1]) &&
-                /^[A-Za-z]$/.test(tickerKey[tickerKey.length - 1])
-              ) {
-                tickerKey = "TBill";
-                tickerName = "MAS Bills";
-              } else if (tickerKey.startsWith("SB") && tickerKey.length === 7) {
-                // If ticker starts with "SB" and has 7 characters, set key to "SSB".
-                tickerKey = "SSB";
-                tickerName = "SSB";
-              } else {
-                // If it's not a mas tbill or SSB, set key to the original ticker.
-                // tickerName = refData?.[tickerKey]?.name ?? "";
-              }
-
-              // If the key already exists, sum the values.
-              if (acc[tickerKey]) {
-                acc[tickerKey].Qty += curr.Qty;
-                acc[tickerKey].Mv += curr.Mv;
-                acc[tickerKey].PnL += curr.PnL;
-                acc[tickerKey].Dividends += curr.Dividends;
-                // acc[tickerKey].Name = tickerName;
-              } else {
-                // Create a new entry with the updated tickerKey.
-                acc[tickerKey] = {
-                  ...curr,
-                  Ticker: tickerKey,
-                  //   Name: tickerName,
-                };
-              }
-              return acc;
-            }, {} as Record<string, Position>)
-          );
-          return aggregatedPositions;
-        },
-        (error) => {
-          console.error("error", error);
-          throw new Error(
-            `An error occurred while fetching positions ${error.message}`
-          );
-        }
-      );
-  };
+  const refData = useSelector((state: RootState) => state.referenceData.data);
 
   const {
-    data: positions = [],
+    data: rawPositions = [],
     isLoading,
     error,
-  } = useQuery({ queryKey: ["positions"], queryFn: fetchPosition });
+  } = useQuery<Position[]>({
+    queryKey: ["positions"],
+    queryFn: async () => {
+      const resp = await fetch(
+        "http://localhost:8080/api/v1/portfolio/positions"
+      );
+      return resp.json();
+    },
+  });
+
+  // Use useMemo to aggregate positions using the latest refData as well.
+  const aggregatedPositions = useMemo(() => {
+    if (!rawPositions) return [];
+    return Object.values(
+      rawPositions.reduce((acc: Record<string, Position>, curr: Position) => {
+        let tickerKey = curr.Ticker;
+        let tickerName: string;
+
+        // If it's a mas tbill, set key to "TBill".
+        if (
+          tickerKey.length === 8 &&
+          /^[A-Za-z]$/.test(tickerKey[0]) &&
+          /^[A-Za-z]$/.test(tickerKey[1]) &&
+          /^[A-Za-z]$/.test(tickerKey[tickerKey.length - 1])
+        ) {
+          tickerKey = "TBill";
+          tickerName = "MAS Bills";
+        } else if (tickerKey.startsWith("SB") && tickerKey.length === 7) {
+          // If ticker starts with "SB" and has 7 characters, set key to "SSB".
+          tickerKey = "SSB";
+          tickerName = "SSB";
+        } else {
+          // Use updated refData here.
+          tickerName = refData?.[tickerKey]?.name ?? "";
+        }
+
+        if (acc[tickerKey]) {
+          acc[tickerKey].Qty += curr.Qty;
+          acc[tickerKey].Mv += curr.Mv;
+          acc[tickerKey].PnL += curr.PnL;
+          acc[tickerKey].Dividends += curr.Dividends;
+          acc[tickerKey].Name = tickerName;
+        } else {
+          acc[tickerKey] = { ...curr, Ticker: tickerKey, Name: tickerName };
+        }
+
+        return acc;
+      }, {} as Record<string, Position>)
+    );
+  }, [rawPositions, refData]);
 
   const totals = useMemo(() => {
-    return positions.reduce(
+    const res = rawPositions.reduce(
       (acc, row) => {
         acc.Mv += row.Mv;
         acc.Pnl += row.PnL;
@@ -106,14 +97,34 @@ const PositionTable: React.FC = () => {
       },
       { Mv: 0, MvLessGovies: 0, Pnl: 0, Dividends: 0 }
     );
-  }, [positions]);
+    return res;
+  }, [rawPositions]);
 
   const columns = useMemo<MRT_ColumnDef<Position>[]>(
     () => [
       { accessorKey: "Ticker", header: "Ticker" },
-      //   { accessorKey: "Name", header: "Name" },
+      {
+        accessorKey: "Name",
+        header: "Name",
+        Cell: ({ cell }) => {
+          const name = cell.getValue<string>();
+          const displayName =
+            name.length > 22 ? name.slice(0, 22) + "..." : name;
+          return (
+            <Tooltip label={name} withArrow>
+              <span>{displayName}</span>
+            </Tooltip>
+          );
+        },
+      },
       { accessorKey: "Ccy", header: "Ccy" },
-      { accessorKey: "Qty", header: "Qty" },
+      {
+        accessorKey: "Qty",
+        header: "Qty",
+        Cell: ({ cell }) => {
+          return <span>{cell.getValue<number>().toLocaleString()}</span>;
+        },
+      },
       {
         accessorKey: "Mv",
         header: "Mv",
@@ -213,12 +224,12 @@ const PositionTable: React.FC = () => {
         },
       },
     ],
-    []
+    [totals, refData]
   );
 
   const table = useMantineReactTable({
     columns,
-    data: positions,
+    data: aggregatedPositions,
     initialState: {
       showGlobalFilter: true,
       showColumnFilters: true,

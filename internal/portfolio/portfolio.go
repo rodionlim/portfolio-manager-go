@@ -25,6 +25,7 @@ type Position struct {
 	PnL           float64
 	Dividends     float64
 	AvgPx         float64
+	Px            float64
 	TotalPaid     float64
 }
 
@@ -301,6 +302,7 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 
 			position.Mv = position.Qty * assetData.Price
 			position.PnL = (assetData.Price-position.AvgPx)*position.Qty + position.Dividends
+			position.Px = assetData.Price
 		}
 	case "":
 		// we allow this since we want somethimes want tests to skip position computation,

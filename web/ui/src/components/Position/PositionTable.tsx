@@ -22,6 +22,7 @@ interface Position {
   PnL: number;
   Dividends: number;
   AvgPx: number;
+  Px: number;
 }
 
 const PositionTable: React.FC = () => {
@@ -72,6 +73,7 @@ const PositionTable: React.FC = () => {
           acc[tickerKey].Mv += curr.Mv;
           acc[tickerKey].PnL += curr.PnL;
           acc[tickerKey].Dividends += curr.Dividends;
+          acc[tickerKey].Dividends += curr.Px;
           acc[tickerKey].Name = tickerName;
         } else {
           acc[tickerKey] = { ...curr, Ticker: tickerKey, Name: tickerName };
@@ -117,7 +119,21 @@ const PositionTable: React.FC = () => {
           );
         },
       },
-      { accessorKey: "Ccy", header: "Ccy" },
+      {
+        accessorKey: "Px",
+        header: "Current Px",
+        Cell: ({ cell }) => {
+          return (
+            <span>
+              $
+              {cell.getValue<number>()?.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              }) ?? ""}
+            </span>
+          );
+        },
+      },
       {
         accessorKey: "Qty",
         header: "Qty",
@@ -215,14 +231,15 @@ const PositionTable: React.FC = () => {
           return (
             <span>
               $
-              {cell.getValue<number>().toLocaleString(undefined, {
+              {cell.getValue<number>()?.toLocaleString(undefined, {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2,
-              })}
+              }) ?? ""}
             </span>
           );
         },
       },
+      { accessorKey: "Ccy", header: "Ccy" },
     ],
     [totals, refData]
   );

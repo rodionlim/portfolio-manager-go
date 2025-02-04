@@ -788,6 +788,9 @@ const docTemplate = `{
                 "pnL": {
                     "type": "number"
                 },
+                "px": {
+                    "type": "number"
+                },
                 "qty": {
                     "type": "number"
                 },

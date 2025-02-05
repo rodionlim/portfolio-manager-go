@@ -139,54 +139,62 @@ func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 	p.logger.Info("Subscribed to blotter service")
 }
 
-func (p *Portfolio) AutoCloseTrades() error {
+func (p *Portfolio) AutoCloseTrades() ([]string, error) {
 	// If blotter svc reference is nil, return an error since we need the blotter service to get the trades
 	if p.blotter == nil {
-		return fmt.Errorf("blotter service reference is nil")
+		return nil, fmt.Errorf("blotter service reference is nil")
 	}
 
 	// Get all the trades from the blotter
 	trades := p.blotter.GetTrades()
 
-	// Get reference data for all tickers
-	rdata, err := p.rdata.GetAllTickers()
-	if err != nil {
-		return err
-	}
-
+	var closedTrades []string
 	for _, trade := range trades {
-		if trade.Status == blotter.StatusOpen && common.IsSgTBill(trade.Ticker) && trade.Side == blotter.TradeSideBuy {
-			// Check maturity date and compare it against today, if it is less than today, close the trade
-			tickerRef, ok := rdata[trade.Ticker]
-			if !ok {
-				return fmt.Errorf("ticker reference not found for ticker %s", trade.Ticker)
-			}
-
-			if !common.IsFutureDate(tickerRef.MaturityDate) {
-
-				p.logger.Infof("Auto closing trade %s for ticker %s", trade.TradeID, trade.Ticker)
-
-				// close the original trade
-				trade.Status = blotter.StatusClosed
-				err := p.blotter.UpdateTrade(trade)
+		if trade.Status == blotter.StatusOpen && trade.Side == blotter.TradeSideBuy {
+			// currently only support auto closing trades for T-Bills
+			if common.IsSgTBill(trade.Ticker) {
+				// Check maturity date and compare it against today, if it is less than today, close the trade
+				tickerRef, err := p.rdata.GetTicker(trade.Ticker)
 				if err != nil {
-					return err
+					return closedTrades, fmt.Errorf("ticker reference not found for ticker %s", trade.Ticker)
 				}
 
-				// make a reversal trade
-				trade.Side = blotter.TradeSideSell
-				trade.OrigTradeID = trade.TradeID
-				trade.TradeID = common.GenerateTradeID()
-				err = p.blotter.AddTrade(trade)
-				if err != nil {
-					return err
+				if tickerRef.MaturityDate == "" {
+					// needs to be updated by market data manager before attempting to close the trade
+					continue
+				}
+
+				if !common.IsFutureDate(tickerRef.MaturityDate) {
+
+					p.logger.Infof("Auto closing trade %s for ticker %s", trade.TradeID, trade.Ticker)
+
+					origTrade := trade.Clone()
+
+					// close the original trade
+					trade.Status = blotter.StatusClosed
+					err := p.blotter.UpdateTrade(trade)
+					if err != nil {
+						return closedTrades, err
+					}
+
+					// make a reversal trade
+					trade.Side = blotter.TradeSideSell
+					trade.OrigTradeID = trade.TradeID
+					trade.TradeDate = tickerRef.MaturityDate
+					trade.TradeID = common.GenerateTradeID()
+					err = p.blotter.AddTrade(trade)
+					if err != nil {
+						// if the reversal trade fails, we should revert the amendments on the original trade
+						p.blotter.UpdateTrade(origTrade)
+						return closedTrades, err
+					}
+
+					closedTrades = append(closedTrades, trade.OrigTradeID)
 				}
 			}
-
 		}
 	}
-
-	return nil
+	return closedTrades, nil
 }
 
 // reverseTradeSide reverses the trade side in preparation for a trade revert

@@ -226,9 +226,9 @@ func TestImportFromCSVFile(t *testing.T) {
 
 	// Create mock CSV content
 	csvContent := [][]string{
-		{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account"},
-		{"2023-10-12T07:20:50Z", "AAPL", "buy", "100", "150.0", "0.0", "trader1", "broker1", "cdp"},
-		{"2023-10-12T07:20:50Z", "GOOG", "sell", "200", "186.53", "", "trader2", "broker2", "cdp"},
+		{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account", "Status"},
+		{"2023-10-12T07:20:50Z", "AAPL", "buy", "100", "150.0", "0.0", "trader1", "broker1", "cdp", ""},
+		{"2023-10-12T07:20:50Z", "GOOG", "sell", "200", "186.53", "", "trader2", "broker2", "cdp", ""},
 	}
 
 	// Create mock CSV file

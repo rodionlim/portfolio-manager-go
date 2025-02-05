@@ -7,6 +7,7 @@ package portfolio
 import (
 	"encoding/json"
 	"net/http"
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
 )
 
@@ -16,16 +17,39 @@ import (
 // @Tags portfolio
 // @Produce json
 // @Success 200 {array} Position
-// @Failure 500 {object} error
+// @Failure 500 {object} common.ErrorResponse "Failed to get positions"
 // @Router /api/v1/portfolio/positions [get]
 func HandlePositionsGet(portfolio *Portfolio) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		positions, err := portfolio.GetAllPositions()
 		if err != nil {
 			logging.GetLogger().Errorf("Failed to get positions: %v", err)
+			common.WriteJSONError(w, "Failed to get positions", http.StatusInternalServerError)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(positions)
+	}
+}
+
+// HandlePositionsCleanup handles closing positions that have expired
+// @Summary Close positions that have expired
+// @Description Closes positions that have expired without a corresponding closure trade
+// @Tags portfolio
+// @Produce json
+// @Success 200 {array} []string "Trade Ids of closed trades"
+// @Failure 500 {object} common.ErrorResponse "Failed to auto close positions"
+// @Router /api/v1/portfolio/cleanup [post]
+func HandlePositionsCleanup(portfolio *Portfolio) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		closedTrades, err := portfolio.AutoCloseTrades()
+		if err != nil {
+			logging.GetLogger().Errorf("Failed to auto close positions: %v", err)
+			common.WriteJSONError(w, "Failed to auto close positions", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(closedTrades)
 	}
 }
 
@@ -36,7 +60,15 @@ func RegisterHandlers(mux *http.ServeMux, portfolio *Portfolio) {
 		case http.MethodGet:
 			HandlePositionsGet(portfolio).ServeHTTP(w, r)
 		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
+	})
+
+	mux.HandleFunc("/api/v1/portfolio/cleanup", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandlePositionsCleanup(portfolio).ServeHTTP(w, r)
 	})
 }

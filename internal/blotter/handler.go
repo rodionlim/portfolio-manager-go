@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"net/http"
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
 	"time"
 )
@@ -25,16 +26,6 @@ type TradeRequest struct {
 	SeqNum      int     `json:"seqNum"` // Sequence number
 }
 
-// ErrorResponse represents the error response payload.
-type ErrorResponse struct {
-	Message string `json:"message"`
-}
-
-// SuccessResponse represents the success response payload.
-type SuccessResponse struct {
-	Message string `json:"message"`
-}
-
 // HandleTradePost handles the addition of trades to the blotter service.
 // @Summary Add a new trade
 // @Description Add a new trade to the blotter
@@ -43,8 +34,8 @@ type SuccessResponse struct {
 // @Produce  json
 // @Param   trade  body  TradeRequest  true  "Trade Request"
 // @Success 201 {object} Trade
-// @Failure 400 {object} ErrorResponse "Invalid request payload"
-// @Failure 500 {object} ErrorResponse "Failed to add trade"
+// @Failure 400 {object} common.ErrorResponse "Invalid request payload"
+// @Failure 500 {object} common.ErrorResponse "Failed to add trade"
 // @Router /api/v1/blotter/trade [post]
 func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -52,14 +43,14 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&tradeRequest)
 		if err != nil {
 			logging.GetLogger().Error(err)
-			writeJSONError(w, "Invalid request payload", http.StatusBadRequest)
+			common.WriteJSONError(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
 
 		tradeDate, err := time.Parse(time.RFC3339, tradeRequest.TradeDate)
 		if err != nil {
 			logging.GetLogger().Error(err)
-			writeJSONError(w, "Invalid trade date format", http.StatusBadRequest)
+			common.WriteJSONError(w, "Invalid trade date format", http.StatusBadRequest)
 			return
 		}
 
@@ -76,14 +67,14 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 			tradeRequest.Yield,
 			tradeDate)
 		if err != nil {
-			writeJSONError(w, err.Error(), http.StatusBadRequest)
+			common.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		err = blotter.AddTrade(*trade)
 		if err != nil {
 			logging.GetLogger().Error("Failed to add trade", err)
-			writeJSONError(w, "Failed to add trade", http.StatusInternalServerError)
+			common.WriteJSONError(w, "Failed to add trade", http.StatusInternalServerError)
 			return
 		}
 
@@ -100,8 +91,8 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 // @Produce  json
 // @Param   trade  body  TradeRequest  true  "Trade Request"
 // @Success 201 {object} Trade
-// @Failure 400 {object} ErrorResponse "Invalid request payload"
-// @Failure 500 {object} ErrorResponse "Failed to update trade"
+// @Failure 400 {object} common.ErrorResponse "Invalid request payload"
+// @Failure 500 {object} common.ErrorResponse "Failed to update trade"
 // @Router /api/v1/blotter/trade [put]
 func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -109,14 +100,14 @@ func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&tradeRequest)
 		if err != nil {
 			logging.GetLogger().Error(err)
-			writeJSONError(w, "Invalid request payload", http.StatusBadRequest)
+			common.WriteJSONError(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
 
 		tradeDate, err := time.Parse(time.RFC3339, tradeRequest.TradeDate)
 		if err != nil {
 			logging.GetLogger().Error(err)
-			writeJSONError(w, "Invalid trade date format", http.StatusBadRequest)
+			common.WriteJSONError(w, "Invalid trade date format", http.StatusBadRequest)
 			return
 		}
 
@@ -135,14 +126,14 @@ func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 			tradeRequest.SeqNum,
 			tradeDate)
 		if err != nil {
-			writeJSONError(w, err.Error(), http.StatusBadRequest)
+			common.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		err = blotter.UpdateTrade(*trade)
 		if err != nil {
 			logging.GetLogger().Error("Failed to update trade", err)
-			writeJSONError(w, "Failed to update trade", http.StatusInternalServerError)
+			common.WriteJSONError(w, "Failed to update trade", http.StatusInternalServerError)
 			return
 		}
 
@@ -158,9 +149,9 @@ func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 // @Accept  json
 // @Produce  json
 // @Param   ids  body  []int  true  "Trade IDs"
-// @Success 200 {object} SuccessResponse "message"
-// @Failure 400 {object} ErrorResponse "Invalid request payload"
-// @Failure 500 {object} ErrorResponse "Failed to delete trades"
+// @Success 200 {object} common.SuccessResponse "message"
+// @Failure 400 {object} common.ErrorResponse "Invalid request payload"
+// @Failure 500 {object} common.ErrorResponse "Failed to delete trades"
 // @Router /api/v1/blotter/trade [delete]
 func HandleTradeDelete(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -168,19 +159,19 @@ func HandleTradeDelete(blotter *TradeBlotter) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&ids)
 		if err != nil {
 			logging.GetLogger().Error(err)
-			writeJSONError(w, "Invalid request payload", http.StatusBadRequest)
+			common.WriteJSONError(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
 
 		err = blotter.RemoveTrades(ids)
 		if err != nil {
 			logging.GetLogger().Error("Failed to delete trades", err)
-			writeJSONError(w, "Failed to delete trades", http.StatusInternalServerError)
+			common.WriteJSONError(w, "Failed to delete trades", http.StatusInternalServerError)
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(SuccessResponse{Message: "Trades deleted successfully"})
+		json.NewEncoder(w).Encode(common.SuccessResponse{Message: "Trades deleted successfully"})
 	}
 }
 
@@ -207,15 +198,15 @@ func HandleTradeGet(blotter *TradeBlotter) http.HandlerFunc {
 // @Produce  json
 // @Param   file  formData  file  true  "CSV file"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} ErrorResponse "Failed to get file from request"
-// @Failure 500 {object} ErrorResponse "Failed to import trades"
+// @Failure 400 {object} common.ErrorResponse "Failed to get file from request"
+// @Failure 500 {object} common.ErrorResponse "Failed to import trades"
 // @Router /api/v1/blotter/import [post]
 func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		file, _, err := r.FormFile("file")
 		if err != nil {
 			logging.GetLogger().Error(err)
-			writeJSONError(w, "Failed to get file from request", http.StatusBadRequest)
+			common.WriteJSONError(w, "Failed to get file from request", http.StatusBadRequest)
 			return
 		}
 		defer file.Close()
@@ -224,7 +215,7 @@ func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 		err = blotter.ImportFromCSVReader(reader)
 		if err != nil {
 			logging.GetLogger().Error(err)
-			writeJSONError(w, err.Error(), http.StatusBadRequest)
+			common.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -238,14 +229,14 @@ func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 // @Tags trades
 // @Produce  text/csv
 // @Success 200 {file} file "trades.csv"
-// @Failure 500 {object} ErrorResponse "Failed to export trades"
+// @Failure 500 {object} common.ErrorResponse "Failed to export trades"
 // @Router /api/v1/blotter/export [get]
 func HandleTradeExportCSV(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		trades, err := blotter.ExportToCSVBytes()
 		if err != nil {
 			logging.GetLogger().Error(err)
-			writeJSONError(w, err.Error(), http.StatusInternalServerError)
+			common.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -254,13 +245,6 @@ func HandleTradeExportCSV(blotter *TradeBlotter) http.HandlerFunc {
 
 		w.Write(trades)
 	}
-}
-
-// writeJSONError writes an error message in JSON format to the response.
-func writeJSONError(w http.ResponseWriter, message string, statusCode int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(ErrorResponse{Message: message})
 }
 
 // RegisterHandlers registers the handlers for the blotter service.
@@ -276,13 +260,13 @@ func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 		case http.MethodPut:
 			HandleTradeUpdate(blotter).ServeHTTP(w, r)
 		default:
-			writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
 
 	mux.HandleFunc("/api/v1/blotter/import", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		HandleTradeImportCSV(blotter).ServeHTTP(w, r)
@@ -290,7 +274,7 @@ func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 
 	mux.HandleFunc("/api/v1/blotter/export", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		HandleTradeExportCSV(blotter).ServeHTTP(w, r)

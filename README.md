@@ -7,9 +7,10 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 ## Features
 
 - Value assets based on current market prices
-- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com) with local cache
-- Import / Export portfolio blotter data using CSV file for easy migration to other portfolio systems, local access and manipulation outside of the UI
+- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas)
+- Import / Export portfolio blotter data using CSV file for easy migration to other portfolio systems
 - Export ticker reference data in yaml format
+- Autoclosing expired positions
 - Store portfolio, reference, dividends and coupon data in leveldb for persistence
 - Display detailed information for individual and aggregated assets
 - OpenAPI compliant for easy integration with other systems
@@ -224,6 +225,12 @@ curl -X GET http://localhost:8080/api/v1/refdata/export
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/dividends -H "Content-Type: application/json" -d '{"ticker": "ES3.SI"}'
+```
+
+### Autoclose expired positions
+
+```sh
+curl -X POST http://localhost:8080/api/v1/portfolio/cleanup
 ```
 
 ## Configurations

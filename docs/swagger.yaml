@@ -1,15 +1,5 @@
 basePath: /
 definitions:
-  blotter.ErrorResponse:
-    properties:
-      message:
-        type: string
-    type: object
-  blotter.SuccessResponse:
-    properties:
-      message:
-        type: string
-    type: object
   blotter.Trade:
     properties:
       Account:
@@ -93,6 +83,16 @@ definitions:
         type: string
       yield:
         type: number
+    type: object
+  common.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  common.SuccessResponse:
+    properties:
+      message:
+        type: string
     type: object
   dividends.Dividends:
     properties:
@@ -200,7 +200,7 @@ paths:
         "500":
           description: Failed to export trades
           schema:
-            $ref: '#/definitions/blotter.ErrorResponse'
+            $ref: '#/definitions/common.ErrorResponse'
       summary: Export trades to CSV
       tags:
       - trades
@@ -225,11 +225,11 @@ paths:
         "400":
           description: Failed to get file from request
           schema:
-            $ref: '#/definitions/blotter.ErrorResponse'
+            $ref: '#/definitions/common.ErrorResponse'
         "500":
           description: Failed to import trades
           schema:
-            $ref: '#/definitions/blotter.ErrorResponse'
+            $ref: '#/definitions/common.ErrorResponse'
       summary: Import trades from CSV
       tags:
       - trades
@@ -253,15 +253,15 @@ paths:
         "200":
           description: message
           schema:
-            $ref: '#/definitions/blotter.SuccessResponse'
+            $ref: '#/definitions/common.SuccessResponse'
         "400":
           description: Invalid request payload
           schema:
-            $ref: '#/definitions/blotter.ErrorResponse'
+            $ref: '#/definitions/common.ErrorResponse'
         "500":
           description: Failed to delete trades
           schema:
-            $ref: '#/definitions/blotter.ErrorResponse'
+            $ref: '#/definitions/common.ErrorResponse'
       summary: Delete all trades by ids
       tags:
       - trades
@@ -300,11 +300,11 @@ paths:
         "400":
           description: Invalid request payload
           schema:
-            $ref: '#/definitions/blotter.ErrorResponse'
+            $ref: '#/definitions/common.ErrorResponse'
         "500":
           description: Failed to add trade
           schema:
-            $ref: '#/definitions/blotter.ErrorResponse'
+            $ref: '#/definitions/common.ErrorResponse'
       summary: Add a new trade
       tags:
       - trades
@@ -329,11 +329,11 @@ paths:
         "400":
           description: Invalid request payload
           schema:
-            $ref: '#/definitions/blotter.ErrorResponse'
+            $ref: '#/definitions/common.ErrorResponse'
         "500":
           description: Failed to update trade
           schema:
-            $ref: '#/definitions/blotter.ErrorResponse'
+            $ref: '#/definitions/common.ErrorResponse'
       summary: Update a trade
       tags:
       - trades
@@ -451,6 +451,28 @@ paths:
       summary: Get market data for multiple tickers
       tags:
       - market-data
+  /api/v1/portfolio/cleanup:
+    post:
+      description: Closes positions that have expired without a corresponding closure
+        trade
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trade Ids of closed trades
+          schema:
+            items:
+              items:
+                type: string
+              type: array
+            type: array
+        "500":
+          description: Failed to auto close positions
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Close positions that have expired
+      tags:
+      - portfolio
   /api/v1/portfolio/positions:
     get:
       description: Retrieves all positions currently in the portfolio
@@ -464,8 +486,9 @@ paths:
               $ref: '#/definitions/portfolio.Position'
             type: array
         "500":
-          description: Internal Server Error
-          schema: {}
+          description: Failed to get positions
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
       summary: Get all portfolio positions
       tags:
       - portfolio

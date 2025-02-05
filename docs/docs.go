@@ -35,7 +35,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Failed to export trades",
                         "schema": {
-                            "$ref": "#/definitions/blotter.ErrorResponse"
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     }
                 }
@@ -73,13 +73,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Failed to get file from request",
                         "schema": {
-                            "$ref": "#/definitions/blotter.ErrorResponse"
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to import trades",
                         "schema": {
-                            "$ref": "#/definitions/blotter.ErrorResponse"
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     }
                 }
@@ -140,13 +140,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request payload",
                         "schema": {
-                            "$ref": "#/definitions/blotter.ErrorResponse"
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to update trade",
                         "schema": {
-                            "$ref": "#/definitions/blotter.ErrorResponse"
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     }
                 }
@@ -184,13 +184,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request payload",
                         "schema": {
-                            "$ref": "#/definitions/blotter.ErrorResponse"
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to add trade",
                         "schema": {
-                            "$ref": "#/definitions/blotter.ErrorResponse"
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     }
                 }
@@ -225,19 +225,19 @@ const docTemplate = `{
                     "200": {
                         "description": "message",
                         "schema": {
-                            "$ref": "#/definitions/blotter.SuccessResponse"
+                            "$ref": "#/definitions/common.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request payload",
                         "schema": {
-                            "$ref": "#/definitions/blotter.ErrorResponse"
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to delete trades",
                         "schema": {
-                            "$ref": "#/definitions/blotter.ErrorResponse"
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     }
                 }
@@ -415,6 +415,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/portfolio/cleanup": {
+            "post": {
+                "description": "Closes positions that have expired without a corresponding closure trade",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolio"
+                ],
+                "summary": "Close positions that have expired",
+                "responses": {
+                    "200": {
+                        "description": "Trade Ids of closed trades",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to auto close positions",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/portfolio/positions": {
             "get": {
                 "description": "Retrieves all positions currently in the portfolio",
@@ -436,8 +468,10 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
-                        "schema": {}
+                        "description": "Failed to get positions",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -636,22 +670,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "blotter.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "blotter.SuccessResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
         "blotter.Trade": {
             "type": "object",
             "required": [
@@ -761,6 +779,22 @@ const docTemplate = `{
                 },
                 "yield": {
                     "type": "number"
+                }
+            }
+        },
+        "common.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "common.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
                 }
             }
         },

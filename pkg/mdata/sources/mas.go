@@ -95,9 +95,10 @@ func (src *Mas) GetDividendsMetadata(ticker string, withholdingTax float64) ([]t
 	var response struct {
 		Result struct {
 			Records []struct {
-				IssueDate   string  `json:"issue_date"`
-				CutoffPrice float64 `json:"cutoff_price"`
-				CutoffYield float64 `json:"cutoff_yield"`
+				IssueDate    string  `json:"issue_date"`
+				CutoffPrice  float64 `json:"cutoff_price"`
+				CutoffYield  float64 `json:"cutoff_yield"`
+				MaturityDate string  `json:"maturity_date"`
 			} `json:"records"`
 		} `json:"result"`
 	}
@@ -127,6 +128,8 @@ func (src *Mas) GetDividendsMetadata(ticker string, withholdingTax float64) ([]t
 			src.logger.Infof("New coupons for ticker %s, storing into database", ticker)
 			src.db.Put(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends)
 		}
+
+		// TODO: store ref data into the db to update maturity date
 	}
 
 	return dividends, nil

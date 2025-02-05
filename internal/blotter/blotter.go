@@ -347,6 +347,25 @@ type Trade struct {
 	SeqNum      int     `json:"SeqNum"`                        // Sequence number
 }
 
+// Clone returns a deep copy of the Trade.
+func (t Trade) Clone() Trade {
+	return Trade{
+		TradeID:     t.TradeID,
+		TradeDate:   t.TradeDate,
+		Ticker:      t.Ticker,
+		Side:        t.Side,
+		Quantity:    t.Quantity,
+		Price:       t.Price,
+		Yield:       t.Yield,
+		Trader:      t.Trader,
+		Broker:      t.Broker,
+		Account:     t.Account,
+		Status:      t.Status,
+		OrigTradeID: t.OrigTradeID,
+		SeqNum:      t.SeqNum,
+	}
+}
+
 // NewTrade creates a new Trade instance.
 func NewTrade(side string, quantity float64, ticker, trader, broker, account, status, origTradeId string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
 
@@ -451,7 +470,7 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) error {
 		return fmt.Errorf("error reading CSV header: %w", err)
 	}
 
-	expectedHeaders := []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account"}
+	expectedHeaders := []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account", "Status"}
 	if len(header) != len(expectedHeaders) {
 		return fmt.Errorf("invalid CSV format: expected %d columns, got %d", len(expectedHeaders), len(header))
 	}
@@ -497,6 +516,11 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) error {
 			return fmt.Errorf("invalid trade date at line %d: %w", lineNum, err)
 		}
 
+		status := StatusOpen
+		if row[9] != "" {
+			status = row[9]
+		}
+
 		trade, err := NewTrade(
 			row[2], // Side
 			quantity,
@@ -504,8 +528,8 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) error {
 			row[6], // Trader
 			row[7], // Broker
 			row[8], // Account
-			StatusOpen,
-			"", // OrigTradeID
+			status, // Status
+			"",     // OrigTradeID (empty, for migration purposes, we don't allow migrating of trade IDs)
 			price,
 			yield,
 			tradeDate,
@@ -555,6 +579,7 @@ func (b *TradeBlotter) ExportToCSVBytes() ([]byte, error) {
 			trade.Trader,
 			trade.Broker,
 			trade.Account,
+			trade.Status,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error writing trade to CSV: %w", err)

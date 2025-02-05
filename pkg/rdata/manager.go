@@ -102,6 +102,7 @@ func (rm *Manager) GetTicker(id string) (TickerReference, error) {
 	if err != nil {
 		// if ticker is a ssb or mas bill ticker, create the ticker reference and insert into db
 		if common.IsSSB(id) || common.IsSgTBill(id) {
+			logging.GetLogger().Infof("Creating new ticker reference for %s", id)
 			ticker = TickerReference{
 				ID:            id,
 				Name:          id,

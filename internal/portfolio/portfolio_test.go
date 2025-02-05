@@ -94,6 +94,28 @@ func TestAvgPriceOnUpdatePosition(t *testing.T) {
 	assert.InDelta(t, 166.67, position.AvgPx, 0.01) // Allowing a small delta of 0.01
 }
 
+func TestClosingPosition(t *testing.T) {
+	p, _ := createTestPortfolio()
+
+	// Add multiple trades
+	trades := []*blotter.Trade{
+		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "trader1", "broker1", "cdp", blotter.StatusOpen, "", 150.0, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideSell, 100, "AAPL", "trader1", "broker1", "cdp", blotter.StatusOpen, "", 200.0, 0.0, time.Now())),
+	}
+
+	for _, trade := range trades {
+		err := p.updatePosition(trade)
+		assert.NoError(t, err)
+	}
+
+	position, err := p.GetPosition("trader1", "AAPL")
+	assert.NoError(t, err)
+	assert.NotNil(t, position)
+	assert.Equal(t, float64(0), position.Qty)
+	assert.Equal(t, float64(0), position.PnL)
+	assert.Equal(t, float64(0), position.Mv)
+}
+
 func TestUpdateBuyAndSellPosition(t *testing.T) {
 	p, _ := createTestPortfolio()
 

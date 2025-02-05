@@ -354,8 +354,9 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 		}
 
 		if position.Qty == 0 {
-			// when the position is closed, the PnL is the total paid + dividends
+			// when the position is closed, the PnL is the total paid + dividends, Mv should be 0
 			position.PnL = (position.TotalPaid * -1) + position.Dividends
+			position.Mv = 0
 		} else {
 			assetData, err := p.mdata.GetAssetPrice(position.Ticker)
 			if err != nil {

@@ -29,7 +29,7 @@ type TickerReference struct {
 	Ccy               string  `json:"ccy" yaml:"ccy" validate:"required,uppercase"`
 	Domicile          string  `json:"domicile" yaml:"domicile" validate:"required,uppercase"`
 	CouponRate        float64 `json:"coupon_rate" yaml:"coupon_rate"`
-	MaturityDate      string  `json:"maturity_date" yaml:"maturity_date"`
+	MaturityDate      string  `json:"maturity_date" yaml:"maturity_date" validate:"omitempty,datetime=2006-01-02"`
 	StrikePrice       float64 `json:"strike_price" yaml:"strike_price"`
 	CallPut           string  `json:"call_put" yaml:"call_put" validate:"oneof=call put"`
 }
@@ -87,7 +87,7 @@ func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, d
 		Ccy:               ccy,
 		Domicile:          domicile,
 		CouponRate:        couponRate,
-		MaturityDate:      maturityDate,
+		MaturityDate:      maturityDate, // YYYY-MM-DD
 		StrikePrice:       strikePrice,
 		CallPut:           callPut,
 	}

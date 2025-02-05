@@ -7,6 +7,7 @@ import (
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 	"time"
 )
@@ -129,7 +130,18 @@ func (src *Mas) GetDividendsMetadata(ticker string, withholdingTax float64) ([]t
 			src.db.Put(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends)
 		}
 
-		// TODO: store ref data into the db to update maturity date
+		// store ref data into the db to update maturity date
+		tickerRef := rdata.TickerReference{
+			ID:            ticker,
+			Name:          ticker,
+			Domicile:      "SG",
+			Ccy:           "SGD",
+			AssetClass:    rdata.AssetClassBonds,
+			AssetSubClass: rdata.AssetSubClassGovies,
+			MaturityDate:  result.MaturityDate,
+		}
+		src.logger.Infof("Updating maturity date for ticker %s to %s", ticker, result.MaturityDate)
+		src.db.Put(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, ticker), tickerRef)
 	}
 
 	return dividends, nil

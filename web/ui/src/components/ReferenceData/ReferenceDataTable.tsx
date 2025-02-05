@@ -92,7 +92,7 @@ const ReferenceDataTable: React.FC = () => {
       { accessorKey: "ccy", header: "Currency" },
       { accessorKey: "domicile", header: "Domicile" },
       //   { accessorKey: "CouponRate", header: "Coupon Rate" },
-      //   { accessorKey: "MaturityDate", header: "Maturity Date" },
+      { accessorKey: "maturity_date", header: "Maturity" },
       //   { accessorKey: "StrikePrice", header: "Strike Price" },
       //   { accessorKey: "CallPut", header: "Call/Put" },
     ],

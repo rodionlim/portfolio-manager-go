@@ -3,6 +3,9 @@ package portfolio
 import (
 	"fmt"
 	"sync"
+	"time"
+
+	"github.com/patrickmn/go-cache"
 
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dal"
@@ -28,18 +31,21 @@ type Position struct {
 	AvgPx         float64
 	Px            float64
 	TotalPaid     float64
+	FxRate        float64
 }
 
 type Portfolio struct {
-	positions     map[string]map[string]*Position // map[trader]map[ticker]*Position
-	currentSeqNum int                             // used as a pointer to point to the last blotter trade that was processed
-	db            dal.Database
-	blotter       *blotter.TradeBlotter
-	mdata         mdata.MarketDataManager
-	rdata         rdata.ReferenceManager
-	dividendsMgr  *dividends.DividendsManager
-	mu            sync.Mutex
-	logger        *logging.Logger
+	positions       map[string]map[string]*Position // map[trader]map[ticker]*Position
+	currentSeqNum   int                             // used as a pointer to point to the last blotter trade that was processed
+	db              dal.Database
+	blotter         *blotter.TradeBlotter
+	mdata           mdata.MarketDataManager
+	rdata           rdata.ReferenceManager
+	dividendsMgr    *dividends.DividendsManager
+	mu              sync.Mutex
+	logger          *logging.Logger
+	fxCache         *cache.Cache
+	fxCacheDuration time.Duration
 }
 
 func NewPortfolio(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.ReferenceManager, dividendsSvc *dividends.DividendsManager) *Portfolio {
@@ -49,15 +55,69 @@ func NewPortfolio(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.Re
 		currentSeqNum = -1
 	}
 
+	defaultFxExpiry := 1 * time.Hour
+
 	return &Portfolio{
-		positions:     make(map[string]map[string]*Position),
-		currentSeqNum: currentSeqNum,
-		mdata:         mdata,
-		rdata:         rdata,
-		dividendsMgr:  dividendsSvc,
-		db:            db,
-		logger:        logging.GetLogger(),
+		positions:       make(map[string]map[string]*Position),
+		currentSeqNum:   currentSeqNum,
+		mdata:           mdata,
+		rdata:           rdata,
+		dividendsMgr:    dividendsSvc,
+		db:              db,
+		logger:          logging.GetLogger(),
+		fxCache:         cache.New(defaultFxExpiry, 2*defaultFxExpiry),
+		fxCacheDuration: defaultFxExpiry,
 	}
+}
+
+func NewPortfolioWithConfigurableExpiry(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.ReferenceManager, dividendsSvc *dividends.DividendsManager, fxDuration time.Duration) *Portfolio {
+	var currentSeqNum int
+	err := db.Get(string(types.HeadSequencePortfolioKey), currentSeqNum)
+	if err != nil {
+		currentSeqNum = -1
+	}
+
+	return &Portfolio{
+		positions:       make(map[string]map[string]*Position),
+		currentSeqNum:   currentSeqNum,
+		mdata:           mdata,
+		rdata:           rdata,
+		dividendsMgr:    dividendsSvc,
+		db:              db,
+		logger:          logging.GetLogger(),
+		fxCache:         cache.New(fxDuration, 2*fxDuration),
+		fxCacheDuration: fxDuration,
+	}
+}
+
+// Add a helper function getFXRate that uses go-cache.
+// It returns the FX rate relative to SGD. If the position currency is SGD, it returns 1.
+func (p *Portfolio) getFXRate(ccy string) (float64, error) {
+	// If currency is SGD, FX rate is 1.
+	if ccy == "SGD" {
+		return 1, nil
+	}
+
+	// Define the pair as X-SGD (e.g. USD-SGD)
+	pair := ccy + "-" + "SGD"
+
+	// Check the cache.
+	if fx, found := p.fxCache.Get(ccy); found {
+		if rate, ok := fx.(float64); ok {
+			return rate, nil
+		}
+	}
+
+	// Not in cache, so retrieve via mdata (assumed to use Yahoo Finance).
+	asset, err := p.mdata.GetAssetPrice(pair)
+	if err != nil {
+		return 0, fmt.Errorf("failed to retrieve fx rate for pair %s: %w", pair, err)
+	}
+
+	// Store in cache.
+	rate := 1 / asset.Price
+	p.fxCache.Set(pair, rate, p.fxCacheDuration)
+	return rate, nil
 }
 
 // LoadPositions loads the positions from the database.
@@ -229,6 +289,7 @@ func (p *Portfolio) updatePositionFromDb(position *Position) error {
 	positionToUpdate.Dividends = position.Dividends
 	positionToUpdate.AvgPx = position.AvgPx
 	positionToUpdate.TotalPaid = position.TotalPaid
+	positionToUpdate.FxRate = position.FxRate
 
 	return nil
 }
@@ -257,6 +318,7 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 	totalPaid := position.AvgPx*position.Qty + trade.Price*qty // qty is negative for sell trades
 	position.TotalPaid = totalPaid
 	position.Qty += qty
+	position.FxRate, _ = p.getFXRate(position.Ccy)
 
 	if position.Qty == 0 {
 		position.AvgPx = 0
@@ -339,6 +401,11 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 		return err
 	}
 
+	position.Ccy = tickerRef.Ccy
+	position.AssetClass = tickerRef.AssetClass
+	position.AssetSubClass = tickerRef.AssetSubClass
+	position.FxRate, _ = p.getFXRate(position.Ccy)
+
 	switch tickerRef.AssetClass {
 	case rdata.AssetClassEquities, rdata.AssetClassBonds:
 		// get dividends
@@ -355,7 +422,7 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 
 		if position.Qty == 0 {
 			// when the position is closed, the PnL is the total paid + dividends, Mv should be 0
-			position.PnL = (position.TotalPaid * -1) + position.Dividends
+			position.PnL = ((position.TotalPaid * -1) + position.Dividends) * position.FxRate
 			position.Mv = 0
 		} else {
 			assetData, err := p.mdata.GetAssetPrice(position.Ticker)
@@ -363,8 +430,8 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 				return err
 			}
 
-			position.Mv = position.Qty * assetData.Price
-			position.PnL = (assetData.Price-position.AvgPx)*position.Qty + position.Dividends
+			position.Mv = (position.Qty * assetData.Price) * position.FxRate
+			position.PnL = ((assetData.Price-position.AvgPx)*position.Qty + position.Dividends) * position.FxRate
 			position.Px = assetData.Price
 		}
 	case "":
@@ -376,9 +443,6 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 		return fmt.Errorf("asset class %s not supported", tickerRef.AssetClass)
 	}
 
-	position.Ccy = tickerRef.Ccy
-	position.AssetClass = tickerRef.AssetClass
-	position.AssetSubClass = tickerRef.AssetSubClass
 	return nil
 }
 

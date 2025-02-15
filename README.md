@@ -6,7 +6,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 
 ## Features
 
-- Value assets based on current market prices
+- Value assets of different currencies based on current market prices
 - Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas)
 - Import / Export portfolio blotter data using CSV file for easy migration to other portfolio systems
 - Export ticker reference data in yaml format

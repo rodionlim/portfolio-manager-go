@@ -143,7 +143,7 @@ const PositionTable: React.FC = () => {
       },
       {
         accessorKey: "Mv",
-        header: "Mv",
+        header: "Mv (SGD)",
         Cell: ({ cell }) => {
           const value = cell.getValue<number>();
           const percentage = totals.Mv ? (value / totals.Mv) * 100 : 0;
@@ -181,7 +181,7 @@ const PositionTable: React.FC = () => {
       },
       {
         accessorKey: "PnL",
-        header: "PnL",
+        header: "PnL (SGD)",
         Footer: () => (
           <div>
             {"$" +

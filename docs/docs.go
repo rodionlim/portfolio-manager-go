@@ -830,6 +830,9 @@ const docTemplate = `{
                 "dividends": {
                     "type": "number"
                 },
+                "fxRate": {
+                    "type": "number"
+                },
                 "mv": {
                     "type": "number"
                 },

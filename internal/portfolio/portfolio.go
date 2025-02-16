@@ -422,7 +422,7 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 
 		if position.Qty == 0 {
 			// when the position is closed, the PnL is the total paid + dividends, Mv should be 0
-			position.PnL = ((position.TotalPaid * -1) + position.Dividends) * position.FxRate
+			position.PnL = (position.TotalPaid * -1) + position.Dividends
 			position.Mv = 0
 		} else {
 			assetData, err := p.mdata.GetAssetPrice(position.Ticker)
@@ -430,8 +430,8 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 				return err
 			}
 
-			position.Mv = (position.Qty * assetData.Price) * position.FxRate
-			position.PnL = ((assetData.Price-position.AvgPx)*position.Qty + position.Dividends) * position.FxRate
+			position.Mv = position.Qty * assetData.Price
+			position.PnL = (assetData.Price-position.AvgPx)*position.Qty + position.Dividends
 			position.Px = assetData.Price
 		}
 	case "":

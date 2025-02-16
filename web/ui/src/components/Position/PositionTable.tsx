@@ -23,6 +23,7 @@ interface Position {
   Dividends: number;
   AvgPx: number;
   Px: number;
+  FxRate: number;
 }
 
 const PositionTable: React.FC = () => {
@@ -70,7 +71,7 @@ const PositionTable: React.FC = () => {
 
         if (acc[tickerKey]) {
           acc[tickerKey].Qty += curr.Qty;
-          acc[tickerKey].Mv += curr.Mv;
+          acc[tickerKey].Mv += curr.Mv * curr.FxRate;
           acc[tickerKey].PnL += curr.PnL;
           acc[tickerKey].Dividends += curr.Dividends;
           acc[tickerKey].Dividends += curr.Px;
@@ -87,12 +88,12 @@ const PositionTable: React.FC = () => {
   const totals = useMemo(() => {
     const res = rawPositions.reduce(
       (acc, row) => {
-        acc.Mv += row.Mv;
-        acc.Pnl += row.PnL;
-        acc.Dividends += row.Dividends;
+        acc.Mv += row.Mv * row.FxRate;
+        acc.Pnl += row.PnL * row.FxRate;
+        acc.Dividends += row.Dividends * row.FxRate;
 
         if (row.AssetSubClass !== "govies") {
-          acc.MvLessGovies += row.Mv;
+          acc.MvLessGovies += row.Mv * row.FxRate;
         }
 
         return acc;
@@ -145,7 +146,8 @@ const PositionTable: React.FC = () => {
         accessorKey: "Mv",
         header: "Mv (SGD)",
         Cell: ({ cell }) => {
-          const value = cell.getValue<number>();
+          const fxRate = cell.row.original.FxRate;
+          const value = cell.getValue<number>() * fxRate;
           const percentage = totals.Mv ? (value / totals.Mv) * 100 : 0;
           return (
             <span>
@@ -192,8 +194,10 @@ const PositionTable: React.FC = () => {
           </div>
         ),
         Cell: ({ cell }) => {
-          const value = cell.getValue<number>();
+          const fxRate = cell.row.original.FxRate;
+          const value = cell.getValue<number>() * fxRate;
           const color = value < 0 ? "red" : "green";
+
           return (
             <span style={{ color }}>
               $
@@ -207,12 +211,13 @@ const PositionTable: React.FC = () => {
       },
       {
         accessorKey: "Dividends",
-        header: "Dividends",
+        header: "Dividends (SGD)",
         Cell: ({ cell }) => {
+          const fxRate = cell.row.original.FxRate;
           return (
             <span>
               $
-              {cell.getValue<number>().toLocaleString(undefined, {
+              {(cell.getValue<number>() * fxRate).toLocaleString(undefined, {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0,
               })}

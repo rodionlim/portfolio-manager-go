@@ -38,8 +38,12 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 		return nil, err
 	}
 
+	// If no dividends.sg ticker found, check if the ticker is a special case
 	if tickerRef.DividendsSgTicker == "" && (!common.IsSSB(ticker) && !common.IsSgTBill(ticker)) {
-		return nil, fmt.Errorf("no dividends.sg ticker found for the given ticker %s", ticker)
+		// yahoo finance also has historical dividends
+		if tickerRef.YahooTicker == "" {
+			return nil, fmt.Errorf("no dividends.sg / yahoo finance ticker found for the given ticker %s", ticker)
+		}
 	}
 
 	// Fetch dividends data from mdata service

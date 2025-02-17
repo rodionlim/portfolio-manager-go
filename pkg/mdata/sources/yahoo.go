@@ -39,7 +39,7 @@ func NewYahooFinance(db dal.Database) types.DataSource {
 // GetDividends implements types.DataSource.
 func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax float64) ([]types.DividendsMetadata, error) {
 	// Check cache first
-	if cachedData, found := src.cache.Get(ticker); found {
+	if cachedData, found := src.cache.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker)); found {
 		src.logger.Info("Returning cached dividends data for ticker:", ticker)
 		return cachedData.([]types.DividendsMetadata), nil
 	}
@@ -91,7 +91,7 @@ func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax floa
 	})
 
 	// Store in cache
-	src.cache.Set(ticker, dividends, 24*time.Hour)
+	src.cache.Set(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends, 24*time.Hour)
 
 	// Store in database if we have new data
 	if src.db != nil {

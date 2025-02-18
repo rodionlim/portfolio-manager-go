@@ -5,8 +5,9 @@ GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 BINARY_NAME=portfolio-manager
-BINARY_UNIX=$(BINARY_NAME)_unix
-BINARY_MAC_ARM=$(BINARY_NAME)_mac_arm64
+BINARY_LINUX_X64=$(BINARY_NAME)_linux_amd64
+BINARY_MAC_ARM=$(BINARY_NAME)_darwin_arm64
+SOURCE_ENTRYPOINT=./cmd/portfolio
 
 UI_PATH = web/ui
 UI_NODE_MODULES_PATH = $(UI_PATH)/node_modules
@@ -31,7 +32,14 @@ all: test build
 
 # Build the project
 build: swagger
-	$(GOBUILD) $(BUILD_TAGS) -o $(BINARY_NAME) -v ./cmd/portfolio
+	$(GOBUILD) $(BUILD_TAGS) -o $(BINARY_NAME) -v $(SOURCE_ENTRYPOINT)
+
+# Build the project for multiple platforms
+build-cross: swagger
+	@echo '>> building assets for cross compilation'
+	make build-linux-x64
+	make build-mac-arm
+	make build-windows-x64
 
 .PHONY: ui-install
 ui-install:
@@ -108,10 +116,15 @@ swagger:
 	swag init --quiet -g cmd/portfolio/main.go
 
 # Cross compilation for Linux
-build-linux:
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_UNIX) -v
+build-linux-x64:
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_LINUX_X64) -v $(SOURCE_ENTRYPOINT)
 
 # Cross compilation for macOS on ARM64build-mac-arm:
-	GOOS=darwin GOARCH=arm64 $(GOBUILD) -o $(BINARY_MAC_ARM) -v
+build-mac-arm:
+	GOOS=darwin GOARCH=arm64 $(GOBUILD) -o $(BINARY_MAC_ARM) -v $(SOURCE_ENTRYPOINT)
 
-.PHONY: all build clean clean-db test run deps tidy build-linux build-mac-arm test test-verbose test-integration swagger
+# Cross compilation for windows on AMD64
+build-windows-x64:
+	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME).exe -v $(SOURCE_ENTRYPOINT)
+
+.PHONY: all build build-cross clean clean-db test run deps tidy build-linux-x64 build-mac-arm build-windows-x64 test test-verbose test-integration swagger

@@ -260,6 +260,7 @@ divWitholdingTaxIE: 0.15
 5. Support exporting/importing of leveldb for backup
 6. Add UI component
 7. Refactor configuration to have sections
+8. Support lxc helper installation script
 
 ## Contributing
 

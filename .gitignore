@@ -1,7 +1,7 @@
 *.log
 
 # binary
-portfolio-manager
+portfolio-manager*
 
 # db files
 portfolio-manager.db

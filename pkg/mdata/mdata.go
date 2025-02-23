@@ -232,7 +232,7 @@ func (m *Manager) getReferenceData(ticker string) (rdata.TickerReference, error)
 }
 
 func (m *Manager) MapDomicileToWitholdingTax(domicile string) float64 {
-	cfg, err := config.GetOrCreateConfig("")
+	cfg, err := config.GetOrCreateConfig("config.yaml")
 	if err != nil {
 		return 0.0
 	}

@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"portfolio-manager/internal/dal"
+	root "portfolio-manager"
 	"sync"
+
+	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/common"
 
 	"gopkg.in/yaml.v2"
 )
@@ -25,59 +28,69 @@ type Config struct {
 	DivWitholdingTaxIE float64 `yaml:"divWitholdingTaxIE"`
 }
 
-// Implement the Stringer interface for Config
+// Implement the Stringer interface for Config.
 func (c Config) String() string {
 	jConfig, _ := json.MarshalIndent(c, "", "\t")
 	return string(jConfig)
 }
 
+// Singleton instance variables.
 var (
 	instance *Config
 	once     sync.Once
-	err      error
+	initErr  error
 )
 
-// SetConfig sets the singleton Config instance, for testing purposes. Else, config is usually read from a file and created via GetOrCreateConfig.
+// SetConfig sets the singleton Config instance (useful for testing).
 func SetConfig(cfg *Config) {
 	instance = cfg
 }
 
-// GetOrCreateConfig returns the singleton Config instance, and instantiates it if it hasn't already been done so.
+// initializeConfig handles unmarshalling, setting defaults and validations.
+// It assigns to the package-level 'instance'.
+func initializeConfig(data []byte) error {
+	cfg := Config{}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return err
+	}
+
+	// Set default for Host if not provided.
+	if cfg.Host == "" {
+		cfg.Host = "localhost"
+	}
+
+	// Set default & validate the database field.
+	if cfg.Db == "" {
+		cfg.Db = dal.LDB
+	}
+	if cfg.Db != dal.LDB && cfg.Db != dal.RDB {
+		return errors.New("invalid db type: must be 'leveldb' or 'rocksdb'")
+	}
+	// Set default for DbPath if not provided.
+	if cfg.DbPath == "" {
+		cfg.DbPath = "./portfolio-manager.db"
+	}
+
+	instance = &cfg
+	return nil
+}
+
+// GetOrCreateConfig reads configuration from the provided file path, provided it has not been set before
 func GetOrCreateConfig(path string) (*Config, error) {
 	once.Do(func() {
-		if instance == nil {
-			var file []byte
-			file, err = os.ReadFile(path)
-			if err != nil {
-				return
-			}
-
-			config := Config{}
-			err = yaml.Unmarshal(file, &config)
-			if err != nil {
-				return
-			}
-
-			// Set default value for Host if not provided
-			if config.Host == "" {
-				config.Host = "localhost"
-			}
-
-			// Validate the database field
-			if config.Db == "" {
-				config.Db = dal.LDB
-			}
-			if config.Db != dal.LDB && config.Db != dal.RDB {
-				err = errors.New("invalid db type: must be 'leveldb' or 'rocksdb'")
-				return
-			}
-			if config.DbPath == "" {
-				config.DbPath = "./portfolio-manager.db"
-			}
-
-			instance = &config
+		if instance != nil {
+			return
 		}
+		var data []byte
+		data, initErr = os.ReadFile(path)
+		if initErr != nil {
+			// Attempt to read from embeddedFS if file not found.
+			data, initErr = root.EmbeddedFiles.ReadFile(common.SanitizePath(path))
+			if initErr != nil {
+				return
+			}
+		}
+		initErr = initializeConfig(data)
 	})
-
-	return instance, err
+	return instance, initErr
 }

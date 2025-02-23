@@ -119,9 +119,10 @@ swagger:
 build-linux-x64:
 	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_LINUX_X64) -v $(SOURCE_ENTRYPOINT)
 
-# Cross compilation for macOS on ARM64build-mac-arm:
+# Cross compilation for macOS on ARM64:
 build-mac-arm:
 	GOOS=darwin GOARCH=arm64 $(GOBUILD) -o $(BINARY_MAC_ARM) -v $(SOURCE_ENTRYPOINT)
+	chmod +x $(BINARY_MAC_ARM)
 
 # Cross compilation for windows on AMD64
 build-windows-x64:

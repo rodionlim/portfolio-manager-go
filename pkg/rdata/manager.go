@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	root "portfolio-manager"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
@@ -56,7 +57,18 @@ func (rm *Manager) seedReferenceData(filePath string) error {
 		return nil // no seed file provided
 	}
 
-	data, err := os.ReadFile(filePath)
+	var data []byte
+	var err error
+
+	if _, statErr := os.Stat(filePath); statErr != nil {
+		if os.IsNotExist(statErr) {
+			data, err = root.EmbeddedFiles.ReadFile(common.SanitizePath(filePath))
+		} else {
+			return statErr
+		}
+	} else {
+		data, err = os.ReadFile(filePath)
+	}
 	if err != nil {
 		return err
 	}

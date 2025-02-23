@@ -22,6 +22,14 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 3. Run `make` to build and install the application
 4. Run the `portfolio-manager` binary to start the application. Pass in config flag `-config custom-config.yaml`
 
+### Proxmox VE Helper Scripts
+
+For home-labbers, helpers scripts are exposed to allow quick and fast installation of `portfolio-manager` in lxc containers.
+
+```sh
+bash -c "$(wget -qLO - https://github.com/rodionlim/portfolio-manager-go/raw/main/lxc/portfolio-manager.sh)"
+```
+
 ## Quickstart
 
 Start the application

@@ -19,15 +19,18 @@ $STD apt-get install -y sudo
 $STD apt-get install -y mc
 msg_ok "Installed Dependencies"
 
-msg_info "Installing Portfolio Manager"
-# $STD tar zxvf <(curl -fsSL https://static.adtidy.org/adguardhome/release/AdGuardHome_linux_amd64.tar.gz) -C /opt
-msg_ok "Installed Portfolio Manager"
+msg_info "Installing Portfolio-Manager"
+# Create target directory if it doesn't exist
+$STD mkdir -p /opt/PortfolioManager
+$STD curl -L -o /opt/PortfolioManager/portfolio-manager https://github.com/rodionlim/portfolio-manager-go/releases/download/v1.0.0/portfolio-manager_linux_amd64
+$STD chmod +x /opt/PortfolioManager/portfolio-manager
+msg_ok "Installed Portfolio-Manager"
 
 msg_info "Creating Service"
 cat <<EOF >/etc/systemd/system/PortfolioManager.service
 [Unit]
-Description=Portfolio Manager: Tool to price and manage portfolio
-ConditionFileIsExecutable=/opt/PortfolioManager/PortfolioManager
+Description=Portfolio-Manager: Tool to price and manage portfolio
+ConditionFileIsExecutable=/opt/PortfolioManager/portfolio-manager
 After=syslog.target network-online.target
 
 [Service]

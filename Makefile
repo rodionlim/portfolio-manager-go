@@ -122,7 +122,6 @@ build-linux-x64:
 # Cross compilation for macOS on ARM64:
 build-mac-arm:
 	GOOS=darwin GOARCH=arm64 $(GOBUILD) -o $(BINARY_MAC_ARM) -v $(SOURCE_ENTRYPOINT)
-	chmod +x $(BINARY_MAC_ARM)
 
 # Cross compilation for windows on AMD64
 build-windows-x64:

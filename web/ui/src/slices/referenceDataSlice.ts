@@ -16,7 +16,9 @@ const initialState: ReferenceDataState = {
 export const fetchReferenceData = createAsyncThunk(
   "referenceData/fetchReferenceData",
   async () => {
-    const response = await fetch("http://localhost:8080/api/v1/refdata");
+    const response = await fetch(
+      `${window.location.protocol}//${window.location.host}/api/v1/refdata`
+    );
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }

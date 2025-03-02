@@ -58,13 +58,16 @@ export default function ReferenceDataForm() {
         : null,
     };
 
-    return fetch("http://localhost:8080/api/v1/refdata", {
-      method: values.id ? "PUT" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    })
+    return fetch(
+      `${window.location.protocol}//${window.location.host}/api/v1/refdata`,
+      {
+        method: values.id ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    )
       .then((resp) => {
         if (!resp.ok) {
           return resp.json().then((error) => {

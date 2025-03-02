@@ -94,6 +94,12 @@ portfolio-manager/
 
 ## UI
 
+### Positions
+
+Users can get an aggregated view of all their positions via the positions component in the user interface.
+
+![Position Table](docs/Positions.png)
+
 ### Blotter Table
 
 User can add, delete and update trades via the blotter component in the user interface.

@@ -37,7 +37,7 @@ const PositionTable: React.FC = () => {
     queryKey: ["positions"],
     queryFn: async () => {
       const resp = await fetch(
-        "http://localhost:8080/api/v1/portfolio/positions"
+        `${window.location.protocol}//${window.location.host}/api/v1/portfolio/positions`
       );
       return resp.json();
     },

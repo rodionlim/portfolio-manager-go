@@ -35,7 +35,8 @@ bash -c "$(wget -qLO - https://github.com/rodionlim/portfolio-manager-go/raw/mai
 Start the application
 
 ```sh
-make run
+make run # only start application backend
+make run-full # if user wants to start with the UI, run this command instead
 ```
 
 Build the application

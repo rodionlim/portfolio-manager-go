@@ -100,8 +100,13 @@ clean:
 clean-db:
 	rm -rf *.db
 
-# Run the application
+# Run the application backend without UI
 run: build
+	@./$(BINARY_NAME)
+
+# Run the application backend with UI
+run-full:
+	make assets-compress build BUILTIN_ASSETS=1
 	@./$(BINARY_NAME)
 
 # Install dependencies
@@ -117,14 +122,14 @@ swagger:
 
 # Cross compilation for Linux
 build-linux-x64:
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_LINUX_X64) -v $(SOURCE_ENTRYPOINT)
+	GOOS=linux GOARCH=amd64 $(GOBUILD) $(BUILD_TAGS) -o $(BINARY_LINUX_X64) -v $(SOURCE_ENTRYPOINT)
 
 # Cross compilation for macOS on ARM64:
 build-mac-arm:
-	GOOS=darwin GOARCH=arm64 $(GOBUILD) -o $(BINARY_MAC_ARM) -v $(SOURCE_ENTRYPOINT)
+	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(BUILD_TAGS) -o $(BINARY_MAC_ARM) -v $(SOURCE_ENTRYPOINT)
 
 # Cross compilation for windows on AMD64
 build-windows-x64:
-	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME).exe -v $(SOURCE_ENTRYPOINT)
+	GOOS=windows GOARCH=amd64 $(GOBUILD) $(BUILD_TAGS) -o $(BINARY_NAME).exe -v $(SOURCE_ENTRYPOINT)
 
-.PHONY: all build build-cross clean clean-db test run deps tidy build-linux-x64 build-mac-arm build-windows-x64 test test-verbose test-integration swagger
+.PHONY: all build build-cross clean clean-db test run run-full deps tidy build-linux-x64 build-mac-arm build-windows-x64 test test-verbose test-integration swagger

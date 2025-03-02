@@ -74,6 +74,7 @@ portfolio-manager/
 │   ├── mocks/
 │   ├── portfolio/
 │   └── server/
+├── lxc/
 ├── pkg/
 │   ├── common/
 │   ├── event/
@@ -82,6 +83,8 @@ portfolio-manager/
 │   │   └── sources/
 │   ├── rdata/
 │   └── types/
+├── templates/
+│   └── blotter_import.csv # Sample for users to reference when trying to import blotter trades via csv
 ├── web/
 ├── .gitignore
 ├── go.mod

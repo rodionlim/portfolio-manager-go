@@ -24,7 +24,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 
 ### Proxmox VE Helper Scripts
 
-For home-labbers, helpers scripts are exposed to allow quick and fast installation of `portfolio-manager` in lxc containers.
+For home-labbers, helpers scripts are exposed to allow easy installation of `portfolio-manager` in lxc containers within Proxmox VE.
 
 ```sh
 bash -c "$(wget -qLO - https://github.com/rodionlim/portfolio-manager-go/raw/main/lxc/portfolio-manager.sh)"
@@ -270,9 +270,8 @@ divWitholdingTaxIE: 0.15
 3. Support Crypto market data (Implemented)
 4. Support FX market data (Implemented)
 5. Support exporting/importing of leveldb for backup
-6. Add UI component
-7. Refactor configuration to have sections
-8. Support lxc helper installation script
+6. Add UI component (Implemented)
+7. Support lxc helper installation script (Implemented)
 
 ## Contributing
 

@@ -202,7 +202,7 @@ func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 func (p *Portfolio) AutoCloseTrades() ([]string, error) {
 	// If blotter svc reference is nil, return an error since we need the blotter service to get the trades
 	if p.blotter == nil {
-		return nil, fmt.Errorf("blotter service reference is nil")
+		return []string{}, fmt.Errorf("blotter service reference is nil")
 	}
 
 	// Get all the trades from the blotter
@@ -378,6 +378,9 @@ func (p *Portfolio) GetAllPositions() ([]*Position, error) {
 		}
 	}
 	err := p.enrichPositions(positions)
+	if positions == nil {
+		positions = make([]*Position, 0)
+	}
 	return positions, err
 }
 

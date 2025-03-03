@@ -1,11 +1,9 @@
-// filepath: /Users/rodionlim/workspace/portfolio-manager-go/web/ui/src/App.tsx
-
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css"; // mantine date picker styles
 import "@mantine/notifications/styles.css";
 import "mantine-react-table/styles.css";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import { Provider, useDispatch } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,7 +12,12 @@ import {
   AppShell,
   AppShellNavbar,
   AppShellMain,
+  AppShellHeader,
+  Burger,
+  Group,
+  Box,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 
 import { theme } from "./theme";
 import store, { AppDispatch } from "./store";
@@ -38,6 +41,17 @@ export default function AppWrapper() {
 
 function App() {
   const dispatch = useDispatch<AppDispatch>();
+  const [opened, setOpened] = useState(true);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  // Automatically close navbar on mobile devices
+  useEffect(() => {
+    if (isMobile) {
+      setOpened(false);
+    } else {
+      setOpened(true);
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     dispatch(fetchReferenceData());
@@ -48,14 +62,33 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <MantineProvider theme={theme}>
           <Notifications />
-          <AppShell navbar={{ width: 300, breakpoint: "sm" }} padding="lg">
+          <AppShell
+            header={isMobile ? { height: 60 } : undefined}
+            navbar={{
+              width: 300,
+              breakpoint: "sm",
+              collapsed: { mobile: !opened, desktop: false },
+            }}
+            padding="lg"
+          >
+            <AppShellHeader>
+              <Group h="100%" px="md">
+                <Burger
+                  opened={opened}
+                  onClick={() => setOpened(!opened)}
+                  hiddenFrom="sm"
+                  size="sm"
+                />
+                <Box style={{ flexGrow: 1 }} />
+                <ColorSchemeToggle />
+              </Group>
+            </AppShellHeader>
             <AppShellNavbar>
               <NavbarNested />
             </AppShellNavbar>
             <AppShellMain>
               <Controller />
             </AppShellMain>
-            <ColorSchemeToggle />
           </AppShell>
         </MantineProvider>
       </QueryClientProvider>

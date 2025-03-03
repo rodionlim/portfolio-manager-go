@@ -10,6 +10,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { useNavigate } from "react-router-dom";
+import { getUrl } from "../../utils/url";
 
 interface RefData {
   id: string;
@@ -31,9 +32,7 @@ interface RefData {
 }
 
 const fetchData = async (): Promise<RefData[]> => {
-  return fetch(
-    `${window.location.protocol}//${window.location.host}/api/v1/refdata`
-  )
+  return fetch(getUrl("/api/v1/refdata"))
     .then((resp) => resp.json())
     .then(
       (data) => {
@@ -51,16 +50,13 @@ const fetchData = async (): Promise<RefData[]> => {
 const deleteRefData = async (
   refData: string[]
 ): Promise<{ message: string }> => {
-  return fetch(
-    `${window.location.protocol}//${window.location.host}/api/v1/refdata`,
-    {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(refData),
-    }
-  )
+  return fetch(getUrl("/api/v1/refdata"), {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(refData),
+  })
     .then((resp) => resp.json())
     .then(
       (data) => {

@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { refDataByAssetClass } from "../../utils/referenceData";
 import { useLocation } from "react-router-dom";
+import { getUrl } from "../../utils/url";
 
 export default function BlotterForm() {
   const location = useLocation();
@@ -98,16 +99,13 @@ export default function BlotterForm() {
       seqNum: values.seqNum,
     };
 
-    return fetch(
-      `${window.location.protocol}//${window.location.host}/api/v1/blotter/trade`,
-      {
-        method: values.tradeId ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      }
-    )
+    return fetch(getUrl("/api/v1/blotter/trade"), {
+      method: values.tradeId ? "PUT" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    })
       .then((resp) => {
         if (!resp.ok) {
           return resp.json().then((error) => {

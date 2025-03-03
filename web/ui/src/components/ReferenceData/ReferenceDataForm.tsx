@@ -12,6 +12,7 @@ import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import { DatePickerInput } from "@mantine/dates";
 import { useLocation } from "react-router-dom";
+import { getUrl } from "../../utils/url";
 
 export default function ReferenceDataForm() {
   const location = useLocation();
@@ -58,16 +59,13 @@ export default function ReferenceDataForm() {
         : null,
     };
 
-    return fetch(
-      `${window.location.protocol}//${window.location.host}/api/v1/refdata`,
-      {
-        method: values.id ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      }
-    )
+    return fetch(getUrl("/api/v1/refdata"), {
+      method: values.id ? "PUT" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    })
       .then((resp) => {
         if (!resp.ok) {
           return resp.json().then((error) => {

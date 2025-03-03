@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { Text, Tooltip } from "@mantine/core";
+import { getUrl } from "../../utils/url";
 
 interface Position {
   Ticker: string;
@@ -36,9 +37,7 @@ const PositionTable: React.FC = () => {
   } = useQuery<Position[]>({
     queryKey: ["positions"],
     queryFn: async () => {
-      const resp = await fetch(
-        `${window.location.protocol}//${window.location.host}/api/v1/portfolio/positions`
-      );
+      const resp = await fetch(getUrl("/api/v1/portfolio/positions"));
       return resp.json();
     },
   });

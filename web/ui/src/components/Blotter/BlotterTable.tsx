@@ -10,6 +10,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { useNavigate } from "react-router-dom";
+import { getUrl } from "../../utils/url";
 
 interface Trade {
   TradeID: string;
@@ -26,9 +27,7 @@ interface Trade {
 }
 
 const fetchTrades = async (): Promise<Trade[]> => {
-  return fetch(
-    `${window.location.protocol}//${window.location.host}/api/v1/blotter/trade`
-  )
+  return fetch(getUrl("/api/v1/blotter/trade"))
     .then((resp) => resp.json())
     .then(
       (data) => {
@@ -44,16 +43,13 @@ const fetchTrades = async (): Promise<Trade[]> => {
 };
 
 const deleteTrades = async (trades: string[]): Promise<{ message: string }> => {
-  return fetch(
-    `${window.location.protocol}//${window.location.host}/api/v1/blotter/trade`,
-    {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(trades),
-    }
-  )
+  return fetch(getUrl("/api/v1/blotter/trade"), {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(trades),
+  })
     .then((resp) => resp.json())
     .then(
       (data) => {

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { ReferenceData } from "../types";
+import { getUrl } from "../utils/url";
 
 interface ReferenceDataState {
   data: ReferenceData | null;
@@ -16,9 +17,7 @@ const initialState: ReferenceDataState = {
 export const fetchReferenceData = createAsyncThunk(
   "referenceData/fetchReferenceData",
   async () => {
-    const response = await fetch(
-      `${window.location.protocol}//${window.location.host}/api/v1/refdata`
-    );
+    const response = await fetch(getUrl("/api/v1/refdata"));
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }

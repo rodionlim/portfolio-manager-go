@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
+	"strconv"
 	"time"
 )
 
@@ -212,14 +213,68 @@ func HandleTradeImportCSV(blotter *TradeBlotter) http.HandlerFunc {
 		defer file.Close()
 
 		reader := csv.NewReader(file)
-		err = blotter.ImportFromCSVReader(reader)
+		count, err := blotter.ImportFromCSVReader(reader)
 		if err != nil {
 			logging.GetLogger().Error(err)
 			common.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(common.SuccessResponse{
+			Message: "Successfully imported " + strconv.Itoa(count) + " trades",
+		})
+	}
+}
+
+// HandleTradeImportCSVStream handles importing trades from a CSV file upload
+// @Summary Import trades from CSV upload
+// @Description Import trades from a CSV file uploaded from the UI
+// @Tags trades
+// @Accept  multipart/form-data
+// @Produce  json
+// @Param   file  formData  file  true  "CSV file"
+// @Success 200 {object} common.SuccessResponse "Trades imported successfully"
+// @Failure 400 {object} common.ErrorResponse "Invalid file or format"
+// @Failure 500 {object} common.ErrorResponse "Server error processing import"
+// @Router /api/v1/blotter/import-ui [post]
+func HandleTradeImportCSVStream(blotter *TradeBlotter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Parse the multipart form data with a reasonable max memory
+		err := r.ParseMultipartForm(10 << 20) // 10 MB max
+		if err != nil {
+			logging.GetLogger().Error("Failed to parse form", err)
+			common.WriteJSONError(w, "Failed to parse upload form", http.StatusBadRequest)
+			return
+		}
+
+		// Get the file from the form data
+		file, handler, err := r.FormFile("file")
+		if err != nil {
+			logging.GetLogger().Error("Failed to get file from form", err)
+			common.WriteJSONError(w, "Failed to get uploaded file", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		logging.GetLogger().Info("Received file: ", handler.Filename)
+
+		// Process the CSV file
+		reader := csv.NewReader(file)
+		count, err := blotter.ImportFromCSVReader(reader)
+		if err != nil {
+			logging.GetLogger().Error("Failed to import CSV data", err)
+			common.WriteJSONError(w, "Error processing CSV data: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Return success response
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(common.SuccessResponse{
+			Message: "Successfully imported " + strconv.Itoa(count) + " trades",
+		})
 	}
 }
 
@@ -264,12 +319,22 @@ func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 		}
 	})
 
+	// import from server file
 	mux.HandleFunc("/api/v1/blotter/import", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		HandleTradeImportCSV(blotter).ServeHTTP(w, r)
+	})
+
+	// upload from client file
+	mux.HandleFunc("/api/v1/blotter/upload", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleTradeImportCSVStream(blotter).ServeHTTP(w, r)
 	})
 
 	mux.HandleFunc("/api/v1/blotter/export", func(w http.ResponseWriter, r *http.Request) {

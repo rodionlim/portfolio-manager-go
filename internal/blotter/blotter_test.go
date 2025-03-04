@@ -239,8 +239,9 @@ func TestImportFromCSVFile(t *testing.T) {
 	blotterSvc := blotter.NewBlotter(db)
 
 	// Call ImportFromCSV
-	err := blotterSvc.ImportFromCSVFile(filePath)
+	cnt, err := blotterSvc.ImportFromCSVFile(filePath)
 	assert.NoError(t, err)
+	assert.Equal(t, 2, cnt)
 
 	// Verify AddTrade was called with the correct trades
 	expectedTrades := []blotter.Trade{

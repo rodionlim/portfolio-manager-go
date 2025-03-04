@@ -1,6 +1,7 @@
 // filepath: /Users/rodionlim/workspace/portfolio-manager-go/web/ui/src/components/BlotterTable.tsx
 import React, { useMemo } from "react";
-import { Box, Button } from "@mantine/core";
+import { Box, Button, FileInput } from "@mantine/core";
+import { IconUpload } from "@tabler/icons-react";
 import {
   MantineReactTable,
   MRT_ColumnDef,
@@ -43,7 +44,7 @@ const fetchTrades = async (): Promise<Trade[]> => {
 };
 
 const deleteTrades = async (trades: string[]): Promise<{ message: string }> => {
-  return fetch(getUrl("/api/v1/blotter/trade"), {
+  return fetch(getUrl("api/v1/blotter/trade"), {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
@@ -58,6 +59,26 @@ const deleteTrades = async (trades: string[]): Promise<{ message: string }> => {
       (error) => {
         console.error("error", error);
         throw new Error("An error occurred while deleting trades");
+      }
+    );
+};
+
+const uploadTradesCSV = async (file: File): Promise<{ message: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return fetch(getUrl("api/v1/blotter/upload"), {
+    method: "POST",
+    body: formData,
+  })
+    .then((resp) => resp.json())
+    .then(
+      (data) => {
+        return data;
+      },
+      (error) => {
+        console.error("error", error);
+        throw new Error("An error occurred while uploading trades");
       }
     );
 };
@@ -97,7 +118,14 @@ const BlotterTable: React.FC = () => {
     enableRowSelection: true,
     positionToolbarAlertBanner: "bottom",
     renderTopToolbarCustomActions: ({ table }) => (
-      <Box style={{ display: "flex", gap: "16px", padding: "4px" }}>
+      <Box
+        style={{
+          display: "flex",
+          gap: "16px",
+          padding: "4px",
+          alignItems: "center",
+        }}
+      >
         <Button color="teal" onClick={handleAddTrade(table)} variant="filled">
           Add Trade
         </Button>
@@ -117,6 +145,14 @@ const BlotterTable: React.FC = () => {
         >
           Update Trade
         </Button>
+        <FileInput
+          placeholder="Upload CSV"
+          accept=".csv"
+          onChange={handleFileUpload}
+          leftSection={<IconUpload size={16} />}
+          style={{ width: "200px" }}
+          clearable
+        />
       </Box>
     ),
   });
@@ -190,6 +226,32 @@ const BlotterTable: React.FC = () => {
         },
       });
     };
+  };
+
+  // Handle file upload
+  const handleFileUpload = (file: File | null) => {
+    if (!file) return;
+
+    uploadTradesCSV(file)
+      .then(
+        (resp: { message: string }) => {
+          notifications.show({
+            title: "Trades successfully uploaded",
+            message: `${resp.message}`,
+            autoClose: 10000,
+          });
+        },
+        (error) => {
+          notifications.show({
+            color: "red",
+            title: "Error",
+            message: `Unable to upload trades to the blotter\n ${error}`,
+          });
+        }
+      )
+      .finally(() => {
+        refetch();
+      });
   };
 
   if (isLoading) return <div>Loading...</div>;

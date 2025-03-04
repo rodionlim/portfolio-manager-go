@@ -94,7 +94,7 @@ func NewPortfolioWithConfigurableExpiry(db dal.Database, mdata mdata.MarketDataM
 // It returns the FX rate relative to SGD. If the position currency is SGD, it returns 1.
 func (p *Portfolio) getFXRate(ccy string) (float64, error) {
 	// If currency is SGD, FX rate is 1.
-	if ccy == "SGD" {
+	if ccy == "SGD" || ccy == "" {
 		return 1, nil
 	}
 

@@ -73,7 +73,6 @@ const PositionTable: React.FC = () => {
           acc[tickerKey].Mv += curr.Mv * curr.FxRate;
           acc[tickerKey].PnL += curr.PnL;
           acc[tickerKey].Dividends += curr.Dividends;
-          acc[tickerKey].Dividends += curr.Px;
           acc[tickerKey].Name = tickerName;
         } else {
           acc[tickerKey] = { ...curr, Ticker: tickerKey, Name: tickerName };
@@ -92,7 +91,7 @@ const PositionTable: React.FC = () => {
         acc.Dividends += row.Dividends * row.FxRate;
 
         if (row.AssetSubClass !== "govies") {
-          acc.MvLessGovies += row.Mv * row.FxRate;
+          acc.MvLessGovies += row.Mv * (row.FxRate ? row.FxRate : 1);
         }
 
         return acc;

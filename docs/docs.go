@@ -85,6 +85,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/blotter/import-ui": {
+            "post": {
+                "description": "Import trades from a CSV file uploaded from the UI",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "trades"
+                ],
+                "summary": "Import trades from CSV upload",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "CSV file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Trades imported successfully",
+                        "schema": {
+                            "$ref": "#/definitions/common.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid file or format",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error processing import",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/blotter/trade": {
             "get": {
                 "description": "Retrieve all trades from the blotter",

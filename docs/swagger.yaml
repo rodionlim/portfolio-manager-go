@@ -235,6 +235,35 @@ paths:
       summary: Import trades from CSV
       tags:
       - trades
+  /api/v1/blotter/import-ui:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Import trades from a CSV file uploaded from the UI
+      parameters:
+      - description: CSV file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trades imported successfully
+          schema:
+            $ref: '#/definitions/common.SuccessResponse'
+        "400":
+          description: Invalid file or format
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Server error processing import
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Import trades from CSV upload
+      tags:
+      - trades
   /api/v1/blotter/trade:
     delete:
       consumes:

@@ -14,6 +14,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Store portfolio, reference, dividends and coupon data in leveldb for persistence
 - Display detailed information for individual and aggregated assets
 - OpenAPI compliant for easy integration with other systems
+- UI for end users
 
 ## Installation
 

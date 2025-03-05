@@ -6,6 +6,7 @@ import BlotterForm from "../Blotter/BlotterForm";
 import ReferenceDataTable from "../ReferenceData/ReferenceDataTable";
 import ReferenceDataForm from "../ReferenceData/ReferenceDataForm";
 import PositionTable from "../Position/PositionTable";
+import DividendsTable from "../Dividends/DividendsTable";
 
 const Controller: React.FC = () => {
   return (
@@ -13,6 +14,7 @@ const Controller: React.FC = () => {
       <Route path="/blotter/add_trade" element={<BlotterForm />} />
       <Route path="/blotter/update_trade" element={<BlotterForm />} />
       <Route path="/blotter" element={<BlotterTable />} />
+      <Route path="/dividends" element={<DividendsTable />} />
       <Route path="/refdata/add_ref_data" element={<ReferenceDataForm />} />
       <Route path="/refdata/update_ref_data" element={<ReferenceDataForm />} />
       <Route path="/refdata" element={<ReferenceDataTable />} />

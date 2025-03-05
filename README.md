@@ -107,6 +107,12 @@ User can add, delete and update trades via the blotter component in the user int
 
 ![Blotter Table](docs/Blotter.png)
 
+### Dividends Table
+
+User can view dividends history of any given ticker at a granular level by ex-date
+
+![Dividends Table](docs/Dividends.png)
+
 ## Backend API - Sample Curl Commands
 
 All API calls are documented (OAS) under `http://localhost:8080/swagger/index.html`
@@ -285,6 +291,7 @@ divWitholdingTaxIE: 0.15
 5. Support exporting/importing of leveldb for backup
 6. Add UI component (Implemented)
 7. Support lxc helper installation script (Implemented)
+8. Support dividends viewer by ticker (Implemented)
 
 ## Contributing
 

@@ -49,8 +49,8 @@ func TestCalculateDividendsForSingleTickerOnlyBuys(t *testing.T) {
 	assert.Len(t, dividends, 2)
 
 	expectedDividends := []Dividends{
-		{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0},
-		{ExDate: "2023-02-01", Amount: 420.0, AmountPerShare: 2.0},
+		{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0, Qty: 100},
+		{ExDate: "2023-02-01", Amount: 420.0, AmountPerShare: 2.0, Qty: 300},
 	}
 
 	assert.Equal(t, expectedDividends, dividends)
@@ -72,7 +72,7 @@ func TestCalculateDividendsForSingleTickerBuysAndSells(t *testing.T) {
 	assert.Len(t, dividends, 1)
 
 	expectedDividends := []Dividends{
-		{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0},
+		{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0, Qty: 100},
 	}
 
 	assert.Equal(t, expectedDividends, dividends)

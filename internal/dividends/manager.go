@@ -7,6 +7,7 @@ import (
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
+	"strings"
 )
 
 type DividendsManager struct {
@@ -20,6 +21,7 @@ type Dividends struct {
 	ExDate         string
 	Amount         float64
 	AmountPerShare float64
+	Qty            float64
 }
 
 func NewDividendsManager(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.ReferenceManager, blotter blotter.TradeGetter) *DividendsManager {
@@ -32,6 +34,8 @@ func NewDividendsManager(db dal.Database, mdata mdata.MarketDataManager, rdata r
 }
 
 func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]Dividends, error) {
+	ticker = strings.ToUpper(ticker)
+
 	// Get dividends.sg ticker from ticker reference
 	tickerRef, err := dm.rdata.GetTicker(ticker)
 	if err != nil {
@@ -71,7 +75,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 
 		// Calculate total dividend amount for trades with TradeDate < ExDate
 		totalQty := 0.0
-		for i := 0; i < idx; i++ {
+		for i := range idx {
 			if trades[i].Side == blotter.TradeSideBuy {
 				totalQty += trades[i].Quantity
 			} else {
@@ -85,6 +89,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 				ExDate:         dividend.ExDate,
 				Amount:         totalAmount,
 				AmountPerShare: dividend.Amount,
+				Qty:            totalQty,
 			})
 		}
 	}

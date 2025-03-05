@@ -287,8 +287,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/dividends": {
-            "post": {
+        "/api/v1/dividends/{ticker}": {
+            "get": {
                 "description": "Get dividends for a single ticker",
                 "consumes": [
                     "application/json"
@@ -302,13 +302,11 @@ const docTemplate = `{
                 "summary": "Get dividends for a single ticker",
                 "parameters": [
                     {
-                        "description": "Ticker symbol",
+                        "type": "string",
+                        "description": "Asset ticker symbol",
                         "name": "ticker",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -853,6 +851,9 @@ const docTemplate = `{
                 },
                 "exDate": {
                     "type": "string"
+                },
+                "qty": {
+                    "type": "number"
                 }
             }
         },

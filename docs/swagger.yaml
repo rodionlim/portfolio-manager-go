@@ -102,6 +102,8 @@ definitions:
         type: number
       exDate:
         type: string
+      qty:
+        type: number
     type: object
   portfolio.Position:
     properties:
@@ -368,18 +370,17 @@ paths:
       summary: Update a trade
       tags:
       - trades
-  /api/v1/dividends:
-    post:
+  /api/v1/dividends/{ticker}:
+    get:
       consumes:
       - application/json
       description: Get dividends for a single ticker
       parameters:
-      - description: Ticker symbol
-        in: body
+      - description: Asset ticker symbol
+        in: path
         name: ticker
         required: true
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
       responses:

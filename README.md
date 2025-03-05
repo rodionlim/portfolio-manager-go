@@ -202,6 +202,12 @@ curl -X GET http://localhost:8080/api/v1/mdata/dividend/sbjul24
 curl -X GET http://localhost:8080/api/v1/mdata/dividend/bs24124z
 ```
 
+### Fetch Portfolio Dividends
+
+```sh
+curl -X GET http://localhost:8080/api/v1/dividends/cjlu.si
+```
+
 ### Fetch Reference Data
 
 ```sh

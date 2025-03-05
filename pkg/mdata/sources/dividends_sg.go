@@ -54,6 +54,9 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 		dbDividendCount = len(dividends)
 	}
 
+	// TODO(rl): retrieve from custom added dividends of the same ticker
+	// to allow monkey patching for incorrect dividends data
+
 	url := fmt.Sprintf("https://www.dividends.sg/view/%s", ticker)
 
 	resp, err := http.Get(url)
@@ -123,8 +126,8 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 		dividends = append(dividends, types.DividendsMetadata{
 			Ticker:         ticker,
 			ExDate:         date,
-			Amount:         math.Round(amount*1000) / 1000,
-			WithholdingTax: withholdingTax}) // sg dividends have no withholding tax
+			Amount:         math.Round(amount*10000) / 10000, // Round to 4 decimal places
+			WithholdingTax: withholdingTax})                  // sg dividends have no withholding tax
 	}
 
 	// Sort dividends by date string (works because format is yyyy-mm-dd)

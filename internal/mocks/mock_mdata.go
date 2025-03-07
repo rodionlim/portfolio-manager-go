@@ -46,6 +46,12 @@ func (m *MockMarketDataManager) GetHistoricalData(ticker string, fromDate, toDat
 	return nil, errors.New("mock: unable to fetch historical data")
 }
 
+// StoreCustomDividendsMetadata stores custom dividends metadata
+func (m *MockMarketDataManager) StoreCustomDividendsMetadata(ticker string, dividends []types.DividendsMetadata) error {
+	m.DividendsMetadata[ticker] = dividends
+	return nil
+}
+
 // GetDividendsMetadata returns mock dividends metadata
 func (m *MockMarketDataManager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
 	if data, ok := m.DividendsMetadata[ticker]; ok {

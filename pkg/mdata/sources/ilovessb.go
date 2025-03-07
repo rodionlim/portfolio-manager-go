@@ -197,3 +197,7 @@ func (src *ILoveSsb) GetDividendsMetadata(ticker string, withholdingTax float64)
 
 	return results, nil
 }
+
+func (src *ILoveSsb) StoreDividendsMetadata(ticker string, dividends []types.DividendsMetadata, isCustom bool) ([]types.DividendsMetadata, error) {
+	panic("unimplemented")
+}

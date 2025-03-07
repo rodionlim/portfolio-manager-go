@@ -31,6 +31,10 @@ func (src *googleFinance) GetDividendsMetadata(ticker string, witholdingTax floa
 	panic("unimplemented")
 }
 
+func (src *googleFinance) StoreDividendsMetadata(ticker string, dividends []types.DividendsMetadata, isCustom bool) ([]types.DividendsMetadata, error) {
+	panic("unimplemented")
+}
+
 func (src *googleFinance) GetAssetPrice(ticker string) (*types.AssetData, error) {
 	// Google Finance URL (note: this might need adjustments as Google doesn't provide an official API)
 	url := fmt.Sprintf("https://www.google.com/finance/quote/%s", ticker)

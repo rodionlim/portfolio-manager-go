@@ -146,3 +146,8 @@ func (src *Mas) GetDividendsMetadata(ticker string, withholdingTax float64) ([]t
 
 	return dividends, nil
 }
+
+// StoreDividendsMetadata stores either custom or official dividends metadata for a given ticker
+func (src *Mas) StoreDividendsMetadata(ticker string, dividends []types.DividendsMetadata, isCustom bool) ([]types.DividendsMetadata, error) {
+	panic("unimplemented")
+}

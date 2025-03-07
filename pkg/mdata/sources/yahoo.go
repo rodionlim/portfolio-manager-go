@@ -18,20 +18,21 @@ import (
 )
 
 type yahooFinance struct {
+	BaseDividendSource
 	client *http.Client
-	db     dal.Database
-	cache  *cache.Cache
 	logger *logging.Logger
 }
 
 // NewYahooFinance creates a new Yahoo Finance data source
 func NewYahooFinance(db dal.Database) types.DataSource {
 	return &yahooFinance{
+		BaseDividendSource: BaseDividendSource{
+			db:    db,
+			cache: cache.New(5*time.Minute, 10*time.Minute),
+		},
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-		db:     db,
-		cache:  cache.New(5*time.Minute, 10*time.Minute),
 		logger: logging.GetLogger(),
 	}
 }
@@ -90,20 +91,16 @@ func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax floa
 		}
 	})
 
-	// Store in cache
-	src.cache.Set(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends, 24*time.Hour)
-
 	// Store in database if we have new data
 	if src.db != nil {
-		var existingDividends []types.DividendsMetadata
-		src.db.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), &existingDividends)
+		existingDividends, _ := src.getSingleDividendsMetadata(ticker, false)
 		if len(dividends) > len(existingDividends) {
 			src.logger.Infof("New dividends for ticker %s, storing into database", ticker)
-			src.db.Put(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends)
+			dividends, err = src.StoreDividendsMetadata(ticker, dividends, false)
 		}
 	}
 
-	return dividends, nil
+	return dividends, err
 }
 
 func (src *yahooFinance) GetAssetPrice(ticker string) (*types.AssetData, error) {

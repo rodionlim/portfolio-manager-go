@@ -9,6 +9,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Value assets of different currencies based on current market prices
 - Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas)
 - Import / Export portfolio blotter data using CSV file for easy migration to other portfolio systems
+- Allow users to supply their own custom dividends metadata
 - Export ticker reference data in yaml format
 - Autoclosing expired positions
 - Store portfolio, reference, dividends and coupon data in leveldb for persistence
@@ -206,6 +207,27 @@ curl -X GET http://localhost:8080/api/v1/mdata/dividend/sbjul24
 
 # mas bill
 curl -X GET http://localhost:8080/api/v1/mdata/dividend/bs24124z
+```
+
+### Store Custom Dividends
+
+```sh
+curl -X POST http://localhost:8080/api/v1/mdata/dividend/AAPL \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "ExDate": "2024-11-10",
+      "Amount": 120.00,
+      "AmountPerShare": 0.24,
+      "Qty": 500
+    },
+    {
+      "ExDate": "2024-08-09",
+      "Amount": 115.00,
+      "AmountPerShare": 0.23,
+      "Qty": 500
+    }
+  ]'
 ```
 
 ### Fetch Portfolio Dividends

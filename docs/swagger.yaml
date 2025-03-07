@@ -184,6 +184,24 @@ definitions:
     - name
     - underlying_ticker
     type: object
+  types.DividendsMetadata:
+    properties:
+      amount:
+        type: number
+      avgInterest:
+        description: SSB, TBills and Bonds only, in percentage
+        type: number
+      exDate:
+        type: string
+      interest:
+        description: SSB, TBills and Bonds only, in percentage
+        type: number
+      ticker:
+        type: string
+      withholdingTax:
+        description: in decimal, not percentage
+        type: number
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -427,6 +445,43 @@ paths:
           schema:
             type: string
       summary: Get dividend metadata for a ticker
+      tags:
+      - market-data
+    post:
+      consumes:
+      - application/json
+      description: Stores user-provided dividend history data for a specified stock
+        ticker
+      parameters:
+      - description: Asset ticker symbol
+        in: path
+        name: ticker
+        required: true
+        type: string
+      - description: Array of dividend metadata to store
+        in: body
+        name: dividend_data
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/types.DividendsMetadata'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Dividends metadata stored successfully
+          schema:
+            $ref: '#/definitions/common.SuccessResponse'
+        "400":
+          description: Bad request - Ticker is required or invalid request body
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Store custom dividend metadata for a ticker
       tags:
       - market-data
   /api/v1/mdata/price/{ticker}:

@@ -374,6 +374,60 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "description": "Stores user-provided dividend history data for a specified stock ticker",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "market-data"
+                ],
+                "summary": "Store custom dividend metadata for a ticker",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset ticker symbol",
+                        "name": "ticker",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Array of dividend metadata to store",
+                        "name": "dividend_data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.DividendsMetadata"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dividends metadata stored successfully",
+                        "schema": {
+                            "$ref": "#/definitions/common.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - Ticker is required or invalid request body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mdata/price/{ticker}": {
@@ -971,6 +1025,32 @@ const docTemplate = `{
                 },
                 "yahoo_ticker": {
                     "type": "string"
+                }
+            }
+        },
+        "types.DividendsMetadata": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "avgInterest": {
+                    "description": "SSB, TBills and Bonds only, in percentage",
+                    "type": "number"
+                },
+                "exDate": {
+                    "type": "string"
+                },
+                "interest": {
+                    "description": "SSB, TBills and Bonds only, in percentage",
+                    "type": "number"
+                },
+                "ticker": {
+                    "type": "string"
+                },
+                "withholdingTax": {
+                    "description": "in decimal, not percentage",
+                    "type": "number"
                 }
             }
         }

@@ -17,14 +17,15 @@ import (
 )
 
 type DividendsSg struct {
-	db    dal.Database
-	cache *cache.Cache
+	BaseDividendSource
 }
 
 func NewDividendsSg(db dal.Database) *DividendsSg {
 	return &DividendsSg{
-		db:    db,
-		cache: cache.New(24*time.Hour, 1*time.Hour),
+		BaseDividendSource: BaseDividendSource{
+			db:    db,
+			cache: cache.New(24*time.Hour, 1*time.Hour),
+		},
 	}
 }
 
@@ -47,15 +48,11 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 		return cachedData.([]types.DividendsMetadata), nil
 	}
 
-	dbDividendCount := 0
-	if src.db != nil {
-		var dividends []types.DividendsMetadata
-		src.db.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), &dividends)
-		dbDividendCount = len(dividends)
+	dbOfficialDividendMetadataCount := 0
+	officialDividendsMetadata, err := src.getSingleDividendsMetadata(ticker, false)
+	if err != nil {
+		dbOfficialDividendMetadataCount = len(officialDividendsMetadata)
 	}
-
-	// TODO(rl): retrieve from custom added dividends of the same ticker
-	// to allow monkey patching for incorrect dividends data
 
 	url := fmt.Sprintf("https://www.dividends.sg/view/%s", ticker)
 
@@ -137,14 +134,11 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 
 	if src.db != nil {
 		// Store in database if we have new data
-		if len(dividends) > dbDividendCount {
+		if len(dividends) > dbOfficialDividendMetadataCount {
 			logger.Infof("New dividends for ticker %s, storing into database", ticker)
-			src.db.Put(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends)
+			dividends, err = src.StoreDividendsMetadata(ticker, dividends, false)
 		}
 	}
 
-	// Store in cache
-	src.cache.Set(ticker, dividends, cache.DefaultExpiration)
-
-	return dividends, nil
+	return dividends, err
 }

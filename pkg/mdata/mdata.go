@@ -19,6 +19,7 @@ type MarketDataManager interface {
 	GetAssetPrice(ticker string) (*types.AssetData, error)
 	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error)
 	GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error)
+	StoreCustomDividendsMetadata(ticker string, dividends []types.DividendsMetadata) error
 	GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error)
 }
 
@@ -202,6 +203,35 @@ func (m *Manager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerRefere
 	}
 
 	return nil, errors.New("unable to fetch dividends from any source")
+}
+
+// StoreCustomDividendsMetadata stores custom dividends metadata
+func (m *Manager) StoreCustomDividendsMetadata(ticker string, dividends []types.DividendsMetadata) error {
+	ticker = strings.ToUpper(ticker)
+
+	ticker = strings.ToUpper(ticker)
+
+	// All other tickers go through normalization via reference data
+	tickerRef, err := m.getReferenceData(ticker)
+	if err != nil {
+		return err
+	}
+
+	if tickerRef.DividendsSgTicker != "" {
+		if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
+			_, err = dividendsSg.StoreDividendsMetadata(tickerRef.DividendsSgTicker, dividends, true)
+			return err
+		}
+	}
+
+	if tickerRef.YahooTicker != "" {
+		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
+			_, err = yahoo.StoreDividendsMetadata(tickerRef.YahooTicker, dividends, true)
+			return err
+		}
+	}
+
+	return errors.New("unable to store custom dividends metadata for this data source")
 }
 
 // NewDataSource creates a new data source engine based on the source type

@@ -484,6 +484,36 @@ paths:
       summary: Store custom dividend metadata for a ticker
       tags:
       - market-data
+  /api/v1/mdata/dividend/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Handles the import of dividend data from an uploaded CSV file for
+        a multiple tickers
+      parameters:
+      - description: CSV file containing dividend data
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully imported dividends data
+          schema:
+            $ref: '#/definitions/common.SuccessResponse'
+        "400":
+          description: Bad request - Invalid form data
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Import dividend data from CSV stream
+      tags:
+      - market-data
   /api/v1/mdata/price/{ticker}:
     get:
       consumes:

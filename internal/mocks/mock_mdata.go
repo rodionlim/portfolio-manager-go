@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"encoding/csv"
 	"errors"
 	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
@@ -50,6 +51,11 @@ func (m *MockMarketDataManager) GetHistoricalData(ticker string, fromDate, toDat
 func (m *MockMarketDataManager) StoreCustomDividendsMetadata(ticker string, dividends []types.DividendsMetadata) error {
 	m.DividendsMetadata[ticker] = dividends
 	return nil
+}
+
+// ImportCustomDividendsFromCSVReader imports custom dividends metadata from a CSV reader
+func (m *MockMarketDataManager) ImportCustomDividendsFromCSVReader(reader *csv.Reader) (int, error) {
+	return 0, nil
 }
 
 // GetDividendsMetadata returns mock dividends metadata

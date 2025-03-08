@@ -1,10 +1,13 @@
 package mdata
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"net/http"
 	"portfolio-manager/pkg/common"
+	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
+	"strconv"
 	"strings"
 )
 
@@ -22,7 +25,7 @@ func HandleTickerGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/price/")
 		if ticker == "" {
-			http.Error(w, "Ticker is required", http.StatusBadRequest)
+			common.WriteJSONError(w, "Ticker is required", http.StatusBadRequest)
 			return
 		}
 
@@ -50,7 +53,8 @@ func HandleTickersGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tickers := r.URL.Query().Get("tickers")
 		if tickers == "" {
-			http.Error(w, "Tickers query parameter is required", http.StatusBadRequest)
+			logging.GetLogger().Error("Tickers query parameter is required")
+			common.WriteJSONError(w, "Tickers query parameter is required", http.StatusBadRequest)
 			return
 		}
 
@@ -85,13 +89,14 @@ func HandleDividendsGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/dividend/")
 		if ticker == "" {
-			http.Error(w, "Ticker is required", http.StatusBadRequest)
+			common.WriteJSONError(w, "Ticker is required", http.StatusBadRequest)
 			return
 		}
 
 		data, err := mdataSvc.GetDividendsMetadata(ticker)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logging.GetLogger().Error("Failed to get dividends metadata", err)
+			common.WriteJSONError(w, "Failed to get dividends metadata", http.StatusInternalServerError)
 			return
 		}
 
@@ -115,7 +120,7 @@ func HandleDividendsStore(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/dividend/")
 		if ticker == "" {
-			http.Error(w, "Ticker is required", http.StatusBadRequest)
+			common.WriteJSONError(w, "Ticker is required", http.StatusBadRequest)
 			return
 		}
 
@@ -123,7 +128,7 @@ func HandleDividendsStore(mdataSvc MarketDataManager) http.HandlerFunc {
 		var dividends []types.DividendsMetadata
 		err := json.NewDecoder(r.Body).Decode(&dividends)
 		if err != nil {
-			http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+			common.WriteJSONError(w, "Failed to decode request body", http.StatusBadRequest)
 			return
 		}
 
@@ -138,6 +143,55 @@ func HandleDividendsStore(mdataSvc MarketDataManager) http.HandlerFunc {
 	}
 }
 
+// @Summary Import dividend data from CSV stream
+// @Description Handles the import of dividend data from an uploaded CSV file for a multiple tickers
+// @Tags market-data
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "CSV file containing dividend data"
+// @Success 200 {object} common.SuccessResponse "Successfully imported dividends data"
+// @Failure 400 {string} string "Bad request - Invalid form data"
+// @Failure 500 {string} string "Internal server error"
+// @Router /api/v1/mdata/dividend/import [post]
+func HandleDividendsImportCSVStream(mdataSvc MarketDataManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Parse the multipart form data with a reasonable max memory
+		err := r.ParseMultipartForm(10 << 20) // 10 MB max
+		if err != nil {
+			logging.GetLogger().Error("Failed to parse form", err)
+			common.WriteJSONError(w, "Failed to parse upload form", http.StatusBadRequest)
+			return
+		}
+
+		// Get the file from the form data
+		file, handler, err := r.FormFile("file")
+		if err != nil {
+			logging.GetLogger().Error("Failed to get file from form", err)
+			common.WriteJSONError(w, "Failed to get uploaded file", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		logging.GetLogger().Info("Received file: ", handler.Filename)
+
+		// Process the CSV file
+		reader := csv.NewReader(file)
+		count, err := mdataSvc.ImportCustomDividendsFromCSVReader(reader)
+		if err != nil {
+			logging.GetLogger().Error("Failed to import CSV data", err)
+			common.WriteJSONError(w, "Error processing CSV data: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Return success response
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(common.SuccessResponse{
+			Message: "Successfully imported " + strconv.Itoa(count) + " trades",
+		})
+	}
+}
+
 // RegisterHandlers registers the handlers for the market data service
 func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 	mux.HandleFunc("/api/v1/mdata/price/", func(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +199,7 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 		case http.MethodGet:
 			HandleTickerGet(mdataSvc).ServeHTTP(w, r)
 		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
 
@@ -154,7 +208,7 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 		case http.MethodGet:
 			HandleTickersGet(mdataSvc).ServeHTTP(w, r)
 		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
 
@@ -165,7 +219,16 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 		case http.MethodPost:
 			HandleDividendsStore(mdataSvc).ServeHTTP(w, r)
 		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/api/v1/mdata/dividend/upload", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			HandleDividendsStore(mdataSvc).ServeHTTP(w, r)
+		default:
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
 }

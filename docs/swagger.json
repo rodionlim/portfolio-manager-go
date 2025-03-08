@@ -328,6 +328,50 @@
                 }
             }
         },
+        "/api/v1/mdata/dividend/import": {
+            "post": {
+                "description": "Handles the import of dividend data from an uploaded CSV file for a multiple tickers",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "market-data"
+                ],
+                "summary": "Import dividend data from CSV stream",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "CSV file containing dividend data",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully imported dividends data",
+                        "schema": {
+                            "$ref": "#/definitions/common.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - Invalid form data",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mdata/dividend/{ticker}": {
             "get": {
                 "description": "Retrieves dividend history data for a specified stock ticker",

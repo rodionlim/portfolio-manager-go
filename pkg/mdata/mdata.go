@@ -1,8 +1,10 @@
 package mdata
 
 import (
+	"encoding/csv"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"portfolio-manager/internal/config"
@@ -19,8 +21,9 @@ type MarketDataManager interface {
 	GetAssetPrice(ticker string) (*types.AssetData, error)
 	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error)
 	GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error)
-	StoreCustomDividendsMetadata(ticker string, dividends []types.DividendsMetadata) error
 	GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error)
+	ImportCustomDividendsFromCSVReader(*csv.Reader) (int, error)
+	StoreCustomDividendsMetadata(ticker string, dividends []types.DividendsMetadata) error
 }
 
 // Manager handles multiple data sources with fallback capability
@@ -214,10 +217,101 @@ func (m *Manager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerRefere
 	return nil, errors.New("unable to fetch dividends from any source")
 }
 
-// StoreCustomDividendsMetadata stores custom dividends metadata
-func (m *Manager) StoreCustomDividendsMetadata(ticker string, dividends []types.DividendsMetadata) error {
-	ticker = strings.ToUpper(ticker)
+// ImportCustomDividendsFromCSVReader imports custom dividends metadata from a CSV reader
+func (m *Manager) ImportCustomDividendsFromCSVReader(reader *csv.Reader) (int, error) {
+	logging.GetLogger().Info("Importing dividends metadata from CSV")
 
+	// Read and validate header
+	header, err := reader.Read()
+	if err != nil {
+		return 0, fmt.Errorf("error reading CSV header: %w", err)
+	}
+
+	expectedHeaders := []string{"Ticker", "ExDate", "Amount", "Interest", "AvgInterest", "WithholdingTax"}
+	if len(header) != len(expectedHeaders) {
+		return 0, fmt.Errorf("invalid CSV format: expected %d columns, got %d", len(expectedHeaders), len(header))
+	}
+
+	for i, h := range expectedHeaders {
+		if header[i] != h {
+			return 0, fmt.Errorf("invalid CSV header: expected %s at position %d, got %s", h, i, header[i])
+		}
+	}
+
+	// Read all rows and create dividends metadata
+	var dividends []*types.DividendsMetadata
+	lineNum := 1
+	for {
+		cnt := lineNum - 1
+		row, err := reader.Read()
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			return cnt, fmt.Errorf("error reading CSV line %d: %w", lineNum, err)
+		}
+
+		amount, err := strconv.ParseFloat(row[2], 64)
+		if err != nil {
+			return cnt, fmt.Errorf("invalid amount at line %d: %w", lineNum, err)
+		}
+
+		var interest float64
+		if row[3] != "" {
+			interest, err = strconv.ParseFloat(row[3], 64)
+			if err != nil {
+				return cnt, fmt.Errorf("invalid interest at line %d: %w", lineNum, err)
+			}
+		}
+
+		var avgInterest float64
+		if row[4] != "" {
+			avgInterest, err = strconv.ParseFloat(row[4], 64)
+			if err != nil {
+				return cnt, fmt.Errorf("invalid average interest at line %d: %w", lineNum, err)
+			}
+		}
+
+		var withholdingTax float64
+		if row[5] != "" {
+			interest, err = strconv.ParseFloat(row[5], 64)
+			if err != nil {
+				return cnt, fmt.Errorf("invalid withholding tax at line %d: %w", lineNum, err)
+			}
+		}
+
+		dividendsMetadata := &types.DividendsMetadata{
+			Ticker:         row[0],
+			ExDate:         row[1],
+			Amount:         amount,
+			Interest:       interest,
+			AvgInterest:    avgInterest,
+			WithholdingTax: withholdingTax,
+		}
+
+		dividends = append(dividends, dividendsMetadata)
+		lineNum++
+	}
+
+	// Add all dividends by ticker after validation
+	// First group by ticker
+	dividendsByTicker := make(map[string][]types.DividendsMetadata)
+	for _, dividend := range dividends {
+		dividendsByTicker[dividend.Ticker] = append(dividendsByTicker[dividend.Ticker], *dividend)
+	}
+
+	// Store all dividends by ticker
+	for ticker, dividends := range dividendsByTicker {
+		if err := m.StoreCustomDividendsMetadata(ticker, dividends); err != nil {
+			return lineNum, fmt.Errorf("error adding dividends metadata: %w", err)
+		}
+	}
+
+	return len(dividends), nil
+}
+
+// StoreCustomDividendsMetadata stores custom dividends metadata for a single ticker
+func (m *Manager) StoreCustomDividendsMetadata(ticker string, dividends []types.DividendsMetadata) error {
 	ticker = strings.ToUpper(ticker)
 
 	// All other tickers go through normalization via reference data

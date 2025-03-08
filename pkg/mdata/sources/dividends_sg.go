@@ -30,21 +30,76 @@ func NewDividendsSg(db dal.Database) *DividendsSg {
 }
 
 // GetHistoricalData implements types.DataSource.
-func (src *DividendsSg) GetHistoricalData(symbol string, fromDate int64, toDate int64) ([]*types.AssetData, error) {
+func (src *DividendsSg) GetHistoricalData(ticker string, fromDate int64, toDate int64) ([]*types.AssetData, error) {
 	panic("unimplemented")
 }
 
 // GetAssetPrice implements types.DataSource.
-func (src *DividendsSg) GetAssetPrice(symbol string) (*types.AssetData, error) {
+func (src *DividendsSg) GetAssetPrice(ticker string) (*types.AssetData, error) {
 	logger := logging.GetLogger()
 
 	// Check cache first
-	if cachedData, found := src.cache.Get(symbol); found {
-		logger.Info("Returning cached price data for ticker:", symbol)
+	if cachedData, found := src.cache.Get(ticker); found {
+		logger.Info("Returning cached price data for ticker:", ticker)
 		return cachedData.(*types.AssetData), nil
 	}
 
-	panic("unimplemented")
+	url := fmt.Sprintf("https://www.dividends.sg/view/%s", ticker)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch prices: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch prices: status code %d", resp.StatusCode)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse HTML: %w", err)
+	}
+
+	var price float64
+	var priceFound bool
+
+	// Find h4 elements containing span with price
+	doc.Find("h4").Each(func(i int, s *goquery.Selection) {
+		// If we've already found the price, skip
+		if priceFound {
+			return
+		}
+
+		// Look for a span inside this h4
+		s.Find("span.badge").Each(func(j int, span *goquery.Selection) {
+			priceText := strings.TrimSpace(span.Text())
+
+			// Try to parse as float
+			p, err := strconv.ParseFloat(priceText, 64)
+			if err == nil {
+				price = p
+				priceFound = true
+			}
+		})
+	})
+
+	if !priceFound {
+		return nil, fmt.Errorf("could not find price for %s", ticker)
+	}
+
+	// Create asset data object
+	assetData := &types.AssetData{
+		Ticker:    ticker,
+		Price:     price,
+		Currency:  "SGD",
+		Timestamp: time.Now().Unix(),
+	}
+
+	// Store in cache
+	src.cache.Set(ticker, assetData, cache.DefaultExpiration)
+
+	return assetData, nil
 }
 
 func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float64) ([]types.DividendsMetadata, error) {

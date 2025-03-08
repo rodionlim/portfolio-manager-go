@@ -112,6 +112,15 @@ func (m *Manager) GetAssetPrice(ticker string) (*types.AssetData, error) {
 		}
 	}
 
+	// Also allow Dividends Sg for exotic SG tickers like bonds etc.
+	if tickerRef.DividendsSgTicker != "" {
+		if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
+			if data, err := dividendsSg.GetAssetPrice(tickerRef.DividendsSgTicker); err == nil {
+				return data, nil
+			}
+		}
+	}
+
 	return nil, fmt.Errorf("unable to fetch asset price %s from any market data sources", ticker)
 }
 

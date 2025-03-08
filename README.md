@@ -191,6 +191,7 @@ curl -X GET http://localhost:8080/api/v1/portfolio/positions
 
 ```sh
 curl -X GET http://localhost:8080/api/v1/mdata/price/es3.si
+curl -X GET http://localhost:8080/api/v1/mdata/price/temb
 curl -X GET http://localhost:8080/api/v1/mdata/price/eth-usd
 curl -X GET http://localhost:8080/api/v1/mdata/price/usd-sgd
 ```

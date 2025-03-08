@@ -133,13 +133,18 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 	// Use map to aggregate dividends by date
 	dividendMap := make(map[string]float64)
 
+	isBond := false
 	doc.Find("table.table-bordered tr").Each(func(i int, s *goquery.Selection) {
-		// Skip header row
+		// Skip header row, and determine if product is bond or equity
 		if i == 0 {
+			cells := s.Find("th")
+			if cells.Length() == 4 {
+				isBond = true
+			}
 			return
 		}
 
-		// Extract date and amount
+		// Extract date and amount (equity)
 		cells := s.Find("td")
 		clen := cells.Length()
 		amountIdx := 3
@@ -151,6 +156,12 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 			dateIdx = 1
 		}
 
+		if isBond {
+			// e.g. https://www.dividends.sg/view/TEMB, ex-date and particulars column
+			amountIdx = 3
+			dateIdx = 1
+		}
+
 		// Amount
 		amountStr := cells.Eq(amountIdx).Text()
 		if amountStr == "-" {
@@ -158,11 +169,27 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 			amountStr = "0"
 		}
 
-		// Parse amount, removing "SGD" prefix if present
-		amountStr = strings.TrimSpace(strings.TrimPrefix(amountStr, "SGD"))
-		amount, err := strconv.ParseFloat(amountStr, 64)
-		if err != nil {
-			return
+		// Parse amount, removing "SGD" prefix if present, also parsing for % for bonds
+		var amount float64
+		if strings.Contains(amountStr, "%") {
+			// check that amount string starts with Rate:, all other cases are not real dividends
+			if !strings.HasPrefix(amountStr, "Rate:") {
+				return
+			}
+			amountStr = strings.Replace(strings.TrimSpace(strings.TrimPrefix(amountStr, "Rate: ")), "%", "", -1)
+			amount, err = strconv.ParseFloat(amountStr, 64)
+			if err != nil {
+				return
+			}
+			// here we make the assumption that the bond pays 2 times a year
+			// TODO: this might not be true and needs a rework, thankfully, semiannual bonds are the most common
+			amount = amount / 100 / 2
+		} else {
+			amountStr = strings.TrimSpace(strings.TrimPrefix(amountStr, "SGD"))
+			amount, err = strconv.ParseFloat(amountStr, 64)
+			if err != nil {
+				return
+			}
 		}
 
 		// Date (ex-date)

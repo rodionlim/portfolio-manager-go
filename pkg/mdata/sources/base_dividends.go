@@ -57,7 +57,7 @@ func (base *BaseDividendSource) StoreDividendsMetadata(ticker string, dividends 
 		dividends = base.mergeAndSortDividendsMetadata(officialdDividendsMetadata, dividends)
 	}
 
-	base.cache.Set(ticker, dividends, cache.DefaultExpiration)
+	base.cache.Set(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends, cache.DefaultExpiration)
 
 	return dividends, err
 }

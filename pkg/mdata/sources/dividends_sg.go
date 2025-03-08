@@ -36,6 +36,14 @@ func (src *DividendsSg) GetHistoricalData(symbol string, fromDate int64, toDate 
 
 // GetAssetPrice implements types.DataSource.
 func (src *DividendsSg) GetAssetPrice(symbol string) (*types.AssetData, error) {
+	logger := logging.GetLogger()
+
+	// Check cache first
+	if cachedData, found := src.cache.Get(symbol); found {
+		logger.Info("Returning cached price data for ticker:", symbol)
+		return cachedData.(*types.AssetData), nil
+	}
+
 	panic("unimplemented")
 }
 
@@ -43,16 +51,12 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 	logger := logging.GetLogger()
 
 	// Check cache first
-	if cachedData, found := src.cache.Get(ticker); found {
+	if cachedData, found := src.cache.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker)); found {
 		logger.Info("Returning cached dividends data for ticker:", ticker)
 		return cachedData.([]types.DividendsMetadata), nil
 	}
 
-	dbOfficialDividendMetadataCount := 0
-	officialDividendsMetadata, err := src.getSingleDividendsMetadata(ticker, false)
-	if err != nil {
-		dbOfficialDividendMetadataCount = len(officialDividendsMetadata)
-	}
+	officialDividendsMetadata, _ := src.getSingleDividendsMetadata(ticker, false)
 
 	url := fmt.Sprintf("https://www.dividends.sg/view/%s", ticker)
 
@@ -134,7 +138,7 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 
 	if src.db != nil {
 		// Store in database if we have new data
-		if len(dividends) > dbOfficialDividendMetadataCount {
+		if len(dividends) > len(officialDividendsMetadata) {
 			logger.Infof("New dividends for ticker %s, storing into database", ticker)
 			dividends, err = src.StoreDividendsMetadata(ticker, dividends, false)
 		}

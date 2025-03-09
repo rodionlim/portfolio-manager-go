@@ -419,7 +419,7 @@ paths:
       summary: Get dividends for a single ticker
       tags:
       - dividends
-  /api/v1/mdata/dividend/{ticker}:
+  /api/v1/mdata/dividends/{ticker}:
     get:
       consumes:
       - application/json
@@ -484,7 +484,7 @@ paths:
       summary: Store custom dividend metadata for a ticker
       tags:
       - market-data
-  /api/v1/mdata/dividend/import:
+  /api/v1/mdata/dividends/import:
     post:
       consumes:
       - multipart/form-data

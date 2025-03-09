@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Box, Select, Text } from "@mantine/core";
+import { Box, FileInput, Select, Text } from "@mantine/core";
 import {
   MantineReactTable,
   MRT_ColumnDef,
@@ -8,6 +8,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
+import { IconUpload } from "@tabler/icons-react";
 
 interface Position {
   Ticker: string;
@@ -56,6 +57,50 @@ const DividendsTable: React.FC = () => {
       });
       return [];
     }
+  };
+
+  const uploadDividendsCSV = async (
+    file: File
+  ): Promise<{ message: string }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return fetch(getUrl("api/v1/mdata/dividends/upload"), {
+      method: "POST",
+      body: formData,
+    })
+      .then((resp) => resp.json())
+      .then(
+        (data) => {
+          return data;
+        },
+        (error) => {
+          console.error("error", error);
+          throw new Error("An error occurred while uploading custom dividends");
+        }
+      );
+  };
+
+  // Handle customs dividends file upload
+  const handleFileUpload = async (file: File | null) => {
+    if (!file) return;
+
+    uploadDividendsCSV(file).then(
+      (resp: { message: string }) => {
+        notifications.show({
+          title: "Custom dividends successfully uploaded",
+          message: `${resp.message}`,
+          autoClose: 10000,
+        });
+      },
+      (error) => {
+        notifications.show({
+          color: "red",
+          title: "Error",
+          message: `Unable to upload custom dividends to the market data service\n ${error}`,
+        });
+      }
+    );
   };
 
   // Query to fetch positions for dropdown
@@ -159,6 +204,14 @@ const DividendsTable: React.FC = () => {
             Total Dividends: ${totalAmount.toFixed(2)}
           </Text>
         )}
+        <FileInput
+          placeholder="Upload CSV"
+          accept=".csv"
+          onChange={handleFileUpload}
+          leftSection={<IconUpload size={16} />}
+          style={{ width: "200px" }}
+          clearable
+        />
       </Box>
     ),
   });

@@ -200,20 +200,20 @@ curl -X GET http://localhost:8080/api/v1/mdata/price/usd-sgd
 
 ```sh
 # equity - refer to ticker reference for identifier
-curl -X GET http://localhost:8080/api/v1/mdata/dividend/es3.si
-curl -X GET http://localhost:8080/api/v1/mdata/dividend/aapl
+curl -X GET http://localhost:8080/api/v1/mdata/dividends/es3.si
+curl -X GET http://localhost:8080/api/v1/mdata/dividends/aapl
 
 # ssb - format SBMMMYY
-curl -X GET http://localhost:8080/api/v1/mdata/dividend/sbjul24
+curl -X GET http://localhost:8080/api/v1/mdata/dividends/sbjul24
 
 # mas bill
-curl -X GET http://localhost:8080/api/v1/mdata/dividend/bs24124z
+curl -X GET http://localhost:8080/api/v1/mdata/dividends/bs24124z
 ```
 
 ### Store Custom Dividends
 
 ```sh
-curl -X POST http://localhost:8080/api/v1/mdata/dividend/AAPL \
+curl -X POST http://localhost:8080/api/v1/mdata/dividends/AAPL \
   -H "Content-Type: application/json" \
   -d '[
     {

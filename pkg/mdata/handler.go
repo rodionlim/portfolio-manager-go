@@ -84,10 +84,10 @@ func HandleTickersGet(mdataSvc MarketDataManager) http.HandlerFunc {
 // @Success 200 {object} interface{} "Dividend data for the ticker"
 // @Failure 400 {string} string "Bad request - Ticker is required"
 // @Failure 500 {string} string "Internal server error"
-// @Router /api/v1/mdata/dividend/{ticker} [get]
+// @Router /api/v1/mdata/dividends/{ticker} [get]
 func HandleDividendsGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/dividend/")
+		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/dividends/")
 		if ticker == "" {
 			common.WriteJSONError(w, "Ticker is required", http.StatusBadRequest)
 			return
@@ -115,10 +115,10 @@ func HandleDividendsGet(mdataSvc MarketDataManager) http.HandlerFunc {
 // @Success 200 {object} common.SuccessResponse "Dividends metadata stored successfully"
 // @Failure 400 {string} string "Bad request - Ticker is required or invalid request body"
 // @Failure 500 {string} string "Internal server error"
-// @Router /api/v1/mdata/dividend/{ticker} [post]
+// @Router /api/v1/mdata/dividends/{ticker} [post]
 func HandleDividendsStore(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/dividend/")
+		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/dividends/")
 		if ticker == "" {
 			common.WriteJSONError(w, "Ticker is required", http.StatusBadRequest)
 			return
@@ -152,7 +152,7 @@ func HandleDividendsStore(mdataSvc MarketDataManager) http.HandlerFunc {
 // @Success 200 {object} common.SuccessResponse "Successfully imported dividends data"
 // @Failure 400 {string} string "Bad request - Invalid form data"
 // @Failure 500 {string} string "Internal server error"
-// @Router /api/v1/mdata/dividend/import [post]
+// @Router /api/v1/mdata/dividends/import [post]
 func HandleDividendsImportCSVStream(mdataSvc MarketDataManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse the multipart form data with a reasonable max memory
@@ -212,7 +212,7 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 		}
 	})
 
-	mux.HandleFunc("/api/v1/mdata/dividend/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/mdata/dividends/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			HandleDividendsGet(mdataSvc).ServeHTTP(w, r)
@@ -223,7 +223,7 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 		}
 	})
 
-	mux.HandleFunc("/api/v1/mdata/dividend/upload", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/mdata/dividends/upload", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
 			HandleDividendsStore(mdataSvc).ServeHTTP(w, r)

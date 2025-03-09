@@ -334,7 +334,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/mdata/dividend/import": {
+        "/api/v1/mdata/dividends/import": {
             "post": {
                 "description": "Handles the import of dividend data from an uploaded CSV file for a multiple tickers",
                 "consumes": [
@@ -378,7 +378,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/mdata/dividend/{ticker}": {
+        "/api/v1/mdata/dividends/{ticker}": {
             "get": {
                 "description": "Retrieves dividend history data for a specified stock ticker",
                 "consumes": [

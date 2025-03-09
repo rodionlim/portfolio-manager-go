@@ -187,7 +187,7 @@ func HandleDividendsImportCSVStream(mdataSvc MarketDataManager) http.HandlerFunc
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(common.SuccessResponse{
-			Message: "Successfully imported " + strconv.Itoa(count) + " trades",
+			Message: "Successfully imported " + strconv.Itoa(count) + " custom dividends data",
 		})
 	}
 }
@@ -226,7 +226,8 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 	mux.HandleFunc("/api/v1/mdata/dividends/upload", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			HandleDividendsStore(mdataSvc).ServeHTTP(w, r)
+			logging.GetLogger().Info("Received request to import dividends data")
+			HandleDividendsImportCSVStream(mdataSvc).ServeHTTP(w, r)
 		default:
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

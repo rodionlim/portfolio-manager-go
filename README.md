@@ -41,6 +41,13 @@ make run # only start application backend
 make run-full # if user wants to start with the UI, run this command instead
 ```
 
+For Developers
+
+```sh
+make run # start backend
+cd web/ui && npm run dev # start ui with hot reload on http://localhost:5173
+```
+
 Build the application
 
 ```sh

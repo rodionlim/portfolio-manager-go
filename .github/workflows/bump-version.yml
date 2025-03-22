@@ -48,9 +48,7 @@ jobs:
           git commit -m "Bump version to $(cat VERSION) [skip ci]"
           git push
 
-      - name: Trigger Release Workflow
+      - name: Create and push tag
         run: |
-          # Using GitHub CLI to trigger workflow_dispatch event
-          gh workflow run release.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git tag v$NEW_VERSION
+          git push --tags

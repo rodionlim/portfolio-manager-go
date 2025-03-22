@@ -8,6 +8,9 @@ on:
         type: boolean
         required: false
         default: false
+  push:
+    tags:
+      - "v*"
 
 jobs:
   release:

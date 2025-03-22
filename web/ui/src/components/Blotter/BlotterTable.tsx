@@ -131,7 +131,7 @@ const BlotterTable: React.FC = () => {
         </Button>
         <Button
           color="red"
-          disabled={!table.getIsSomeRowsSelected()}
+          disabled={table.getSelectedRowModel().rows.length === 0}
           onClick={handleDeleteTrades(table)}
           variant="filled"
         >

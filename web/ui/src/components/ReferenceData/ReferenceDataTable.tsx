@@ -119,7 +119,7 @@ const ReferenceDataTable: React.FC = () => {
         </Button>
         <Button
           color="red"
-          disabled={!table.getIsSomeRowsSelected()}
+          disabled={table.getSelectedRowModel().rows.length === 0}
           onClick={handleDeleteRefData(table)}
           variant="filled"
         >

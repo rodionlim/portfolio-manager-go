@@ -25,7 +25,7 @@ $STD mkdir -p /opt/PortfolioManager
 VERSION=$($STD curl -s https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/VERSION)
 $STD curl -L -o /opt/PortfolioManager/portfolio-manager https://github.com/rodionlim/portfolio-manager-go/releases/download/v${VERSION}/portfolio-manager_linux_amd64
 $STD chmod +x /opt/PortfolioManager/portfolio-manager
-msg_ok "Installed Portfolio-Manager"
+msg_ok "Installed Portfolio-Manager v${VERSION}"
 
 msg_info "Creating Service"
 cat <<EOF >/etc/systemd/system/PortfolioManager.service

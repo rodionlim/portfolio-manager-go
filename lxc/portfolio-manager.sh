@@ -26,7 +26,25 @@ function update_script() {
         msg_error "No ${APP} Installation Found!"
         exit
     fi
-    msg_error "Portfolio-Manager should be updated via the user interface."
+    if (( $(df /boot | awk 'NR==2{gsub("%","",$5); print $5}') > 80 )); then
+        read -r -p "Warning: Storage is dangerously low, continue anyway? <y/N> " prompt
+        [[ ${prompt,,} =~ ^(y|yes)$ ]] || exit
+    fi
+    msg_info "Stopping ${APP}"
+    systemctl stop PortfolioManager.service
+    msg_ok "Stopped ${APP}"
+
+    msg_info "Updating ${APP}"
+    VERSION=$(curl -s https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/VERSION)
+    curl -L -o /opt/PortfolioManager/portfolio-manager https://github.com/rodionlim/portfolio-manager-go/releases/download/v${VERSION}/portfolio-manager_linux_amd64
+    chmod +x /opt/PortfolioManager/portfolio-manager
+    msg_ok "Updated ${APP} v${VERSION}"
+
+    msg_info "Starting ${APP}"
+    systemctl start PortfolioManager.service
+    msg_ok "Started ${APP}"
+
+    msg_ok "Updated Successfully"
     exit
 }
 

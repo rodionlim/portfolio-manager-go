@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021-2025 rodionlim
+# Copyright (c) 2025 rodionlim
 # Author: rodion (rodionlim)
 # License: MIT
 # https://github.com/rodionlim/portfolio-manager-go/blob/main/LICENSE
@@ -22,7 +22,8 @@ msg_ok "Installed Dependencies"
 msg_info "Installing Portfolio-Manager"
 # Create target directory if it doesn't exist
 $STD mkdir -p /opt/PortfolioManager
-$STD curl -L -o /opt/PortfolioManager/portfolio-manager https://github.com/rodionlim/portfolio-manager-go/releases/download/v1.0.0/portfolio-manager_linux_amd64
+VERSION=$($STD curl -s https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/VERSION)
+$STD curl -L -o /opt/PortfolioManager/portfolio-manager https://github.com/rodionlim/portfolio-manager-go/releases/download/v${VERSION}/portfolio-manager_linux_amd64
 $STD chmod +x /opt/PortfolioManager/portfolio-manager
 msg_ok "Installed Portfolio-Manager"
 

@@ -281,6 +281,32 @@
                 }
             }
         },
+        "/api/v1/blotter/trade/all": {
+            "delete": {
+                "description": "Delete all trades from the blotter",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "trades"
+                ],
+                "summary": "Delete all trades",
+                "responses": {
+                    "200": {
+                        "description": "message",
+                        "schema": {
+                            "$ref": "#/definitions/common.SuccessResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete all trades",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dividends/{ticker}": {
             "get": {
                 "description": "Get dividends for a single ticker",
@@ -603,6 +629,30 @@
                     },
                     "500": {
                         "description": "Failed to get positions",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes all positions currently in the portfolio",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolio"
+                ],
+                "summary": "Delete all portfolio positions",
+                "responses": {
+                    "200": {
+                        "description": "Positions deleted successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete positions",
                         "schema": {
                             "$ref": "#/definitions/common.ErrorResponse"
                         }

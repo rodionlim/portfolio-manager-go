@@ -176,6 +176,28 @@ func HandleTradeDelete(blotter *TradeBlotter) http.HandlerFunc {
 	}
 }
 
+// HandleTradeDeleteAll handles the deletion of all trades from the blotter service
+// @Summary Delete all trades
+// @Description Delete all trades from the blotter
+// @Tags trades
+// @Produce  json
+// @Success 200 {object} common.SuccessResponse "message"
+// @Failure 500 {object} common.ErrorResponse "Failed to delete all trades"
+// @Router /api/v1/blotter/trade/all [delete]
+func HandleTradeDeleteAll(blotter *TradeBlotter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := blotter.RemoveAllTrades()
+		if err != nil {
+			logging.GetLogger().Error("Failed to delete all trades", err)
+			common.WriteJSONError(w, "Failed to delete all trades", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(common.SuccessResponse{Message: "All trades deleted successfully"})
+	}
+}
+
 // HandleTradeGet handles retrieving trades from the blotter service.
 // @Summary Get all trades
 // @Description Retrieve all trades from the blotter
@@ -317,6 +339,15 @@ func RegisterHandlers(mux *http.ServeMux, blotter *TradeBlotter) {
 		default:
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
+	})
+
+	// delete all trades
+	mux.HandleFunc("/api/v1/blotter/trade/all", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleTradeDeleteAll(blotter).ServeHTTP(w, r)
 	})
 
 	// import from server file

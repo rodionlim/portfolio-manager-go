@@ -18,6 +18,8 @@ import (
 	"os"
 	"strconv"
 
+	"slices"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -184,6 +186,16 @@ func (b *TradeBlotter) UpdateTrade(trade Trade) error {
 	return nil
 }
 
+func (b *TradeBlotter) RemoveAllTrades() error {
+	tradeIDs := make([]string, len(b.trades))
+	for i, trade := range b.trades {
+		tradeIDs[i] = trade.TradeID
+	}
+
+	// Then remove them
+	return b.RemoveTrades(tradeIDs)
+}
+
 func (b *TradeBlotter) RemoveTrades(tradeIDs []string) error {
 	var err error
 	errorCount := 0
@@ -215,10 +227,12 @@ func (b *TradeBlotter) RemoveTrade(tradeID string) error {
 		return errors.New("trade not found")
 	}
 
+	logging.GetLogger().Infof("Removing trade with ID %s", tradeID)
+
 	// Remove trade from the trades slice
 	for i, t := range b.trades {
 		if t.TradeID == tradeID {
-			b.trades = append(b.trades[:i], b.trades[i+1:]...)
+			b.trades = slices.Delete(b.trades, i, i+1)
 			break
 		}
 	}

@@ -388,6 +388,23 @@ paths:
       summary: Update a trade
       tags:
       - trades
+  /api/v1/blotter/trade/all:
+    delete:
+      description: Delete all trades from the blotter
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            $ref: '#/definitions/common.SuccessResponse'
+        "500":
+          description: Failed to delete all trades
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Delete all trades
+      tags:
+      - trades
   /api/v1/dividends/{ticker}:
     get:
       consumes:
@@ -591,6 +608,22 @@ paths:
       tags:
       - portfolio
   /api/v1/portfolio/positions:
+    delete:
+      description: Deletes all positions currently in the portfolio
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Positions deleted successfully
+          schema:
+            type: string
+        "500":
+          description: Failed to delete positions
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Delete all portfolio positions
+      tags:
+      - portfolio
     get:
       description: Retrieves all positions currently in the portfolio
       produces:

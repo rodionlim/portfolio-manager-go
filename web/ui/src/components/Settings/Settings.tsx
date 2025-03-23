@@ -4,6 +4,7 @@ import {
   IconUser,
   IconCalendarX,
   IconSettings,
+  IconTrash,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import {
@@ -27,6 +28,59 @@ import { getUrl } from "../../utils/url";
 const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("User");
+
+  // Add this new state
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Add this new handler
+  const handleDeleteAllData = async () => {
+    if (
+      !window.confirm(
+        "WARNING: This will permanently delete ALL portfolio positions and trades. This action cannot be undone. Are you sure?"
+      )
+    ) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    try {
+      // Delete all blotter trades
+      const blotterResponse = await fetch(getUrl("api/v1/blotter/trade/all"), {
+        method: "DELETE",
+      });
+
+      if (!blotterResponse.ok) {
+        throw new Error("Failed to delete blotter trades");
+      }
+
+      // Delete all portfolio positions
+      const portfolioResponse = await fetch(
+        getUrl("api/v1/portfolio/positions"),
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!portfolioResponse.ok) {
+        throw new Error("Failed to delete portfolio positions");
+      }
+
+      notifications.show({
+        title: "Success",
+        message: "All portfolio positions and trades have been deleted",
+        color: "green",
+      });
+    } catch (error) {
+      console.error("Error deleting data:", error);
+      notifications.show({
+        title: "Error",
+        message: `Failed to delete all data: ${error}`,
+        color: "red",
+      });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const handleCloseExpiries = async () => {
     setLoading(true);
@@ -160,7 +214,6 @@ const Settings = () => {
                   This will automatically close all positions that have expired
                   without a corresponding closure trade.
                 </Alert>
-
                 <Button
                   color="blue"
                   onClick={handleCloseExpiries}
@@ -168,6 +221,26 @@ const Settings = () => {
                   leftSection={<IconCalendarX size={16} />}
                 >
                   Close Expired Positions
+                </Button>
+                <Divider my="lg" />
+
+                <Alert
+                  icon={<IconAlertCircle size={16} />}
+                  title="Delete All Data"
+                  color="red"
+                  mb="md"
+                >
+                  This will permanently delete ALL portfolio positions and
+                  trades from the system. This action cannot be undone.
+                </Alert>
+
+                <Button
+                  color="red"
+                  onClick={handleDeleteAllData}
+                  loading={deleteLoading}
+                  leftSection={<IconTrash size={16} />}
+                >
+                  Delete All Data
                 </Button>
               </Stack>
             </Box>

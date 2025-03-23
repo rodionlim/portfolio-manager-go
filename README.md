@@ -175,6 +175,13 @@ curl -X DELETE http://localhost:8080/api/v1/blotter/trade \
     -d '["61570b49-2adb-4b99-be20-d14001e761a9"]'
 ```
 
+### Delete all Assets from Blotter and Positions
+
+```sh
+curl -X DELETE http://localhost:8080/api/v1/blotter/trade/all
+curl -X DELETE http://localhost:8080/api/v1/portfolio/positions
+```
+
 ### Import Trades from CSV (for migrating into portfolio-manager)
 
 ```sh

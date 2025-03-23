@@ -14,3 +14,5 @@ npm_licenses.tar.bz2
 
 .#*
 .tarballs/*
+
+.DS_Store

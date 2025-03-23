@@ -121,6 +121,12 @@ User can view dividends history of any given ticker at a granular level by ex-da
 
 ![Dividends Table](docs/Dividends.png)
 
+### Settings
+
+User can edit application wide settings, such as auto closing expired positions via the user interface
+
+![Settings](docs/Settings.png)
+
 ## Backend API - Sample Curl Commands
 
 All API calls are documented (OAS) under `http://localhost:8080/swagger/index.html`

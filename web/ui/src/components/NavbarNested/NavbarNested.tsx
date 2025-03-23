@@ -6,11 +6,14 @@ import {
   IconDeviceLaptop,
 } from "@tabler/icons-react";
 import { Code, Group, ScrollArea } from "@mantine/core";
+import React from "react";
+
 import { LinksGroup } from "../NavbarLinksGroup/NavbarLinksGroup";
 import { UserButton } from "../UserButton/UserButton";
 import { Logo } from "./Logo";
+import { VERSION } from "../../utils/version";
+
 import classes from "./NavbarNested.module.css";
-import React from "react";
 
 const items = [
   { label: "Positions", icon: IconCoin, link: "/positions" },
@@ -48,7 +51,7 @@ const NavbarNested: React.FC = () => {
       <div className={classes.header}>
         <Group justify="space-between">
           <Logo style={{ width: 140 }} />
-          <Code fw={700}>v1.0.0</Code>
+          <Code fw={700}>v{VERSION}</Code>
         </Group>
       </div>
 

@@ -32,6 +32,27 @@ func HandlePositionsGet(portfolio *Portfolio) http.HandlerFunc {
 	}
 }
 
+// HandlePositionsDelete handles deleting all positions from the portfolio service.
+// @Summary Delete all portfolio positions
+// @Description Deletes all positions currently in the portfolio
+// @Tags portfolio
+// @Produce json
+// @Success 200 {string} string "Positions deleted successfully"
+// @Failure 500 {object} common.ErrorResponse "Failed to delete positions"
+// @Router /api/v1/portfolio/positions [delete]
+func HandlePositionsDelete(portfolio *Portfolio) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := portfolio.DeletePositions()
+		if err != nil {
+			logging.GetLogger().Errorf("Failed to delete positions: %v", err)
+			common.WriteJSONError(w, "Failed to delete positions", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode("Positions deleted successfully")
+	}
+}
+
 // HandlePositionsCleanup handles closing positions that have expired
 // @Summary Close positions that have expired
 // @Description Closes positions that have expired without a corresponding closure trade
@@ -59,6 +80,8 @@ func RegisterHandlers(mux *http.ServeMux, portfolio *Portfolio) {
 		switch r.Method {
 		case http.MethodGet:
 			HandlePositionsGet(portfolio).ServeHTTP(w, r)
+		case http.MethodDelete:
+			HandlePositionsDelete(portfolio).ServeHTTP(w, r)
 		default:
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

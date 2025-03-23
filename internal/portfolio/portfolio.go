@@ -144,6 +144,27 @@ func (p *Portfolio) LoadPositions() error {
 	return nil
 }
 
+// DeletePositions deletes all positions from the database.
+func (p *Portfolio) DeletePositions() error {
+	positionKeys, err := p.db.GetAllKeysWithPrefix(string(types.PositionKeyPrefix))
+	if err != nil {
+		return err
+	}
+
+	for _, key := range positionKeys {
+		err := p.db.Delete(key)
+		if err != nil {
+			return err
+		}
+	}
+
+	p.positions = make(map[string]map[string]*Position) // reset positions in memory
+	p.currentSeqNum = -1                                // reset current sequence number
+
+	p.logger.Infof("Deleted %d positions from database", len(positionKeys))
+	return nil
+}
+
 // GetMdataManager returns the market data manager.
 func (p *Portfolio) GetMdataManager() mdata.MarketDataManager {
 	return p.mdata

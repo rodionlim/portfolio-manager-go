@@ -351,7 +351,7 @@ type Trade struct {
 	Ticker      string  `json:"Ticker" validate:"required"`    // Ticker symbol of the asset
 	Side        string  `json:"Side" validate:"required"`      // Buy or Sell
 	Quantity    float64 `json:"Quantity" validate:"required"`  // Quantity of the asset
-	Price       float64 `json:"Price" validate:"required"`     // Price per unit of the asset
+	Price       float64 `json:"Price" validate:"gte=0"`        // Price per unit of the asset
 	Yield       float64 `json:"Yield"`                         // Yield of the asset
 	Trader      string  `json:"Trader" validate:"required"`    // Trader who executed the trade
 	Broker      string  `json:"Broker" validate:"required"`    // Broker who executed the trade

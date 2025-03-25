@@ -14,6 +14,7 @@ definitions:
         type: string
       Price:
         description: Price per unit of the asset
+        minimum: 0
         type: number
       Quantity:
         description: Quantity of the asset
@@ -47,7 +48,6 @@ definitions:
     required:
     - Account
     - Broker
-    - Price
     - Quantity
     - Side
     - Ticker

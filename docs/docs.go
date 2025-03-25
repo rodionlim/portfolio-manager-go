@@ -865,7 +865,6 @@ const docTemplate = `{
             "required": [
                 "Account",
                 "Broker",
-                "Price",
                 "Quantity",
                 "Side",
                 "Ticker",
@@ -887,7 +886,8 @@ const docTemplate = `{
                 },
                 "Price": {
                     "description": "Price per unit of the asset",
-                    "type": "number"
+                    "type": "number",
+                    "minimum": 0
                 },
                 "Quantity": {
                     "description": "Quantity of the asset",

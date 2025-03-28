@@ -330,7 +330,7 @@
   ccy: "SGD"
   domicile: "SG"
 - id: "FCOT.SI"
-  name: "Frasers Commercial Trust"
+  name: "Frasers Commercial Trust (DEP)"
   underlying_ticker: "FCOT.SI"
   yahoo_ticker: "FCOT.SI"
   google_ticker: "FCOT:SGX"

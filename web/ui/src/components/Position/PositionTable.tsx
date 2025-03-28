@@ -38,6 +38,10 @@ const PositionTable: React.FC = () => {
     queryKey: ["positions"],
     queryFn: async () => {
       const resp = await fetch(getUrl("/api/v1/portfolio/positions"));
+      if (!resp.ok) {
+        console.error(await resp.json());
+        throw new Error(`Error fetching positions`);
+      }
       return resp.json();
     },
   });

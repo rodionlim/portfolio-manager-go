@@ -409,6 +409,7 @@ func (p *Portfolio) GetAllPositions() ([]*Position, error) {
 func (p *Portfolio) enrichPositions(positions []*Position) error {
 	var errs []error
 	for _, position := range positions {
+		// TODO: use goroutines to parallelize the enrichment process
 		if err := p.enrichPosition(position); err != nil {
 			errs = append(errs, err)
 		}

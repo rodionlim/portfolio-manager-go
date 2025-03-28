@@ -8,8 +8,10 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
-import { Text, Tooltip } from "@mantine/core";
+import { Button, Text, Tooltip } from "@mantine/core";
 import { getUrl } from "../../utils/url";
+import { useNavigate } from "react-router-dom";
+import { IconHistory } from "@tabler/icons-react";
 
 interface Position {
   Ticker: string;
@@ -28,6 +30,7 @@ interface Position {
 }
 
 const PositionTable: React.FC = () => {
+  const navigate = useNavigate();
   const refData = useSelector((state: RootState) => state.referenceData.data);
 
   const {
@@ -45,6 +48,16 @@ const PositionTable: React.FC = () => {
       return resp.json();
     },
   });
+
+  // Add this function to handle navigation
+  const handleViewTrades = () => {
+    const selectedRows = table.getSelectedRowModel().rows;
+    if (selectedRows.length === 1) {
+      const ticker = selectedRows[0].original.Ticker;
+      // Navigate to blotter with ticker filter
+      navigate(`/blotter?ticker=${encodeURIComponent(ticker)}`);
+    }
+  };
 
   // Use useMemo to aggregate positions using the latest refData as well.
   const aggregatedPositions = useMemo(() => {
@@ -267,6 +280,23 @@ const PositionTable: React.FC = () => {
     state: { density: "xs" },
     enableRowSelection: true,
     positionToolbarAlertBanner: "bottom",
+    renderTopToolbarCustomActions: ({ table }) => {
+      const selectedRows = table.getSelectedRowModel().rows;
+      const isOneRowSelected = selectedRows.length === 1;
+
+      return (
+        <Button
+          leftSection={<IconHistory size={16} />}
+          onClick={handleViewTrades}
+          disabled={!isOneRowSelected}
+          variant="filled"
+          color="blue"
+          size="sm"
+        >
+          View Trade History
+        </Button>
+      );
+    },
   });
 
   if (isLoading) return <div>Loading...</div>;

@@ -10,7 +10,7 @@ import {
 } from "mantine-react-table";
 import { useQuery } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getUrl } from "../../utils/url";
 
 interface Trade {
@@ -85,6 +85,12 @@ const uploadTradesCSV = async (file: File): Promise<{ message: string }> => {
 
 const BlotterTable: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Extract ticker filter from location state or search params
+  const searchParams = new URLSearchParams(location.search);
+  const filterTicker =
+    searchParams.get("ticker") || (location.state as any)?.ticker || "";
 
   const {
     data: trades = [],
@@ -113,7 +119,13 @@ const BlotterTable: React.FC = () => {
   const table = useMantineReactTable({
     columns,
     data: trades,
-    initialState: { showGlobalFilter: true, showColumnFilters: true },
+    initialState: {
+      showGlobalFilter: true,
+      showColumnFilters: true,
+      columnFilters: filterTicker
+        ? [{ id: "Ticker", value: filterTicker }]
+        : [],
+    },
     state: { density: "xs" },
     enableRowSelection: true,
     positionToolbarAlertBanner: "bottom",

@@ -1,6 +1,7 @@
 package portfolio
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -19,7 +20,15 @@ func createTestPortfolio() (*Portfolio, *mocks.MockDatabase) {
 	mockDB := new(mocks.MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
 	mockDB.On("Get", string(types.HeadSequenceBlotterKey), mock.Anything).Return(nil)
-
+	mockDB.On("Get", fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, "C31.SI"), mock.AnythingOfType("*rdata.TickerReference")).Return(nil).Run(func(args mock.Arguments) {
+		ref := args.Get(1).(*rdata.TickerReference)
+		*ref = rdata.TickerReference{
+			ID:         "C31.SI",
+			Name:       "CapitaLand",
+			Ccy:        "SGD",
+			AssetClass: rdata.AssetClassEquities,
+		}
+	})
 	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*rdata.TickerReference")).Return(nil)
 	mockDB.On("GetAllKeysWithPrefix", string(types.ReferenceDataKeyPrefix), mock.Anything).Return([]string{}, nil)
 	mockDB.On("Put", mock.Anything, mock.Anything).Return(nil)
@@ -228,6 +237,135 @@ func TestSubscribeToBlotter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, position)
 	assert.Equal(t, 100.0, position.Qty)
+}
+
+func TestSubscribeToBlotterWithBuyAndClosePosition(t *testing.T) {
+	p, mockDB := createTestPortfolio()
+	blotterSvc := blotter.NewBlotter(mockDB)
+
+	p.SubscribeToBlotter(blotterSvc)
+
+	trade, _ := blotter.NewTrade(
+		blotter.TradeSideBuy,
+		700,
+		"C31.SI",
+		"trader1",
+		"broker1",
+		"cdp",
+		blotter.StatusOpen,
+		"",
+		3.5068,
+		0.0,
+		time.Now(),
+	)
+	err := blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	trade, _ = blotter.NewTrade(
+		blotter.TradeSideSell,
+		700,
+		"C31.SI",
+		"trader1",
+		"broker1",
+		"cdp",
+		blotter.StatusOpen,
+		"",
+		3.8231,
+		0.0,
+		time.Now(),
+	)
+	err = blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	// Give some time for the event to be processed
+	time.Sleep(100 * time.Millisecond)
+
+	position, err := p.GetPosition("trader1", "C31.SI")
+	assert.NoError(t, err)
+	assert.NotNil(t, position)
+	assert.Equal(t, float64(0), position.Qty)
+	assert.Equal(t, 221, int(position.PnL))
+}
+
+func TestSubscribeToBlotterWithBuyAndClosePositionTwice(t *testing.T) {
+	// This was initially a bug with the p&l calculation
+	p, mockDB := createTestPortfolio()
+	blotterSvc := blotter.NewBlotter(mockDB)
+
+	p.SubscribeToBlotter(blotterSvc)
+
+	trade, _ := blotter.NewTrade(
+		blotter.TradeSideBuy,
+		700,
+		"C31.SI",
+		"trader1",
+		"broker1",
+		"cdp",
+		blotter.StatusOpen,
+		"",
+		3.5068,
+		0.0,
+		time.Now(),
+	)
+	err := blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	trade, _ = blotter.NewTrade(
+		blotter.TradeSideSell,
+		700,
+		"C31.SI",
+		"trader1",
+		"broker1",
+		"cdp",
+		blotter.StatusOpen,
+		"",
+		3.8231,
+		0.0,
+		time.Now(),
+	)
+	err = blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	trade, _ = blotter.NewTrade(
+		blotter.TradeSideBuy,
+		600,
+		"C31.SI",
+		"trader1",
+		"broker1",
+		"cdp",
+		blotter.StatusOpen,
+		"",
+		3.6194,
+		0.0,
+		time.Now(),
+	)
+	err = blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	trade, _ = blotter.NewTrade(
+		blotter.TradeSideSell,
+		600,
+		"C31.SI",
+		"trader1",
+		"broker1",
+		"cdp",
+		blotter.StatusOpen,
+		"",
+		3.5507,
+		0.0,
+		time.Now(),
+	)
+	err = blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	// Give some time for the event to be processed
+	time.Sleep(100 * time.Millisecond)
+
+	position, err := p.GetPosition("trader1", "C31.SI")
+	assert.NoError(t, err)
+	assert.NotNil(t, position)
+	assert.Equal(t, float64(0), position.Qty)
+	assert.Equal(t, 180, int(position.PnL))
 }
 
 func TestSubscribeToBlotterWithTradeDeletion(t *testing.T) {

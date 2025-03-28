@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"slices"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/patrickmn/go-cache"
 )
@@ -112,6 +114,12 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 	}
 
 	officialDividendsMetadata, _ := src.getSingleDividendsMetadata(ticker, false)
+
+	// Escape hatch for custom dividends with in valid dividend history on dividends.sg
+	specialTickers := []string{"FCOT.SI"}
+	if slices.Contains(specialTickers, ticker) {
+		return src.getSingleDividendsMetadata(ticker, true)
+	}
 
 	url := fmt.Sprintf("https://www.dividends.sg/view/%s", ticker)
 

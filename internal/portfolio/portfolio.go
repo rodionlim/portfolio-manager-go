@@ -336,7 +336,8 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 	}
 
 	position := p.positions[trader][ticker]
-	totalPaid := position.AvgPx*position.Qty + trade.Price*qty // qty is negative for sell trades
+
+	totalPaid := position.TotalPaid + trade.Price*qty // qty is negative for sell trades
 	position.TotalPaid = totalPaid
 	position.Qty += qty
 	position.FxRate, _ = p.getFXRate(position.Ccy)

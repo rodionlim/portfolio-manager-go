@@ -77,3 +77,4 @@ jobs:
           files: portfolio-manager*
           make_latest: true
           draft: false
+          generate_release_notes: true

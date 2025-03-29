@@ -337,7 +337,7 @@ divWitholdingTaxIE: 0.15
 8. Support dividends viewer by ticker (Implemented)
 9. Compute internal rate of return and store total portfolio value against price paid, with csv import/exports
 10. Add UI charts for irr and portfolio value
-11. Parallalize get position when fetching market data
+11. Parallalize get position when fetching market data (Implemented)
 
 ## Contributing
 

@@ -407,15 +407,49 @@ func (p *Portfolio) GetAllPositions() ([]*Position, error) {
 }
 
 func (p *Portfolio) enrichPositions(positions []*Position) error {
-	var errs []error
-	for _, position := range positions {
-		// TODO: use goroutines to parallelize the enrichment process
-		if err := p.enrichPosition(position); err != nil {
-			errs = append(errs, err)
-		}
+	if len(positions) == 0 {
+		return nil
 	}
+
+	// Use a concurrent-safe error collection
+	var errMu sync.Mutex
+	var errs []error
+
+	// Create a worker pool with limited concurrency (3 workers)
+	const maxWorkers = 2
+	positionCh := make(chan *Position, len(positions))
+	var wg sync.WaitGroup
+
+	// Launch workers (only 2 to prevent overloading external services)
+	for i := 0; i < maxWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			// Process positions from the channel
+			for position := range positionCh {
+				if err := p.enrichPosition(position); err != nil {
+					// Thread-safe error collection
+					errMu.Lock()
+					errs = append(errs, err)
+					errMu.Unlock()
+				}
+			}
+		}()
+	}
+
+	// Feed positions to the workers
+	for _, position := range positions {
+		positionCh <- position
+	}
+	close(positionCh)
+
+	// Wait for all enrichment operations to complete
+	wg.Wait()
+
+	// Return combined errors, if any
 	if len(errs) > 0 {
-		return fmt.Errorf("multiple errors: %v", errs)
+		return fmt.Errorf("multiple errors enriching positions: %v", errs)
 	}
 	return nil
 }

@@ -49,7 +49,7 @@ export default function BlotterForm() {
       ticker: (value) => value.length < 1 && "Ticker is required",
       account: (value) => value.length < 1 && "Account is required",
       status: (value) =>
-        ["open", "autoclosed", "closed"].includes(value) &&
+        !["open", "autoclosed", "closed"].includes(value) &&
         "Status is required, and must be either open, autoclosed, or closed",
       qty: (value) => value <= 0 && "Quantity must be greater than 0",
       price: (value, values) => {
@@ -99,7 +99,7 @@ export default function BlotterForm() {
       seqNum: values.seqNum,
     };
 
-    return fetch(getUrl("/api/v1/blotter/trade"), {
+    return fetch(getUrl("api/v1/blotter/trade"), {
       method: values.tradeId ? "PUT" : "POST",
       headers: {
         "Content-Type": "application/json",

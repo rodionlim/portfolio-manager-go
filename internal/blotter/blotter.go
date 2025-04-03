@@ -382,7 +382,6 @@ func (t Trade) Clone() Trade {
 
 // NewTrade creates a new Trade instance.
 func NewTrade(side string, quantity float64, ticker, trader, broker, account, status, origTradeId string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
-
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
 	}

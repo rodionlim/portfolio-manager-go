@@ -213,7 +213,7 @@ export default function BlotterForm() {
             label="Quantity"
             placeholder="Quantity"
             thousandSeparator=","
-            allowDecimal={false}
+            allowDecimal={true}
             key={form.key("qty")}
             {...form.getInputProps("qty")}
           />

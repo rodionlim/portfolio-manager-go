@@ -173,12 +173,18 @@ const BlotterTable: React.FC = () => {
   const handleAddTrade = (table: MRT_TableInstance<Trade>): (() => void) => {
     return () => {
       // first check if there is any selections
-      const selection = table
-        .getSelectedRowModel()
-        .rows.map((trade) => trade.original.Ticker);
+      const selection = table.getSelectedRowModel().rows;
       if (selection.length > 0) {
         const ticker = selection[0];
-        navigate("/blotter/add_trade", { state: { ticker } });
+        console.log(ticker);
+        navigate("/blotter/add_trade", {
+          state: {
+            ticker: ticker.original.Ticker,
+            broker: ticker.original.Broker,
+            account: ticker.original.Account,
+            trader: ticker.original.Trader,
+          },
+        });
       } else {
         navigate("/blotter/add_trade");
       }

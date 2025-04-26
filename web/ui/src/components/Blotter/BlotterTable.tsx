@@ -31,8 +31,11 @@ const fetchTrades = async (): Promise<Trade[]> => {
   return fetch(getUrl("/api/v1/blotter/trade"))
     .then((resp) => resp.json())
     .then(
-      (data) => {
-        return data;
+      (data: Trade[]) => {
+        return data.sort(
+          (x, y) =>
+            new Date(y.TradeDate).getTime() - new Date(x.TradeDate).getTime()
+        );
       },
       (error) => {
         console.error("error", error);
@@ -157,6 +160,9 @@ const BlotterTable: React.FC = () => {
         >
           Update Trade
         </Button>
+        <Button color="gray" variant="outline" onClick={handleExportCSV}>
+          Export CSV
+        </Button>
         <FileInput
           placeholder="Upload CSV"
           accept=".csv"
@@ -270,6 +276,18 @@ const BlotterTable: React.FC = () => {
       .finally(() => {
         refetch();
       });
+  };
+
+  // Add the export handler function
+  const handleExportCSV = () => {
+    const url = getUrl("/api/v1/blotter/export");
+    // Create a hidden link and click it to trigger download
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "trades.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (isLoading) return <div>Loading...</div>;

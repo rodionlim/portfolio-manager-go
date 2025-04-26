@@ -31,8 +31,11 @@ const fetchTrades = async (): Promise<Trade[]> => {
   return fetch(getUrl("/api/v1/blotter/trade"))
     .then((resp) => resp.json())
     .then(
-      (data) => {
-        return data;
+      (data: Trade[]) => {
+        return data.sort(
+          (x, y) =>
+            new Date(y.TradeDate).getTime() - new Date(x.TradeDate).getTime()
+        );
       },
       (error) => {
         console.error("error", error);

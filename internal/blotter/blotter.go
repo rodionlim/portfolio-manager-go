@@ -576,7 +576,7 @@ func (b *TradeBlotter) ExportToCSVBytes() ([]byte, error) {
 	writer := csv.NewWriter(&buf)
 
 	// Write header
-	err := writer.Write([]string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account"})
+	err := writer.Write([]string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account", "Status"})
 	if err != nil {
 		return nil, fmt.Errorf("error writing CSV header: %w", err)
 	}

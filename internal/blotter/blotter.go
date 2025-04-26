@@ -300,6 +300,19 @@ func (b *TradeBlotter) GetTradesByTicker(ticker string) ([]Trade, error) {
 	return trades, nil
 }
 
+// GetAllTickers returns all unique tickers that has ever traded in the blotter.
+func (b *TradeBlotter) GetAllTickers() ([]string, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	tickers := make([]string, 0, len(b.tradesByTicker))
+	for ticker := range b.tradesByTicker {
+		tickers = append(tickers, ticker)
+	}
+
+	return tickers, nil
+}
+
 // GetCurrentSeqNum returns the current sequence number.
 func (b *TradeBlotter) GetCurrentSeqNum() int {
 	return b.currentSeqNum

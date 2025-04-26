@@ -33,6 +33,25 @@ func NewDividendsManager(db dal.Database, mdata mdata.MarketDataManager, rdata r
 	}
 }
 
+func (dm *DividendsManager) CalculateDividendsForAllTickers() (map[string][]Dividends, error) {
+	// Get all tickers from the database
+	tickers, err := dm.blotter.GetAllTickers()
+	if err != nil {
+		return nil, err
+	}
+
+	dividendsMap := make(map[string][]Dividends)
+	for _, ticker := range tickers {
+		dividends, err := dm.CalculateDividendsForSingleTicker(ticker)
+		if err != nil {
+			return nil, err
+		}
+		dividendsMap[ticker] = dividends
+	}
+
+	return dividendsMap, nil
+}
+
 func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]Dividends, error) {
 	ticker = strings.ToUpper(ticker)
 

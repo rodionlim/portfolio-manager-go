@@ -34,6 +34,18 @@ func (m *MockTradeGetterBlotter) GetTrades() []blotter.Trade {
 	return allTrades
 }
 
+func (m *MockTradeGetterBlotter) GetAllTickers() ([]string, error) {
+	if len(m.trades) == 0 {
+		return nil, errors.New("no trades found")
+	}
+
+	tickers := make([]string, 0, len(m.trades))
+	for ticker := range m.trades {
+		tickers = append(tickers, ticker)
+	}
+	return tickers, nil
+}
+
 func (m *MockTradeGetterBlotter) GetTradesByTicker(ticker string) ([]blotter.Trade, error) {
 	if trades, ok := m.trades[ticker]; !ok {
 		return nil, fmt.Errorf("no trades found for the given ticker %s", ticker)

@@ -405,6 +405,29 @@ paths:
       summary: Delete all trades
       tags:
       - trades
+  /api/v1/dividends:
+    get:
+      consumes:
+      - application/json
+      description: Get dividends for all tickers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Mapping of ticker to dividends
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/dividends.Dividends'
+              type: array
+            type: object
+        "500":
+          description: failed to calculate dividends
+          schema:
+            type: string
+      summary: Get dividends for all tickers
+      tags:
+      - dividends
   /api/v1/dividends/{ticker}:
     get:
       consumes:
@@ -425,10 +448,6 @@ paths:
             items:
               $ref: '#/definitions/dividends.Dividends'
             type: array
-        "400":
-          description: ticker is required
-          schema:
-            type: string
         "500":
           description: failed to calculate dividends
           schema:

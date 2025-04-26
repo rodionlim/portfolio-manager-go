@@ -313,6 +313,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dividends": {
+            "get": {
+                "description": "Get dividends for all tickers",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dividends"
+                ],
+                "summary": "Get dividends for all tickers",
+                "responses": {
+                    "200": {
+                        "description": "Mapping of ticker to dividends",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/dividends.Dividends"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "failed to calculate dividends",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dividends/{ticker}": {
             "get": {
                 "description": "Get dividends for a single ticker",
@@ -343,12 +378,6 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/dividends.Dividends"
                             }
-                        }
-                    },
-                    "400": {
-                        "description": "ticker is required",
-                        "schema": {
-                            "type": "string"
                         }
                     },
                     "500": {

@@ -253,8 +253,16 @@ curl -X POST http://localhost:8080/api/v1/mdata/dividends/AAPL \
 
 ### Fetch Portfolio Dividends
 
+Single Ticker
+
 ```sh
 curl -X GET http://localhost:8080/api/v1/dividends/cjlu.si
+```
+
+All Tickers
+
+```sh
+curl -X GET http://localhost:8080/api/v1/dividends
 ```
 
 ### Fetch Reference Data

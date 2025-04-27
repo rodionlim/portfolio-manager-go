@@ -157,7 +157,7 @@ const DividendsTable: React.FC = () => {
       },
       {
         accessorKey: "Amount",
-        header: "Total Amount",
+        header: "Total Amount (After withholding tax)",
         Cell: ({ cell }) => {
           return cell.getValue<number>().toFixed(2);
         },

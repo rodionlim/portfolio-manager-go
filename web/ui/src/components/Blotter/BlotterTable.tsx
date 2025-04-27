@@ -1,4 +1,3 @@
-// filepath: /Users/rodionlim/workspace/portfolio-manager-go/web/ui/src/components/BlotterTable.tsx
 import React, { useMemo } from "react";
 import { Box, Button, FileInput } from "@mantine/core";
 import { IconUpload } from "@tabler/icons-react";
@@ -12,20 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getUrl } from "../../utils/url";
-
-interface Trade {
-  TradeID: string;
-  TradeDate: string;
-  Ticker: string;
-  Trader: string;
-  Broker: string;
-  Account: string;
-  Quantity: number;
-  Price: number;
-  TradeType: boolean;
-  Side: string;
-  SeqNum: number;
-}
+import { Trade } from "../../types/blotter";
 
 const fetchTrades = async (): Promise<Trade[]> => {
   return fetch(getUrl("/api/v1/blotter/trade"))

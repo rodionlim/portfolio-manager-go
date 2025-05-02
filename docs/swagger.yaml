@@ -8,6 +8,9 @@ definitions:
       Broker:
         description: Broker who executed the trade
         type: string
+      Fx:
+        description: FX rate for the trade
+        type: number
       OrigTradeID:
         description: Original trade ID to link auto closed trades to the original
           trade
@@ -60,6 +63,8 @@ definitions:
         type: string
       broker:
         type: string
+      fx:
+        type: number
       id:
         type: string
       origTradeID:
@@ -183,6 +188,17 @@ definitions:
     - id
     - name
     - underlying_ticker
+    type: object
+  types.AssetData:
+    properties:
+      currency:
+        type: string
+      price:
+        type: number
+      ticker:
+        type: string
+      timestamp:
+        type: integer
     type: object
   types.DividendsMetadata:
     properties:
@@ -576,6 +592,47 @@ paths:
           schema:
             type: string
       summary: Get market data for a single ticker
+      tags:
+      - market-data
+  /api/v1/mdata/price/historical/{ticker}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves historical price data for a specified ticker between
+        start and end dates
+      parameters:
+      - description: Ticker symbol (see reference data)
+        in: path
+        name: ticker
+        required: true
+        type: string
+      - description: Start date in YYYYMMDD format
+        in: query
+        name: start
+        required: true
+        type: string
+      - description: End date in YYYYMMDD format (defaults to today)
+        in: query
+        name: end
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Historical price data for the ticker
+          schema:
+            items:
+              $ref: '#/definitions/types.AssetData'
+            type: array
+        "400":
+          description: Bad request - Invalid parameters
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get historical price data for a ticker
       tags:
       - market-data
   /api/v1/mdata/tickers/price:

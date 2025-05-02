@@ -529,6 +529,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/mdata/price/historical/{ticker}": {
+            "get": {
+                "description": "Retrieves historical price data for a specified ticker between start and end dates",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "market-data"
+                ],
+                "summary": "Get historical price data for a ticker",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ticker symbol (see reference data)",
+                        "name": "ticker",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date in YYYYMMDD format",
+                        "name": "start",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date in YYYYMMDD format (defaults to today)",
+                        "name": "end",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Historical price data for the ticker",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.AssetData"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - Invalid parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mdata/price/{ticker}": {
             "get": {
                 "description": "Retrieves current market data for a specified ticker",
@@ -909,6 +969,10 @@ const docTemplate = `{
                     "description": "Broker who executed the trade",
                     "type": "string"
                 },
+                "Fx": {
+                    "description": "FX rate for the trade",
+                    "type": "number"
+                },
                 "OrigTradeID": {
                     "description": "Original trade ID to link auto closed trades to the original trade",
                     "type": "string"
@@ -964,6 +1028,9 @@ const docTemplate = `{
                 },
                 "broker": {
                     "type": "string"
+                },
+                "fx": {
+                    "type": "number"
                 },
                 "id": {
                     "type": "string"
@@ -1148,6 +1215,23 @@ const docTemplate = `{
                 },
                 "yahoo_ticker": {
                     "type": "string"
+                }
+            }
+        },
+        "types.AssetData": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "ticker": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "integer"
                 }
             }
         },

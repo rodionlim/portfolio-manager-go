@@ -140,7 +140,7 @@ func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*t
 	}
 
 	tickerRef, err := m.getReferenceData(ticker)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 

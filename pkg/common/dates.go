@@ -64,3 +64,29 @@ func GetEpochFromDate(year, month, day int) int64 {
 func GetCurrentEpochTime() int64 {
 	return time.Now().Unix()
 }
+
+// Helper function to check if a date string is in RFC3339 format
+func IsRFC3339Format(dateStr string) bool {
+	_, err := time.Parse(time.RFC3339, dateStr)
+	return err == nil
+}
+
+// Helper function to parse dates in various formats
+func ParseFlexibleDate(dateStr string) (time.Time, error) {
+	formats := []string{
+		"2006-01-02",          // YYYY-MM-DD
+		"2006/01/02",          // YYYY/MM/DD
+		"02-01-2006",          // DD-MM-YYYY
+		"02/01/2006",          // DD/MM/YYYY
+		"2006-01-02 15:04:05", // YYYY-MM-DD HH:MM:SS
+		"2006/01/02 15:04:05", // YYYY/MM/DD HH:MM:SS
+	}
+
+	for _, format := range formats {
+		if parsedDate, err := time.Parse(format, dateStr); err == nil {
+			return parsedDate, nil
+		}
+	}
+
+	return time.Time{}, fmt.Errorf("unable to parse date string: %s", dateStr)
+}

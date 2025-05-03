@@ -502,7 +502,12 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) (int, error) {
 	}
 
 	expectedHeaders := []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account", "Status", "Fx"}
-	if len(header) != len(expectedHeaders) {
+	fxRateMissing := false
+	if len(header) == len(expectedHeaders)-1 {
+		// for backwards compatibility, assume fx rate is not present
+		fxRateMissing = true
+		expectedHeaders = expectedHeaders[:len(expectedHeaders)-1]
+	} else if len(header) != len(expectedHeaders) {
 		return 0, fmt.Errorf("invalid CSV format: expected %d columns, got %d", len(expectedHeaders), len(header))
 	}
 
@@ -535,9 +540,12 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) (int, error) {
 			return cnt, fmt.Errorf("invalid price at line %d: %w", lineNum, err)
 		}
 
-		fx, err := strconv.ParseFloat(row[10], 64)
-		if err != nil {
-			return cnt, fmt.Errorf("invalid fx rate at line %d: %w", lineNum, err)
+		fx := 0.0
+		if !fxRateMissing {
+			fx, err = strconv.ParseFloat(row[10], 64)
+			if err != nil {
+				return cnt, fmt.Errorf("invalid fx rate at line %d: %w", lineNum, err)
+			}
 		}
 
 		var yield float64

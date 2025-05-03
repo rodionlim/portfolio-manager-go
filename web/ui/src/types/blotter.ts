@@ -7,6 +7,7 @@ export interface Trade {
   Account: string;
   Quantity: number;
   Price: number;
+  Fx: number;
   TradeType: boolean;
   Side: string;
   SeqNum: number;

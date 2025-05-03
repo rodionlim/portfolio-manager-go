@@ -31,7 +31,15 @@ export default function BlotterForm() {
     mode: "uncontrolled",
     initialValues: {
       tradeId: location.state?.tradeId || "",
-      date: location.state?.date || new Date(),
+      date:
+        location.state?.date ||
+        (() => {
+          // Create date at midnight
+          const date = new Date();
+          // Add 9 hours to get 9:00 AM local time
+          date.setHours(9, 0, 0, 0);
+          return date;
+        })(),
       ticker: location.state?.ticker || "",
       trader: location.state?.trader || defaultTrader,
       broker: location.state?.broker || defaultBroker,

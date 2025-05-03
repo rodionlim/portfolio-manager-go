@@ -261,7 +261,23 @@ func (p *Portfolio) AutoCloseTrades() ([]string, error) {
 					// make a reversal trade
 					trade.Side = blotter.TradeSideSell
 					trade.OrigTradeID = trade.TradeID
-					trade.TradeDate = tickerRef.MaturityDate
+
+					// convert maturity date to RFC3339 format if needed
+					maturityDate := tickerRef.MaturityDate
+					if !common.IsRFC3339Format(maturityDate) {
+						// Parse the maturity date using common formats
+						parsedDate, err := common.ParseFlexibleDate(fmt.Sprintf("%s 09:00:00", maturityDate))
+						if err != nil {
+							p.logger.Warnf("Failed to parse maturity date %s for ticker %s: %v",
+								maturityDate, trade.Ticker, err)
+							// Fall back to today's date in RFC3339 format if parsing fails
+							parsedDate = time.Now()
+						}
+						// Format the date in RFC3339
+						maturityDate = parsedDate.Format(time.RFC3339)
+					}
+
+					trade.TradeDate = maturityDate
 					trade.TradeID = common.GenerateTradeID()
 					err = p.blotter.AddTrade(trade)
 					if err != nil {

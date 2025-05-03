@@ -48,7 +48,6 @@ const DividendsAggregatedTable: React.FC = () => {
 
       const dividends = await dividendsResp.json();
       const trades = await tradesResp.json();
-      console.log(trades);
 
       return { dividends, trades };
     } catch (error: any) {
@@ -139,7 +138,7 @@ const DividendsAggregatedTable: React.FC = () => {
       const year = date.getFullYear();
 
       // TODO: handle non sgd trades
-      const tradeValue = trade.Quantity * trade.Price;
+      const tradeValue = trade.Quantity * trade.Price * trade.Fx;
 
       // Initialize year record if it doesn't exist
       if (!yearlyData[year]) {

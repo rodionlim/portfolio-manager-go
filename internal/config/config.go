@@ -19,6 +19,7 @@ type Config struct {
 	LogFilePath        string  `yaml:"logFilePath"`
 	Host               string  `yaml:"host"`
 	Port               string  `yaml:"port"`
+	BaseCcy            string  `yaml:"baseCcy"`
 	Db                 string  `yaml:"db"`
 	DbPath             string  `yaml:"dbPath"`
 	RefDataSeedPath    string  `yaml:"refDataSeedPath"`

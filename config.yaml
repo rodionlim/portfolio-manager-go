@@ -2,6 +2,7 @@ verboseLogging: true
 logFilePath: ./portfolio-manager.log
 host: 0.0.0.0
 port: 8080
+baseCcy: SGD
 db: leveldb
 dbPath: ./portfolio-manager.db
 refDataSeedPath: "./seed/refdata.yaml"

@@ -41,6 +41,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/blotter/export-with-fx": {
+            "get": {
+                "description": "Export all trades as CSV with FX rates inferred where missing",
+                "produces": [
+                    "text/csv"
+                ],
+                "tags": [
+                    "trades"
+                ],
+                "summary": "Export trades with inferred FX rates",
+                "responses": {
+                    "200": {
+                        "description": "trades_with_fx.csv",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to export trades",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/blotter/import": {
             "post": {
                 "description": "Import trades from a CSV file",

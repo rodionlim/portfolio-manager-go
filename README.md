@@ -81,12 +81,14 @@ portfolio-manager/
 │   ├── config/
 │   ├── dal/
 │   ├── dividends/
+│   ├── fxinfer/
 │   ├── mocks/
 │   ├── portfolio/
 │   └── server/
 ├── lxc/
 ├── pkg/
 │   ├── common/
+│   ├── csvutil/
 │   ├── event/
 │   ├── logging/
 │   ├── mdata/
@@ -184,6 +186,8 @@ curl -X DELETE http://localhost:8080/api/v1/portfolio/positions
 
 ### Import Trades from CSV (for migrating into portfolio-manager)
 
+Note that FX rate here is always with respect to portfolio revaluation currency per foreign ccy, e.g. SGD/USD if SGD is portfolio revaluation currency
+
 ```sh
 curl -X POST http://localhost:8080/api/v1/blotter/import \
   -F "file=@templates/blotter_import.csv"
@@ -193,6 +197,13 @@ curl -X POST http://localhost:8080/api/v1/blotter/import \
 
 ```sh
 curl -X GET http://localhost:8080/api/v1/blotter/export
+```
+
+### Export Trades with Inferred FX Rates
+
+```sh
+# Export trades with FX rates automatically inferred for trades where FX rate is missing
+curl -X GET http://localhost:8080/api/v1/blotter/export-with-fx
 ```
 
 ### View Blotter Trades

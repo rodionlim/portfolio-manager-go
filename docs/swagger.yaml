@@ -242,6 +242,23 @@ paths:
       summary: Export trades to CSV
       tags:
       - trades
+  /api/v1/blotter/export-with-fx:
+    get:
+      description: Export all trades as CSV with FX rates inferred where missing
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: trades_with_fx.csv
+          schema:
+            type: file
+        "500":
+          description: Failed to export trades
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Export trades with inferred FX rates
+      tags:
+      - trades
   /api/v1/blotter/import:
     post:
       consumes:

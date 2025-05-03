@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/common"
+	"portfolio-manager/pkg/csvutil"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
@@ -599,7 +600,7 @@ func (b *TradeBlotter) ExportToCSVBytes() ([]byte, error) {
 	writer := csv.NewWriter(&buf)
 
 	// Write header
-	err := writer.Write([]string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account", "Status"})
+	err := writer.Write(csvutil.TradeHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("error writing CSV header: %w", err)
 	}
@@ -610,14 +611,14 @@ func (b *TradeBlotter) ExportToCSVBytes() ([]byte, error) {
 			trade.TradeDate,
 			trade.Ticker,
 			trade.Side,
-			strconv.FormatFloat(trade.Quantity, 'f', -1, 64),
-			strconv.FormatFloat(trade.Price, 'f', -1, 64),
-			strconv.FormatFloat(trade.Yield, 'f', -1, 64),
+			csvutil.FormatFloat(trade.Quantity, 4),
+			csvutil.FormatFloat(trade.Price, 4),
+			csvutil.FormatFloat(trade.Yield, 4),
 			trade.Trader,
 			trade.Broker,
 			trade.Account,
 			trade.Status,
-			strconv.FormatFloat(trade.Fx, 'f', -1, 64),
+			csvutil.FormatFloat(trade.Fx, 4),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error writing trade to CSV: %w", err)

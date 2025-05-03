@@ -11,6 +11,7 @@ import (
 	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/dividends"
+	"portfolio-manager/internal/fxinfer"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/internal/server"
 
@@ -89,6 +90,9 @@ func main() {
 	// Create a new dividends manager
 	dividendsSvc := dividends.NewDividendsManager(db, mdata, rdata, blotterSvc)
 
+	// Create a new FX inference service
+	fxInferSvc := fxinfer.NewFXInferenceService(blotterSvc, mdata, rdata, config.BaseCcy)
+
 	// Create a new portfolio service
 	portfolioSvc := portfolio.NewPortfolio(db, mdata, rdata, dividendsSvc)
 	err = portfolioSvc.LoadPositions()
@@ -99,7 +103,7 @@ func main() {
 
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	srv := server.NewServer(addr, blotterSvc, portfolioSvc)
+	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc)
 
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)

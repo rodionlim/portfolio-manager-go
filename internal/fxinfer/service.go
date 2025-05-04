@@ -37,6 +37,8 @@ func NewFXInferenceService(
 }
 
 // ExportTradesWithInferredFX exports all trades as CSV with inferred FX rates where missing
+// This function also amend the blotter trades in memory when fx rates are 0,
+// but users that want to persist the new rates should wipe and reimport the blotter
 func (s *Service) ExportTradesWithInferredFX() ([]byte, error) {
 	// Get all trades from blotter
 	trades := s.blotterSvc.GetTrades()
@@ -59,7 +61,7 @@ func (s *Service) ExportTradesWithInferredFX() ([]byte, error) {
 
 	// Collect all currencies and their date ranges
 	for i := range trades {
-		// Skip trades that already have FX rates
+		// impt!! Skip trades that already have FX rates
 		if trades[i].Fx != 0 {
 			continue
 		}

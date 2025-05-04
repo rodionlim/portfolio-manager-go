@@ -99,6 +99,11 @@ const BlotterTable: React.FC = () => {
       { accessorKey: "Account", header: "Account" },
       { accessorKey: "Quantity", header: "Quantity" },
       { accessorKey: "Price", header: "Price" },
+      {
+        accessorKey: "Fx",
+        header: "Fx",
+        Cell: ({ cell }) => Number(cell.getValue()).toFixed(4),
+      },
       // { accessorKey: "TradeType", header: "Trade Type" },
       // { accessorKey: "SeqNum", header: "Seq Num" },
     ],

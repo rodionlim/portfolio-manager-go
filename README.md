@@ -201,8 +201,9 @@ curl -X GET http://localhost:8080/api/v1/blotter/export
 
 ### Export Trades with Inferred FX Rates
 
+Export trades with FX rates automatically inferred for trades where FX rate is missing. This amends the blotter in memory as well. Users should wipe all blotter trades and reimport the amended blotter if they want it to be persisted across restarts.
+
 ```sh
-# Export trades with FX rates automatically inferred for trades where FX rate is missing
 curl -X GET http://localhost:8080/api/v1/blotter/export-with-fx
 ```
 

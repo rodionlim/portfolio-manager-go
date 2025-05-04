@@ -171,6 +171,7 @@ curl -X POST http://localhost:8080/api/v1/blotter/trade \
         "account": "CDP",
         "quantity": 10,
         "price": 150.00,
+        "fx": 1.33,
         "type": "buy",
         "tradeDate": "2024-12-09T00:00:00Z"
     }'
@@ -189,6 +190,7 @@ curl -X PUT http://localhost:8080/api/v1/blotter/trade \
         "account": "CDP",
         "quantity": 10,
         "price": 200.00,
+        "fx": 1,
         "type": "buy",
         "tradeDate": "2024-12-09T00:00:00Z"
     }'

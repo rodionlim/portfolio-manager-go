@@ -15,7 +15,7 @@ import (
 
 // Service is responsible for inferring FX rates for trades and enriching trade data
 type Service struct {
-	blotterSvc *blotter.TradeBlotter
+	blotterSvc blotter.TradeGetter
 	mdataSvc   mdata.MarketDataManager
 	rdataSvc   rdata.ReferenceManager
 	baseCcy    string
@@ -23,7 +23,7 @@ type Service struct {
 
 // NewFXInferenceService creates a new instance of the FX inference service
 func NewFXInferenceService(
-	blotterSvc *blotter.TradeBlotter,
+	blotterSvc blotter.TradeGetter,
 	mdataSvc mdata.MarketDataManager,
 	rdataSvc rdata.ReferenceManager,
 	baseCcy string,
@@ -213,4 +213,48 @@ func abs(x int64) int64 {
 		return -x
 	}
 	return x
+}
+
+// GetCurrentFXRates returns the current FX rates for currencies used in the trades
+func (s *Service) GetCurrentFXRates() (map[string]float64, error) {
+	trades := s.blotterSvc.GetTrades()
+	if len(trades) == 0 {
+		return map[string]float64{s.baseCcy: 1.0}, nil
+	}
+
+	// Store unique currencies we need to fetch
+	currencies := make(map[string]bool)
+	currencies[s.baseCcy] = true // Always include base currency
+
+	// Process all trades to find unique currencies
+	for _, trade := range trades {
+		refData, err := s.rdataSvc.GetTicker(trade.Ticker)
+		if err != nil {
+			logging.GetLogger().Warnf("Failed to get reference data for ticker %s: %v", trade.Ticker, err)
+			continue
+		}
+		currencies[refData.Ccy] = true
+	}
+
+	// Create the result map with rates relative to base currency
+	result := make(map[string]float64)
+	for ccy := range currencies {
+		if ccy == s.baseCcy {
+			result[ccy] = 1.0 // Base currency always has rate of 1.0
+			continue
+		}
+
+		// Fetch FX rate from market data service
+		fxPair := ccy + "-" + s.baseCcy
+		assetData, err := s.mdataSvc.GetAssetPrice(fxPair)
+		if err != nil {
+			logging.GetLogger().Warnf("Failed to get FX rate for %s: %v", fxPair, err)
+			continue
+		}
+
+		// Calculate rate as 1/price (if price is in terms of base currency)
+		result[ccy] = 1.0 / assetData.Price
+	}
+
+	return result, nil
 }

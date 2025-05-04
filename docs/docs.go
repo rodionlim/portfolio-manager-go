@@ -67,6 +67,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/blotter/fx": {
+            "get": {
+                "description": "Get current FX rates for all currencies in blotter trades",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "fx"
+                ],
+                "summary": "Get current FX rates",
+                "responses": {
+                    "200": {
+                        "description": "Map of currencies to their current FX rates",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "number"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch FX rates",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/blotter/import": {
             "post": {
                 "description": "Import trades from a CSV file",

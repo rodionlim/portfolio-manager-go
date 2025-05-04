@@ -103,6 +103,31 @@ portfolio-manager/
 └── README.md
 ```
 
+## For Developers
+
+### Testing and Mocking Strategy
+
+This project uses the `testify` framework for testing and mocking. While there are two different mocking approaches in this codebase:
+
+1. **Testify-based mocks** (preferred): Located in `internal/mocks/testify/` directory
+2. **Custom mocks**: Located in `internal/mocks/` directory
+
+When writing new tests or modifying existing ones, please **use the testify mocks** instead of the custom mock implementation.
+
+Example:
+
+```go
+// Import testify mocks (preferred)
+import "portfolio-manager/internal/mocks/testify"
+
+// Create a mock
+mockService := new(testify.MockService)
+mockService.On("MethodName", arg1, arg2).Return(expectedResult)
+
+// Later verify expectations
+mockService.AssertExpectations(t)
+```
+
 ## UI
 
 ### Positions
@@ -205,6 +230,14 @@ Export trades with FX rates automatically inferred for trades where FX rate is m
 
 ```sh
 curl -X GET http://localhost:8080/api/v1/blotter/export-with-fx
+```
+
+### Get Current FX Rates for relevant currencies in our blotter
+
+Get current FX rates for all currencies in the blotter. Returns a JSON mapping of currencies to their current exchange rates relative to the base currency.
+
+```sh
+curl -X GET http://localhost:8080/api/v1/blotter/fx
 ```
 
 ### View Blotter Trades

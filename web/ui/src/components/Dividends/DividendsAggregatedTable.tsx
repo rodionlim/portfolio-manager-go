@@ -100,6 +100,8 @@ const DividendsAggregatedTable: React.FC = () => {
             };
           }
 
+          // TODO: handle non-sgd dividends
+
           // Add to total dividends
           yearlyData[year].Dividends += dividend.Amount;
 

@@ -5,6 +5,7 @@ import {
   IconCalendarX,
   IconSettings,
   IconTrash,
+  IconCurrencyDollar,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import {
@@ -28,11 +29,9 @@ import { getUrl } from "../../utils/url";
 const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("User");
-
-  // Add this new state
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [fxInferLoading, setFxInferLoading] = useState(false);
 
-  // Add this new handler
   const handleDeleteAllData = async () => {
     if (
       !window.confirm(
@@ -44,7 +43,6 @@ const Settings = () => {
 
     setDeleteLoading(true);
     try {
-      // Delete all blotter trades
       const blotterResponse = await fetch(getUrl("api/v1/blotter/trade/all"), {
         method: "DELETE",
       });
@@ -53,7 +51,6 @@ const Settings = () => {
         throw new Error("Failed to delete blotter trades");
       }
 
-      // Delete all portfolio positions
       const portfolioResponse = await fetch(
         getUrl("api/v1/portfolio/positions"),
         {
@@ -112,7 +109,35 @@ const Settings = () => {
     }
   };
 
-  // Placeholder for future implementation
+  const handleInferFxRates = async () => {
+    setFxInferLoading(true);
+    try {
+      // This endpoint both infers FX rates and returns the CSV data
+      const exportUrl = getUrl("api/v1/blotter/export-with-fx");
+      const link = document.createElement("a");
+      link.href = exportUrl;
+      link.setAttribute("download", "trades-with-fx.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      notifications.show({
+        title: "Success",
+        message: "Successfully inferred FX rates and downloaded trades",
+        color: "green",
+      });
+    } catch (error) {
+      console.error("Error inferring FX rates:", error);
+      notifications.show({
+        title: "Error",
+        message: `Failed to infer FX rates: ${error}`,
+        color: "red",
+      });
+    } finally {
+      setFxInferLoading(false);
+    }
+  };
+
   const handleSaveProfile = () => {
     notifications.show({
       title: "Profile Updated",
@@ -121,9 +146,7 @@ const Settings = () => {
     });
   };
 
-  // Placeholder for future implementation
   const handleUploadProfilePicture = () => {
-    // This would be implemented when the feature is ready
     console.log("Upload profile picture functionality to be implemented");
   };
 
@@ -141,6 +164,12 @@ const Settings = () => {
           <Tabs.Tab value="portfolio" leftSection={<IconCalendarX size={16} />}>
             Portfolio
           </Tabs.Tab>
+          <Tabs.Tab
+            value="blotter"
+            leftSection={<IconCurrencyDollar size={16} />}
+          >
+            Blotter
+          </Tabs.Tab>
           <Tabs.Tab value="general" leftSection={<IconSettings size={16} />}>
             General
           </Tabs.Tab>
@@ -154,7 +183,6 @@ const Settings = () => {
                 <Title order={4}>Profile Information</Title>
                 <Divider />
 
-                {/* Add warning alert here */}
                 <Alert
                   icon={<IconAlertCircle size={16} />}
                   title="Feature in Development"
@@ -241,6 +269,44 @@ const Settings = () => {
                   leftSection={<IconTrash size={16} />}
                 >
                   Delete All Data
+                </Button>
+              </Stack>
+            </Box>
+          </Card>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="blotter">
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Box pos="relative">
+              <LoadingOverlay
+                visible={fxInferLoading}
+                overlayProps={{ blur: 2 }}
+              />
+              <Stack>
+                <Title order={4}>Blotter Management</Title>
+                <Divider />
+
+                <Text c="dimmed" mb="md">
+                  Manage your blotter settings and perform maintenance
+                  operations.
+                </Text>
+
+                <Alert
+                  icon={<IconAlertCircle size={16} />}
+                  title="Infer FX Rates"
+                  color="blue"
+                  mb="md"
+                >
+                  This will infer FX rates for historical trades and download
+                  blotter trades to a csv file.
+                </Alert>
+                <Button
+                  color="blue"
+                  onClick={handleInferFxRates}
+                  loading={fxInferLoading}
+                  leftSection={<IconCurrencyDollar size={16} />}
+                >
+                  Infer FX Rates
                 </Button>
               </Stack>
             </Box>

@@ -12,6 +12,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Allow users to supply their own custom dividends metadata
 - Export ticker reference data in yaml format
 - Autoclosing expired positions
+- Infer historical fx rates for blotter trades
 - Store portfolio, reference, dividends and coupon data in leveldb for persistence
 - Display detailed information for individual and aggregated assets
 - OpenAPI compliant for easy integration with other systems
@@ -381,6 +382,7 @@ verboseLogging: true
 logFilePath: ./portfolio-manager.log
 host: localhost
 port: 8080
+baseCcy: SGD
 db: leveldb
 dbPath: ./portfolio-manager.db
 refDataSeedPath: "./seed/refdata.yaml"
@@ -392,17 +394,7 @@ divWitholdingTaxIE: 0.15
 
 ## Roadmap
 
-1. Support non SGD dividends (Implemented)
-2. Support MAS TBills (Implemented)
-3. Support Crypto market data (Implemented)
-4. Support FX market data (Implemented)
-5. Support exporting/importing of leveldb for backup
-6. Add UI component (Implemented)
-7. Support lxc helper installation script (Implemented)
-8. Support dividends viewer by ticker (Implemented)
-9. Compute internal rate of return and store total portfolio value against price paid, with csv import/exports
-10. Add UI charts for irr and portfolio value
-11. Parallalize get position when fetching market data (Implemented)
+See https://github.com/rodionlim/portfolio-manager-go/milestones
 
 ## Contributing
 

@@ -236,6 +236,7 @@ const BlotterTable: React.FC = () => {
           account: selection.Account,
           qty: selection.Quantity,
           price: selection.Price,
+          fx: selection.Fx,
           tradeType: selection.TradeType,
           seqNum: selection.SeqNum,
         },

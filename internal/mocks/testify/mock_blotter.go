@@ -115,3 +115,35 @@ func (m *MockTradeBlotter) ImportFromCSVReader(reader *csv.Reader) (int, error) 
 	args := m.Called(reader)
 	return args.Int(0), args.Error(1)
 }
+
+// MockBlotterTradeGetter is a mock implementation of blotter.TradeGetter
+type MockBlotterTradeGetter struct {
+	mock.Mock
+}
+
+// GetTrades mocks the GetTrades method of TradeGetter
+func (m *MockBlotterTradeGetter) GetTrades() []blotter.Trade {
+	args := m.Called()
+	return args.Get(0).([]blotter.Trade)
+}
+
+// GetTradeByID mocks the GetTradeByID method of TradeGetter
+func (m *MockBlotterTradeGetter) GetTradeByID(tradeID string) (*blotter.Trade, error) {
+	args := m.Called(tradeID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*blotter.Trade), args.Error(1)
+}
+
+// GetTradesByTicker mocks the GetTradesByTicker method of TradeGetter
+func (m *MockBlotterTradeGetter) GetTradesByTicker(ticker string) ([]blotter.Trade, error) {
+	args := m.Called(ticker)
+	return args.Get(0).([]blotter.Trade), args.Error(1)
+}
+
+// GetAllTickers mocks the GetAllTickers method of TradeGetter
+func (m *MockBlotterTradeGetter) GetAllTickers() ([]string, error) {
+	args := m.Called()
+	return args.Get(0).([]string), args.Error(1)
+}

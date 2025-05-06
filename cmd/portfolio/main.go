@@ -12,6 +12,7 @@ import (
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/dividends"
 	"portfolio-manager/internal/fxinfer"
+	"portfolio-manager/internal/metrics"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/internal/server"
 
@@ -101,9 +102,12 @@ func main() {
 	}
 	portfolioSvc.SubscribeToBlotter(blotterSvc)
 
+	// Create a new metrics service
+	metricsSvc := metrics.NewMetricsService(blotterSvc, portfolioSvc, dividendsSvc, mdata, rdata)
+
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc)
+	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc, metricsSvc)
 
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)

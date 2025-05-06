@@ -725,6 +725,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/metrics": {
+            "get": {
+                "description": "Get the Internal Rate of Return (IRR), MV, Price Paid for the entire portfolio",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "Get portfolio IRR",
+                "responses": {
+                    "200": {
+                        "description": "The portfolio metrics, including IRR, cash flows and others",
+                        "schema": {
+                            "$ref": "#/definitions/metrics.MetricsResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to calculate portoflio metrics",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/portfolio/cleanup": {
             "post": {
                 "description": "Closes positions that have expired without a corresponding closure trade",
@@ -1152,6 +1178,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "qty": {
+                    "type": "number"
+                }
+            }
+        },
+        "metrics.MetricsResult": {
+            "type": "object",
+            "properties": {
+                "irr": {
+                    "type": "number"
+                },
+                "mv": {
+                    "description": "Portfolio market value",
+                    "type": "number"
+                },
+                "pricePaid": {
+                    "description": "Buy - Sell",
+                    "type": "number"
+                },
+                "totalDividends": {
+                    "description": "Total dividends",
                     "type": "number"
                 }
             }

@@ -110,6 +110,20 @@ definitions:
       qty:
         type: number
     type: object
+  metrics.MetricsResult:
+    properties:
+      irr:
+        type: number
+      mv:
+        description: Portfolio market value
+        type: number
+      pricePaid:
+        description: Buy - Sell
+        type: number
+      totalDividends:
+        description: Total dividends
+        type: number
+    type: object
   portfolio.Position:
     properties:
       assetClass:
@@ -697,6 +711,24 @@ paths:
       summary: Get market data for multiple tickers
       tags:
       - market-data
+  /api/v1/metrics:
+    get:
+      description: Get the Internal Rate of Return (IRR), MV, Price Paid for the entire
+        portfolio
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The portfolio metrics, including IRR, cash flows and others
+          schema:
+            $ref: '#/definitions/metrics.MetricsResult'
+        "500":
+          description: Failed to calculate portoflio metrics
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get portfolio IRR
+      tags:
+      - metrics
   /api/v1/portfolio/cleanup:
     post:
       description: Closes positions that have expired without a corresponding closure

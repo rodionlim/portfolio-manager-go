@@ -83,6 +83,7 @@ portfolio-manager/
 │   ├── dal/
 │   ├── dividends/
 │   ├── fxinfer/
+│   ├── metrics/
 │   ├── mocks/
 │   ├── portfolio/
 │   └── server/
@@ -371,6 +372,14 @@ curl -X POST http://localhost:8080/api/v1/dividends -H "Content-Type: applicatio
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/portfolio/cleanup
+```
+
+### Get Portfolio Metrics, e.g. IRR (Internal Rate of Return), Price Paid, MV, Total Dividends
+
+Get portfolio metrics such as Internal Rate of Return (IRR) for the entire portfolio. Returns the calculated IRR and other metrics as a JSON object.
+
+```sh
+curl -X GET http://localhost:8080/api/v1/metrics
 ```
 
 ## Configurations

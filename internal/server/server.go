@@ -8,6 +8,7 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dividends"
 	"portfolio-manager/internal/fxinfer"
+	"portfolio-manager/internal/metrics"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
@@ -27,16 +28,18 @@ type Server struct {
 	blotter   *blotter.TradeBlotter
 	portfolio *portfolio.Portfolio
 	fxinfer   *fxinfer.Service
+	metrics   *metrics.MetricsService
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service) *Server {
+func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService) *Server {
 	return &Server{
 		Addr:      addr,
 		mux:       http.NewServeMux(),
 		blotter:   blotterSvc,
 		portfolio: portfolioSvc,
 		fxinfer:   fxinferSvc,
+		metrics:   metricsSvc,
 	}
 }
 
@@ -72,6 +75,7 @@ func (s *Server) Start(ctx context.Context) error {
 		dividends.RegisterHandlers(s.mux, s.portfolio.GetDividendsManager())
 	}
 	fxinfer.RegisterHandlers(s.mux, s.fxinfer)
+	metrics.RegisterHandlers(s.mux, s.metrics)
 
 	// Swagger registration
 	s.mux.Handle("/swagger/", httpSwagger.WrapHandler)

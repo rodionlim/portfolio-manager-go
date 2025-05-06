@@ -1,5 +1,9 @@
 # GitHub Copilot Instructions for portfolio-manager-go
 
+## Guidelines
+
+- Whenever adding a new handler endpoint, always remember to add sample curl commands in README.md at the root. Also, if we change the directory structure, also remember to update the README on the Project Structure.
+
 ## Mocking Strategy
 
 When writing tests for this codebase, always use the testify mocking framework located in `internal/mocks/testify/` rather than the custom mock implementations in `internal/mocks/`.

@@ -32,25 +32,6 @@ func HandleTradeExportWithInferredFX(service *Service) http.HandlerFunc {
 	}
 }
 
-// RegisterHandlers registers the handlers for the FX inference service
-func RegisterHandlers(mux *http.ServeMux, service *Service) {
-	mux.HandleFunc("/api/v1/blotter/export-with-fx", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		HandleTradeExportWithInferredFX(service).ServeHTTP(w, r)
-	})
-
-	mux.HandleFunc("/api/v1/blotter/fx", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		HandleGetCurrentFXRates(service).ServeHTTP(w, r)
-	})
-}
-
 // HandleGetCurrentFXRates handles getting current FX rates for all currencies in the blotter
 // @Summary Get current FX rates
 // @Description Get current FX rates for all currencies in blotter trades
@@ -121,4 +102,23 @@ func HandleGetCurrentFXRates(service *Service) http.HandlerFunc {
 			common.WriteJSONError(w, "Failed to write FX rates", http.StatusInternalServerError)
 		}
 	}
+}
+
+// RegisterHandlers registers the handlers for the FX inference service
+func RegisterHandlers(mux *http.ServeMux, service *Service) {
+	mux.HandleFunc("/api/v1/blotter/export-with-fx", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleTradeExportWithInferredFX(service).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/blotter/fx", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleGetCurrentFXRates(service).ServeHTTP(w, r)
+	})
 }

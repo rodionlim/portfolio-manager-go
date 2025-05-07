@@ -41,9 +41,10 @@ func NewMetricsService(
 
 // CalculatePortfolioMetrics computes the XIRR for the portfolio using all trades, dividends, and current market value as final cash flow
 // It also stores other metrics such as price paid, market value of portfolio and total dividends
-func (m *MetricsService) CalculatePortfolioMetrics() (MetricsResult, error) {
+func (m *MetricsService) CalculatePortfolioMetrics() (MetricResultsWithCashFlows, error) {
 	var cashflows goxirr.Transactions
-	var result MetricsResult
+	var result MetricResultsWithCashFlows
+	result.Metrics = MetricsResult{}
 	result.CashFlows = []CashFlow{}
 
 	var pricePaid float64
@@ -78,12 +79,12 @@ func (m *MetricsService) CalculatePortfolioMetrics() (MetricsResult, error) {
 			Description: flowType,
 		})
 	}
-	result.PricePaid = -pricePaid
+	result.Metrics.PricePaid = -pricePaid
 
 	// 2. Add all dividends as positive cash flows
 	divs, err := m.dividendsManager.CalculateDividendsForAllTickers()
 	if err != nil {
-		return MetricsResult{}, err
+		return MetricResultsWithCashFlows{}, err
 	}
 
 	for ticker, dividendsList := range divs {
@@ -142,19 +143,19 @@ func (m *MetricsService) CalculatePortfolioMetrics() (MetricsResult, error) {
 			})
 		}
 	}
-	result.TotalDividends = totalDividends
+	result.Metrics.TotalDividends = totalDividends
 
 	// 3. Add final cash flow as current market value (positive, at current date)
 	positions, err := m.portfolioSvc.GetAllPositions()
 	if err != nil {
-		return MetricsResult{}, err
+		return MetricResultsWithCashFlows{}, err
 	}
 
 	totalMarketValue := 0.0
 	for _, position := range positions {
 		totalMarketValue += position.Mv * position.FxRate
 	}
-	result.MV = totalMarketValue
+	result.Metrics.MV = totalMarketValue
 
 	now := time.Now()
 	// Add to goxirr transactions for calculation
@@ -178,6 +179,6 @@ func (m *MetricsService) CalculatePortfolioMetrics() (MetricsResult, error) {
 
 	// 5. Calculate XIRR
 	r := goxirr.Xirr(cashflows)
-	result.IRR = r / 100
+	result.Metrics.IRR = r / 100
 	return result, nil
 }

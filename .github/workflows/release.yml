@@ -1,7 +1,10 @@
 name: Release
 
 on:
-  workflow_dispatch: # Trigger workflow manually
+  pull_request:
+    types: [closed]
+    branches:
+      - main
 
 jobs:
   release:

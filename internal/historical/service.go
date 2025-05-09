@@ -114,19 +114,22 @@ func (s *Service) GetMetrics(start, end time.Time) ([]TimestampedMetrics, error)
 	return results, nil
 }
 
-// StartMetricsCollection starts periodic collection of metrics
-func (s *Service) StartMetricsCollection(interval time.Duration) func() {
-	// Create a task that will store metrics
+// StartMetricsCollection starts collection of metrics based on a cron expression
+func (s *Service) StartMetricsCollection(cronExpr string) func() {
 	metricsTask := func(ctx context.Context) error {
 		return s.StoreCurrentMetrics()
 	}
 
-	// Schedule the task with the given interval
-	s.collectionTask = s.scheduler.ScheduleTaskFunc(metricsTask, scheduler.NewPeriodicSchedule(interval))
+	sched, err := scheduler.NewCronSchedule(cronExpr)
+	if err != nil {
+		s.logger.Errorf("Invalid cron expression for metrics collection: %v", err)
+		return func() {}
+	}
 
-	s.logger.Infof("Started metrics collection with interval of %v", interval)
+	s.collectionTask = s.scheduler.ScheduleTaskFunc(metricsTask, sched)
 
-	// Return a function that can be used to stop collection
+	s.logger.Infof("Started metrics collection with cron schedule: %s", cronExpr)
+
 	return func() {
 		if s.collectionTask != "" {
 			s.scheduler.Unschedule(s.collectionTask)

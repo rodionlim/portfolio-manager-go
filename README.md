@@ -130,6 +130,62 @@ mockService.On("MethodName", arg1, arg2).Return(expectedResult)
 mockService.AssertExpectations(t)
 ```
 
+## Built-in Scheduler (Cron-based)
+
+This project includes a flexible, cron-based scheduler component that can be used by any package to trigger jobs at specific times or intervals. The scheduler supports standard 5-field cron expressions, enabling developers to easily schedule tasks such as data collection, reporting, or maintenance jobs.
+
+### Key Features
+- Schedule any Go function or job using a cron expression (minute, hour, day of month, month, day of week)
+- Reusable across the codebase for any periodic or time-based automation
+- Powered by the robust [robfig/cron](https://pkg.go.dev/github.com/robfig/cron/v3) library
+
+### Example Use Case: Metrics Collection
+
+Portfolio metrics collection is scheduled using the built-in scheduler. For example, to collect metrics every day at midnight:
+
+```
+service.StartMetricsCollection("0 0 * * *") // Every day at midnight
+```
+
+Or, to collect every 5 minutes:
+
+```
+service.StartMetricsCollection("*/5 * * * *")
+```
+
+You can use the scheduler in your own packages to trigger any job on a schedule:
+
+```
+sched, _ := scheduler.NewCronSchedule("0 9 * * MON") // Every Monday at 9:00 AM
+scheduler.ScheduleTaskFunc(myJobFunc, sched)
+```
+
+### Cron Expression Format
+
+A cron expression consists of five fields:
+
+```
+* * * * *
+| | | | |
+| | | | +----- day of week (0 - 6) (Sunday=0)
+| | | +------- month (1 - 12)
+| | +--------- day of month (1 - 31)
+| +----------- hour (0 - 23)
++------------- minute (0 - 59)
+```
+
+#### Examples
+
+| Cron Expression | Schedule Description                |
+|-----------------|-------------------------------------|
+| * * * * *       | Every minute                        |
+| 0 * * * *       | Every hour                          |
+| 0 0 * * *       | Every day at 12:00 AM               |
+| 0 0 * * FRI     | At 12:00 AM, only on Friday         |
+| 0 0 1 * *       | At 12:00 AM, on day 1 of the month  |
+
+For more details, see [crontab.guru](https://crontab.guru/) or the [robfig/cron](https://pkg.go.dev/github.com/robfig/cron/v3) Go library documentation.
+
 ## UI
 
 ### Positions

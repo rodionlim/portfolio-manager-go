@@ -1,55 +1,11 @@
 package scheduler
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/robfig/cron/v3"
 )
-
-// PeriodicSchedule represents a schedule that repeats at fixed intervals
-type PeriodicSchedule struct {
-	Interval time.Duration
-}
-
-// NewPeriodicSchedule creates a new schedule that repeats at fixed intervals
-func NewPeriodicSchedule(interval time.Duration) *PeriodicSchedule {
-	return &PeriodicSchedule{Interval: interval}
-}
-
-// Next implements the Schedule interface
-func (s *PeriodicSchedule) Next(after time.Time) (time.Time, bool) {
-	return after.Add(s.Interval), true
-}
-
-// DailySchedule represents a schedule that runs once per day at a specific time
-type DailySchedule struct {
-	Hour   int
-	Minute int
-	Second int
-}
-
-// NewDailySchedule creates a new schedule that runs once per day at a specific time
-func NewDailySchedule(hour, minute, second int) *DailySchedule {
-	return &DailySchedule{
-		Hour:   hour,
-		Minute: minute,
-		Second: second,
-	}
-}
-
-// Next implements the Schedule interface
-func (s *DailySchedule) Next(after time.Time) (time.Time, bool) {
-	next := time.Date(
-		after.Year(), after.Month(), after.Day(),
-		s.Hour, s.Minute, s.Second, 0,
-		after.Location(),
-	)
-
-	if next.Before(after) || next.Equal(after) {
-		// If the time for today has already passed, schedule for tomorrow
-		next = next.AddDate(0, 0, 1)
-	}
-
-	return next, true
-}
 
 // OneTimeSchedule represents a schedule that runs only once at a specific time
 type OneTimeSchedule struct {
@@ -93,4 +49,35 @@ func (s *DelaySchedule) Next(after time.Time) (time.Time, bool) {
 
 	s.used = true
 	return s.start.Add(s.Delay), true
+}
+
+// CronSchedule represents a schedule based on a cron expression
+// Uses robfig/cron/v3 for parsing and next time calculation
+// Only standard 5-field cron expressions are supported
+// (minute, hour, day of month, month, day of week)
+type CronSchedule struct {
+	expr  string
+	sched cron.Schedule
+}
+
+// NewCronSchedule creates a new schedule from a cron expression (5 fields)
+func NewCronSchedule(expr string) (*CronSchedule, error) {
+	parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+	sched, err := parser.Parse(expr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid cron expression: %w", err)
+	}
+	return &CronSchedule{
+		expr:  expr,
+		sched: sched,
+	}, nil
+}
+
+// Next implements the Schedule interface for CronSchedule
+func (s *CronSchedule) Next(after time.Time) (time.Time, bool) {
+	next := s.sched.Next(after)
+	if next.IsZero() {
+		return time.Time{}, false
+	}
+	return next, true
 }

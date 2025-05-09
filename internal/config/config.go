@@ -22,6 +22,12 @@ type DividendsConfig struct {
 	WithholdingTaxIE float64 `yaml:"withholdingTaxIE"`
 }
 
+// MetricsConfig nests all metrics-related configuration
+// Schedule is a cron string for metrics collection
+type MetricsConfig struct {
+	Schedule string `yaml:"schedule"`
+}
+
 // Config represents the application configuration.
 type Config struct {
 	VerboseLogging  bool            `yaml:"verboseLogging"`
@@ -33,6 +39,7 @@ type Config struct {
 	DbPath          string          `yaml:"dbPath"`
 	RefDataSeedPath string          `yaml:"refDataSeedPath"`
 	Dividends       DividendsConfig `yaml:"dividends"`
+	Metrics         MetricsConfig   `yaml:"metrics"`
 }
 
 // Implement the Stringer interface for Config.
@@ -80,6 +87,12 @@ func initializeConfig(data []byte) error {
 
 	// Set defaults for DividendsConfig if not provided
 	// (all default to 0)
+
+	// Set default for MetricsConfig if not provided
+	if cfg.Metrics.Schedule == "" {
+		cfg.Metrics.Schedule = "10 17 * * 1-5" // default: 5:10pm Mon-Fri
+	}
+
 	instance = &cfg
 	return nil
 }

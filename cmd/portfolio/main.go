@@ -113,6 +113,12 @@ func main() {
 	// Create a new historical metrics service
 	historicalSvc := historical.NewService(metricsSvc, db, sched)
 
+	// Start metrics collection schedule if configured
+	if config.Metrics.Schedule != "" {
+		stopFn := historicalSvc.StartMetricsCollection(config.Metrics.Schedule)
+		defer stopFn()
+	}
+
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc)

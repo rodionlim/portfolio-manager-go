@@ -465,6 +465,8 @@ dividends:
   divWitholdingTaxUS: 0.3
   divWitholdingTaxHK: 0
   divWitholdingTaxIE: 0.15
+metrics:
+  schedule: "10 17 * * 1-5" # daily at 5:10pm, Mon-Fri (excludes weekends)
 ```
 
 ## Roadmap

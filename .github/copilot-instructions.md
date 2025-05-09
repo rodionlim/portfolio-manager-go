@@ -4,6 +4,7 @@
 
 - Whenever adding a new handler endpoint, always remember to add sample curl commands in README.md at the root. Also, if we change the directory structure, also remember to update the README on the Project Structure.
 - Whenever adding a new handler endpoint, always update the swagger documentation for the endpoint (using swaggo comments above the handler).
+- Whenever you amend config.yaml or add new configuration to config.go, always update the Configurations section in README.md to reflect the latest config options and defaults.
 
 ## Mocking Strategy
 

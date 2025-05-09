@@ -8,6 +8,7 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dividends"
 	"portfolio-manager/internal/fxinfer"
+	"portfolio-manager/internal/historical"
 	"portfolio-manager/internal/metrics"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/pkg/logging"
@@ -23,23 +24,25 @@ import (
 
 // Server represents the HTTP server.
 type Server struct {
-	Addr      string
-	mux       *http.ServeMux
-	blotter   *blotter.TradeBlotter
-	portfolio *portfolio.Portfolio
-	fxinfer   *fxinfer.Service
-	metrics   *metrics.MetricsService
+	Addr       string
+	mux        *http.ServeMux
+	blotter    *blotter.TradeBlotter
+	portfolio  *portfolio.Portfolio
+	fxinfer    *fxinfer.Service
+	metrics    *metrics.MetricsService
+	historical *historical.Service // add historical service
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService) *Server {
+func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service) *Server {
 	return &Server{
-		Addr:      addr,
-		mux:       http.NewServeMux(),
-		blotter:   blotterSvc,
-		portfolio: portfolioSvc,
-		fxinfer:   fxinferSvc,
-		metrics:   metricsSvc,
+		Addr:       addr,
+		mux:        http.NewServeMux(),
+		blotter:    blotterSvc,
+		portfolio:  portfolioSvc,
+		fxinfer:    fxinferSvc,
+		metrics:    metricsSvc,
+		historical: historicalSvc,
 	}
 }
 
@@ -76,6 +79,9 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 	fxinfer.RegisterHandlers(s.mux, s.fxinfer)
 	metrics.RegisterHandlers(s.mux, s.metrics)
+	if s.historical != nil {
+		historical.RegisterHandlers(s.mux, s.historical)
+	}
 
 	// Swagger registration
 	s.mux.Handle("/swagger/", httpSwagger.WrapHandler)

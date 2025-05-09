@@ -444,6 +444,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/historical/metrics": {
+            "get": {
+                "description": "Get all historical portfolio metrics (date-stamped portfolio metrics)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Get historical portfolio metrics",
+                "responses": {
+                    "200": {
+                        "description": "List of historical portfolio metrics by date",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/historical.TimestampedMetrics"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get historical metrics",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mdata/dividends/import": {
             "post": {
                 "description": "Handles the import of dividend data from an uploaded CSV file for a multiple tickers",
@@ -1179,6 +1208,18 @@ const docTemplate = `{
                 },
                 "qty": {
                     "type": "number"
+                }
+            }
+        },
+        "historical.TimestampedMetrics": {
+            "type": "object",
+            "properties": {
+                "metrics": {
+                    "$ref": "#/definitions/metrics.MetricsResult"
+                },
+                "timestamp": {
+                    "description": "Only the date portion of this field will be used",
+                    "type": "string"
                 }
             }
         },

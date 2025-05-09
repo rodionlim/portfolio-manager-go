@@ -439,6 +439,14 @@ Get portfolio metrics such as Internal Rate of Return (IRR) for the entire portf
 curl -X GET http://localhost:8080/api/v1/metrics
 ```
 
+### Fetch Historical Portfolio Metrics
+
+Fetch all historical portfolio metrics (date-stamped portfolio metrics).
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics
+```
+
 ## Configurations
 
 Sample configurations

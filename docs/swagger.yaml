@@ -110,6 +110,14 @@ definitions:
       qty:
         type: number
     type: object
+  historical.TimestampedMetrics:
+    properties:
+      metrics:
+        $ref: '#/definitions/metrics.MetricsResult'
+      timestamp:
+        description: Only the date portion of this field will be used
+        type: string
+    type: object
   metrics.MetricsResult:
     properties:
       irr:
@@ -521,6 +529,25 @@ paths:
       summary: Get dividends for a single ticker
       tags:
       - dividends
+  /api/v1/historical/metrics:
+    get:
+      description: Get all historical portfolio metrics (date-stamped portfolio metrics)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of historical portfolio metrics by date
+          schema:
+            items:
+              $ref: '#/definitions/historical.TimestampedMetrics'
+            type: array
+        "500":
+          description: Failed to get historical metrics
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get historical portfolio metrics
+      tags:
+      - historical
   /api/v1/mdata/dividends/{ticker}:
     get:
       consumes:

@@ -7,6 +7,9 @@ import (
 
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dividends"
+	"portfolio-manager/internal/fxinfer"
+	"portfolio-manager/internal/historical"
+	"portfolio-manager/internal/metrics"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
@@ -21,17 +24,25 @@ import (
 
 // Server represents the HTTP server.
 type Server struct {
-	Addr      string
-	blotter   *blotter.TradeBlotter
-	portfolio *portfolio.Portfolio
+	Addr       string
+	mux        *http.ServeMux
+	blotter    *blotter.TradeBlotter
+	portfolio  *portfolio.Portfolio
+	fxinfer    *fxinfer.Service
+	metrics    *metrics.MetricsService
+	historical *historical.Service // add historical service
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio) *Server {
+func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service) *Server {
 	return &Server{
-		Addr:      addr,
-		blotter:   blotterSvc,
-		portfolio: portfolioSvc,
+		Addr:       addr,
+		mux:        http.NewServeMux(),
+		blotter:    blotterSvc,
+		portfolio:  portfolioSvc,
+		fxinfer:    fxinferSvc,
+		metrics:    metricsSvc,
+		historical: historicalSvc,
 	}
 }
 
@@ -49,31 +60,34 @@ func upcheckHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Start(ctx context.Context) error {
 	logger := ctx.Value(types.LoggerKey).(*logging.Logger)
 
-	mux := http.NewServeMux()
-
 	// Serve embed assets. If the build tag builtinassets is set,
 	// ui.AssetsHandler() will serve files; otherwise it will return a dummy handler.
-	mux.Handle("/", ui.AssetsHandler())
+	s.mux.Handle("/", ui.AssetsHandler())
 
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	s.mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		upcheckHandler(w, r.WithContext(ctx))
 	})
 
 	// Application handlers registration
-	blotter.RegisterHandlers(mux, s.blotter)
-	portfolio.RegisterHandlers(mux, s.portfolio)
+	blotter.RegisterHandlers(s.mux, s.blotter)
+	portfolio.RegisterHandlers(s.mux, s.portfolio)
 	if s.portfolio != nil {
 		// Register market data service handlers
-		mdata.RegisterHandlers(mux, s.portfolio.GetMdataManager())
-		rdata.RegisterHandlers(mux, s.portfolio.GetRdataManager())
-		dividends.RegisterHandlers(mux, s.portfolio.GetDividendsManager())
+		mdata.RegisterHandlers(s.mux, s.portfolio.GetMdataManager())
+		rdata.RegisterHandlers(s.mux, s.portfolio.GetRdataManager())
+		dividends.RegisterHandlers(s.mux, s.portfolio.GetDividendsManager())
+	}
+	fxinfer.RegisterHandlers(s.mux, s.fxinfer)
+	metrics.RegisterHandlers(s.mux, s.metrics)
+	if s.historical != nil {
+		historical.RegisterHandlers(s.mux, s.historical)
 	}
 
 	// Swagger registration
-	mux.Handle("/swagger/", httpSwagger.WrapHandler)
+	s.mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
 	// Wrap mux with loggingMiddleware and corsMiddleware
-	loggedCorsMux := loggingMiddleware(corsMiddleware(mux), logger)
+	loggedCorsMux := loggingMiddleware(corsMiddleware(s.mux), logger)
 
 	logger.Info("Starting server on", fmt.Sprintf("http://%s", s.Addr))
 	logger.Info("Swagger UI available at", fmt.Sprintf("http://%s/swagger/index.html", s.Addr))

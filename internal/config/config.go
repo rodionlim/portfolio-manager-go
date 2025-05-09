@@ -13,19 +13,33 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// DividendsConfig nests all dividend-related configuration
+// Withholding tax rates are in decimal (e.g., 0.15 for 15%)
+type DividendsConfig struct {
+	WithholdingTaxSG float64 `yaml:"withholdingTaxSG"`
+	WithholdingTaxUS float64 `yaml:"withholdingTaxUS"`
+	WithholdingTaxHK float64 `yaml:"withholdingTaxHK"`
+	WithholdingTaxIE float64 `yaml:"withholdingTaxIE"`
+}
+
+// MetricsConfig nests all metrics-related configuration
+// Schedule is a cron string for metrics collection
+type MetricsConfig struct {
+	Schedule string `yaml:"schedule"`
+}
+
 // Config represents the application configuration.
 type Config struct {
-	VerboseLogging     bool    `yaml:"verboseLogging"`
-	LogFilePath        string  `yaml:"logFilePath"`
-	Host               string  `yaml:"host"`
-	Port               string  `yaml:"port"`
-	Db                 string  `yaml:"db"`
-	DbPath             string  `yaml:"dbPath"`
-	RefDataSeedPath    string  `yaml:"refDataSeedPath"`
-	DivWitholdingTaxSG float64 `yaml:"divWitholdingTaxSG"`
-	DivWitholdingTaxUS float64 `yaml:"divWitholdingTaxUS"`
-	DivWitholdingTaxHK float64 `yaml:"divWitholdingTaxHK"`
-	DivWitholdingTaxIE float64 `yaml:"divWitholdingTaxIE"`
+	VerboseLogging  bool            `yaml:"verboseLogging"`
+	LogFilePath     string          `yaml:"logFilePath"`
+	Host            string          `yaml:"host"`
+	Port            string          `yaml:"port"`
+	BaseCcy         string          `yaml:"baseCcy"`
+	Db              string          `yaml:"db"`
+	DbPath          string          `yaml:"dbPath"`
+	RefDataSeedPath string          `yaml:"refDataSeedPath"`
+	Dividends       DividendsConfig `yaml:"dividends"`
+	Metrics         MetricsConfig   `yaml:"metrics"`
 }
 
 // Implement the Stringer interface for Config.
@@ -69,6 +83,14 @@ func initializeConfig(data []byte) error {
 	// Set default for DbPath if not provided.
 	if cfg.DbPath == "" {
 		cfg.DbPath = "./portfolio-manager.db"
+	}
+
+	// Set defaults for DividendsConfig if not provided
+	// (all default to 0)
+
+	// Set default for MetricsConfig if not provided
+	if cfg.Metrics.Schedule == "" {
+		cfg.Metrics.Schedule = "10 17 * * 1-5" // default: 5:10pm Mon-Fri
 	}
 
 	instance = &cfg

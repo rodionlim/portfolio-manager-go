@@ -192,6 +192,64 @@ func HandleDividendsImportCSVStream(mdataSvc MarketDataManager) http.HandlerFunc
 	}
 }
 
+// @Summary Get historical price data for a ticker
+// @Description Retrieves historical price data for a specified ticker between start and end dates
+// @Tags market-data
+// @Accept json
+// @Produce json
+// @Param ticker path string true "Ticker symbol (see reference data)"
+// @Param start query string true "Start date in YYYYMMDD format"
+// @Param end query string false "End date in YYYYMMDD format (defaults to today)"
+// @Success 200 {array} types.AssetData "Historical price data for the ticker"
+// @Failure 400 {string} string "Bad request - Invalid parameters"
+// @Failure 500 {string} string "Internal server error"
+// @Router /api/v1/mdata/price/historical/{ticker} [get]
+func HandleHistoricalDataGet(mdataSvc MarketDataManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Extract ticker from URL path
+		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/price/historical/")
+		if ticker == "" {
+			common.WriteJSONError(w, "Ticker is required", http.StatusBadRequest)
+			return
+		}
+
+		// Get start date from query params (required)
+		startDateStr := r.URL.Query().Get("start")
+		if startDateStr == "" {
+			common.WriteJSONError(w, "Start date is required (format: YYYYMMDD)", http.StatusBadRequest)
+			return
+		}
+
+		// Parse start date
+		startDate, err := common.ParseDateToEpoch(startDateStr)
+		if err != nil {
+			common.WriteJSONError(w, "Invalid start date format, use YYYYMMDD", http.StatusBadRequest)
+			return
+		}
+
+		// Get end date from query params (optional, defaults to today)
+		endDate := common.GetCurrentEpochTime()
+		endDateStr := r.URL.Query().Get("end")
+		if endDateStr != "" {
+			endDate, err = common.ParseDateToEpoch(endDateStr)
+			if err != nil {
+				common.WriteJSONError(w, "Invalid end date format, use YYYYMMDD", http.StatusBadRequest)
+				return
+			}
+		}
+
+		data, err := mdataSvc.GetHistoricalData(ticker, startDate, endDate)
+		if err != nil {
+			logging.GetLogger().Error("Failed to get historical data", err)
+			common.WriteJSONError(w, "Failed to get historical data: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(data)
+	}
+}
+
 // RegisterHandlers registers the handlers for the market data service
 func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 	mux.HandleFunc("/api/v1/mdata/price/", func(w http.ResponseWriter, r *http.Request) {
@@ -228,6 +286,15 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 		case http.MethodPost:
 			logging.GetLogger().Info("Received request to import dividends data")
 			HandleDividendsImportCSVStream(mdataSvc).ServeHTTP(w, r)
+		default:
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/api/v1/mdata/price/historical/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			HandleHistoricalDataGet(mdataSvc).ServeHTTP(w, r)
 		default:
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

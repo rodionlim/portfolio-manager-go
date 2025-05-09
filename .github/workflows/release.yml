@@ -1,13 +1,10 @@
 name: Release
 
 on:
-  workflow_dispatch: # Trigger workflow manually
-    inputs:
-      delete_tag:
-        description: "Delete tag if exists?"
-        type: boolean
-        required: false
-        default: false
+  pull_request:
+    types: [closed]
+    branches:
+      - main
 
 jobs:
   release:
@@ -20,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for all branches and tags
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -47,34 +46,46 @@ jobs:
       - name: Install swag
         run: go install github.com/swaggo/swag/cmd/swag@${{ env.SWAG_VERSION }}
 
+      - name: Generate a changelog and current version
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff
+        with:
+          config: cliff.toml
+          args: -v --bump --unreleased --strip header
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Update version file
+        run: echo "${{ steps.git-cliff.outputs.version }}" | sed 's/^v//' > VERSION
+
+      - name: Run tests
+        run: make test
+
       - name: Build
         run: make assets-compress build-cross BUILTIN_ASSETS=1
 
-      - name: Get Version
-        id: version
-        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
-
-      - name: Delete tag if exists
-        if: ${{ github.event.inputs.delete_tag == 'true' }}
+      - name: Upload Changelog and Version
         run: |
-          TAG_NAME="v${{ steps.version.outputs.version }}"
-          echo "Checking deletion for tag $TAG_NAME"
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            git tag -d "$TAG_NAME"
-          else
-            echo "Tag $TAG_NAME does not exist"
-          fi
-          if git ls-remote --exit-code --tags origin "$TAG_NAME" >/dev/null 2>&1; then
-            git push origin --delete "$TAG_NAME"
-          else
-            echo "Tag $TAG_NAME does not exist on remote"
-          fi
+          # Upload changelog
+          git config user.name 'GitHub Actions'
+          git config user.email 'github-actions@users.noreply.github.com'
+          git add VERSION
+          git add CHANGELOG.md
+          git commit -m "Bump version to ${{ steps.git-cliff.outputs.version }} [skip ci]"
+          git push
+
+      - name: Tag version
+        run: |
+          # Tag version
+          git tag ${{ steps.git-cliff.outputs.version }}
+          git push --tags
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.git-cliff.outputs.version }}
           files: portfolio-manager*
           make_latest: true
           draft: false
-          generate_release_notes: true
+          body: ${{ steps.git-cliff.outputs.content }}

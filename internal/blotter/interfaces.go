@@ -14,6 +14,7 @@ type TradeGetter interface {
 	GetTrades() []Trade
 	GetTradeByID(tradeID string) (*Trade, error)
 	GetTradesByTicker(ticker string) ([]Trade, error)
+	GetAllTickers() ([]string, error)
 }
 
 type TradeExporter interface {

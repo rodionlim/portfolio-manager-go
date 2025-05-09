@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/common"
+	"portfolio-manager/pkg/csvutil"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
@@ -300,6 +301,19 @@ func (b *TradeBlotter) GetTradesByTicker(ticker string) ([]Trade, error) {
 	return trades, nil
 }
 
+// GetAllTickers returns all unique tickers that has ever traded in the blotter.
+func (b *TradeBlotter) GetAllTickers() ([]string, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	tickers := make([]string, 0, len(b.tradesByTicker))
+	for ticker := range b.tradesByTicker {
+		tickers = append(tickers, ticker)
+	}
+
+	return tickers, nil
+}
+
 // GetCurrentSeqNum returns the current sequence number.
 func (b *TradeBlotter) GetCurrentSeqNum() int {
 	return b.currentSeqNum
@@ -352,6 +366,7 @@ type Trade struct {
 	Side        string  `json:"Side" validate:"required"`      // Buy or Sell
 	Quantity    float64 `json:"Quantity" validate:"required"`  // Quantity of the asset
 	Price       float64 `json:"Price" validate:"gte=0"`        // Price per unit of the asset
+	Fx          float64 `json:"Fx"`                            // FX rate for the trade
 	Yield       float64 `json:"Yield"`                         // Yield of the asset
 	Trader      string  `json:"Trader" validate:"required"`    // Trader who executed the trade
 	Broker      string  `json:"Broker" validate:"required"`    // Broker who executed the trade
@@ -370,6 +385,7 @@ func (t Trade) Clone() Trade {
 		Side:        t.Side,
 		Quantity:    t.Quantity,
 		Price:       t.Price,
+		Fx:          t.Fx,
 		Yield:       t.Yield,
 		Trader:      t.Trader,
 		Broker:      t.Broker,
@@ -381,7 +397,7 @@ func (t Trade) Clone() Trade {
 }
 
 // NewTrade creates a new Trade instance.
-func NewTrade(side string, quantity float64, ticker, trader, broker, account, status, origTradeId string, price float64, yield float64, tradeDate time.Time) (*Trade, error) {
+func NewTrade(side string, quantity float64, ticker, trader, broker, account, status, origTradeId string, price, fx float64, yield float64, tradeDate time.Time) (*Trade, error) {
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
 	}
@@ -397,6 +413,7 @@ func NewTrade(side string, quantity float64, ticker, trader, broker, account, st
 		Side:        side,
 		Quantity:    quantity,
 		Price:       price,
+		Fx:          fx,
 		Yield:       yield,
 		Trader:      trader,
 		Broker:      broker,
@@ -410,7 +427,7 @@ func NewTrade(side string, quantity float64, ticker, trader, broker, account, st
 }
 
 // NewTradeWithID creates a new Trade instance with a given trade ID, mainly for updating purposes
-func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trader, broker, account, status, origTradeId string, price float64, yield float64, seqNum int, tradeDate time.Time) (*Trade, error) {
+func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trader, broker, account, status, origTradeId string, price, fx float64, yield float64, seqNum int, tradeDate time.Time) (*Trade, error) {
 
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
@@ -427,6 +444,7 @@ func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trade
 		Side:        side,
 		Quantity:    quantity,
 		Price:       price,
+		Fx:          fx,
 		Yield:       yield,
 		Trader:      trader,
 		Broker:      broker,
@@ -461,7 +479,7 @@ func validateTrade(trade Trade) error {
 // For backup purposes without intention of migrating to a different system, the author suggests to backup the leveldb instead of migrating via csv files
 
 // ImportFromCSV imports trades from a CSV file and adds them to the blotter.
-// Expected CSV format: TradeDate,Ticker,Side,Quantity,Price,Yield,Trader,Broker
+// Expected CSV format: TradeDate,Ticker,Side,Quantity,Price,Yield,Trader,Broker,Account,Status,Fx
 func (b *TradeBlotter) ImportFromCSVFile(filepath string) (int, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
@@ -483,8 +501,13 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) (int, error) {
 		return 0, fmt.Errorf("error reading CSV header: %w", err)
 	}
 
-	expectedHeaders := []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account", "Status"}
-	if len(header) != len(expectedHeaders) {
+	expectedHeaders := []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account", "Status", "Fx"}
+	fxRateMissing := false
+	if len(header) == len(expectedHeaders)-1 {
+		// for backwards compatibility, assume fx rate is not present
+		fxRateMissing = true
+		expectedHeaders = expectedHeaders[:len(expectedHeaders)-1]
+	} else if len(header) != len(expectedHeaders) {
 		return 0, fmt.Errorf("invalid CSV format: expected %d columns, got %d", len(expectedHeaders), len(header))
 	}
 
@@ -517,6 +540,14 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) (int, error) {
 			return cnt, fmt.Errorf("invalid price at line %d: %w", lineNum, err)
 		}
 
+		fx := 0.0
+		if !fxRateMissing {
+			fx, err = strconv.ParseFloat(row[10], 64)
+			if err != nil {
+				return cnt, fmt.Errorf("invalid fx rate at line %d: %w", lineNum, err)
+			}
+		}
+
 		var yield float64
 		if row[5] != "" {
 			yield, err = strconv.ParseFloat(row[5], 64)
@@ -545,6 +576,7 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) (int, error) {
 			status, // Status
 			"",     // OrigTradeID (empty, for migration purposes, we don't allow migrating of trade IDs)
 			price,
+			fx,
 			yield,
 			tradeDate,
 		)
@@ -576,7 +608,7 @@ func (b *TradeBlotter) ExportToCSVBytes() ([]byte, error) {
 	writer := csv.NewWriter(&buf)
 
 	// Write header
-	err := writer.Write([]string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account", "Status"})
+	err := writer.Write(csvutil.TradeHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("error writing CSV header: %w", err)
 	}
@@ -587,13 +619,14 @@ func (b *TradeBlotter) ExportToCSVBytes() ([]byte, error) {
 			trade.TradeDate,
 			trade.Ticker,
 			trade.Side,
-			strconv.FormatFloat(trade.Quantity, 'f', -1, 64),
-			strconv.FormatFloat(trade.Price, 'f', -1, 64),
-			strconv.FormatFloat(trade.Yield, 'f', -1, 64),
+			csvutil.FormatFloat(trade.Quantity, 4),
+			csvutil.FormatFloat(trade.Price, 4),
+			csvutil.FormatFloat(trade.Yield, 4),
 			trade.Trader,
 			trade.Broker,
 			trade.Account,
 			trade.Status,
+			csvutil.FormatFloat(trade.Fx, 4),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error writing trade to CSV: %w", err)

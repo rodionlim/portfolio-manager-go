@@ -11,12 +11,16 @@ import (
 	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/dividends"
+	"portfolio-manager/internal/fxinfer"
+	"portfolio-manager/internal/historical"
+	"portfolio-manager/internal/metrics"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/internal/server"
 
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
+	"portfolio-manager/pkg/scheduler"
 	"portfolio-manager/pkg/types"
 )
 
@@ -89,6 +93,9 @@ func main() {
 	// Create a new dividends manager
 	dividendsSvc := dividends.NewDividendsManager(db, mdata, rdata, blotterSvc)
 
+	// Create a new FX inference service
+	fxInferSvc := fxinfer.NewFXInferenceService(blotterSvc, mdata, rdata, config.BaseCcy)
+
 	// Create a new portfolio service
 	portfolioSvc := portfolio.NewPortfolio(db, mdata, rdata, dividendsSvc)
 	err = portfolioSvc.LoadPositions()
@@ -97,9 +104,24 @@ func main() {
 	}
 	portfolioSvc.SubscribeToBlotter(blotterSvc)
 
+	// Create a new metrics service
+	metricsSvc := metrics.NewMetricsService(blotterSvc, portfolioSvc, dividendsSvc, mdata, rdata)
+
+	// Create a new scheduler
+	sched := scheduler.NewScheduler()
+
+	// Create a new historical metrics service
+	historicalSvc := historical.NewService(metricsSvc, db, sched)
+
+	// Start metrics collection schedule if configured
+	if config.Metrics.Schedule != "" {
+		stopFn := historicalSvc.StartMetricsCollection(config.Metrics.Schedule)
+		defer stopFn()
+	}
+
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	srv := server.NewServer(addr, blotterSvc, portfolioSvc)
+	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc)
 
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)

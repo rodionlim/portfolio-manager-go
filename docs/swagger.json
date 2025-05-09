@@ -35,6 +35,61 @@
                 }
             }
         },
+        "/api/v1/blotter/export-with-fx": {
+            "get": {
+                "description": "Export all trades as CSV with FX rates inferred where missing",
+                "produces": [
+                    "text/csv"
+                ],
+                "tags": [
+                    "trades"
+                ],
+                "summary": "Export trades with inferred FX rates",
+                "responses": {
+                    "200": {
+                        "description": "trades_with_fx.csv",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to export trades",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/blotter/fx": {
+            "get": {
+                "description": "Get current FX rates for all currencies in blotter trades",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "fx"
+                ],
+                "summary": "Get current FX rates",
+                "responses": {
+                    "200": {
+                        "description": "Map of currencies to their current FX rates",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "number"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch FX rates",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/blotter/import": {
             "post": {
                 "description": "Import trades from a CSV file",
@@ -307,6 +362,41 @@
                 }
             }
         },
+        "/api/v1/dividends": {
+            "get": {
+                "description": "Get dividends for all tickers",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dividends"
+                ],
+                "summary": "Get dividends for all tickers",
+                "responses": {
+                    "200": {
+                        "description": "Mapping of ticker to dividends",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/dividends.Dividends"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "failed to calculate dividends",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dividends/{ticker}": {
             "get": {
                 "description": "Get dividends for a single ticker",
@@ -339,16 +429,39 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ticker is required",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
                     "500": {
                         "description": "failed to calculate dividends",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/metrics": {
+            "get": {
+                "description": "Get all historical portfolio metrics (date-stamped portfolio metrics)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Get historical portfolio metrics",
+                "responses": {
+                    "200": {
+                        "description": "List of historical portfolio metrics by date",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/historical.TimestampedMetrics"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get historical metrics",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     }
                 }
@@ -494,6 +607,66 @@
                 }
             }
         },
+        "/api/v1/mdata/price/historical/{ticker}": {
+            "get": {
+                "description": "Retrieves historical price data for a specified ticker between start and end dates",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "market-data"
+                ],
+                "summary": "Get historical price data for a ticker",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ticker symbol (see reference data)",
+                        "name": "ticker",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date in YYYYMMDD format",
+                        "name": "start",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date in YYYYMMDD format (defaults to today)",
+                        "name": "end",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Historical price data for the ticker",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.AssetData"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - Invalid parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mdata/price/{ticker}": {
             "get": {
                 "description": "Retrieves current market data for a specified ticker",
@@ -570,6 +743,32 @@
                         "description": "Bad request - Tickers query parameter is required",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/metrics": {
+            "get": {
+                "description": "Get the Internal Rate of Return (IRR), MV, Price Paid for the entire portfolio",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "Get portfolio IRR",
+                "responses": {
+                    "200": {
+                        "description": "The portfolio metrics, including IRR, cash flows and others",
+                        "schema": {
+                            "$ref": "#/definitions/metrics.MetricsResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to calculate portoflio metrics",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     }
                 }
@@ -874,6 +1073,10 @@
                     "description": "Broker who executed the trade",
                     "type": "string"
                 },
+                "Fx": {
+                    "description": "FX rate for the trade",
+                    "type": "number"
+                },
                 "OrigTradeID": {
                     "description": "Original trade ID to link auto closed trades to the original trade",
                     "type": "string"
@@ -929,6 +1132,9 @@
                 },
                 "broker": {
                     "type": "string"
+                },
+                "fx": {
+                    "type": "number"
                 },
                 "id": {
                     "type": "string"
@@ -995,6 +1201,38 @@
                     "type": "string"
                 },
                 "qty": {
+                    "type": "number"
+                }
+            }
+        },
+        "historical.TimestampedMetrics": {
+            "type": "object",
+            "properties": {
+                "metrics": {
+                    "$ref": "#/definitions/metrics.MetricsResult"
+                },
+                "timestamp": {
+                    "description": "Only the date portion of this field will be used",
+                    "type": "string"
+                }
+            }
+        },
+        "metrics.MetricsResult": {
+            "type": "object",
+            "properties": {
+                "irr": {
+                    "type": "number"
+                },
+                "mv": {
+                    "description": "Portfolio market value",
+                    "type": "number"
+                },
+                "pricePaid": {
+                    "description": "Buy - Sell",
+                    "type": "number"
+                },
+                "totalDividends": {
+                    "description": "Total dividends",
                     "type": "number"
                 }
             }
@@ -1113,6 +1351,23 @@
                 },
                 "yahoo_ticker": {
                     "type": "string"
+                }
+            }
+        },
+        "types.AssetData": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "ticker": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "integer"
                 }
             }
         },

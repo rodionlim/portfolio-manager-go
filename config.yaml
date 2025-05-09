@@ -2,10 +2,14 @@ verboseLogging: true
 logFilePath: ./portfolio-manager.log
 host: 0.0.0.0
 port: 8080
+baseCcy: SGD
 db: leveldb
 dbPath: ./portfolio-manager.db
 refDataSeedPath: "./seed/refdata.yaml"
-divWitholdingTaxSG: 0
-divWitholdingTaxUS: 0.3
-divWitholdingTaxHK: 0
-divWitholdingTaxIE: 0.15
+dividends:
+  withholdingTaxSG: 0
+  withholdingTaxUS: 0.3
+  withholdingTaxHK: 0
+  withholdingTaxIE: 0.15
+metrics:
+  schedule: "10 17 * * 1-5" # daily at 5:10pm, Mon-Fri (excludes weekends)

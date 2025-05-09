@@ -31,7 +31,15 @@ export default function BlotterForm() {
     mode: "uncontrolled",
     initialValues: {
       tradeId: location.state?.tradeId || "",
-      date: location.state?.date || new Date(),
+      date:
+        location.state?.date ||
+        (() => {
+          // Create date at midnight
+          const date = new Date();
+          // Add 9 hours to get 9:00 AM local time
+          date.setHours(9, 0, 0, 0);
+          return date;
+        })(),
       ticker: location.state?.ticker || "",
       trader: location.state?.trader || defaultTrader,
       broker: location.state?.broker || defaultBroker,
@@ -41,6 +49,7 @@ export default function BlotterForm() {
       qty: location.state?.qty || 0,
       price: location.state?.price || 0,
       value: 0, // either value or price must be specified
+      fx: location.state?.fx || 0, // optional: 0 means the rate will be inferred
       tradeType: location.state?.tradeType || false, // false for BUY, true for SELL
       seqNum: location.state?.seqNum || 0,
     },
@@ -79,11 +88,35 @@ export default function BlotterForm() {
     }),
   });
 
-  function upsertTrade(
+  async function upsertTrade(
     values: Omit<typeof form.values, "date"> & { date: string }
   ) {
     const tradeTypeAction = !values.tradeId ? "add" : "update";
     const tradeTypeActionPastTense = !values.tradeId ? "added" : "updated";
+
+    if (values.fx === 0) {
+      if (refData && refData[values.ticker]?.ccy) {
+        const dt = values.date.replaceAll("-", "").slice(0, 8); // YYYYMMDD
+        // fetch price as of historical date
+        const resp = await fetch(
+          getUrl(
+            `api/v1/mdata/price/historical/${
+              refData[values.ticker].ccy
+            }-SGD?start=${dt}&end=${dt}`
+          )
+        );
+        const price = (await resp.json())[0]["Price"];
+        values.fx = price;
+      } else {
+        notifications.show({
+          color: "red",
+          title: "Error",
+          message: `Unable to infer FX rate for ${values.ticker}`,
+        });
+        throw new Error("Unable to infer FX rate");
+      }
+    }
+
     const body = {
       id: values.tradeId,
       tradeDate: values.date, // need to convert to 2024-12-09T00:00:00Z
@@ -95,41 +128,43 @@ export default function BlotterForm() {
       originalTradeId: values.originalTradeId,
       quantity: values.qty,
       price: values.price,
+      fx: values.fx, // Add FX rate to request body (0 means infer from backend)
       side: values.tradeType ? "sell" : "buy",
       seqNum: values.seqNum,
     };
 
-    return fetch(getUrl("api/v1/blotter/trade"), {
-      method: values.tradeId ? "PUT" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    })
-      .then((resp) => {
-        if (!resp.ok) {
-          return resp.json().then((error) => {
-            throw new Error(error.message || "An error occurred");
-          });
-        }
-        return resp.json();
-      })
-      .then((data) => {
-        notifications.show({
-          title: "Trade successfully added",
-          message: `Trade [${data.TradeID}] was successfully ${tradeTypeActionPastTense} in the blotter`,
-          autoClose: 6000,
-        });
-      })
-      .catch((error) => {
-        console.error(error);
-        notifications.show({
-          color: "red",
-          title: "Error",
-          message: `Unable to ${tradeTypeAction} trade to the blotter\n ${error}`,
-        });
-        throw new Error("An error occurred while submitting trade to blotter");
+    try {
+      const resp = await fetch(getUrl("api/v1/blotter/trade"), {
+        method: values.tradeId ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
       });
+
+      if (!resp.ok) {
+        const error = await resp.json();
+        throw new Error(error.message || "An error occurred");
+      }
+
+      const data = await resp.json();
+
+      notifications.show({
+        title: "Trade successfully added",
+        message: `Trade [${data.TradeID}] was successfully ${tradeTypeActionPastTense} in the blotter`,
+        autoClose: 6000,
+      });
+
+      return data;
+    } catch (error) {
+      console.error(error);
+      notifications.show({
+        color: "red",
+        title: "Error",
+        message: `Unable to ${tradeTypeAction} trade to the blotter\n ${error}`,
+      });
+      throw new Error("An error occurred while submitting trade to blotter");
+    }
   }
 
   const handleSubmit = (
@@ -232,6 +267,14 @@ export default function BlotterForm() {
             decimalScale={4}
             key={form.key("value")}
             {...form.getInputProps("value")}
+          />
+          <NumberInput
+            label="FX Rate (Set 0 to infer)"
+            placeholder="FX Rate"
+            allowDecimal={true}
+            decimalScale={4}
+            key={form.key("fx")}
+            {...form.getInputProps("fx")}
           />
 
           <div />

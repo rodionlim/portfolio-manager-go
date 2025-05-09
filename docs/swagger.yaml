@@ -8,6 +8,9 @@ definitions:
       Broker:
         description: Broker who executed the trade
         type: string
+      Fx:
+        description: FX rate for the trade
+        type: number
       OrigTradeID:
         description: Original trade ID to link auto closed trades to the original
           trade
@@ -60,6 +63,8 @@ definitions:
         type: string
       broker:
         type: string
+      fx:
+        type: number
       id:
         type: string
       origTradeID:
@@ -103,6 +108,28 @@ definitions:
       exDate:
         type: string
       qty:
+        type: number
+    type: object
+  historical.TimestampedMetrics:
+    properties:
+      metrics:
+        $ref: '#/definitions/metrics.MetricsResult'
+      timestamp:
+        description: Only the date portion of this field will be used
+        type: string
+    type: object
+  metrics.MetricsResult:
+    properties:
+      irr:
+        type: number
+      mv:
+        description: Portfolio market value
+        type: number
+      pricePaid:
+        description: Buy - Sell
+        type: number
+      totalDividends:
+        description: Total dividends
         type: number
     type: object
   portfolio.Position:
@@ -184,6 +211,17 @@ definitions:
     - name
     - underlying_ticker
     type: object
+  types.AssetData:
+    properties:
+      currency:
+        type: string
+      price:
+        type: number
+      ticker:
+        type: string
+      timestamp:
+        type: integer
+    type: object
   types.DividendsMetadata:
     properties:
       amount:
@@ -226,6 +264,42 @@ paths:
       summary: Export trades to CSV
       tags:
       - trades
+  /api/v1/blotter/export-with-fx:
+    get:
+      description: Export all trades as CSV with FX rates inferred where missing
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: trades_with_fx.csv
+          schema:
+            type: file
+        "500":
+          description: Failed to export trades
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Export trades with inferred FX rates
+      tags:
+      - trades
+  /api/v1/blotter/fx:
+    get:
+      description: Get current FX rates for all currencies in blotter trades
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Map of currencies to their current FX rates
+          schema:
+            additionalProperties:
+              type: number
+            type: object
+        "500":
+          description: Failed to fetch FX rates
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get current FX rates
+      tags:
+      - fx
   /api/v1/blotter/import:
     post:
       consumes:
@@ -405,6 +479,29 @@ paths:
       summary: Delete all trades
       tags:
       - trades
+  /api/v1/dividends:
+    get:
+      consumes:
+      - application/json
+      description: Get dividends for all tickers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Mapping of ticker to dividends
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/dividends.Dividends'
+              type: array
+            type: object
+        "500":
+          description: failed to calculate dividends
+          schema:
+            type: string
+      summary: Get dividends for all tickers
+      tags:
+      - dividends
   /api/v1/dividends/{ticker}:
     get:
       consumes:
@@ -425,10 +522,6 @@ paths:
             items:
               $ref: '#/definitions/dividends.Dividends'
             type: array
-        "400":
-          description: ticker is required
-          schema:
-            type: string
         "500":
           description: failed to calculate dividends
           schema:
@@ -436,6 +529,25 @@ paths:
       summary: Get dividends for a single ticker
       tags:
       - dividends
+  /api/v1/historical/metrics:
+    get:
+      description: Get all historical portfolio metrics (date-stamped portfolio metrics)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of historical portfolio metrics by date
+          schema:
+            items:
+              $ref: '#/definitions/historical.TimestampedMetrics'
+            type: array
+        "500":
+          description: Failed to get historical metrics
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get historical portfolio metrics
+      tags:
+      - historical
   /api/v1/mdata/dividends/{ticker}:
     get:
       consumes:
@@ -559,6 +671,47 @@ paths:
       summary: Get market data for a single ticker
       tags:
       - market-data
+  /api/v1/mdata/price/historical/{ticker}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves historical price data for a specified ticker between
+        start and end dates
+      parameters:
+      - description: Ticker symbol (see reference data)
+        in: path
+        name: ticker
+        required: true
+        type: string
+      - description: Start date in YYYYMMDD format
+        in: query
+        name: start
+        required: true
+        type: string
+      - description: End date in YYYYMMDD format (defaults to today)
+        in: query
+        name: end
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Historical price data for the ticker
+          schema:
+            items:
+              $ref: '#/definitions/types.AssetData'
+            type: array
+        "400":
+          description: Bad request - Invalid parameters
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get historical price data for a ticker
+      tags:
+      - market-data
   /api/v1/mdata/tickers/price:
     get:
       consumes:
@@ -585,6 +738,24 @@ paths:
       summary: Get market data for multiple tickers
       tags:
       - market-data
+  /api/v1/metrics:
+    get:
+      description: Get the Internal Rate of Return (IRR), MV, Price Paid for the entire
+        portfolio
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The portfolio metrics, including IRR, cash flows and others
+          schema:
+            $ref: '#/definitions/metrics.MetricsResult'
+        "500":
+          description: Failed to calculate portoflio metrics
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get portfolio IRR
+      tags:
+      - metrics
   /api/v1/portfolio/cleanup:
     post:
       description: Closes positions that have expired without a corresponding closure

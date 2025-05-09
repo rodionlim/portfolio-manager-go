@@ -8,13 +8,18 @@ import (
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
 	"strings"
+	"sync"
+	"time"
 )
 
 type DividendsManager struct {
-	db      dal.Database
-	mdata   mdata.MarketDataManager
-	rdata   rdata.ReferenceManager
-	blotter blotter.TradeGetter
+	db                dal.Database
+	mdata             mdata.MarketDataManager
+	rdata             rdata.ReferenceManager
+	blotter           blotter.TradeGetter
+	cachedDividends   map[string][]Dividends
+	cachedDividendsAt time.Time
+	cacheMutex        sync.RWMutex
 }
 
 type Dividends struct {
@@ -31,6 +36,48 @@ func NewDividendsManager(db dal.Database, mdata mdata.MarketDataManager, rdata r
 		rdata:   rdata,
 		blotter: blotter,
 	}
+}
+
+// CalculateDividendsForAllTickers calculates dividends for all tickers
+// Results are cached for 24 hours to improve performance
+func (dm *DividendsManager) CalculateDividendsForAllTickers() (map[string][]Dividends, error) {
+	const cacheDuration = 24 * time.Hour
+
+	// Check cache first
+	dm.cacheMutex.RLock()
+	if dm.cachedDividends != nil && time.Since(dm.cachedDividendsAt) < cacheDuration {
+		// Create a copy of the cached data to avoid concurrent map access issues
+		result := make(map[string][]Dividends, len(dm.cachedDividends))
+		for k, v := range dm.cachedDividends {
+			result[k] = v
+		}
+		dm.cacheMutex.RUnlock()
+		return result, nil
+	}
+	dm.cacheMutex.RUnlock()
+
+	// Cache miss or expired - calculate fresh results
+	tickers, err := dm.blotter.GetAllTickers()
+	if err != nil {
+		return nil, err
+	}
+
+	dividendsMap := make(map[string][]Dividends)
+	for _, ticker := range tickers {
+		dividends, err := dm.CalculateDividendsForSingleTicker(ticker)
+		if err != nil {
+			return nil, err
+		}
+		dividendsMap[ticker] = dividends
+	}
+
+	// Update cache
+	dm.cacheMutex.Lock()
+	dm.cachedDividends = dividendsMap
+	dm.cachedDividendsAt = time.Now()
+	dm.cacheMutex.Unlock()
+
+	return dividendsMap, nil
 }
 
 func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]Dividends, error) {

@@ -7,11 +7,12 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 ## Features
 
 - Value assets of different currencies based on current market prices
-- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas)
+- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas), current and historical
 - Import / Export portfolio blotter data using CSV file for easy migration to other portfolio systems
 - Allow users to supply their own custom dividends metadata
 - Export ticker reference data in yaml format
 - Autoclosing expired positions
+- Infer historical fx rates for blotter trades
 - Store portfolio, reference, dividends and coupon data in leveldb for persistence
 - Display detailed information for individual and aggregated assets
 - OpenAPI compliant for easy integration with other systems
@@ -81,12 +82,15 @@ portfolio-manager/
 │   ├── config/
 │   ├── dal/
 │   ├── dividends/
+│   ├── fxinfer/
+│   ├── metrics/
 │   ├── mocks/
 │   ├── portfolio/
 │   └── server/
 ├── lxc/
 ├── pkg/
 │   ├── common/
+│   ├── csvutil/
 │   ├── event/
 │   ├── logging/
 │   ├── mdata/
@@ -100,6 +104,88 @@ portfolio-manager/
 ├── go.mod
 └── README.md
 ```
+
+## For Developers
+
+### Testing and Mocking Strategy
+
+This project uses the `testify` framework for testing and mocking. While there are two different mocking approaches in this codebase:
+
+1. **Testify-based mocks** (preferred): Located in `internal/mocks/testify/` directory
+2. **Custom mocks**: Located in `internal/mocks/` directory
+
+When writing new tests or modifying existing ones, please **use the testify mocks** instead of the custom mock implementation.
+
+Example:
+
+```go
+// Import testify mocks (preferred)
+import "portfolio-manager/internal/mocks/testify"
+
+// Create a mock
+mockService := new(testify.MockService)
+mockService.On("MethodName", arg1, arg2).Return(expectedResult)
+
+// Later verify expectations
+mockService.AssertExpectations(t)
+```
+
+## Built-in Scheduler (Cron-based)
+
+This project includes a flexible, cron-based scheduler component that can be used by any package to trigger jobs at specific times or intervals. The scheduler supports standard 5-field cron expressions, enabling developers to easily schedule tasks such as data collection, reporting, or maintenance jobs.
+
+### Key Features
+
+- Schedule any Go function or job using a cron expression (minute, hour, day of month, month, day of week)
+- Reusable across the codebase for any periodic or time-based automation
+- Powered by the robust [robfig/cron](https://pkg.go.dev/github.com/robfig/cron/v3) library
+
+### Example Use Case: Metrics Collection
+
+Portfolio metrics collection is scheduled using the built-in scheduler. For example, to collect metrics every day at midnight:
+
+```
+service.StartMetricsCollection("0 0 * * *") // Every day at midnight
+```
+
+Or, to collect every 5 minutes:
+
+```
+service.StartMetricsCollection("*/5 * * * *")
+```
+
+You can use the scheduler in your own packages to trigger any job on a schedule:
+
+```
+sched, _ := scheduler.NewCronSchedule("0 9 * * MON") // Every Monday at 9:00 AM
+scheduler.ScheduleTaskFunc(myJobFunc, sched)
+```
+
+### Cron Expression Format
+
+A cron expression consists of five fields:
+
+```
+* * * * *
+| | | | |
+| | | | +----- day of week (0 - 6) (Sunday=0)
+| | | +------- month (1 - 12)
+| | +--------- day of month (1 - 31)
+| +----------- hour (0 - 23)
++------------- minute (0 - 59)
+```
+
+#### Examples
+
+| Cron Expression | Schedule Description               |
+| --------------- | ---------------------------------- |
+| \* \* \* \* \*  | Every minute                       |
+| 0 \* \* \* \*   | Every hour                         |
+| 0 0 \* \* \*    | Every day at 12:00 AM              |
+| 0 0 \* \* FRI   | At 12:00 AM, only on Friday        |
+| 0 0 1 \* \*     | At 12:00 AM, on day 1 of the month |
+
+For more details, see [crontab.guru](https://crontab.guru/) or the [robfig/cron](https://pkg.go.dev/github.com/robfig/cron/v3) Go library documentation.
 
 ## UI
 
@@ -144,6 +230,7 @@ curl -X POST http://localhost:8080/api/v1/blotter/trade \
         "account": "CDP",
         "quantity": 10,
         "price": 150.00,
+        "fx": 1.33,
         "type": "buy",
         "tradeDate": "2024-12-09T00:00:00Z"
     }'
@@ -162,6 +249,7 @@ curl -X PUT http://localhost:8080/api/v1/blotter/trade \
         "account": "CDP",
         "quantity": 10,
         "price": 200.00,
+        "fx": 1,
         "type": "buy",
         "tradeDate": "2024-12-09T00:00:00Z"
     }'
@@ -184,6 +272,8 @@ curl -X DELETE http://localhost:8080/api/v1/portfolio/positions
 
 ### Import Trades from CSV (for migrating into portfolio-manager)
 
+Note that FX rate here is always with respect to portfolio revaluation currency per foreign ccy, e.g. SGD/USD if SGD is portfolio revaluation currency
+
 ```sh
 curl -X POST http://localhost:8080/api/v1/blotter/import \
   -F "file=@templates/blotter_import.csv"
@@ -193,6 +283,22 @@ curl -X POST http://localhost:8080/api/v1/blotter/import \
 
 ```sh
 curl -X GET http://localhost:8080/api/v1/blotter/export
+```
+
+### Export Trades with Inferred FX Rates
+
+Export trades with FX rates automatically inferred for trades where FX rate is missing. This amends the blotter in memory as well. Users should wipe all blotter trades and reimport the amended blotter if they want it to be persisted across restarts.
+
+```sh
+curl -X GET http://localhost:8080/api/v1/blotter/export-with-fx
+```
+
+### Get Current FX Rates for relevant currencies in our blotter
+
+Get current FX rates for all currencies in the blotter. Returns a JSON mapping of currencies to their current exchange rates relative to the base currency.
+
+```sh
+curl -X GET http://localhost:8080/api/v1/blotter/fx
 ```
 
 ### View Blotter Trades
@@ -214,6 +320,16 @@ curl -X GET http://localhost:8080/api/v1/mdata/price/es3.si
 curl -X GET http://localhost:8080/api/v1/mdata/price/temb
 curl -X GET http://localhost:8080/api/v1/mdata/price/eth-usd
 curl -X GET http://localhost:8080/api/v1/mdata/price/usd-sgd
+```
+
+### Fetch Historical Price Data
+
+```sh
+# Get historical price data from January 1, 2024 to current date
+curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/AAPL?start=20240101"
+
+# Get historical price data for a specific date range
+curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/ES3.SI?start=20240101&end=20240501"
 ```
 
 ### Fetch Dividends
@@ -253,8 +369,16 @@ curl -X POST http://localhost:8080/api/v1/mdata/dividends/AAPL \
 
 ### Fetch Portfolio Dividends
 
+Single Ticker
+
 ```sh
 curl -X GET http://localhost:8080/api/v1/dividends/cjlu.si
+```
+
+All Tickers
+
+```sh
+curl -X GET http://localhost:8080/api/v1/dividends
 ```
 
 ### Fetch Reference Data
@@ -307,6 +431,22 @@ curl -X POST http://localhost:8080/api/v1/dividends -H "Content-Type: applicatio
 curl -X POST http://localhost:8080/api/v1/portfolio/cleanup
 ```
 
+### Get Portfolio Metrics, e.g. IRR (Internal Rate of Return), Price Paid, MV, Total Dividends
+
+Get portfolio metrics such as Internal Rate of Return (IRR) for the entire portfolio. Returns the calculated IRR and other metrics as a JSON object.
+
+```sh
+curl -X GET http://localhost:8080/api/v1/metrics
+```
+
+### Fetch Historical Portfolio Metrics
+
+Fetch all historical portfolio metrics (date-stamped portfolio metrics).
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics
+```
+
 ## Configurations
 
 Sample configurations
@@ -316,28 +456,22 @@ verboseLogging: true
 logFilePath: ./portfolio-manager.log
 host: localhost
 port: 8080
+baseCcy: SGD
 db: leveldb
 dbPath: ./portfolio-manager.db
 refDataSeedPath: "./seed/refdata.yaml"
-divWitholdingTaxSG: 0
-divWitholdingTaxUS: 0.3
-divWitholdingTaxHK: 0
-divWitholdingTaxIE: 0.15
+dividends:
+  divWitholdingTaxSG: 0
+  divWitholdingTaxUS: 0.3
+  divWitholdingTaxHK: 0
+  divWitholdingTaxIE: 0.15
+metrics:
+  schedule: "10 17 * * 1-5" # daily at 5:10pm, Mon-Fri (excludes weekends)
 ```
 
 ## Roadmap
 
-1. Support non SGD dividends (Implemented)
-2. Support MAS TBills (Implemented)
-3. Support Crypto market data (Implemented)
-4. Support FX market data (Implemented)
-5. Support exporting/importing of leveldb for backup
-6. Add UI component (Implemented)
-7. Support lxc helper installation script (Implemented)
-8. Support dividends viewer by ticker (Implemented)
-9. Compute internal rate of return and store total portfolio value against price paid, with csv import/exports
-10. Add UI charts for irr and portfolio value
-11. Parallalize get position when fetching market data (Implemented)
+See https://github.com/rodionlim/portfolio-manager-go/milestones
 
 ## Contributing
 

@@ -79,38 +79,27 @@ func TestStoreCurrentMetrics(t *testing.T) {
 	mockDB.AssertExpectations(t)
 }
 
-// TestGetMetrics tests the GetMetrics function
+// TestGetMetrics tests fetching all historical metrics
 func TestGetMetrics(t *testing.T) {
-	// Create mock dependencies
 	mockMetrics := new(testify.MockMetricsService)
 	mockDB := new(mocks.MockDatabase)
 	mockScheduler := scheduler.NewScheduler()
 
-	// Sample date range
-	startDate := time.Date(2023, 5, 1, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2023, 6, 1, 0, 0, 0, 0, time.UTC)
-
-	// Sample keys representing dates (date only format now)
 	keys := []string{
 		"METRICS:portfolio:2023-05-01",
 		"METRICS:portfolio:2023-05-15",
 		"METRICS:portfolio:2023-06-01",
 	}
 
-	// Configure mock behavior
 	mockDB.On("GetAllKeysWithPrefix", mock.AnythingOfType("string")).Return(keys, nil)
 	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*historical.TimestampedMetrics")).Run(func(args mock.Arguments) {
-		// Populate the TimestampedMetrics passed as the second argument
 		metricsPtr := args.Get(1).(*TimestampedMetrics)
-
-		// Parse the date from the key for testing
 		key := args.Get(0).(string)
 		parts := strings.Split(key, ":")
 		dateStr := parts[2]
 		date, _ := time.Parse("2006-01-02", dateStr)
-
 		*metricsPtr = TimestampedMetrics{
-			Timestamp: date, // Use the date from the key
+			Timestamp: date,
 			Metrics: metrics.MetricsResult{
 				IRR:       0.05,
 				PricePaid: 1000.0,
@@ -119,19 +108,59 @@ func TestGetMetrics(t *testing.T) {
 		}
 	}).Return(nil)
 
-	// Create the service
 	service := &Service{
 		metricsService: mockMetrics,
 		db:             mockDB,
 		scheduler:      mockScheduler,
-		logger:         nil, // Not needed for test
+		logger:         nil,
 	}
 
-	// Call the method under test
-	results, err := service.GetMetrics(startDate, endDate)
-
-	// Assertions
+	results, err := service.GetMetrics()
 	assert.NoError(t, err)
-	assert.NotEmpty(t, results)
+	assert.Len(t, results, 3)
+	mockDB.AssertExpectations(t)
+}
+
+// TestGetMetricsByDateRange tests fetching metrics within a date range
+func TestGetMetricsByDateRange(t *testing.T) {
+	mockMetrics := new(testify.MockMetricsService)
+	mockDB := new(mocks.MockDatabase)
+	mockScheduler := scheduler.NewScheduler()
+
+	startDate := time.Date(2023, 5, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(2023, 6, 1, 0, 0, 0, 0, time.UTC)
+	keys := []string{
+		"METRICS:portfolio:2023-05-01",
+		"METRICS:portfolio:2023-05-15",
+		"METRICS:portfolio:2023-06-01",
+	}
+
+	mockDB.On("GetAllKeysWithPrefix", mock.AnythingOfType("string")).Return(keys, nil)
+	mockDB.On("Get", mock.AnythingOfType("string"), mock.AnythingOfType("*historical.TimestampedMetrics")).Run(func(args mock.Arguments) {
+		metricsPtr := args.Get(1).(*TimestampedMetrics)
+		key := args.Get(0).(string)
+		parts := strings.Split(key, ":")
+		dateStr := parts[2]
+		date, _ := time.Parse("2006-01-02", dateStr)
+		*metricsPtr = TimestampedMetrics{
+			Timestamp: date,
+			Metrics: metrics.MetricsResult{
+				IRR:       0.05,
+				PricePaid: 1000.0,
+				MV:        1200.0,
+			},
+		}
+	}).Return(nil)
+
+	service := &Service{
+		metricsService: mockMetrics,
+		db:             mockDB,
+		scheduler:      mockScheduler,
+		logger:         nil,
+	}
+
+	results, err := service.GetMetricsByDateRange(startDate, endDate)
+	assert.NoError(t, err)
+	assert.Len(t, results, 3)
 	mockDB.AssertExpectations(t)
 }

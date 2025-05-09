@@ -13,17 +13,17 @@ type TimeSeriesKey struct {
 }
 
 // HistoricalMetricsManager defines the interface for managing historical metrics
+// Updated to match the implementation in service.go
+// - GetMetrics() fetches all metrics
+// - GetMetricsByDateRange(start, end) fetches by date range
+// - StartMetricsCollection uses a cron expression
+// - StopMetricsCollection stops the collection
 type HistoricalMetricsManager interface {
-	// StoreCurrentMetrics stores the current portfolio metrics with the current timestamp
 	StoreCurrentMetrics() error
-
-	// GetMetrics retrieves historical metrics for a given time range
-	GetMetrics(start, end time.Time) ([]TimestampedMetrics, error)
-
-	// StartMetricsCollection starts periodic collection of metrics
-	// interval specifies how often to collect metrics
-	// Returns a function that can be called to stop collection
-	StartMetricsCollection(interval time.Duration) func()
+	GetMetrics() ([]TimestampedMetrics, error)
+	GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetrics, error)
+	StartMetricsCollection(cronExpr string) func()
+	StopMetricsCollection()
 }
 
 // TimestampedMetrics represents portfolio metrics with a timestamp (date only)

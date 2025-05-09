@@ -70,9 +70,8 @@ func (s *Service) StoreCurrentMetrics() error {
 	return nil
 }
 
-// GetMetrics retrieves historical metrics for a given time range
-func (s *Service) GetMetrics(start, end time.Time) ([]TimestampedMetrics, error) {
-	// Get all keys with prefix
+// GetMetrics retrieves all historical metrics
+func (s *Service) GetMetrics() ([]TimestampedMetrics, error) {
 	prefix := fmt.Sprintf("%s:%s:", types.KeyPrefixHistoricalMetrics, "portfolio")
 	keys, err := s.db.GetAllKeysWithPrefix(prefix)
 	if err != nil {
@@ -80,25 +79,39 @@ func (s *Service) GetMetrics(start, end time.Time) ([]TimestampedMetrics, error)
 	}
 
 	var results []TimestampedMetrics
-
-	// Process each key
 	for _, key := range keys {
-		// Extract the timestamp from the key
+		var metrics TimestampedMetrics
+		err := s.db.Get(key, &metrics)
+		if err != nil {
+			s.logger.Warnf("Failed to get metrics for key %s: %v", key, err)
+			continue
+		}
+		results = append(results, metrics)
+	}
+	return results, nil
+}
+
+// GetMetricsByDateRange retrieves historical metrics for a given time range
+func (s *Service) GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetrics, error) {
+	prefix := fmt.Sprintf("%s:%s:", types.KeyPrefixHistoricalMetrics, "portfolio")
+	keys, err := s.db.GetAllKeysWithPrefix(prefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get metrics keys: %w", err)
+	}
+
+	var results []TimestampedMetrics
+	for _, key := range keys {
 		parts := strings.Split(key, ":")
 		if len(parts) < 3 {
 			s.logger.Warnf("Malformed metrics key: %s", key)
 			continue
 		}
-
-		// Format should be metrics:portfolio:YYYY-MM-DD
 		dateStr := parts[2]
 		timestamp, err := time.Parse("2006-01-02", dateStr)
 		if err != nil {
 			s.logger.Warnf("Failed to parse date from key %s: %v", key, err)
 			continue
 		}
-
-		// Check if the timestamp is in the requested range
 		if (timestamp.Equal(start) || timestamp.After(start)) &&
 			(timestamp.Equal(end) || timestamp.Before(end)) {
 			var metrics TimestampedMetrics
@@ -110,7 +123,6 @@ func (s *Service) GetMetrics(start, end time.Time) ([]TimestampedMetrics, error)
 			results = append(results, metrics)
 		}
 	}
-
 	return results, nil
 }
 

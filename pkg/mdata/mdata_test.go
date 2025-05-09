@@ -9,10 +9,12 @@ import (
 func TestMapDomicileToWitholdingTax(t *testing.T) {
 	// Mock configuration
 	cfg := &config.Config{
-		DivWitholdingTaxSG: 0.1,
-		DivWitholdingTaxUS: 0.2,
-		DivWitholdingTaxHK: 0.15,
-		DivWitholdingTaxIE: 0.05,
+		Dividends: config.DividendsConfig{
+			WithholdingTaxSG: 0.1,
+			WithholdingTaxUS: 0.2,
+			WithholdingTaxHK: 0.15,
+			WithholdingTaxIE: 0.05,
+		},
 	}
 	config.SetConfig(cfg)
 

@@ -13,20 +13,26 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// DividendsConfig nests all dividend-related configuration
+// Withholding tax rates are in decimal (e.g., 0.15 for 15%)
+type DividendsConfig struct {
+	WithholdingTaxSG float64 `yaml:"withholdingTaxSG"`
+	WithholdingTaxUS float64 `yaml:"withholdingTaxUS"`
+	WithholdingTaxHK float64 `yaml:"withholdingTaxHK"`
+	WithholdingTaxIE float64 `yaml:"withholdingTaxIE"`
+}
+
 // Config represents the application configuration.
 type Config struct {
-	VerboseLogging     bool    `yaml:"verboseLogging"`
-	LogFilePath        string  `yaml:"logFilePath"`
-	Host               string  `yaml:"host"`
-	Port               string  `yaml:"port"`
-	BaseCcy            string  `yaml:"baseCcy"`
-	Db                 string  `yaml:"db"`
-	DbPath             string  `yaml:"dbPath"`
-	RefDataSeedPath    string  `yaml:"refDataSeedPath"`
-	DivWitholdingTaxSG float64 `yaml:"divWitholdingTaxSG"`
-	DivWitholdingTaxUS float64 `yaml:"divWitholdingTaxUS"`
-	DivWitholdingTaxHK float64 `yaml:"divWitholdingTaxHK"`
-	DivWitholdingTaxIE float64 `yaml:"divWitholdingTaxIE"`
+	VerboseLogging  bool            `yaml:"verboseLogging"`
+	LogFilePath     string          `yaml:"logFilePath"`
+	Host            string          `yaml:"host"`
+	Port            string          `yaml:"port"`
+	BaseCcy         string          `yaml:"baseCcy"`
+	Db              string          `yaml:"db"`
+	DbPath          string          `yaml:"dbPath"`
+	RefDataSeedPath string          `yaml:"refDataSeedPath"`
+	Dividends       DividendsConfig `yaml:"dividends"`
 }
 
 // Implement the Stringer interface for Config.
@@ -72,6 +78,8 @@ func initializeConfig(data []byte) error {
 		cfg.DbPath = "./portfolio-manager.db"
 	}
 
+	// Set defaults for DividendsConfig if not provided
+	// (all default to 0)
 	instance = &cfg
 	return nil
 }

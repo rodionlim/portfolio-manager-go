@@ -432,11 +432,11 @@ func (p *Portfolio) enrichPositions(positions []*Position) error {
 	var errs []error
 
 	// Create a worker pool with limited concurrency (3 workers)
-	const maxWorkers = 2
+	const maxWorkers = 3
 	positionCh := make(chan *Position, len(positions))
 	var wg sync.WaitGroup
 
-	// Launch workers (only 2 to prevent overloading external services)
+	// Launch workers (only 3 to prevent overloading external services)
 	for i := 0; i < maxWorkers; i++ {
 		wg.Add(1)
 		go func() {

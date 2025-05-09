@@ -372,13 +372,13 @@ func (m *Manager) MapDomicileToWitholdingTax(domicile string) float64 {
 
 	switch domicile {
 	case "SG":
-		return cfg.DivWitholdingTaxSG
+		return cfg.Dividends.WithholdingTaxSG
 	case "US":
-		return cfg.DivWitholdingTaxUS
+		return cfg.Dividends.WithholdingTaxUS
 	case "HK":
-		return cfg.DivWitholdingTaxHK
+		return cfg.Dividends.WithholdingTaxHK
 	case "IE":
-		return cfg.DivWitholdingTaxIE
+		return cfg.Dividends.WithholdingTaxIE
 	default:
 		return 0.0
 	}

@@ -1,0 +1,308 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [unreleased]
+
+### 🚀 Features
+
+- *(dividends)* Allow fetching of all dividends
+- *(dividends)* Add caching when fetching all dividends
+- *(ui)* Create component for aggregated dividends by year
+- *(ui)* Bring in blotter trades to compute net purchases and sales per year
+- *(blotter)* Add fx property to each trade
+- *(mdata)* Add handler to extract historical market data
+- *(config)* Add base ccy to config
+- *(fxinfer)* Add new endpoint to infer blotter trades fx
+- *(blotter)* Add backwards compatibility for files with no fx column
+- *(ui)* Add fx column to blotter table
+- *(ui)* Add fx inferring to blotter trades in settings drawer
+- *(fxinfer)* Add new endpoint to fetch relevant current fx rates based on blotter trades
+- *(ui)* Dividends are revalued at current rates and add portfolio stats excl gov
+- *(ui)* Infer historical fx when upserting a trade with 0 fx rate
+- *(metrics)* Add metrics service to compute irr
+- *(scheduler)* Add a scheduler module to create jobs
+- *(scheduler)* Switch to cron scheduler for flexibility
+- *(config)* Add nesting to config yaml to make it clearer
+- *(historical)* Redo getMetrics to fetch all data
+- *(historical)* Add new handler to get all historical metrics
+- *(historical)* Add configuration to start historical metrics scheduling when app starts
+
+### 🐛 Bug Fixes
+
+- *(ui)* Fx rate needs to populate when updating a trade in blotter
+
+### 📚 Documentation
+
+- Update README and shift roadmap to github issues
+
+## [1.0.10] - 2025-04-26
+
+### 🚀 Features
+
+- *(ui)* Blotter table should show most recent trades first
+- *(ui)* Implement export blotter button in ui and fix missing status column in backend
+
+## [1.0.9] - 2025-04-25
+
+### 🐛 Bug Fixes
+
+- *(ui)* Allow decimals in qty and persist state when routing to add trade from blotter view
+
+## [1.0.8] - 2025-04-03
+
+### 🐛 Bug Fixes
+
+- Correct status validation on ui and extra leading slash in post method
+
+## [1.0.7] - 2025-03-29
+
+### 🚀 Features
+
+- Enrich position with market data on 2 threads
+
+### 📚 Documentation
+
+- Update roadmap
+
+## [1.0.6] - 2025-03-28
+
+### 🚀 Features
+
+- Allow users to navigate to blotter from positions component in ui
+
+### 🐛 Bug Fixes
+
+- Fcot final dividends on wrong date
+
+### ⚙️ Miscellaneous Tasks
+
+- Automatically generate release notes
+
+## [1.0.5] - 2025-03-28
+
+### 🐛 Bug Fixes
+
+- Opening and closing position twice leads to incorrect pnl
+- Ui blanks out when invalid ticker is imported into blotter
+
+### 🧪 Testing
+
+- Add test on enrich position for pnl calc on closed positions
+
+## [1.0.4] - 2025-03-25
+
+### 🚀 Features
+
+- Allow 0 price trades
+
+## [1.0.3] - 2025-03-23
+
+### 🚀 Features
+
+- Add clean up setting to reset blotter and positions
+
+### 🐛 Bug Fixes
+
+- Lxc not correctly storing update command
+
+## [1.0.2] - 2025-03-23
+
+### 🚀 Features
+
+- Add settings component for auto expiries
+
+## [1.0.1] - 2025-03-22
+
+### 🚀 Features
+
+- Print version during lxc installation and fix update script
+
+### 🐛 Bug Fixes
+
+- Unable to delete when all rows are selected
+
+### 📚 Documentation
+
+- Add section on developer
+
+### ⚙️ Miscellaneous Tasks
+
+- Set up automatic version bumping and release on merge to main
+- Create tags when version is bumped
+
+## [1.0.0] - 2025-03-22
+
+### 🚀 Features
+
+- First commit
+- Update dependencies
+- Tidy up start up
+- Add http server
+- Add blotter service
+- Wire up db and blotter in application
+- Allow configurable db path
+- Update cash and bond asset classes
+- Add new getters for blotter
+- Refactor blotter and add tests
+- Server should compose a blotter service
+- Remove dataframes from blotter service
+- Add handler to add trade in blotter
+- Add sequence number to blotter
+- Add broker to blotter
+- Add event subscription functionality to blotter
+- Add portfolio service
+- Add portfolio tests
+- Wire up portfolio service to application
+- Add clean db functionality in makefile
+- Wire portfolio to subscribe to blotter and add more validation
+- Update average price upon new trades
+- Add market data mdata package
+- Add dividends.sg mdata source
+- Register mdata handlers in server
+- Mdata dividends should be sorted
+- Wire in dividends sg to handlers
+- Introduce ticker reference data and shift asset class there
+- Implement ref data manager
+- Make configurations a cli flag
+- Implement import from csv for blotter trades
+- Implement export to csv for blotter trades
+- Add short name to ref data
+- Add account to blotter
+- Seed more ticker references
+- Add swagger documentation
+- Enhance get position to return reference data
+- Wire up dividends manager
+- Convert config to singleton
+- Add dividends witholding tax capability
+- Add country of domicile for ticker reference for withholding tax computation
+- Add ireland withholding tax configuration
+- Extract out mdata interface
+- Extract interfaces from blotter
+- Add dividends computation tests and add ticker to dividends metadata
+- Cache dividends instead of hitting endpoint multiple times
+- Refactor mdata to use rdata for data source routing
+- Add pnl computation logic to portfolio
+- Add dividends to pnl computation logic in portfolio
+- Cache fetching of stock price for yahoo data source
+- Support singapore savings bond in portfolio
+- Ticker reference to support crypto
+- Implement get asset price for ssb
+- Seed fx ticker references
+- Compute dividends for ssb
+- Support non sgd dividends
+- Support mas bills dividends and asset price
+- Add web-ui skeleton
+- Add more stocks to ref data seed
+- Update web ui dependencies
+- Edit styling on ui
+- Add navigation controller
+- Add navigation logic to route to add trades
+- Add cors middleware and remove fetch blotter hardcode
+- Create a basic form to add blotter trades
+- Add redux store to fetch ref data
+- Add ref data type
+- Add autocomplete for ticker in add trade and set defaults for trader and broker on submit
+- Implement react-router-dom instead of custom controller
+- Add trade date to blotter table
+- Add submit post call to adding a trade to blotter from ui
+- Upgrade react router dom to v7.1.3
+- Allow row selection for blotter table
+- Allow deletion and update of blotter trades
+- Add functionality to export reference data as yaml
+- Add custom action for blotter toolbar to delete and add trades
+- Allow for user to specify trade value instead of only trade price
+- Allow for deletion and adding of trades via ui
+- Allow updating of trades
+- Add reference data fetch ui component
+- Update ref data svc to handle updates, addition and deletion
+- Cosmetic change on blotter navbar
+- Add update functionality to reference data
+- Default to show column filters
+- Add skeleton for web ui building
+- Wire up web ui via conditional build tags
+- Add position table in ui
+- Aggregate ssb and tbill positions
+- Add ticker name skeleton
+- Add totals to positions
+- Add breakdown for non government bonds
+- Add ticker name to positions
+- Positions endpoint should return current price as well
+- Add percentage relative to total portfolio in positions
+- Add original trade id and trade lifecycle to blotter trades
+- Add autoclosing of expired trades functionality to portfolio service
+- Add autoclosing of expired positions functionality
+- Revalue position against sgd
+- Add lxc skeleton support
+- Embed default config and ref data yaml files
+- Point lxc script to dl from github
+- Abstract commands to compile UI into the backend
+- Update api calls to use window.location instead of hardcoded ones
+- Allow collapsible navbar on small screens
+- Add upload functionality in ui for blotter trades
+- Add dividends breakdown to ui component
+- Allow for user supplied custom dividends metadata
+- Implement GetAssetPrice for dividends sg
+- Add vt to ref data seed
+- Allow custom dividends upload by csv
+- Refactor /mdata/dividend to /mdata/dividends
+- Update navbar sizing
+- Pick latest version dynamically for lxc installation
+
+### 🐛 Bug Fixes
+
+- Handle bug with sell trades in portfolio positions
+- Handle divison by zero error
+- Compute dividends had issues with sorting
+- Dividends handler prematurely exiting
+- Future dividends should not be included in positions computation
+- Zerorize dividends since we recompute all the time
+- Trigger dispatch without storing ref data as a variable
+- Typo with reference data nav bar
+- Handle errors correctly when submitting trades
+- Add account to submit trade form
+- Auto compute price when value is specified
+- Bug with update ref data not updating right field
+- Correct content-type for static files
+- Fix failing tests
+- Invalid mv when position closed and update maturity date for bills
+- Send positions back in base currency
+- Yahoo finance dividends caching was colliding with asset price
+- Default to bind to all addresses and listen on 8080
+- Development ui should point to hardcoded backend
+- Portfolio endpoints should not return null but empty arrays
+- Expose dividends by portfolio as get instead of post
+- Dividends should minimally be 4 decimals
+- Dividends sg was not caching dividends metadata correctly
+- Dividends metadata for sg bonds refering to wrong columns
+- Invalid import message
+
+### 🚜 Refactor
+
+- Portfolio should not instantiate mdata and rdata
+- Mdata dividends renamed to dividends metadata
+- Shift reference data from internal into a package and extract as interface
+- Refactor mdata GetStockPrice to GetAssetPrice
+- Shift all api handlers to /api/v1 prefix
+- Shift Blotter and Controller to components
+
+### 📚 Documentation
+
+- Add sample curl commands to README
+- Add product roadmap
+- Add ui images
+- Update roadmap implementations
+
+### 🧪 Testing
+
+- Add more tests for dividends handler
+
+### ⚙️ Miscellaneous Tasks
+
+- Update README
+- Update README with project structure
+- Add workflow to run automated tests
+- Add release workflow dispatch
+- Use action-gh-release for release
+
+<!-- generated by git-cliff -->

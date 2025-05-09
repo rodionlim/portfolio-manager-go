@@ -41,3 +41,10 @@ type MetricsCalculator interface {
 	// CalculateIRR computes the Internal Rate of Return (XIRR) for the portfolio
 	CalculateIRR() (MetricsResult, error)
 }
+
+// MetricsServicer defines the interface for the metrics service
+type MetricsServicer interface {
+	// CalculatePortfolioMetrics computes the XIRR for the portfolio using all trades, dividends, and current market value as final cash flow
+	// It also stores other metrics such as price paid, market value of portfolio and total dividends
+	CalculatePortfolioMetrics() (MetricResultsWithCashFlows, error)
+}

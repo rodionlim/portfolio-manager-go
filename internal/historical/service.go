@@ -14,7 +14,7 @@ import (
 
 // Service implements the HistoricalMetricsManager interface
 type Service struct {
-	metricsService *metrics.MetricsService
+	metricsService metrics.MetricsServicer
 	db             dal.Database
 	scheduler      scheduler.Scheduler
 	logger         *logging.Logger
@@ -23,7 +23,7 @@ type Service struct {
 
 // NewService creates a new historical metrics service
 func NewService(
-	metricsService *metrics.MetricsService,
+	metricsService metrics.MetricsServicer,
 	db dal.Database,
 	scheduler scheduler.Scheduler,
 ) *Service {
@@ -43,19 +43,21 @@ func (s *Service) StoreCurrentMetrics() error {
 		return fmt.Errorf("failed to calculate metrics: %w", err)
 	}
 
-	// Create timestamped metrics
+	// Create timestamped metrics (date only)
 	now := time.Now()
+	// Set time to midnight to ensure only date info is used
+	dateOnly := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	timestampedMetrics := TimestampedMetrics{
-		Timestamp: now,
+		Timestamp: dateOnly,
 		Metrics:   result.Metrics,
 	}
 
 	// Generate key for LevelDB
-	// Format: metrics:portfolio:YYYY-MM-DD:HH:MM:SS
+	// Format: metrics:portfolio:YYYY-MM-DD
 	key := fmt.Sprintf("%s:%s:%s",
 		types.KeyPrefixHistoricalMetrics,
 		"portfolio",
-		now.Format("2006-01-02:15:04:05"),
+		dateOnly.Format("2006-01-02"),
 	)
 
 	// Store in LevelDB
@@ -83,16 +85,16 @@ func (s *Service) GetMetrics(start, end time.Time) ([]TimestampedMetrics, error)
 	for _, key := range keys {
 		// Extract the timestamp from the key
 		parts := strings.Split(key, ":")
-		if len(parts) < 4 {
+		if len(parts) < 3 {
 			s.logger.Warnf("Malformed metrics key: %s", key)
 			continue
 		}
 
-		// Format should be metrics:portfolio:YYYY-MM-DD:HH:MM:SS
-		dateStr := parts[2] + ":" + parts[3]
-		timestamp, err := time.Parse("2006-01-02:15:04:05", dateStr)
+		// Format should be metrics:portfolio:YYYY-MM-DD
+		dateStr := parts[2]
+		timestamp, err := time.Parse("2006-01-02", dateStr)
 		if err != nil {
-			s.logger.Warnf("Failed to parse timestamp from key %s: %v", key, err)
+			s.logger.Warnf("Failed to parse date from key %s: %v", key, err)
 			continue
 		}
 

@@ -26,8 +26,8 @@ type HistoricalMetricsManager interface {
 	StartMetricsCollection(interval time.Duration) func()
 }
 
-// TimestampedMetrics represents portfolio metrics with a timestamp
+// TimestampedMetrics represents portfolio metrics with a timestamp (date only)
 type TimestampedMetrics struct {
-	Timestamp time.Time             `json:"timestamp"`
+	Timestamp time.Time             `json:"timestamp"` // Only the date portion of this field will be used
 	Metrics   metrics.MetricsResult `json:"metrics"`
 }

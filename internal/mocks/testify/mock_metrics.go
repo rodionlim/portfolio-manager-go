@@ -12,7 +12,7 @@ type MockMetricsService struct {
 }
 
 // CalculatePortfolioMetrics is a mock implementation of the CalculatePortfolioMetrics method
-func (m *MockMetricsService) CalculatePortfolioMetrics() (metrics.MetricsResult, error) {
+func (m *MockMetricsService) CalculatePortfolioMetrics() (metrics.MetricResultsWithCashFlows, error) {
 	args := m.Called()
-	return args.Get(0).(metrics.MetricsResult), args.Error(1)
+	return args.Get(0).(metrics.MetricResultsWithCashFlows), args.Error(1)
 }

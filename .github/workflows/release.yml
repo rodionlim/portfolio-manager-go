@@ -45,13 +45,13 @@ jobs:
 
       - name: Install swag
         run: go install github.com/swaggo/swag/cmd/swag@${{ env.SWAG_VERSION }}
-
+      
       - name: Generate a changelog and current version
         uses: orhun/git-cliff-action@v4
         id: git-cliff
         with:
           config: cliff.toml
-          args: -v --bump --unreleased --strip header
+          args: -v --bump --strip header
         env:
           OUTPUT: CHANGELOG.md
           GITHUB_REPO: ${{ github.repository }}

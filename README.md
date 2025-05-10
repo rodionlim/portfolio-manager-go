@@ -83,6 +83,7 @@ portfolio-manager/
 │   ├── dal/
 │   ├── dividends/
 │   ├── fxinfer/
+│   ├── historical/
 │   ├── metrics/
 │   ├── mocks/
 │   ├── portfolio/
@@ -96,9 +97,11 @@ portfolio-manager/
 │   ├── mdata/
 │   │   └── sources/
 │   ├── rdata/
+│   ├── scheduler/
 │   └── types/
 ├── templates/
 │   └── blotter_import.csv # Sample for users to reference when trying to import blotter trades via csv
+│   └── dividends_metadata_import.csv # Sample for users to reference when inserting custom dividends
 ├── web/
 ├── .gitignore
 ├── go.mod
@@ -206,6 +209,12 @@ User can add, delete and update trades via the blotter component in the user int
 User can view dividends history of any given ticker at a granular level by ex-date
 
 ![Dividends Table](docs/Dividends.png)
+
+### Dividends Summary
+
+User can view aggregated dividends by year with more details such as dividend yield etc.
+
+![Dividends Summary Table](docs/DividendsSummary.png)
 
 ### Settings
 

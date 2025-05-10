@@ -96,17 +96,29 @@ export default function BlotterForm() {
 
     if (values.fx === 0) {
       if (refData && refData[values.ticker]?.ccy) {
-        const dt = values.date.replaceAll("-", "").slice(0, 8); // YYYYMMDD
-        // fetch price as of historical date
-        const resp = await fetch(
-          getUrl(
-            `api/v1/mdata/price/historical/${
-              refData[values.ticker].ccy
-            }-SGD?start=${dt}&end=${dt}`
-          )
-        );
-        const price = (await resp.json())[0]["Price"];
-        values.fx = price;
+        const baseCcy = "SGD";
+        const quoteCcy = refData[values.ticker].ccy;
+        if (quoteCcy === baseCcy) {
+          values.fx = 1;
+        } else {
+          const dt = values.date.replaceAll("-", "").slice(0, 8); // YYYYMMDD
+          // fetch price as of historical date
+          const resp = await fetch(
+            getUrl(
+              `api/v1/mdata/price/historical/${quoteCcy}-SGD?start=${dt}&end=${dt}`
+            )
+          );
+          if (!resp.ok) {
+            notifications.show({
+              color: "red",
+              title: "Error",
+              message: `Unable to fetch FX rate for ${values.ticker}`,
+            });
+            throw new Error("Unable to fetch FX rate");
+          }
+          const price = (await resp.json())[0]["Price"];
+          values.fx = price;
+        }
       } else {
         notifications.show({
           color: "red",

@@ -45,16 +45,26 @@ jobs:
 
       - name: Install swag
         run: go install github.com/swaggo/swag/cmd/swag@${{ env.SWAG_VERSION }}
-
-      - name: Generate a changelog and current version
+      
+      - name: Generate changelog
         uses: orhun/git-cliff-action@v4
         id: git-cliff
         with:
           config: cliff.toml
           args: -v --bump --unreleased --strip header
+          output: NEW_CHANGELOG.md
         env:
-          OUTPUT: CHANGELOG.md
-          GITHUB_REPO: ${{ github.repository }}
+         GITHUB_REPO: ${{ github.repository }}
+
+      - name: Merge with existing changelog
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            cat NEW_CHANGELOG.md CHANGELOG.md > temp_changelog.md
+            mv temp_changelog.md CHANGELOG.md
+          else
+            mv NEW_CHANGELOG.md CHANGELOG.md
+          fi
+          rm -f NEW_CHANGELOG.md
 
       - name: Update version file
         run: echo "${{ steps.git-cliff.outputs.version }}" | sed 's/^v//' > VERSION

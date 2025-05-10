@@ -320,7 +320,6 @@ const DividendsAggregatedTable: React.FC = () => {
         Cell: ({ cell }) => {
           return `${formatNumber(cell.getValue<number>())}%`;
         },
-        Footer: () => <strong>${formatNumber(totals.DividendYield)}%</strong>,
       },
       {
         accessorKey: "DividendYieldExclGov",
@@ -328,9 +327,6 @@ const DividendsAggregatedTable: React.FC = () => {
         Cell: ({ cell }) => {
           return `${formatNumber(cell.getValue<number>())}%`;
         },
-        Footer: () => (
-          <strong>${formatNumber(totals.DividendYieldExclGov)}%</strong>
-        ),
       },
       {
         accessorKey: "Dividends",

@@ -32,7 +32,7 @@ func TestCalculateIRR(t *testing.T) {
 		{
 			TradeID:   "trade1",
 			Ticker:    "AAPL",
-			Side:      "BUY",
+			Side:      blotter.TradeSideBuy,
 			Quantity:  10,
 			Price:     150.0,
 			Fx:        1.0,
@@ -41,7 +41,7 @@ func TestCalculateIRR(t *testing.T) {
 		{
 			TradeID:   "trade2",
 			Ticker:    "GOOGL",
-			Side:      "BUY",
+			Side:      blotter.TradeSideBuy,
 			Quantity:  5,
 			Price:     1000.0,
 			Fx:        1.0,
@@ -156,4 +156,63 @@ func TestCalculateIRR_Error(t *testing.T) {
 	// Assert results
 	assert.Error(t, err)
 	assert.Zero(t, irr)
+}
+
+func TestCalculateIRR_SimpleProfitWithDividend(t *testing.T) {
+	mockBlotter := new(testify.MockBlotterTradeGetter)
+	mockPortfolio := new(testify.MockPortfolioGetter)
+	mockDividends := new(testify.MockDividendsManager)
+	mockMdataSvc := new(testify.MockMarketDataManager)
+	mockRdataSvc := new(testify.MockReferenceManager)
+
+	buyDate := time.Now().AddDate(-1, 0, 0)
+	trades := []blotter.Trade{
+		{
+			TradeID:   "trade1",
+			Ticker:    "AAPL",
+			Side:      blotter.TradeSideBuy,
+			Quantity:  1,
+			Price:     100.0,
+			Fx:        1.0,
+			TradeDate: buyDate.Format(time.RFC3339),
+		},
+	}
+	positions := []*portfolio.Position{
+		{
+			Ticker: "AAPL",
+			Qty:    1,
+			Mv:     110.0,
+			FxRate: 1.0,
+		},
+	}
+	dividendsMap := map[string][]dividends.Dividends{
+		"AAPL": {
+			{
+				ExDate:         buyDate.AddDate(0, 6, 0).Format("2006-01-02"),
+				Amount:         10.0,
+				AmountPerShare: 10.0,
+				Qty:            1,
+			},
+		},
+	}
+	aaplRef := rdata.TickerReference{ID: "AAPL", Ccy: "USD"}
+	usdSgdRate := &types.AssetData{Ticker: "USD-SGD", Price: 1.0}
+
+	mockBlotter.On("GetTrades").Return(trades)
+	mockDividends.On("CalculateDividendsForAllTickers").Return(dividendsMap, nil)
+	mockPortfolio.On("GetAllPositions").Return(positions, nil)
+	mockRdataSvc.On("GetTicker", "AAPL").Return(aaplRef, nil)
+	mockMdataSvc.On("GetAssetPrice", "USD-SGD").Return(usdSgdRate, nil)
+
+	service := metrics.NewMetricsService(mockBlotter, mockPortfolio, mockDividends, mockMdataSvc, mockRdataSvc)
+	res, err := service.CalculatePortfolioMetrics()
+
+	mockBlotter.AssertExpectations(t)
+	mockDividends.AssertExpectations(t)
+	mockPortfolio.AssertExpectations(t)
+	mockRdataSvc.AssertExpectations(t)
+	mockMdataSvc.AssertExpectations(t)
+
+	assert.NoError(t, err)
+	assert.InDelta(t, 0.20, res.Metrics.IRR, 0.01, "IRR should be approximately 20% for 10% capital gain + 10% dividend")
 }

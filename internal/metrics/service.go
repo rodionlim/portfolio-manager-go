@@ -177,8 +177,13 @@ func (m *MetricsService) CalculatePortfolioMetrics() (MetricResultsWithCashFlows
 		return cashflows[i].Date.Before(cashflows[j].Date)
 	})
 
+	// DEBUG: Log cashflows for IRR calculation
+	for i, cf := range cashflows {
+		logging.GetLogger().Infof("IRR cashflow[%d]: date=%s, cash=%.2f", i, cf.Date.Format("2006-01-02"), cf.Cash)
+	}
+
 	// 5. Calculate XIRR
 	r := goxirr.Xirr(cashflows)
-	result.Metrics.IRR = r / 100
+	result.Metrics.IRR = r / 100 // goxirr.Xirr returns percent, so divide by 100 for decimal
 	return result, nil
 }

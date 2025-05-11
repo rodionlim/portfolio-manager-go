@@ -456,6 +456,65 @@ Fetch all historical portfolio metrics (date-stamped portfolio metrics).
 curl -X GET http://localhost:8080/api/v1/historical/metrics
 ```
 
+### Import Historical Portfolio Metrics from CSV
+
+Import historical portfolio metrics (date-stamped portfolio metrics) from a CSV file. The CSV should have the following headers:
+
+```
+Date,IRR,PricePaid,MV,TotalDividends
+```
+
+Sample file: `templates/historical_metrics_import.csv`
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics/import \
+  -F "file=@templates/historical_metrics_import.csv"
+```
+
+### Export Historical Portfolio Metrics to CSV
+
+Export all historical portfolio metrics as a CSV file.
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics/export -o historical_metrics_export.csv
+```
+
+### Upsert (Insert/Update) a Single Historical Portfolio Metric
+
+Insert or update a single historical portfolio metric (date-stamped portfolio metric) using POST or PUT. Update is keyed on timestamp date. The JSON should match the `TimestampedMetrics` structure:
+
+```
+{
+  "timestamp": "2025-05-11T00:00:00Z",
+  "metrics": {
+    "irr": 0.2,
+    "pricePaid": 10000,
+    "mv": 12000,
+    "totalDividends": 500
+  }
+}
+```
+
+Sample curl (insert or update):
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2025-05-11T00:00:00Z",
+    "metrics": {"irr": 0.2, "pricePaid": 10000, "mv": 12000, "totalDividends": 500}
+  }'
+
+curl -X PUT http://localhost:8080/api/v1/historical/metrics \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2025-05-11T00:00:00Z",
+    "metrics": {"irr": 0.2, "pricePaid": 10000, "mv": 12000, "totalDividends": 500}
+  }'
+```
+
+See also: Import/Export endpoints for batch operations.
+
 ## Configurations
 
 Sample configurations

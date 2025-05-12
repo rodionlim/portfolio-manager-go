@@ -8,6 +8,7 @@ on:
 
 jobs:
   release:
+    if: github.event.pull_request.merged && !github.event.pull_request.head.repo.fork
     runs-on: ubuntu-latest
 
     env:
@@ -45,7 +46,7 @@ jobs:
 
       - name: Install swag
         run: go install github.com/swaggo/swag/cmd/swag@${{ env.SWAG_VERSION }}
-      
+
       - name: Generate a changelog and current version
         uses: orhun/git-cliff-action@v4
         id: git-cliff

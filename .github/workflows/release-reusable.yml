@@ -1,0 +1,72 @@
+name: Reusable Release
+
+on:
+  workflow_call:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      SWAG_VERSION: v1.16.4
+      GO_VERSION: 1.23.4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.18.2"
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            /go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Install dependencies
+        run: go mod download
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@${{ env.SWAG_VERSION }}
+      - name: Generate a changelog and current version
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff
+        with:
+          config: cliff.toml
+          args: -v --bump --strip header
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
+      - name: Update version file
+        run: echo "${{ steps.git-cliff.outputs.version }}" | sed 's/^v//' > VERSION
+      - name: Run tests
+        run: make test
+      - name: Build
+        run: make assets-compress build-cross BUILTIN_ASSETS=1
+      - name: Upload Changelog and Version
+        run: |
+          git config user.name 'GitHub Actions'
+          git config user.email 'github-actions@users.noreply.github.com'
+          git add VERSION
+          git add CHANGELOG.md
+          git commit -m "Bump version to ${{ steps.git-cliff.outputs.version }} [skip ci]"
+          git push
+      - name: Tag version
+        run: |
+          git tag ${{ steps.git-cliff.outputs.version }}
+          git push --tags
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.git-cliff.outputs.version }}
+          files: portfolio-manager*
+          make_latest: true
+          draft: false
+          body: ${{ steps.git-cliff.outputs.content }}

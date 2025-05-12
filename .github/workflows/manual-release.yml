@@ -1,0 +1,9 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  call-reusable-release:
+    uses: ./.github/workflows/release-reusable.yml
+    secrets: inherit

@@ -632,6 +632,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/historical/metrics/{timestamp}": {
+            "delete": {
+                "description": "Delete a single historical portfolio metric by its timestamp",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Delete a historical portfolio metric",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Timestamp of the metric to delete (URL encoded)",
+                        "name": "timestamp",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Message confirming deletion",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid timestamp format",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Metric not found",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete historical metric",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mdata/dividends/import": {
             "post": {
                 "description": "Handles the import of dividend data from an uploaded CSV file for a multiple tickers",

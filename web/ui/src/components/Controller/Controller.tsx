@@ -7,6 +7,7 @@ import ReferenceDataTable from "../ReferenceData/ReferenceDataTable";
 import ReferenceDataForm from "../ReferenceData/ReferenceDataForm";
 import PositionTable from "../Position/PositionTable";
 import DividendsView from "../Dividends/DividendsView";
+import MetricsView from "../Analytics/MetricsView";
 import Settings from "../Settings/Settings";
 
 const Controller: React.FC = () => {
@@ -20,6 +21,7 @@ const Controller: React.FC = () => {
       <Route path="/refdata/update_ref_data" element={<ReferenceDataForm />} />
       <Route path="/refdata" element={<ReferenceDataTable />} />
       <Route path="/positions" element={<PositionTable />} />
+      <Route path="/analytics/metrics" element={<MetricsView />} />
       <Route path="/settings" element={<Settings />} />
       <Route
         path="/*"

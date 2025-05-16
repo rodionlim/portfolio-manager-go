@@ -120,6 +120,42 @@ func HandleUpsertMetric(service interface {
 	}
 }
 
+// HandleDeleteMetric handles deleting a single historical metric by timestamp
+// @Summary Delete a historical portfolio metric
+// @Description Delete a single historical portfolio metric by its timestamp
+// @Tags historical
+// @Produce json
+// @Param timestamp path string true "Timestamp of the metric to delete (URL encoded)"
+// @Success 200 {object} map[string]string "Message confirming deletion"
+// @Failure 400 {object} common.ErrorResponse "Invalid timestamp format"
+// @Failure 404 {object} common.ErrorResponse "Metric not found"
+// @Failure 500 {object} common.ErrorResponse "Failed to delete historical metric"
+// @Router /api/v1/historical/metrics/{timestamp} [delete]
+func HandleDeleteMetric(service interface {
+	DeleteMetric(timestamp string) error
+}) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		timestamp := r.PathValue("timestamp")
+		if timestamp == "" {
+			common.WriteJSONError(w, "Timestamp is required", http.StatusBadRequest)
+			return
+		}
+
+		err := service.DeleteMetric(timestamp)
+		if err != nil {
+			if err.Error() == "metric not found" {
+				common.WriteJSONError(w, "Metric not found: "+err.Error(), http.StatusNotFound)
+				return
+			}
+			common.WriteJSONError(w, "Failed to delete historical metric: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "Metric deleted successfully"})
+	}
+}
+
 // RegisterHandlers registers the historical metrics handlers
 func RegisterHandlers(mux *http.ServeMux, service *Service) {
 	mux.HandleFunc("/api/v1/historical/metrics", func(w http.ResponseWriter, r *http.Request) {
@@ -145,5 +181,14 @@ func RegisterHandlers(mux *http.ServeMux, service *Service) {
 			return
 		}
 		HandleImportMetricsCSV(service).ServeHTTP(w, r)
+	})
+	
+	// Register DELETE endpoint with path parameter
+	mux.HandleFunc("/api/v1/historical/metrics/{timestamp}", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleDeleteMetric(service).ServeHTTP(w, r)
 	})
 }

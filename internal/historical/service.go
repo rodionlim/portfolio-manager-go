@@ -268,3 +268,37 @@ func (s *Service) UpsertMetric(metric TimestampedMetrics) error {
 	key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", metric.Timestamp.Format("2006-01-02"))
 	return s.db.Put(key, metric)
 }
+
+// DeleteMetric deletes a historical metric by timestamp
+func (s *Service) DeleteMetric(timestamp string) error {
+	s.logger.Info(fmt.Sprintf("Deleting historical metric for timestamp: %s", timestamp))
+	
+	// Parse the timestamp to validate it
+	parsedTime, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Invalid timestamp format: %s", timestamp))
+		return fmt.Errorf("invalid timestamp format: %v", err)
+	}
+
+	// Create the key for the database - use the date part only
+	dateOnly := time.Date(parsedTime.Year(), parsedTime.Month(), parsedTime.Day(), 0, 0, 0, 0, parsedTime.Location())
+	key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", dateOnly.Format("2006-01-02"))
+	
+	// Check if the metric exists by trying to get it
+	var metric TimestampedMetrics
+	err = s.db.Get(key, &metric)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Metric not found for timestamp: %s - %v", timestamp, err))
+		return fmt.Errorf("metric not found")
+	}
+	
+	// Delete the metric
+	err = s.db.Delete(key)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to delete metric: %v", err))
+		return err
+	}
+	
+	s.logger.Info(fmt.Sprintf("Successfully deleted metric for timestamp: %s", timestamp))
+	return nil
+}

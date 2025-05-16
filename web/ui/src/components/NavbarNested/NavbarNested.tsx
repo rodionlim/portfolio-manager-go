@@ -4,6 +4,7 @@ import {
   IconCalendarStats,
   IconCoin,
   IconDeviceLaptop,
+  IconChartLine,
 } from "@tabler/icons-react";
 import { Code, Group, ScrollArea } from "@mantine/core";
 import React from "react";
@@ -30,6 +31,14 @@ const items = [
     label: "Dividends",
     icon: IconCalendarStats,
     link: "/dividends",
+  },
+  {
+    label: "Analytics",
+    icon: IconChartLine,
+    initiallyOpened: false,
+    links: [
+      { label: "Metrics", link: "/analytics/metrics" },
+    ],
   },
   {
     label: "Reference Data",

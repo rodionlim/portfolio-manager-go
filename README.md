@@ -396,6 +396,49 @@ curl -X GET http://localhost:8080/api/v1/dividends
 curl -X GET http://localhost:8080/api/v1/refdata
 ```
 
+### Historical Portfolio Metrics
+
+Get all historical metrics:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics
+```
+
+Export historical metrics as CSV:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics/export
+```
+
+Import historical metrics from CSV file:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics/import \
+  -F "file=@/path/to/historical_metrics_import.csv"
+```
+
+Insert or update a historical metric:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2024-05-15T00:00:00Z",
+    "metrics": {
+      "irr": 0.12,
+      "pricePaid": 50000,
+      "mv": 55000,
+      "totalDividends": 1200
+    }
+  }'
+```
+
+Delete a historical metric:
+
+```sh
+curl -X DELETE http://localhost:8080/api/v1/historical/metrics/2024-05-15T00%3A00%3A00Z
+```
+
 ### Add Reference Data
 
 ```sh

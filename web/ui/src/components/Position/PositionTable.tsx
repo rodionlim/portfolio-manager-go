@@ -1,4 +1,3 @@
-// filepath: /Users/rodionlim/workspace/portfolio-manager-go/web/ui/src/components/BlotterTable.tsx
 import React, { useMemo } from "react";
 import {
   MantineReactTable,
@@ -11,7 +10,7 @@ import { RootState } from "../../store";
 import { Button, Text, Tooltip } from "@mantine/core";
 import { getUrl } from "../../utils/url";
 import { useNavigate } from "react-router-dom";
-import { IconHistory } from "@tabler/icons-react";
+import { IconHistory, IconCoins } from "@tabler/icons-react";
 
 interface Position {
   Ticker: string;
@@ -56,6 +55,18 @@ const PositionTable: React.FC = () => {
       const ticker = selectedRows[0].original.Ticker;
       // Navigate to blotter with ticker filter
       navigate(`/blotter?ticker=${encodeURIComponent(ticker)}`);
+    }
+  };
+
+  // Add this function to handle navigation to dividends view
+  const handleViewDividends = () => {
+    const selectedRows = table.getSelectedRowModel().rows;
+    if (selectedRows.length === 1) {
+      const ticker = selectedRows[0].original.Ticker;
+      // Navigate to dividends with ticker filter
+      navigate(`/dividends`, {
+        state: { ticker: ticker },
+      });
     }
   };
 
@@ -285,16 +296,28 @@ const PositionTable: React.FC = () => {
       const isOneRowSelected = selectedRows.length === 1;
 
       return (
-        <Button
-          leftSection={<IconHistory size={16} />}
-          onClick={handleViewTrades}
-          disabled={!isOneRowSelected}
-          variant="filled"
-          color="blue"
-          size="sm"
-        >
-          View Trade History
-        </Button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <Button
+            leftSection={<IconHistory size={16} />}
+            onClick={handleViewTrades}
+            disabled={!isOneRowSelected}
+            variant="filled"
+            color="blue"
+            size="sm"
+          >
+            View Trade History
+          </Button>
+          <Button
+            leftSection={<IconCoins size={16} />}
+            onClick={handleViewDividends}
+            disabled={!isOneRowSelected}
+            variant="filled"
+            color="green"
+            size="sm"
+          >
+            View Dividends
+          </Button>
+        </div>
       );
     },
   });

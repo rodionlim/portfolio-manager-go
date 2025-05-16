@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Box, FileInput, Select, Text } from "@mantine/core";
 import {
   MantineReactTable,
@@ -21,8 +21,23 @@ interface Dividend {
   Qty: number;
 }
 
-const DividendsTable: React.FC = () => {
-  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+interface DividendsTableProps {
+  initialTicker?: string | null;
+}
+
+const DividendsTable: React.FC<DividendsTableProps> = ({
+  initialTicker = null,
+}) => {
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(
+    initialTicker
+  );
+
+  // Effect to update selectedTicker when initialTicker changes (e.g., from navigation)
+  useEffect(() => {
+    if (initialTicker) {
+      setSelectedTicker(initialTicker);
+    }
+  }, [initialTicker]);
 
   // Fetch all positions to populate the dropdown of tickers
   const fetchPositions = async (): Promise<Position[]> => {

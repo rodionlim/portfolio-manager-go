@@ -216,6 +216,12 @@ User can view aggregated dividends by year with more details such as dividend yi
 
 ![Dividends Summary Table](docs/DividendsSummary.png)
 
+### Metrics Chart
+
+Users can visualize portfolio performance over time with both market value and IRR (Internal Rate of Return) plotted together.
+
+![Metrics Chart](docs/MetricsChart.png)
+
 ### Settings
 
 User can edit application wide settings, such as auto closing expired positions via the user interface

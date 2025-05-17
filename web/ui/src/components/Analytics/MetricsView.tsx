@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { Tabs } from "@mantine/core";
 import MetricsTable from "./MetricsTable";
+import MetricsChart from "./MetricsChart";
 
 const MetricsView: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<string | null>("table");
+
   return (
-    <Tabs defaultValue="table">
+    <Tabs defaultValue="table" onChange={setActiveTab}>
       <Tabs.List>
         <Tabs.Tab value="table">Historical Metrics Table</Tabs.Tab>
         <Tabs.Tab value="chart">Metrics Chart</Tabs.Tab>
@@ -15,8 +18,7 @@ const MetricsView: React.FC = () => {
       </Tabs.Panel>
 
       <Tabs.Panel value="chart" pt="md">
-        <h2>Work In Progress</h2>
-        <p>Charts visualization coming soon.</p>
+        {activeTab === "chart" && <MetricsChart />}
       </Tabs.Panel>
     </Tabs>
   );

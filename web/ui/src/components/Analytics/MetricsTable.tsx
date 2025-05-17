@@ -9,18 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
 import { IconDownload, IconUpload, IconTrash } from "@tabler/icons-react";
-
-interface Metrics {
-  irr: number;
-  pricePaid: number;
-  mv: number;
-  totalDividends: number;
-}
-
-interface TimestampedMetrics {
-  timestamp: string;
-  metrics: Metrics;
-}
+import { TimestampedMetrics } from "./types";
 
 const MetricsTable: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);

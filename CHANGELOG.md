@@ -1,3 +1,20 @@
+## [1.2.0] - 2025-05-17
+
+### 🚀 Features
+
+- *(historical)* Add CRUD functionality and new endpoints #36
+- *(ui)* Allow navigation from positions to dividends #40
+- *(ui)* Add a historical metrics component #38
+- *(ui)* Add lightweight charts to plot historical metrics #26
+
+### 📚 Documentation
+
+- Add a version badge
+
+### ⚙️ Miscellaneous Tasks
+
+- Add issues template
+
 ## [1.1.2] - 2025-05-12
 
 ### 🐛 Bug Fixes

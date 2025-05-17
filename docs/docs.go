@@ -471,6 +471,215 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "description": "Insert or update a single historical portfolio metric (date-stamped portfolio metric)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Upsert a historical portfolio metric",
+                "parameters": [
+                    {
+                        "description": "Historical metric",
+                        "name": "metric",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/historical.TimestampedMetrics"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/historical.TimestampedMetrics"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to upsert historical metric",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Insert or update a single historical portfolio metric (date-stamped portfolio metric)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Upsert a historical portfolio metric",
+                "parameters": [
+                    {
+                        "description": "Historical metric",
+                        "name": "metric",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/historical.TimestampedMetrics"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/historical.TimestampedMetrics"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to upsert historical metric",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/metrics/export": {
+            "get": {
+                "description": "Export all historical portfolio metrics (date-stamped portfolio metrics) as a CSV file",
+                "produces": [
+                    "text/csv"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Export historical portfolio metrics as CSV",
+                "responses": {
+                    "200": {
+                        "description": "CSV file with historical metrics",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to export historical metrics",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/metrics/import": {
+            "post": {
+                "description": "Import historical portfolio metrics (date-stamped portfolio metrics) from a CSV file",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Import historical portfolio metrics from CSV",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "CSV file to import",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Import result",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid file or format",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to import historical metrics",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/metrics/{timestamp}": {
+            "delete": {
+                "description": "Delete a single historical portfolio metric by its timestamp",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Delete a historical portfolio metric",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Timestamp of the metric to delete (URL encoded)",
+                        "name": "timestamp",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Message confirming deletion",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid timestamp format",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Metric not found",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete historical metric",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mdata/dividends/import": {

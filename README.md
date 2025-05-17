@@ -1,6 +1,6 @@
 # Portfolio Valuation Tool
 
-[![CI](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml/badge.svg)](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml)
+[![CI](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml/badge.svg)](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.1.2-blue.svg)](https://github.com/rodionlim/portfolio-manager-go/blob/main/VERSION)
 
 An application to value equities, fx, commodities, cash, bonds (corps / gov), and cryptocurrencies in your personal portfolio.
 
@@ -216,6 +216,12 @@ User can view aggregated dividends by year with more details such as dividend yi
 
 ![Dividends Summary Table](docs/DividendsSummary.png)
 
+### Metrics Chart
+
+Users can visualize portfolio performance over time with both market value and IRR (Internal Rate of Return) plotted together.
+
+![Metrics Chart](docs/MetricsChart.png)
+
 ### Settings
 
 User can edit application wide settings, such as auto closing expired positions via the user interface
@@ -396,6 +402,49 @@ curl -X GET http://localhost:8080/api/v1/dividends
 curl -X GET http://localhost:8080/api/v1/refdata
 ```
 
+### Historical Portfolio Metrics
+
+Get all historical metrics:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics
+```
+
+Export historical metrics as CSV:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics/export
+```
+
+Import historical metrics from CSV file:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics/import \
+  -F "file=@/path/to/historical_metrics_import.csv"
+```
+
+Insert or update a historical metric:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2024-05-15T00:00:00Z",
+    "metrics": {
+      "irr": 0.12,
+      "pricePaid": 50000,
+      "mv": 55000,
+      "totalDividends": 1200
+    }
+  }'
+```
+
+Delete a historical metric:
+
+```sh
+curl -X DELETE http://localhost:8080/api/v1/historical/metrics/2024-05-15T00%3A00%3A00Z
+```
+
 ### Add Reference Data
 
 ```sh
@@ -455,6 +504,65 @@ Fetch all historical portfolio metrics (date-stamped portfolio metrics).
 ```sh
 curl -X GET http://localhost:8080/api/v1/historical/metrics
 ```
+
+### Import Historical Portfolio Metrics from CSV
+
+Import historical portfolio metrics (date-stamped portfolio metrics) from a CSV file. The CSV should have the following headers:
+
+```
+Date,IRR,PricePaid,MV,TotalDividends
+```
+
+Sample file: `templates/historical_metrics_import.csv`
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics/import \
+  -F "file=@templates/historical_metrics_import.csv"
+```
+
+### Export Historical Portfolio Metrics to CSV
+
+Export all historical portfolio metrics as a CSV file.
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics/export -o historical_metrics_export.csv
+```
+
+### Upsert (Insert/Update) a Single Historical Portfolio Metric
+
+Insert or update a single historical portfolio metric (date-stamped portfolio metric) using POST or PUT. Update is keyed on timestamp date. The JSON should match the `TimestampedMetrics` structure:
+
+```
+{
+  "timestamp": "2025-05-11T00:00:00Z",
+  "metrics": {
+    "irr": 0.2,
+    "pricePaid": 10000,
+    "mv": 12000,
+    "totalDividends": 500
+  }
+}
+```
+
+Sample curl (insert or update):
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2025-05-11T00:00:00Z",
+    "metrics": {"irr": 0.2, "pricePaid": 10000, "mv": 12000, "totalDividends": 500}
+  }'
+
+curl -X PUT http://localhost:8080/api/v1/historical/metrics \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2025-05-11T00:00:00Z",
+    "metrics": {"irr": 0.2, "pricePaid": 10000, "mv": 12000, "totalDividends": 500}
+  }'
+```
+
+See also: Import/Export endpoints for batch operations.
 
 ## Configurations
 

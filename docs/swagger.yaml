@@ -548,6 +548,148 @@ paths:
       summary: Get historical portfolio metrics
       tags:
       - historical
+    post:
+      consumes:
+      - application/json
+      description: Insert or update a single historical portfolio metric (date-stamped
+        portfolio metric)
+      parameters:
+      - description: Historical metric
+        in: body
+        name: metric
+        required: true
+        schema:
+          $ref: '#/definitions/historical.TimestampedMetrics'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/historical.TimestampedMetrics'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to upsert historical metric
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Upsert a historical portfolio metric
+      tags:
+      - historical
+    put:
+      consumes:
+      - application/json
+      description: Insert or update a single historical portfolio metric (date-stamped
+        portfolio metric)
+      parameters:
+      - description: Historical metric
+        in: body
+        name: metric
+        required: true
+        schema:
+          $ref: '#/definitions/historical.TimestampedMetrics'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/historical.TimestampedMetrics'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to upsert historical metric
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Upsert a historical portfolio metric
+      tags:
+      - historical
+  /api/v1/historical/metrics/{timestamp}:
+    delete:
+      description: Delete a single historical portfolio metric by its timestamp
+      parameters:
+      - description: Timestamp of the metric to delete (URL encoded)
+        in: path
+        name: timestamp
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Message confirming deletion
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid timestamp format
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "404":
+          description: Metric not found
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to delete historical metric
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Delete a historical portfolio metric
+      tags:
+      - historical
+  /api/v1/historical/metrics/export:
+    get:
+      description: Export all historical portfolio metrics (date-stamped portfolio
+        metrics) as a CSV file
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: CSV file with historical metrics
+          schema:
+            type: string
+        "500":
+          description: Failed to export historical metrics
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Export historical portfolio metrics as CSV
+      tags:
+      - historical
+  /api/v1/historical/metrics/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Import historical portfolio metrics (date-stamped portfolio metrics)
+        from a CSV file
+      parameters:
+      - description: CSV file to import
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Import result
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid file or format
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to import historical metrics
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Import historical portfolio metrics from CSV
+      tags:
+      - historical
   /api/v1/mdata/dividends/{ticker}:
     get:
       consumes:

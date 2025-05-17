@@ -1,13 +1,19 @@
 package historical
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/metrics"
+	"portfolio-manager/pkg/csvutil"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/scheduler"
 	"portfolio-manager/pkg/types"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -157,4 +163,142 @@ func (s *Service) StopMetricsCollection() {
 		s.collectionTask = ""
 		s.logger.Info("Stopped metrics collection")
 	}
+}
+
+// ExportMetricsToCSV exports all historical metrics to a CSV file in memory and returns it as a byte slice.
+func (s *Service) ExportMetricsToCSV() ([]byte, error) {
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	headers := []string{"Date", "IRR", "PricePaid", "MV", "TotalDividends"}
+	if err := writer.Write(headers); err != nil {
+		return nil, err
+	}
+
+	metrics, err := s.GetMetrics()
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range metrics {
+		record := []string{
+			m.Timestamp.Format("2006-01-02"),
+			csvutil.FormatFloat(m.Metrics.IRR, 6),
+			csvutil.FormatFloat(m.Metrics.PricePaid, 2),
+			csvutil.FormatFloat(m.Metrics.MV, 2),
+			csvutil.FormatFloat(m.Metrics.TotalDividends, 2),
+		}
+		if err := writer.Write(record); err != nil {
+			return nil, err
+		}
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// ImportMetricsFromCSVFile imports historical metrics from a CSV file and adds them to the database.
+func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
+	reader := csv.NewReader(file)
+	header, err := reader.Read()
+	if err != nil {
+		return 0, err
+	}
+	expectedHeaders := []string{"Date", "IRR", "PricePaid", "MV", "TotalDividends"}
+	for i, h := range expectedHeaders {
+		if header[i] != h {
+			return 0, fmt.Errorf("invalid CSV header: expected %s at position %d, got %s", h, i, header[i])
+		}
+	}
+	count := 0
+	for {
+		row, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return count, err
+		}
+		if len(row) < 5 {
+			return count, fmt.Errorf("invalid row length: %v", row)
+		}
+		ts, err := time.Parse("2006-01-02", row[0])
+		if err != nil {
+			return count, fmt.Errorf("invalid date: %w", err)
+		}
+		irr, err := strconv.ParseFloat(row[1], 64)
+		if err != nil {
+			return count, fmt.Errorf("invalid IRR: %w", err)
+		}
+		pricePaid, err := strconv.ParseFloat(row[2], 64)
+		if err != nil {
+			return count, fmt.Errorf("invalid PricePaid: %w", err)
+		}
+		mv, err := strconv.ParseFloat(row[3], 64)
+		if err != nil {
+			return count, fmt.Errorf("invalid MV: %w", err)
+		}
+		totalDiv, err := strconv.ParseFloat(row[4], 64)
+		if err != nil {
+			return count, fmt.Errorf("invalid TotalDividends: %w", err)
+		}
+		metrics := metrics.MetricsResult{
+			IRR:            irr,
+			PricePaid:      pricePaid,
+			MV:             mv,
+			TotalDividends: totalDiv,
+		}
+		tm := TimestampedMetrics{
+			Timestamp: ts,
+			Metrics:   metrics,
+		}
+		// Store in DB (overwrite if exists)
+		key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", ts.Format("2006-01-02"))
+		if err := s.db.Put(key, tm); err != nil {
+			return count, err
+		}
+		count++
+	}
+	return count, nil
+}
+
+// UpsertMetric inserts or updates a single historical metric in the database
+func (s *Service) UpsertMetric(metric TimestampedMetrics) error {
+	key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", metric.Timestamp.Format("2006-01-02"))
+	return s.db.Put(key, metric)
+}
+
+// DeleteMetric deletes a historical metric by timestamp
+func (s *Service) DeleteMetric(timestamp string) error {
+	s.logger.Info(fmt.Sprintf("Deleting historical metric for timestamp: %s", timestamp))
+	
+	// Parse the timestamp to validate it
+	parsedTime, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Invalid timestamp format: %s", timestamp))
+		return fmt.Errorf("invalid timestamp format: %v", err)
+	}
+
+	// Create the key for the database - use the date part only
+	dateOnly := time.Date(parsedTime.Year(), parsedTime.Month(), parsedTime.Day(), 0, 0, 0, 0, parsedTime.Location())
+	key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", dateOnly.Format("2006-01-02"))
+	
+	// Check if the metric exists by trying to get it
+	var metric TimestampedMetrics
+	err = s.db.Get(key, &metric)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Metric not found for timestamp: %s - %v", timestamp, err))
+		return fmt.Errorf("metric not found")
+	}
+	
+	// Delete the metric
+	err = s.db.Delete(key)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to delete metric: %v", err))
+		return err
+	}
+	
+	s.logger.Info(fmt.Sprintf("Successfully deleted metric for timestamp: %s", timestamp))
+	return nil
 }

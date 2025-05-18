@@ -120,39 +120,40 @@ func HandleUpsertMetric(service interface {
 	}
 }
 
-// HandleDeleteMetric handles deleting a single historical metric by timestamp
-// @Summary Delete a historical portfolio metric
-// @Description Delete a single historical portfolio metric by its timestamp
+// HandleDeleteMetrics handles deleting one or more historical metrics
+// @Summary Delete historical portfolio metrics
+// @Description Delete one or more historical portfolio metrics by their timestamps
 // @Tags historical
+// @Accept json
 // @Produce json
-// @Param timestamp path string true "Timestamp of the metric to delete (URL encoded)"
-// @Success 200 {object} map[string]string "Message confirming deletion"
-// @Failure 400 {object} common.ErrorResponse "Invalid timestamp format"
-// @Failure 404 {object} common.ErrorResponse "Metric not found"
-// @Failure 500 {object} common.ErrorResponse "Failed to delete historical metric"
-// @Router /api/v1/historical/metrics/{timestamp} [delete]
-func HandleDeleteMetric(service interface {
-	DeleteMetric(timestamp string) error
+// @Param request body DeleteMetricsRequest true "List of timestamps to delete"
+// @Success 200 {object} DeleteMetricsResponse "Result of the deletion operation"
+// @Failure 400 {object} common.ErrorResponse "Invalid request payload"
+// @Failure 500 {object} common.ErrorResponse "Failed to delete historical metrics"
+// @Router /api/v1/historical/metrics/delete [post]
+func HandleDeleteMetrics(service interface {
+	DeleteMetrics(timestamps []string) (DeleteMetricsResponse, error)
 }) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		timestamp := r.PathValue("timestamp")
-		if timestamp == "" {
-			common.WriteJSONError(w, "Timestamp is required", http.StatusBadRequest)
+		var request DeleteMetricsRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			common.WriteJSONError(w, "Invalid request payload: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		err := service.DeleteMetric(timestamp)
+		if len(request.Timestamps) == 0 {
+			common.WriteJSONError(w, "No timestamps provided for deletion", http.StatusBadRequest)
+			return
+		}
+
+		response, err := service.DeleteMetrics(request.Timestamps)
 		if err != nil {
-			if err.Error() == "metric not found" {
-				common.WriteJSONError(w, "Metric not found: "+err.Error(), http.StatusNotFound)
-				return
-			}
-			common.WriteJSONError(w, "Failed to delete historical metric: "+err.Error(), http.StatusInternalServerError)
+			common.WriteJSONError(w, "Failed to delete historical metrics: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"message": "Metric deleted successfully"})
+		json.NewEncoder(w).Encode(response)
 	}
 }
 
@@ -182,13 +183,13 @@ func RegisterHandlers(mux *http.ServeMux, service *Service) {
 		}
 		HandleImportMetricsCSV(service).ServeHTTP(w, r)
 	})
-	
-	// Register DELETE endpoint with path parameter
-	mux.HandleFunc("/api/v1/historical/metrics/{timestamp}", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodDelete {
+
+	// Register metrics deletion endpoint
+	mux.HandleFunc("/api/v1/historical/metrics/delete", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		HandleDeleteMetric(service).ServeHTTP(w, r)
+		HandleDeleteMetrics(service).ServeHTTP(w, r)
 	})
 }

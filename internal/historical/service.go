@@ -304,3 +304,28 @@ func (s *Service) DeleteMetric(timestamp string) error {
 	s.logger.Info(fmt.Sprintf("Successfully deleted metric for timestamp: %s", timestamp))
 	return nil
 }
+
+// DeleteMetrics deletes multiple historical metrics by their timestamps
+func (s *Service) DeleteMetrics(timestamps []string) (DeleteMetricsResponse, error) {
+	s.logger.Info(fmt.Sprintf("Batch deleting %d historical metrics", len(timestamps)))
+
+	result := DeleteMetricsResponse{
+		Deleted:  0,
+		Failed:   0,
+		Failures: []string{},
+	}
+
+	for _, timestamp := range timestamps {
+		err := s.DeleteMetric(timestamp)
+		if err != nil {
+			result.Failed++
+			result.Failures = append(result.Failures, fmt.Sprintf("Failed to delete metric with timestamp %s: %v", timestamp, err))
+			s.logger.Warn(fmt.Sprintf("Failed to delete metric with timestamp %s: %v", timestamp, err))
+		} else {
+			result.Deleted++
+		}
+	}
+
+	s.logger.Info(fmt.Sprintf("Batch delete completed: %d deleted, %d failed", result.Deleted, result.Failed))
+	return result, nil
+}

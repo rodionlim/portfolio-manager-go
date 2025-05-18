@@ -1,3 +1,15 @@
+## [1.2.1] - 2025-05-18
+
+### 🐛 Bug Fixes
+
+- Handle bug with empty historical metrics #42
+- Delete multiple historical metrics at one go #43
+- Scheduler needs to be started for it to process tasks #44
+
+### ⚙️ Miscellaneous Tasks
+
+- Add bugs and issues template
+
 ## [1.2.0] - 2025-05-17
 
 ### 🚀 Features

@@ -11,10 +11,20 @@ import { getUrl } from "../../utils/url";
 import { IconDownload, IconUpload, IconTrash } from "@tabler/icons-react";
 import { TimestampedMetrics } from "./types";
 
+interface DeleteMetricsResponse {
+  deleted: number;
+  failed: number;
+  failures: string[];
+}
+
 const MetricsTable: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] =
     useState<TimestampedMetrics | null>(null);
+  const [selectedMetrics, setSelectedMetrics] = useState<TimestampedMetrics[]>(
+    []
+  );
+  const [isBatchDelete, setIsBatchDelete] = useState(false);
 
   // Fetch all historical metrics
   const fetchHistoricalMetrics = async (): Promise<TimestampedMetrics[]> => {
@@ -65,13 +75,17 @@ const MetricsTable: React.FC = () => {
     }
   };
 
-  // Delete a historical metric
-  const deleteMetric = async (timestamp: string) => {
+  // Simplified delete process to use a single endpoint
+  const deleteMetrics = async (timestamps: string[]) => {
     try {
       const response = await fetch(
-        getUrl(`/api/v1/historical/metrics/${encodeURIComponent(timestamp)}`),
+        getUrl(`/api/v1/historical/metrics/delete`),
         {
-          method: "DELETE",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ timestamps }),
         }
       );
 
@@ -79,16 +93,26 @@ const MetricsTable: React.FC = () => {
         throw new Error(`Delete failed with status: ${response.status}`);
       }
 
-      notifications.show({
-        title: "Success",
-        message: "Historical metric deleted successfully",
-        color: "green",
-      });
+      const result = (await response.json()) as DeleteMetricsResponse;
+
+      if (result.failed > 0) {
+        notifications.show({
+          title: "Partial Success",
+          message: `Deleted ${result.deleted} record(s), failed to delete ${result.failed} record(s)`,
+          color: "yellow",
+        });
+      } else {
+        notifications.show({
+          title: "Success",
+          message: `Successfully deleted ${result.deleted} record(s)`,
+          color: "green",
+        });
+      }
 
       // Refetch the data after deleting
       refetch();
     } catch (error: any) {
-      console.error("Error deleting metric:", error);
+      console.error("Error deleting metrics:", error);
       notifications.show({
         color: "red",
         title: "Delete Failed",
@@ -98,10 +122,13 @@ const MetricsTable: React.FC = () => {
   };
 
   const confirmDelete = () => {
-    if (selectedMetric) {
-      deleteMetric(selectedMetric.timestamp);
-      setDeleteModalOpen(false);
+    if (isBatchDelete) {
+      const timestamps = selectedMetrics.map((metric) => metric.timestamp);
+      deleteMetrics(timestamps);
+    } else if (selectedMetric) {
+      deleteMetrics([selectedMetric.timestamp]);
     }
+    setDeleteModalOpen(false);
   };
 
   // Upload metrics CSV file
@@ -262,8 +289,17 @@ const MetricsTable: React.FC = () => {
           <Button
             onClick={() => {
               const selectedRows = table.getSelectedRowModel().rows;
-              if (selectedRows.length > 0) {
+              if (selectedRows.length === 1) {
+                // Single selection
                 setSelectedMetric(selectedRows[0].original);
+                setSelectedMetrics([]);
+                setIsBatchDelete(false);
+                setDeleteModalOpen(true);
+              } else if (selectedRows.length > 1) {
+                // Multiple selection
+                setSelectedMetric(null);
+                setSelectedMetrics(selectedRows.map((row) => row.original));
+                setIsBatchDelete(true);
                 setDeleteModalOpen(true);
               }
             }}
@@ -272,7 +308,10 @@ const MetricsTable: React.FC = () => {
             color="red"
             disabled={table.getSelectedRowModel().rows.length === 0}
           >
-            Delete Record
+            Delete{" "}
+            {table.getSelectedRowModel().rows.length > 1
+              ? `Selected (${table.getSelectedRowModel().rows.length})`
+              : "Record"}
           </Button>
           <input
             ref={uploadFileRef}
@@ -307,12 +346,19 @@ const MetricsTable: React.FC = () => {
         title="Confirm Deletion"
         size="sm"
       >
-        <Text mb="md">
-          Are you sure you want to delete the historical metrics record from{" "}
-          {selectedMetric &&
-            new Date(selectedMetric.timestamp).toLocaleDateString()}
-          ?
-        </Text>
+        {isBatchDelete ? (
+          <Text mb="md">
+            Are you sure you want to delete {selectedMetrics.length} historical
+            metrics records?
+          </Text>
+        ) : (
+          <Text mb="md">
+            Are you sure you want to delete the historical metrics record from{" "}
+            {selectedMetric &&
+              new Date(selectedMetric.timestamp).toLocaleDateString()}
+            ?
+          </Text>
+        )}
         <Group justify="flex-end">
           <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
             Cancel

@@ -35,7 +35,7 @@ func TestHandleGetMetrics_Success(t *testing.T) {
 func TestHandleGetMetrics_Error(t *testing.T) {
 	mockSvc := new(mockHistoricalService)
 	// Return an empty slice for the first return value, not nil
-	mockSvc.On("GetMetrics").Return([]TimestampedMetrics(nil), assert.AnError)
+	mockSvc.On("GetMetrics").Return([]TimestampedMetrics{}, assert.AnError)
 
 	req := httptest.NewRequest("GET", "/api/v1/historical/metrics", nil)
 	rr := httptest.NewRecorder()
@@ -43,5 +43,21 @@ func TestHandleGetMetrics_Error(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	mockSvc.AssertExpectations(t)
+}
+
+func TestHandleGetMetrics_EmptyResult(t *testing.T) {
+	mockSvc := new(mockHistoricalService)
+	// Return an empty slice, not nil
+	mockSvc.On("GetMetrics").Return([]TimestampedMetrics{}, nil)
+
+	req := httptest.NewRequest("GET", "/api/v1/historical/metrics", nil)
+	rr := httptest.NewRecorder()
+	handler := HandleGetMetrics(mockSvc)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	// Check that the response is an empty array `[]`, not `null`
+	assert.Equal(t, "[]\n", rr.Body.String())
 	mockSvc.AssertExpectations(t)
 }

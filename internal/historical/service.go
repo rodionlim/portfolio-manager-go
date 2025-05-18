@@ -84,7 +84,8 @@ func (s *Service) GetMetrics() ([]TimestampedMetrics, error) {
 		return nil, fmt.Errorf("failed to get metrics keys: %w", err)
 	}
 
-	var results []TimestampedMetrics
+	// Initialize with an empty slice instead of nil to ensure JSON encodes as [] not null
+	results := []TimestampedMetrics{}
 	for _, key := range keys {
 		var metrics TimestampedMetrics
 		err := s.db.Get(key, &metrics)
@@ -105,7 +106,8 @@ func (s *Service) GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetr
 		return nil, fmt.Errorf("failed to get metrics keys: %w", err)
 	}
 
-	var results []TimestampedMetrics
+	// Initialize with an empty slice instead of nil to ensure JSON encodes as [] not null
+	results := []TimestampedMetrics{}
 	for _, key := range keys {
 		parts := strings.Split(key, ":")
 		if len(parts) < 3 {
@@ -272,7 +274,7 @@ func (s *Service) UpsertMetric(metric TimestampedMetrics) error {
 // DeleteMetric deletes a historical metric by timestamp
 func (s *Service) DeleteMetric(timestamp string) error {
 	s.logger.Info(fmt.Sprintf("Deleting historical metric for timestamp: %s", timestamp))
-	
+
 	// Parse the timestamp to validate it
 	parsedTime, err := time.Parse(time.RFC3339, timestamp)
 	if err != nil {
@@ -283,7 +285,7 @@ func (s *Service) DeleteMetric(timestamp string) error {
 	// Create the key for the database - use the date part only
 	dateOnly := time.Date(parsedTime.Year(), parsedTime.Month(), parsedTime.Day(), 0, 0, 0, 0, parsedTime.Location())
 	key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", dateOnly.Format("2006-01-02"))
-	
+
 	// Check if the metric exists by trying to get it
 	var metric TimestampedMetrics
 	err = s.db.Get(key, &metric)
@@ -291,14 +293,39 @@ func (s *Service) DeleteMetric(timestamp string) error {
 		s.logger.Error(fmt.Sprintf("Metric not found for timestamp: %s - %v", timestamp, err))
 		return fmt.Errorf("metric not found")
 	}
-	
+
 	// Delete the metric
 	err = s.db.Delete(key)
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("Failed to delete metric: %v", err))
 		return err
 	}
-	
+
 	s.logger.Info(fmt.Sprintf("Successfully deleted metric for timestamp: %s", timestamp))
 	return nil
+}
+
+// DeleteMetrics deletes multiple historical metrics by their timestamps
+func (s *Service) DeleteMetrics(timestamps []string) (DeleteMetricsResponse, error) {
+	s.logger.Info(fmt.Sprintf("Batch deleting %d historical metrics", len(timestamps)))
+
+	result := DeleteMetricsResponse{
+		Deleted:  0,
+		Failed:   0,
+		Failures: []string{},
+	}
+
+	for _, timestamp := range timestamps {
+		err := s.DeleteMetric(timestamp)
+		if err != nil {
+			result.Failed++
+			result.Failures = append(result.Failures, fmt.Sprintf("Failed to delete metric with timestamp %s: %v", timestamp, err))
+			s.logger.Warn(fmt.Sprintf("Failed to delete metric with timestamp %s: %v", timestamp, err))
+		} else {
+			result.Deleted++
+		}
+	}
+
+	s.logger.Info(fmt.Sprintf("Batch delete completed: %d deleted, %d failed", result.Deleted, result.Failed))
+	return result, nil
 }

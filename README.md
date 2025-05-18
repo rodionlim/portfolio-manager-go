@@ -439,10 +439,17 @@ curl -X POST http://localhost:8080/api/v1/historical/metrics \
   }'
 ```
 
-Delete a historical metric:
+Delete historical metrics:
 
 ```sh
-curl -X DELETE http://localhost:8080/api/v1/historical/metrics/2024-05-15T00%3A00%3A00Z
+curl -X POST http://localhost:8080/api/v1/historical/metrics/delete \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamps": [
+      "2024-05-15T00:00:00Z",
+      "2024-06-15T00:00:00Z"
+    ]
+  }'
 ```
 
 ### Add Reference Data

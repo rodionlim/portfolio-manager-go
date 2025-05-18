@@ -71,6 +71,11 @@ func main() {
 	}
 	defer db.Close()
 
+	// Create a new scheduler
+	sched := scheduler.NewScheduler()
+	sched.Start(ctx)
+	defer sched.Stop()
+
 	// Create a new blotter service
 	blotterSvc := blotter.NewBlotter(db)
 	err = blotterSvc.LoadFromDB()
@@ -106,9 +111,6 @@ func main() {
 
 	// Create a new metrics service
 	metricsSvc := metrics.NewMetricsService(blotterSvc, portfolioSvc, dividendsSvc, mdata, rdata)
-
-	// Create a new scheduler
-	sched := scheduler.NewScheduler()
 
 	// Create a new historical metrics service
 	historicalSvc := historical.NewService(metricsSvc, db, sched)

@@ -555,6 +555,52 @@
                 }
             }
         },
+        "/api/v1/historical/metrics/delete": {
+            "post": {
+                "description": "Delete one or more historical portfolio metrics by their timestamps",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Delete historical portfolio metrics",
+                "parameters": [
+                    {
+                        "description": "List of timestamps to delete",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/historical.DeleteMetricsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Result of the deletion operation",
+                        "schema": {
+                            "$ref": "#/definitions/historical.DeleteMetricsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete historical metrics",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/historical/metrics/export": {
             "get": {
                 "description": "Export all historical portfolio metrics (date-stamped portfolio metrics) as a CSV file",
@@ -619,56 +665,6 @@
                     },
                     "500": {
                         "description": "Failed to import historical metrics",
-                        "schema": {
-                            "$ref": "#/definitions/common.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/historical/metrics/{timestamp}": {
-            "delete": {
-                "description": "Delete a single historical portfolio metric by its timestamp",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "historical"
-                ],
-                "summary": "Delete a historical portfolio metric",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Timestamp of the metric to delete (URL encoded)",
-                        "name": "timestamp",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Message confirming deletion",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid timestamp format",
-                        "schema": {
-                            "$ref": "#/definitions/common.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Metric not found",
-                        "schema": {
-                            "$ref": "#/definitions/common.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to delete historical metric",
                         "schema": {
                             "$ref": "#/definitions/common.ErrorResponse"
                         }
@@ -1411,6 +1407,34 @@
                 },
                 "qty": {
                     "type": "number"
+                }
+            }
+        },
+        "historical.DeleteMetricsRequest": {
+            "type": "object",
+            "properties": {
+                "timestamps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "historical.DeleteMetricsResponse": {
+            "type": "object",
+            "properties": {
+                "deleted": {
+                    "type": "integer"
+                },
+                "failed": {
+                    "type": "integer"
+                },
+                "failures": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

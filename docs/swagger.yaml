@@ -110,6 +110,24 @@ definitions:
       qty:
         type: number
     type: object
+  historical.DeleteMetricsRequest:
+    properties:
+      timestamps:
+        items:
+          type: string
+        type: array
+    type: object
+  historical.DeleteMetricsResponse:
+    properties:
+      deleted:
+        type: integer
+      failed:
+        type: integer
+      failures:
+        items:
+          type: string
+        type: array
+    type: object
   historical.TimestampedMetrics:
     properties:
       metrics:
@@ -608,37 +626,34 @@ paths:
       summary: Upsert a historical portfolio metric
       tags:
       - historical
-  /api/v1/historical/metrics/{timestamp}:
-    delete:
-      description: Delete a single historical portfolio metric by its timestamp
+  /api/v1/historical/metrics/delete:
+    post:
+      consumes:
+      - application/json
+      description: Delete one or more historical portfolio metrics by their timestamps
       parameters:
-      - description: Timestamp of the metric to delete (URL encoded)
-        in: path
-        name: timestamp
+      - description: List of timestamps to delete
+        in: body
+        name: request
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/historical.DeleteMetricsRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Message confirming deletion
+          description: Result of the deletion operation
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/historical.DeleteMetricsResponse'
         "400":
-          description: Invalid timestamp format
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "404":
-          description: Metric not found
+          description: Invalid request payload
           schema:
             $ref: '#/definitions/common.ErrorResponse'
         "500":
-          description: Failed to delete historical metric
+          description: Failed to delete historical metrics
           schema:
             $ref: '#/definitions/common.ErrorResponse'
-      summary: Delete a historical portfolio metric
+      summary: Delete historical portfolio metrics
       tags:
       - historical
   /api/v1/historical/metrics/export:

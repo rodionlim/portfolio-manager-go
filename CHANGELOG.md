@@ -1,3 +1,9 @@
+## [1.2.2] - 2025-05-23
+
+### 🐛 Bug Fixes
+
+- *(refdata)* Fix bug with refdata upsert not working in ui #48
+
 ## [1.2.1] - 2025-05-18
 
 ### 🐛 Bug Fixes

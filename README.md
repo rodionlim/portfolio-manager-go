@@ -1,6 +1,6 @@
 # Portfolio Valuation Tool
 
-[![CI](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml/badge.svg)](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)](https://github.com/rodionlim/portfolio-manager-go/blob/main/VERSION)
+[![CI](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml/badge.svg)](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)](https://github.com/rodionlim/portfolio-manager-go/blob/main/VERSION)
 
 An application to value equities, fx, commodities, cash, bonds (corps / gov), and cryptocurrencies in your personal portfolio.
 

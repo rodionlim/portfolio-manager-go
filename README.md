@@ -15,6 +15,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Infer historical fx rates for blotter trades
 - Store portfolio, reference, dividends and coupon data in leveldb for persistence
 - Display detailed information for individual and aggregated assets
+- Collect and display portfolio statistics such as IRR, MV, Price Paid
 - OpenAPI compliant for easy integration with other systems
 - UI for end users
 
@@ -401,6 +402,19 @@ curl -X GET http://localhost:8080/api/v1/dividends
 ```sh
 curl -X GET http://localhost:8080/api/v1/refdata
 ```
+
+## Import Reference Data (YAML)
+
+You can import reference data from a YAML file using the following endpoint:
+
+```
+curl -X POST \
+  -F "file=@seed/refdata.yaml" \
+  http://localhost:8080/api/v1/refdata/import
+```
+
+- Replace `seed/refdata.yaml` with the path to your YAML file if different.
+- The response will indicate how many tickers were inserted or updated.
 
 ### Historical Portfolio Metrics
 

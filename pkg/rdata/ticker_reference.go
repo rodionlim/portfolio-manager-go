@@ -59,16 +59,20 @@ const (
 
 // Supported categories
 const (
-	CategoryConsumerGoods = "consumergoods"
-	CategoryCrypto        = "crypto"
-	CategoryEnergy        = "energy"
-	CategoryFinance       = "finance"
-	CategoryFuneral       = "funeral"
-	CategoryHealthcare    = "healthcare"
-	CategoryIndustrials   = "industrials"
-	CategoryRealEstate    = "realestate"
-	CategoryTechnology    = "technology"
-	CategoryTravel        = "travel"
+	CategoryConsumerCyclicals    = "consumercyclicals"
+	CategoryConsumerNonCyclicals = "consumernoncyclicals"
+	CategoryCrypto               = "crypto"
+	CategoryEnergy               = "energy"
+	CategoryFinance              = "finance"
+	CategoryFuneral              = "funeral"
+	CategoryHealthcare           = "healthcare"
+	CategoryIndustrials          = "industrials"
+	CategoryMaterials            = "materials"  // Matericals and Resources
+	CategoryRealEstate           = "realestate" // Excludes REITs
+	CategoryREITs                = "reits"
+	CategoryTelecommunications   = "telecommunications"
+	CategoryTechnology           = "technology"
+	CategoryUtilities            = "utilities"
 )
 
 // NewTickerReference creates a new TickerReference instance.
@@ -122,7 +126,7 @@ func validateCategory(fl validator.FieldLevel) bool {
 	cat := fl.Field().String()
 
 	switch cat {
-	case CategoryConsumerGoods, CategoryCrypto, CategoryEnergy, CategoryFinance, CategoryHealthcare, CategoryIndustrials, CategoryRealEstate, CategoryTechnology:
+	case CategoryConsumerCyclicals, CategoryConsumerNonCyclicals, CategoryCrypto, CategoryEnergy, CategoryFinance, CategoryFuneral, CategoryHealthcare, CategoryIndustrials, CategoryMaterials, CategoryRealEstate, CategoryREITs, CategoryTelecommunications, CategoryTechnology, CategoryUtilities:
 		return true
 	default:
 		return false

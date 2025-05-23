@@ -1086,6 +1086,33 @@ paths:
       summary: Export reference data
       tags:
       - Reference
+  /api/v1/refdata/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Imports reference data from a YAML file
+      parameters:
+      - description: YAML file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rdata.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Import reference data
+      tags:
+      - Reference
   /healthz:
     get:
       description: Returns a simple message to indicate that the server is up and

@@ -1,6 +1,6 @@
 // filepath: /Users/rodionlim/workspace/portfolio-manager-go/web/ui/src/components/BlotterTable.tsx
 import React, { useMemo } from "react";
-import { Box, Button } from "@mantine/core";
+import { Box, Button, FileInput } from "@mantine/core";
 import {
   MantineReactTable,
   MRT_ColumnDef,
@@ -69,6 +69,29 @@ const deleteRefData = async (
     );
 };
 
+// Add this function for uploading YAML
+const uploadRefDataYAML = async (file: File): Promise<{ message: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return fetch(getUrl("/api/v1/refdata/import"), {
+    method: "POST",
+    body: formData,
+  })
+    .then((resp) => resp.json())
+    .then(
+      (data) => {
+        return data;
+      },
+      (error) => {
+        console.error("error", error);
+        throw new Error(
+          "An error occurred while importing reference data YAML"
+        );
+      }
+    );
+};
+
 const ReferenceDataTable: React.FC = () => {
   const navigate = useNavigate();
 
@@ -103,12 +126,26 @@ const ReferenceDataTable: React.FC = () => {
   const table = useMantineReactTable({
     columns,
     data: refData,
-    initialState: { showGlobalFilter: true, showColumnFilters: true },
+    initialState: {
+      showGlobalFilter: true,
+      showColumnFilters: true,
+      sorting: [
+        { id: "asset_class", desc: true },
+        { id: "name", desc: false },
+      ],
+    },
     state: { density: "xs" },
     enableRowSelection: true,
     positionToolbarAlertBanner: "bottom",
     renderTopToolbarCustomActions: ({ table }) => (
-      <Box style={{ display: "flex", gap: "16px", padding: "4px" }}>
+      <Box
+        style={{
+          display: "flex",
+          gap: "16px",
+          padding: "4px",
+          alignItems: "center",
+        }}
+      >
         <Button
           color="teal"
           onClick={handleAddRefData()}
@@ -133,6 +170,14 @@ const ReferenceDataTable: React.FC = () => {
         >
           Update Reference Data
         </Button>
+        <FileInput
+          placeholder="Import Ref Data YAML"
+          accept=".yaml,.yml"
+          onChange={handleFileUpload}
+          leftSection={null}
+          style={{ width: "220px" }}
+          clearable
+        />
       </Box>
     ),
   });
@@ -205,6 +250,31 @@ const ReferenceDataTable: React.FC = () => {
         },
       });
     };
+  };
+
+  // Handle file upload for YAML import
+  const handleFileUpload = (file: File | null) => {
+    if (!file) return;
+    uploadRefDataYAML(file)
+      .then(
+        (resp: { message: string }) => {
+          notifications.show({
+            title: "Reference data successfully imported",
+            message: `${resp.message}`,
+            autoClose: 10000,
+          });
+        },
+        (error) => {
+          notifications.show({
+            color: "red",
+            title: "Error",
+            message: `Unable to import reference data\n ${error}`,
+          });
+        }
+      )
+      .finally(() => {
+        refetch();
+      });
   };
 
   if (isLoading) return <div>Loading...</div>;

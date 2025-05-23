@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"portfolio-manager/pkg/logging"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 // ErrorResponse represents the error response payload.
@@ -161,6 +163,60 @@ func HandleReferenceDataExport(refSvc ReferenceManager) http.HandlerFunc {
 	}
 }
 
+// @Summary Import reference data
+// @Description Imports reference data from a YAML file
+// @Tags Reference
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "YAML file"
+// @Success 200 {object} SuccessResponse
+// @Failure 400 {object} error
+// @Failure 500 {object} error
+// @Router /api/v1/refdata/import [post]
+func HandleReferenceDataImport(refSvc ReferenceManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseMultipartForm(10 << 20) // 10MB max
+		if err != nil {
+			writeJSONError(w, "Failed to parse multipart form", http.StatusBadRequest)
+			return
+		}
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			writeJSONError(w, "Failed to get uploaded file", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		var tickers []TickerReference
+		if err := yaml.NewDecoder(file).Decode(&tickers); err != nil {
+			writeJSONError(w, "Failed to parse YAML file", http.StatusBadRequest)
+			return
+		}
+
+		inserted, updated := 0, 0
+		for _, ticker := range tickers {
+			_, err := refSvc.GetTicker(ticker.ID)
+			if err == nil {
+				// Exists, update
+				err = refSvc.UpdateTicker(&ticker)
+				if err == nil {
+					updated++
+				}
+			} else {
+				// Not found, add
+				_, err = refSvc.AddTicker(ticker)
+				if err == nil {
+					inserted++
+				}
+			}
+		}
+
+		msg := fmt.Sprintf("Reference data import complete: %d inserted, %d updated", inserted, updated)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(SuccessResponse{Message: msg})
+	}
+}
+
 // writeJSONError writes an error message in JSON format to the response.
 func writeJSONError(w http.ResponseWriter, message string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
@@ -191,5 +247,13 @@ func RegisterHandlers(mux *http.ServeMux, refSvc ReferenceManager) {
 			return
 		}
 		HandleReferenceDataExport(refSvc).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/refdata/import", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleReferenceDataImport(refSvc).ServeHTTP(w, r)
 	})
 }

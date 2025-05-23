@@ -1242,6 +1242,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/refdata/import": {
+            "post": {
+                "description": "Imports reference data from a YAML file",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reference"
+                ],
+                "summary": "Import reference data",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "YAML file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rdata.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
         "/healthz": {
             "get": {
                 "description": "Returns a simple message to indicate that the server is up and running",

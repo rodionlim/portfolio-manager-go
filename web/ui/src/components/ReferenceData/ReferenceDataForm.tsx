@@ -7,12 +7,47 @@ import {
   Text,
   TextInput,
   Title,
+  Autocomplete,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import { DatePickerInput } from "@mantine/dates";
 import { useLocation } from "react-router-dom";
 import { getUrl } from "../../utils/url";
+
+const assetClassOptions = ["bond", "cash", "cmdty", "crypto", "eq", "fx"];
+
+const assetSubClassOptions = [
+  "bond",
+  "cash",
+  "etf",
+  "future",
+  "govies",
+  "option",
+  "reit",
+  "spot",
+  "stock",
+];
+
+const categoryOptions = [
+  "consumercyclicals",
+  "consumernoncyclicals",
+  "crypto",
+  "energy",
+  "finance",
+  "funeral",
+  "healthcare",
+  "industrials",
+  "materials",
+  "realestate",
+  "reits",
+  "telecommunications",
+  "technology",
+  "utilities",
+];
+
+const currencyOptions = ["SGD", "HKD", "GBP", "USD"];
+const domicileOptions = ["SG", "US", "HK", "IE"];
 
 export default function ReferenceDataForm() {
   const location = useLocation();
@@ -38,7 +73,6 @@ export default function ReferenceDataForm() {
       call_put: location.state?.call_put || "",
     },
     validate: {
-      id: (value) => value.length < 1 && "ID is required",
       name: (value) => value.length < 1 && "Name is required",
       underlying_ticker: (value) =>
         value.length < 1 && "Underlying Ticker is required",
@@ -54,6 +88,7 @@ export default function ReferenceDataForm() {
     const actionPastTense = !values.id ? "added" : "updated";
     const body = {
       ...values,
+      ID: values.underlying_ticker,
       maturity_date: values.maturity_date
         ? values.maturity_date.toISOString().split(".")[0] + "Z"
         : null,
@@ -126,7 +161,7 @@ export default function ReferenceDataForm() {
           />
           <TextInput
             withAsterisk
-            label="Underlying Ticker"
+            label="Underlying Ticker (Ref ID) "
             placeholder="Underlying Ticker"
             key={form.key("underlying_ticker")}
             {...form.getInputProps("underlying_ticker")}
@@ -149,24 +184,27 @@ export default function ReferenceDataForm() {
             key={form.key("dividends_sg_ticker")}
             {...form.getInputProps("dividends_sg_ticker")}
           />
-          <TextInput
+          <Autocomplete
             withAsterisk
             label="Asset Class"
             placeholder="Asset Class"
             key={form.key("asset_class")}
+            data={assetClassOptions}
             {...form.getInputProps("asset_class")}
           />
-          <TextInput
+          <Autocomplete
             withAsterisk
             label="Asset Subclass"
             placeholder="Asset Subclass"
             key={form.key("asset_sub_class")}
+            data={assetSubClassOptions}
             {...form.getInputProps("asset_sub_class")}
           />
-          <TextInput
+          <Autocomplete
             label="Category"
             placeholder="Category"
             key={form.key("category")}
+            data={categoryOptions}
             {...form.getInputProps("category")}
           />
           <TextInput
@@ -175,17 +213,19 @@ export default function ReferenceDataForm() {
             key={form.key("sub_category")}
             {...form.getInputProps("sub_category")}
           />
-          <TextInput
+          <Autocomplete
             withAsterisk
             label="Currency"
             placeholder="Currency"
             key={form.key("ccy")}
+            data={currencyOptions}
             {...form.getInputProps("ccy")}
           />
-          <TextInput
+          <Autocomplete
             label="Domicile"
             placeholder="Domicile"
             key={form.key("domicile")}
+            data={domicileOptions}
             {...form.getInputProps("domicile")}
           />
           <NumberInput

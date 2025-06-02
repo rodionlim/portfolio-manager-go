@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"portfolio-manager/web/assets"
 	"portfolio-manager/web/server"
+	"strings"
 )
 
 // AssetsHandler returns a handler that serves the embedded static files.
@@ -39,6 +40,12 @@ func AssetsHandler() http.Handler {
 
 	serveReactApp := func(w http.ResponseWriter, r *http.Request) {
 		route := r.URL.Path
+
+		// Skip API routes - these should be handled by other handlers
+		if strings.HasPrefix(route, "/api/") || strings.HasPrefix(route, "/swagger/") || route == "/healthz" {
+			http.NotFound(w, r)
+			return
+		}
 
 		// If the route is "/" serve the React index.
 		if route == "/" {
@@ -60,9 +67,35 @@ func AssetsHandler() http.Handler {
 			}
 			w.Write(data)
 		} else {
-			// For any other route, assume it's a static asset under reactAssetsRoot.
+			// Try to serve as a static asset first
 			r.URL.Path = reactAssetsRoot + route
-			fileServer.ServeHTTP(w, r)
+
+			// Check if the file exists
+			f, err := assetsFS.Open(r.URL.Path)
+			if err == nil {
+				// File exists, serve it as a static asset
+				f.Close()
+				fileServer.ServeHTTP(w, r)
+			} else {
+				// File doesn't exist, serve index.html for SPA routing
+				r.URL.Path = reactAssetsRoot + "/index.html"
+				f, err := assetsFS.Open(r.URL.Path)
+
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					fmt.Fprintf(w, "Error opening index.html: %v", err)
+					return
+				}
+				defer f.Close()
+
+				data, err := io.ReadAll(f)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					fmt.Fprintf(w, "Error reading index.html: %v", err)
+					return
+				}
+				w.Write(data)
+			}
 		}
 	}
 

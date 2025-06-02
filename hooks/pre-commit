@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Pre-commit hook to prevent committing Gemini API key in config.yaml
+# This hook checks if config.yaml is being committed and contains a real API key
+
+# Check if config.yaml is in the staged files
+if git diff --cached --name-only | grep -q "^config\.yaml$"; then
+    echo "🔍 Checking config.yaml for sensitive data..."
+    
+    # Get the staged content of config.yaml
+    staged_content=$(git show :config.yaml 2>/dev/null)
+    
+    # Check for potential API key patterns in geminiApiKey field
+    # Look for lines that contain geminiApiKey with a non-empty, non-placeholder value
+    if echo "$staged_content" | grep -E "geminiApiKey:\s*[\"']?[A-Za-z0-9+/=]{20,}[\"']?" | grep -v -E "(your-api-key|YOUR_API_KEY|PLACEHOLDER|example|test-key|\"\"|''|null)" > /dev/null; then
+        echo "❌ ERROR: config.yaml contains what appears to be a real Gemini API key!"
+        echo ""
+        echo "🔒 Security Notice:"
+        echo "   API keys should not be committed to version control."
+        echo ""
+        echo "🛠️  To fix this:"
+        echo "   1. Remove your API key from config.yaml"
+        echo "   2. Set it as an environment variable instead:"
+        echo "      export GEMINI_API_KEY=\"your-actual-api-key\""
+        echo "   3. Or use a placeholder value like:"
+        echo "      geminiApiKey: \"\" # Set via GEMINI_API_KEY environment variable"
+        echo ""
+        echo "💡 The application will automatically use the GEMINI_API_KEY environment variable"
+        echo "   if the config file has an empty geminiApiKey value."
+        echo ""
+        echo "🚫 Commit blocked for security."
+        exit 1
+    fi
+    
+    # Additional check for other potential sensitive patterns
+    if echo "$staged_content" | grep -iE "(password|secret|token|key).*[A-Za-z0-9+/=]{20,}" | grep -v -E "(placeholder|example|test|your-|TODO|geminiApiKey)" > /dev/null; then
+        echo "⚠️  WARNING: config.yaml may contain other sensitive data."
+        echo "   Please review the file before committing."
+        echo ""
+        echo "Potentially sensitive lines found:"
+        echo "$staged_content" | grep -iE "(password|secret|token|key).*[A-Za-z0-9+/=]{20,}" | grep -v -E "(placeholder|example|test|your-|TODO|geminiApiKey)"
+        echo ""
+        read -p "Do you want to continue with the commit? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "🚫 Commit cancelled."
+            exit 1
+        fi
+    fi
+    
+    echo "✅ config.yaml security check passed."
+fi
+
+echo "✅ Pre-commit checks completed successfully."

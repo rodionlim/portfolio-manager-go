@@ -1,13 +1,16 @@
 package analytics
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/xuri/excelize/v2"
 	"google.golang.org/genai"
 )
 
@@ -18,7 +21,7 @@ type GeminiAnalyzer struct {
 }
 
 // NewGeminiAnalyzer creates a new Gemini AI analyzer
-func NewGeminiAnalyzer(ctx context.Context, apiKey string) (AIAnalyzer, error) {
+func NewGeminiAnalyzer(ctx context.Context, apiKey string, model string) (AIAnalyzer, error) {
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: apiKey,
 	})
@@ -28,31 +31,53 @@ func NewGeminiAnalyzer(ctx context.Context, apiKey string) (AIAnalyzer, error) {
 
 	return &GeminiAnalyzer{
 		client: client,
-		model:  "gemini-1.5-flash", // Using the latest model
+		model:  model,
 	}, nil
 }
 
 // AnalyzeDocument analyzes a document and returns insights
 func (g *GeminiAnalyzer) AnalyzeDocument(ctx context.Context, filePath string, fileType string) (*ReportAnalysis, error) {
-	// Read the file
-	fileData, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+	var fileData []byte
+	var mimeType string
+	var err error
+
+	// Handle different file types
+	switch strings.ToLower(fileType) {
+	case "xlsx", "xls":
+		// Convert XLSX to text format for Gemini
+		textData, err := convertXLSXToText(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert XLSX to text: %w", err)
+		}
+		fileData = []byte(textData)
+		mimeType = "text/plain"
+	default:
+		// Read other file types directly
+		fileData, err = os.ReadFile(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+		}
+		mimeType = getMimeType(fileType)
 	}
 
-	// Determine MIME type based on file extension
-	mimeType := getMimeType(fileType)
-
 	// Create the prompt for analysis
-	prompt := `Please analyze this financial report and provide:
-1. A comprehensive summary (2-3 paragraphs)
-2. Key insights and findings (list format)
-3. Important trends or patterns
-4. Notable data points or metrics
-5. Any significant changes from previous reports (if mentioned)
+	prompt := `Analyze this SGX fund flow report with HOLISTIC PERSPECTIVE focusing on institutional flows as smart money. Provide:
 
-Focus on financial metrics, market trends, fund flows, trading volumes, and any strategic insights.
-Be specific and include numerical data where available.`
+1. CONCISE SUMMARY (1 paragraph max):
+   - Overall institutional vs retail flow dynamics (weekly + YTD trends)
+   - Notable divergences between weekly and YTD patterns
+   - 2 SPECIFIC BUY RECOMMENDATIONS based on: consistent institutional accumulation, favorable YTD trends, retail sentiment divergence, and average daily flow patterns
+
+2. KEY INSIGHTS (max 5 bullet points):
+   - Institutional flow consistency patterns (weekly vs YTD alignment)
+   - Significant retail vs institutional divergences (contrarian opportunities)  
+   - Average daily flow anomalies vs current week performance
+   - Momentum shifts in institutional positioning
+   - Risk signals from unusual flow patterns
+
+Consider ALL data: weekly flows, YTD flows, retail behavior, average daily volumes, and flow consistency.
+Treat institutional flows as smart money but analyze PERSISTENCE and CONSISTENCY, not just magnitude.
+Be concise and actionable with specific stock codes.`
 
 	// Create content parts for the request
 	contents := []*genai.Content{
@@ -68,7 +93,7 @@ Be specific and include numerical data where available.`
 	// Create generation config
 	config := &genai.GenerateContentConfig{
 		Temperature:     genai.Ptr(float32(0.1)), // Lower temperature for more consistent analysis
-		MaxOutputTokens: 2048,
+		MaxOutputTokens: 1024,                    // Reduced for more concise responses
 	}
 
 	// Generate content
@@ -105,7 +130,7 @@ Be specific and include numerical data where available.`
 		FilePath:     filePath,
 		AnalysisDate: time.Now().Unix(),
 		Metadata: map[string]string{
-			"analyzer":  "gemini-1.5-flash",
+			"analyzer":  g.model,
 			"file_size": fmt.Sprintf("%d", len(fileData)),
 			"mime_type": mimeType,
 		},
@@ -125,14 +150,26 @@ func getMimeType(fileType string) string {
 	switch strings.ToLower(fileType) {
 	case "pdf":
 		return "application/pdf"
-	case "xlsx", "xls":
-		return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 	case "csv":
 		return "text/csv"
 	case "txt":
 		return "text/plain"
+	case "html":
+		return "text/html"
+	case "css":
+		return "text/css"
+	case "xml":
+		return "text/xml"
+	case "rtf":
+		return "text/rtf"
+	case "md", "markdown":
+		return "text/md"
+	case "js", "javascript":
+		return "application/x-javascript"
+	case "py", "python":
+		return "application/x-python"
 	default:
-		return "application/octet-stream"
+		return "text/plain" // Default to plain text for better compatibility
 	}
 }
 
@@ -153,17 +190,19 @@ func parseAnalysisText(text string) (summary string, keyInsights []string) {
 
 		// Look for section headers
 		lowerLine := strings.ToLower(line)
-		if strings.Contains(lowerLine, "summary") {
+		if strings.Contains(lowerLine, "summary") || strings.Contains(lowerLine, "concise summary") {
 			inSummary = true
 			inInsights = false
 			continue
-		} else if strings.Contains(lowerLine, "insight") || strings.Contains(lowerLine, "finding") || strings.Contains(lowerLine, "key") {
+		} else if strings.Contains(lowerLine, "insight") || strings.Contains(lowerLine, "key insights") ||
+			strings.Contains(lowerLine, "bullet") || strings.Contains(lowerLine, "recommendations") {
 			inSummary = false
 			inInsights = true
 			continue
-		} else if strings.Contains(lowerLine, "trend") || strings.Contains(lowerLine, "data point") || strings.Contains(lowerLine, "change") {
-			inSummary = false
-			inInsights = true
+		}
+
+		// Skip numbered headers like "1.", "2." etc
+		if len(line) <= 3 && (strings.HasSuffix(line, ".") || strings.HasSuffix(line, ":")) {
 			continue
 		}
 
@@ -176,24 +215,60 @@ func parseAnalysisText(text string) (summary string, keyInsights []string) {
 			cleaned = strings.TrimPrefix(cleaned, "*")
 			cleaned = strings.TrimPrefix(cleaned, "•")
 			cleaned = strings.TrimSpace(cleaned)
-			if cleaned != "" {
+			if cleaned != "" && len(cleaned) > 5 { // Filter out very short lines
 				insightLines = append(insightLines, cleaned)
 			}
 		}
 	}
 
-	// If we didn't find structured sections, use the whole text as summary and extract bullet points as insights
+	// If we didn't find structured sections, use fallback parsing
 	if len(summaryLines) == 0 && len(insightLines) == 0 {
-		// Split by paragraphs and bullet points
+		// Look for buy recommendations and institutional flow mentions
 		paragraphs := strings.Split(text, "\n\n")
+		var bestParagraph string
+		var bestScore int
+
 		for _, para := range paragraphs {
 			para = strings.TrimSpace(para)
 			if para == "" {
 				continue
 			}
 
+			// Score paragraphs based on relevant keywords for holistic analysis
+			score := 0
+			lowerPara := strings.ToLower(para)
+			if strings.Contains(lowerPara, "institutional") {
+				score += 3
+			}
+			if strings.Contains(lowerPara, "ytd") || strings.Contains(lowerPara, "year-to-date") {
+				score += 2
+			}
+			if strings.Contains(lowerPara, "weekly") && strings.Contains(lowerPara, "average") {
+				score += 2
+			}
+			if strings.Contains(lowerPara, "divergence") || strings.Contains(lowerPara, "contrarian") {
+				score += 2
+			}
+			if strings.Contains(lowerPara, "consistency") || strings.Contains(lowerPara, "persistent") {
+				score += 2
+			}
+			if strings.Contains(lowerPara, "buy") || strings.Contains(lowerPara, "recommend") {
+				score += 2
+			}
+			if strings.Contains(lowerPara, "retail") && strings.Contains(lowerPara, "institutional") {
+				score += 1
+			}
+			if strings.Contains(lowerPara, "smart money") {
+				score += 2
+			}
+
+			if score > bestScore && len(para) > 50 {
+				bestScore = score
+				bestParagraph = para
+			}
+
+			// Extract bullet points
 			if strings.Contains(para, "-") || strings.Contains(para, "*") || strings.Contains(para, "•") {
-				// This looks like a list of insights
 				bulletLines := strings.Split(para, "\n")
 				for _, bulletLine := range bulletLines {
 					bulletLine = strings.TrimSpace(bulletLine)
@@ -202,21 +277,22 @@ func parseAnalysisText(text string) (summary string, keyInsights []string) {
 						cleaned = strings.TrimPrefix(cleaned, "*")
 						cleaned = strings.TrimPrefix(cleaned, "•")
 						cleaned = strings.TrimSpace(cleaned)
-						if cleaned != "" {
+						if cleaned != "" && len(cleaned) > 10 {
 							insightLines = append(insightLines, cleaned)
 						}
 					}
 				}
-			} else {
-				// This looks like summary text
-				summaryLines = append(summaryLines, para)
 			}
+		}
+
+		if bestParagraph != "" {
+			summaryLines = append(summaryLines, bestParagraph)
 		}
 	}
 
 	summary = strings.Join(summaryLines, " ")
 	if summary == "" {
-		// Fallback: use first few sentences as summary
+		// Final fallback: look for the first substantial paragraph
 		sentences := strings.Split(text, ". ")
 		if len(sentences) >= 2 {
 			summary = strings.Join(sentences[:2], ". ") + "."
@@ -227,9 +303,88 @@ func parseAnalysisText(text string) (summary string, keyInsights []string) {
 
 	keyInsights = insightLines
 	if len(keyInsights) == 0 {
-		// Fallback: create some insights from the text
-		keyInsights = []string{"Detailed analysis available in full summary"}
+		// Extract key information as fallback with holistic approach
+		if strings.Contains(strings.ToLower(text), "institutional") {
+			keyInsights = []string{"Analyze institutional flow consistency across weekly and YTD timeframes for investment decisions"}
+		} else {
+			keyInsights = []string{"Consider multiple flow dimensions: weekly, YTD, retail divergence, and average daily patterns"}
+		}
 	}
 
 	return summary, keyInsights
+}
+
+// convertXLSXToText converts an XLSX file to structured text format
+// This handles multiple sheets and preserves the structure for AI analysis
+func convertXLSXToText(filePath string) (string, error) {
+	// Open the Excel file
+	f, err := excelize.OpenFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open Excel file: %w", err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			// Log the error but don't fail the function
+		}
+	}()
+
+	var textBuilder strings.Builder
+
+	// Get all sheet names
+	sheetNames := f.GetSheetList()
+
+	// Process each sheet
+	for i, sheetName := range sheetNames {
+		if i > 0 {
+			textBuilder.WriteString("\n\n" + strings.Repeat("=", 80) + "\n")
+		}
+		textBuilder.WriteString(fmt.Sprintf("SHEET: %s\n", sheetName))
+		textBuilder.WriteString(strings.Repeat("=", 80) + "\n\n")
+
+		// Get all rows from the sheet
+		rows, err := f.GetRows(sheetName)
+		if err != nil {
+			textBuilder.WriteString(fmt.Sprintf("Error reading sheet %s: %v\n", sheetName, err))
+			continue
+		}
+
+		// Convert rows to CSV-like format for better structure
+		csvBuffer := &bytes.Buffer{}
+		csvWriter := csv.NewWriter(csvBuffer)
+
+		// Write all rows to CSV buffer
+		for _, row := range rows {
+			// Skip completely empty rows
+			if isEmptyRow(row) {
+				continue
+			}
+
+			// Ensure all cells are strings and handle empty cells
+			cleanRow := make([]string, len(row))
+			for j, cell := range row {
+				cleanRow[j] = strings.TrimSpace(cell)
+			}
+
+			if err := csvWriter.Write(cleanRow); err != nil {
+				return "", fmt.Errorf("failed to write CSV row: %w", err)
+			}
+		}
+		csvWriter.Flush()
+
+		// Add the CSV content as structured text
+		textBuilder.WriteString(csvBuffer.String())
+		textBuilder.WriteString("\n")
+	}
+
+	return textBuilder.String(), nil
+}
+
+// isEmptyRow checks if a row contains only empty or whitespace-only cells
+func isEmptyRow(row []string) bool {
+	for _, cell := range row {
+		if strings.TrimSpace(cell) != "" {
+			return false
+		}
+	}
+	return true
 }

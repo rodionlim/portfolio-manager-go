@@ -126,7 +126,7 @@ func main() {
 
 	if geminiAPIKey != "" {
 		sgxClient := analytics.NewSGXClient()
-		aiAnalyzer, err := analytics.NewGeminiAnalyzer(ctx, geminiAPIKey)
+		aiAnalyzer, err := analytics.NewGeminiAnalyzer(ctx, geminiAPIKey, config.Analytics.GeminiModel)
 		if err != nil {
 			logger.Error("Failed to create Gemini analyzer, analytics will be disabled:", err)
 		} else {

@@ -17,6 +17,9 @@ type MockSGXClient struct {
 
 func (m *MockSGXClient) FetchReports(ctx context.Context) (*SGXReportsResponse, error) {
 	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*SGXReportsResponse), args.Error(1)
 }
 
@@ -32,6 +35,9 @@ type MockAIAnalyzer struct {
 
 func (m *MockAIAnalyzer) AnalyzeDocument(ctx context.Context, filePath string, fileType string) (*ReportAnalysis, error) {
 	args := m.Called(ctx, filePath, fileType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*ReportAnalysis), args.Error(1)
 }
 
@@ -42,116 +48,143 @@ func TestServiceImpl_FetchLatestReport(t *testing.T) {
 	service := NewService(mockSGXClient, mockAIAnalyzer, "./data")
 
 	mockReports := &SGXReportsResponse{
-		List: struct {
-			Count   int         `json:"count"`
-			Results []SGXReport `json:"results"`
+		Data: struct {
+			ReportTypes struct {
+				Count   int `json:"count"`
+				Results []struct {
+					Data struct {
+						ID   string `json:"id"`
+						Name string `json:"name"`
+					} `json:"data"`
+				} `json:"results"`
+			} `json:"reportTypes"`
+			List struct {
+				Count   int         `json:"count"`
+				Results []SGXReport `json:"results"`
+			} `json:"list"`
 		}{
-			Count: 1,
-			Results: []SGXReport{
-				{
-					Data: struct {
-						Title      string `json:"title"`
-						ReportDate int64  `json:"reportDate"`
-						Report     struct {
-							Data struct {
-								MediaType string `json:"mediaType"`
-								Name      string `json:"name"`
-								Date      int64  `json:"date"`
-								File      struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
-								} `json:"file"`
-							} `json:"data"`
-						} `json:"report"`
-						FundsFlowType []struct {
-							Data struct {
+			ReportTypes: struct {
+				Count   int `json:"count"`
+				Results []struct {
+					Data struct {
+						ID   string `json:"id"`
+						Name string `json:"name"`
+					} `json:"data"`
+				} `json:"results"`
+			}{
+				Count: 1,
+			},
+			List: struct {
+				Count   int         `json:"count"`
+				Results []SGXReport `json:"results"`
+			}{
+				Count: 1,
+				Results: []SGXReport{
+					{
+						Data: struct {
+							Title      string `json:"title"`
+							ReportDate int64  `json:"reportDate"`
+							Report     struct {
 								Data struct {
-									ID           string `json:"id"`
-									Name         string `json:"name"`
-									Order        string `json:"order"`
-									ParentCode   string `json:"parentCode"`
-									EntityBundle string `json:"entityBundle"`
+									MediaType string `json:"mediaType"`
+									Name      string `json:"name"`
+									Date      int64  `json:"date"`
+									File      struct {
+										Data struct {
+											URL      string `json:"url"`
+											FileMime string `json:"filemime"`
+										} `json:"data"`
+									} `json:"file"`
 								} `json:"data"`
-							} `json:"data"`
-						} `json:"fundsFlowType"`
-					}{
-						Title:      "Test Report",
-						ReportDate: time.Now().Unix(),
-						Report: struct {
-							Data struct {
-								MediaType string `json:"mediaType"`
-								Name      string `json:"name"`
-								Date      int64  `json:"date"`
-								File      struct {
+							} `json:"report"`
+							FundsFlowType []struct {
+								Data struct {
 									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
+										ID           string  `json:"id"`
+										Name         string  `json:"name"`
+										Order        string  `json:"order"`
+										ParentCode   *string `json:"parentCode"`
+										EntityBundle string  `json:"entityBundle"`
 									} `json:"data"`
-								} `json:"file"`
-							} `json:"data"`
+								} `json:"data"`
+							} `json:"fundsFlowType"`
 						}{
-							Data: struct {
-								MediaType string `json:"mediaType"`
-								Name      string `json:"name"`
-								Date      int64  `json:"date"`
-								File      struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
-								} `json:"file"`
+							Title:      "Test Report",
+							ReportDate: time.Now().Unix(),
+							Report: struct {
+								Data struct {
+									MediaType string `json:"mediaType"`
+									Name      string `json:"name"`
+									Date      int64  `json:"date"`
+									File      struct {
+										Data struct {
+											URL      string `json:"url"`
+											FileMime string `json:"filemime"`
+										} `json:"data"`
+									} `json:"file"`
+								} `json:"data"`
 							}{
-								MediaType: "application/xlsx",
-								Name:      "Fund Flow Report",
-								Date:      time.Now().Unix(),
-								File: struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
+								Data: struct {
+									MediaType string `json:"mediaType"`
+									Name      string `json:"name"`
+									Date      int64  `json:"date"`
+									File      struct {
+										Data struct {
+											URL      string `json:"url"`
+											FileMime string `json:"filemime"`
+										} `json:"data"`
+									} `json:"file"`
 								}{
-									Data: struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
+									MediaType: "application/xlsx",
+									Name:      "Fund Flow Report",
+									Date:      time.Now().Unix(),
+									File: struct {
+										Data struct {
+											URL      string `json:"url"`
+											FileMime string `json:"filemime"`
+										} `json:"data"`
 									}{
-										URL:      "https://example.com/report.xlsx",
-										FileMime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+										Data: struct {
+											URL      string `json:"url"`
+											FileMime string `json:"filemime"`
+										}{
+											URL:      "https://example.com/report.xlsx",
+											FileMime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+										},
 									},
 								},
 							},
-						},
-						FundsFlowType: []struct {
-							Data struct {
+							FundsFlowType: []struct {
 								Data struct {
-									ID           string `json:"id"`
-									Name         string `json:"name"`
-									Order        string `json:"order"`
-									ParentCode   string `json:"parentCode"`
-									EntityBundle string `json:"entityBundle"`
-								} `json:"data"`
-							} `json:"data"`
-						}{
-							{
-								Data: struct {
 									Data struct {
-										ID           string `json:"id"`
-										Name         string `json:"name"`
-										Order        string `json:"order"`
-										ParentCode   string `json:"parentCode"`
-										EntityBundle string `json:"entityBundle"`
+										ID           string  `json:"id"`
+										Name         string  `json:"name"`
+										Order        string  `json:"order"`
+										ParentCode   *string `json:"parentCode"`
+										EntityBundle string  `json:"entityBundle"`
 									} `json:"data"`
-								}{
+								} `json:"data"`
+							}{
+								{
 									Data: struct {
-										ID           string `json:"id"`
-										Name         string `json:"name"`
-										Order        string `json:"order"`
-										ParentCode   string `json:"parentCode"`
-										EntityBundle string `json:"entityBundle"`
+										Data struct {
+											ID           string  `json:"id"`
+											Name         string  `json:"name"`
+											Order        string  `json:"order"`
+											ParentCode   *string `json:"parentCode"`
+											EntityBundle string  `json:"entityBundle"`
+										} `json:"data"`
 									}{
-										ID:   "1",
-										Name: "Fund Flow Tracker",
+										Data: struct {
+											ID           string  `json:"id"`
+											Name         string  `json:"name"`
+											Order        string  `json:"order"`
+											ParentCode   *string `json:"parentCode"`
+											EntityBundle string  `json:"entityBundle"`
+										}{
+											ID:   "203",
+											Name: "Fund Flow Tracker",
+										},
 									},
 								},
 							},
@@ -186,322 +219,6 @@ func TestServiceImpl_FetchLatestReport(t *testing.T) {
 	mockAIAnalyzer.AssertExpectations(t)
 }
 
-func TestServiceImpl_FetchLatestReportByType(t *testing.T) {
-	// Arrange
-	mockSGXClient := new(MockSGXClient)
-	mockAIAnalyzer := new(MockAIAnalyzer)
-	service := NewService(mockSGXClient, mockAIAnalyzer, "./data")
-
-	mockReports := &SGXReportsResponse{
-		List: struct {
-			Count   int         `json:"count"`
-			Results []SGXReport `json:"results"`
-		}{
-			Count: 1,
-			Results: []SGXReport{
-				{
-					Data: struct {
-						Title      string `json:"title"`
-						ReportDate int64  `json:"reportDate"`
-						Report     struct {
-							Data struct {
-								MediaType string `json:"mediaType"`
-								Name      string `json:"name"`
-								Date      int64  `json:"date"`
-								File      struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
-								} `json:"file"`
-							} `json:"data"`
-						} `json:"report"`
-						FundsFlowType []struct {
-							Data struct {
-								Data struct {
-									ID           string `json:"id"`
-									Name         string `json:"name"`
-									Order        string `json:"order"`
-									ParentCode   string `json:"parentCode"`
-									EntityBundle string `json:"entityBundle"`
-								} `json:"data"`
-							} `json:"data"`
-						} `json:"fundsFlowType"`
-					}{
-						Title:      "Fund Flow Report",
-						ReportDate: time.Now().Unix(),
-						Report: struct {
-							Data struct {
-								MediaType string `json:"mediaType"`
-								Name      string `json:"name"`
-								Date      int64  `json:"date"`
-								File      struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
-								} `json:"file"`
-							} `json:"data"`
-						}{
-							Data: struct {
-								MediaType string `json:"mediaType"`
-								Name      string `json:"name"`
-								Date      int64  `json:"date"`
-								File      struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
-								} `json:"file"`
-							}{
-								MediaType: "application/xlsx",
-								Name:      "Fund Flow Report",
-								Date:      time.Now().Unix(),
-								File: struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
-								}{
-									Data: struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									}{
-										URL:      "https://example.com/fund_flow.xlsx",
-										FileMime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-									},
-								},
-							},
-						},
-						FundsFlowType: []struct {
-							Data struct {
-								Data struct {
-									ID           string `json:"id"`
-									Name         string `json:"name"`
-									Order        string `json:"order"`
-									ParentCode   string `json:"parentCode"`
-									EntityBundle string `json:"entityBundle"`
-								} `json:"data"`
-							} `json:"data"`
-						}{
-							{
-								Data: struct {
-									Data struct {
-										ID           string `json:"id"`
-										Name         string `json:"name"`
-										Order        string `json:"order"`
-										ParentCode   string `json:"parentCode"`
-										EntityBundle string `json:"entityBundle"`
-									} `json:"data"`
-								}{
-									Data: struct {
-										ID           string `json:"id"`
-										Name         string `json:"name"`
-										Order        string `json:"order"`
-										ParentCode   string `json:"parentCode"`
-										EntityBundle string `json:"entityBundle"`
-									}{
-										ID:   "1",
-										Name: "Fund Flow Tracker",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	mockAnalysis := &ReportAnalysis{
-		Summary:     "Fund flow analysis",
-		KeyInsights: []string{"Strong inflows", "Sector rotation"},
-	}
-
-	ctx := context.Background()
-	mockSGXClient.On("FetchReports", ctx).Return(mockReports, nil)
-	mockSGXClient.On("DownloadFile", ctx, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
-	mockAIAnalyzer.On("AnalyzeDocument", ctx, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(mockAnalysis, nil)
-
-	// Act
-	result, err := service.FetchLatestReportByType(ctx, "fund")
-
-	// Assert
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, "Fund flow analysis", result.Summary)
-
-	mockSGXClient.AssertExpectations(t)
-	mockAIAnalyzer.AssertExpectations(t)
-}
-
-func TestServiceImpl_FetchLatestReportByType_NoMatchingType(t *testing.T) {
-	// Arrange
-	mockSGXClient := new(MockSGXClient)
-	mockAIAnalyzer := new(MockAIAnalyzer)
-	service := NewService(mockSGXClient, mockAIAnalyzer, "./data")
-
-	mockReports := &SGXReportsResponse{
-		List: struct {
-			Count   int         `json:"count"`
-			Results []SGXReport `json:"results"`
-		}{
-			Count: 1,
-			Results: []SGXReport{
-				{
-					Data: struct {
-						Title      string `json:"title"`
-						ReportDate int64  `json:"reportDate"`
-						Report     struct {
-							Data struct {
-								MediaType string `json:"mediaType"`
-								Name      string `json:"name"`
-								Date      int64  `json:"date"`
-								File      struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
-								} `json:"file"`
-							} `json:"data"`
-						} `json:"report"`
-						FundsFlowType []struct {
-							Data struct {
-								Data struct {
-									ID           string `json:"id"`
-									Name         string `json:"name"`
-									Order        string `json:"order"`
-									ParentCode   string `json:"parentCode"`
-									EntityBundle string `json:"entityBundle"`
-								} `json:"data"`
-							} `json:"data"`
-						} `json:"fundsFlowType"`
-					}{
-						Title:      "Different Report Type",
-						ReportDate: time.Now().Unix(),
-						Report: struct {
-							Data struct {
-								MediaType string `json:"mediaType"`
-								Name      string `json:"name"`
-								Date      int64  `json:"date"`
-								File      struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
-								} `json:"file"`
-							} `json:"data"`
-						}{
-							Data: struct {
-								MediaType string `json:"mediaType"`
-								Name      string `json:"name"`
-								Date      int64  `json:"date"`
-								File      struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
-								} `json:"file"`
-							}{
-								MediaType: "application/xlsx",
-								Name:      "Daily Momentum Report",
-								Date:      time.Now().Unix(),
-								File: struct {
-									Data struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									} `json:"data"`
-								}{
-									Data: struct {
-										URL      string `json:"url"`
-										FileMime string `json:"filemime"`
-									}{
-										URL:      "https://example.com/momentum.xlsx",
-										FileMime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-									},
-								},
-							},
-						},
-						FundsFlowType: []struct {
-							Data struct {
-								Data struct {
-									ID           string `json:"id"`
-									Name         string `json:"name"`
-									Order        string `json:"order"`
-									ParentCode   string `json:"parentCode"`
-									EntityBundle string `json:"entityBundle"`
-								} `json:"data"`
-							} `json:"data"`
-						}{
-							{
-								Data: struct {
-									Data struct {
-										ID           string `json:"id"`
-										Name         string `json:"name"`
-										Order        string `json:"order"`
-										ParentCode   string `json:"parentCode"`
-										EntityBundle string `json:"entityBundle"`
-									} `json:"data"`
-								}{
-									Data: struct {
-										ID           string `json:"id"`
-										Name         string `json:"name"`
-										Order        string `json:"order"`
-										ParentCode   string `json:"parentCode"`
-										EntityBundle string `json:"entityBundle"`
-									}{
-										ID:   "1",
-										Name: "Daily Momentum",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	ctx := context.Background()
-	mockSGXClient.On("FetchReports", ctx).Return(mockReports, nil)
-
-	// Act
-	result, err := service.FetchLatestReportByType(ctx, "fund_flow")
-
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "no reports found for type: fund_flow")
-
-	mockSGXClient.AssertExpectations(t)
-}
-
-func TestServiceImpl_AnalyzeExistingFile(t *testing.T) {
-	// Arrange
-	mockSGXClient := new(MockSGXClient)
-	mockAIAnalyzer := new(MockAIAnalyzer)
-	service := NewService(mockSGXClient, mockAIAnalyzer, "./data")
-
-	mockAnalysis := &ReportAnalysis{
-		Summary:     "Analysis of existing file",
-		KeyInsights: []string{"Key finding 1", "Key finding 2"},
-	}
-
-	ctx := context.Background()
-	filePath := "./data/existing_report.xlsx"
-	mockAIAnalyzer.On("AnalyzeDocument", ctx, filePath, "xlsx").Return(mockAnalysis, nil)
-
-	// Act
-	result, err := service.AnalyzeExistingFile(ctx, filePath)
-
-	// Assert
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, "Analysis of existing file", result.Summary)
-
-	mockAIAnalyzer.AssertExpectations(t)
-}
-
 func TestServiceImpl_FetchLatestReport_NoReports(t *testing.T) {
 	// Arrange
 	mockSGXClient := new(MockSGXClient)
@@ -509,12 +226,28 @@ func TestServiceImpl_FetchLatestReport_NoReports(t *testing.T) {
 	service := NewService(mockSGXClient, mockAIAnalyzer, "./data")
 
 	mockReports := &SGXReportsResponse{
-		List: struct {
-			Count   int         `json:"count"`
-			Results []SGXReport `json:"results"`
+		Data: struct {
+			ReportTypes struct {
+				Count   int `json:"count"`
+				Results []struct {
+					Data struct {
+						ID   string `json:"id"`
+						Name string `json:"name"`
+					} `json:"data"`
+				} `json:"results"`
+			} `json:"reportTypes"`
+			List struct {
+				Count   int         `json:"count"`
+				Results []SGXReport `json:"results"`
+			} `json:"list"`
 		}{
-			Count:   0,
-			Results: []SGXReport{},
+			List: struct {
+				Count   int         `json:"count"`
+				Results []SGXReport `json:"results"`
+			}{
+				Count:   0,
+				Results: []SGXReport{},
+			},
 		},
 	}
 
@@ -551,4 +284,30 @@ func TestServiceImpl_FetchLatestReport_SGXClientError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to fetch reports")
 
 	mockSGXClient.AssertExpectations(t)
+}
+
+func TestServiceImpl_AnalyzeExistingFile(t *testing.T) {
+	// Arrange
+	mockSGXClient := new(MockSGXClient)
+	mockAIAnalyzer := new(MockAIAnalyzer)
+	service := NewService(mockSGXClient, mockAIAnalyzer, "./data")
+
+	mockAnalysis := &ReportAnalysis{
+		Summary:     "Analysis of existing file",
+		KeyInsights: []string{"Key finding 1", "Key finding 2"},
+	}
+
+	ctx := context.Background()
+	filePath := "./data/existing_report.xlsx"
+	mockAIAnalyzer.On("AnalyzeDocument", ctx, filePath, "xlsx").Return(mockAnalysis, nil)
+
+	// Act
+	result, err := service.AnalyzeExistingFile(ctx, filePath)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, "Analysis of existing file", result.Summary)
+
+	mockAIAnalyzer.AssertExpectations(t)
 }

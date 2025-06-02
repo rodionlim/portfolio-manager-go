@@ -118,8 +118,5 @@ func generateSafeFileName(title string, extension string) string {
 	safe = strings.ReplaceAll(safe, ">", "_")
 	safe = strings.ReplaceAll(safe, "|", "_")
 
-	// Add timestamp to ensure uniqueness
-	timestamp := time.Now().Format("20060102_150405")
-
-	return fmt.Sprintf("%s_%s%s", safe, timestamp, extension)
+	return fmt.Sprintf("%s%s", safe, extension)
 }

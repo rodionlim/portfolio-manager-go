@@ -597,7 +597,7 @@ curl -X GET http://localhost:8080/api/v1/analytics/latest
 Fetch and analyze the latest SGX report of a specific type:
 
 ```sh
-curl -X GET "http://localhost:8080/api/v1/analytics/latest?type=fund_flow"
+curl -X GET "http://localhost:8080/api/v1/analytics/latest?type=fund%20flow"
 ```
 
 Analyze an existing file in the data directory:
@@ -606,7 +606,7 @@ Analyze an existing file in the data directory:
 curl -X POST http://localhost:8080/api/v1/analytics/analyze \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "./data/SGX_Fund_Flow_Report_2024.xlsx"
+    "filePath": "./data/SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025.xlsx"
   }'
 ```
 
@@ -632,6 +632,7 @@ metrics:
   schedule: "10 17 * * 1-5" # daily at 5:10pm, Mon-Fri (excludes weekends)
 analytics:
   geminiApiKey: "" # Get from Google AI Studio - required for analytics features
+  geminiModel: "gemini-2.5-flash-preview-05-20" # Gemini model to use (docs: https://ai.google.dev/gemini-api/docs/models)
   dataDir: "./data" # Directory to store downloaded SGX reports
 ```
 

@@ -25,11 +25,11 @@ type SGXReport struct {
 		FundsFlowType []struct {
 			Data struct {
 				Data struct {
-					ID           string `json:"id"`
-					Name         string `json:"name"`
-					Order        string `json:"order"`
-					ParentCode   string `json:"parentCode"`
-					EntityBundle string `json:"entityBundle"`
+					ID           string  `json:"id"`
+					Name         string  `json:"name"`
+					Order        string  `json:"order"`
+					ParentCode   *string `json:"parentCode"`
+					EntityBundle string  `json:"entityBundle"`
 				} `json:"data"`
 			} `json:"data"`
 		} `json:"fundsFlowType"`
@@ -38,19 +38,21 @@ type SGXReport struct {
 
 // SGXReportsResponse represents the API response structure
 type SGXReportsResponse struct {
-	ReportTypes struct {
-		Count   int `json:"count"`
-		Results []struct {
-			Data struct {
-				ID   string `json:"id"`
-				Name string `json:"name"`
-			} `json:"data"`
-		} `json:"results"`
-	} `json:"reportTypes"`
-	List struct {
-		Count   int         `json:"count"`
-		Results []SGXReport `json:"results"`
-	} `json:"list"`
+	Data struct {
+		ReportTypes struct {
+			Count   int `json:"count"`
+			Results []struct {
+				Data struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"data"`
+			} `json:"results"`
+		} `json:"reportTypes"`
+		List struct {
+			Count   int         `json:"count"`
+			Results []SGXReport `json:"results"`
+		} `json:"list"`
+	} `json:"data"`
 }
 
 // ReportAnalysis represents the AI analysis of a report

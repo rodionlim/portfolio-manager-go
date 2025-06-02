@@ -42,7 +42,7 @@ func TestHandleGetLatestReport(t *testing.T) {
 		ReportTitle: "Test Report",
 	}
 
-	mockService.On("FetchLatestReport", mock.AnythingOfType("*context.valueCtx")).Return(mockAnalysis, nil)
+	mockService.On("FetchLatestReport", mock.Anything).Return(mockAnalysis, nil)
 
 	// Create handler
 	handler := HandleGetLatestReport(mockService)
@@ -76,7 +76,7 @@ func TestHandleAnalyzeExistingFile(t *testing.T) {
 		FilePath:    "./data/test.xlsx",
 	}
 
-	mockService.On("AnalyzeExistingFile", mock.AnythingOfType("*context.valueCtx"), "./data/test.xlsx").Return(mockAnalysis, nil)
+	mockService.On("AnalyzeExistingFile", mock.Anything, "./data/test.xlsx").Return(mockAnalysis, nil)
 
 	// Create handler
 	handler := HandleAnalyzeExistingFile(mockService)
@@ -132,7 +132,7 @@ func TestHandleGetLatestReport_ServiceError(t *testing.T) {
 	mockService := new(MockService)
 	expectedError := fmt.Errorf("service error")
 
-	mockService.On("FetchLatestReport", mock.AnythingOfType("*context.valueCtx")).Return((*ReportAnalysis)(nil), expectedError)
+	mockService.On("FetchLatestReport", mock.Anything).Return((*ReportAnalysis)(nil), expectedError)
 
 	// Create handler
 	handler := HandleGetLatestReport(mockService)

@@ -31,6 +31,7 @@ type MetricsConfig struct {
 // AnalyticsConfig nests all analytics-related configuration
 type AnalyticsConfig struct {
 	GeminiAPIKey string `yaml:"geminiApiKey"`
+	GeminiModel  string `yaml:"geminiModel"`
 	DataDir      string `yaml:"dataDir"`
 }
 
@@ -103,6 +104,9 @@ func initializeConfig(data []byte) error {
 	// Set defaults for AnalyticsConfig if not provided
 	if cfg.Analytics.DataDir == "" {
 		cfg.Analytics.DataDir = "./data"
+	}
+	if cfg.Analytics.GeminiModel == "" {
+		cfg.Analytics.GeminiModel = "gemini-1.5-flash" // default: fastest and most cost-effective model
 	}
 
 	instance = &cfg

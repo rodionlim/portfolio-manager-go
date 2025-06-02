@@ -33,12 +33,12 @@ func (s *ServiceImpl) FetchLatestReport(ctx context.Context) (*ReportAnalysis, e
 		return nil, fmt.Errorf("failed to fetch reports: %w", err)
 	}
 
-	if len(reports.List.Results) == 0 {
+	if len(reports.Data.List.Results) == 0 {
 		return nil, fmt.Errorf("no reports found")
 	}
 
 	// Find the latest report (they should already be sorted by date)
-	latestReport := reports.List.Results[0]
+	latestReport := reports.Data.List.Results[0]
 
 	return s.processReport(ctx, latestReport)
 }
@@ -53,7 +53,7 @@ func (s *ServiceImpl) FetchLatestReportByType(ctx context.Context, reportType st
 
 	// Filter reports by type and find the latest one
 	var filteredReports []SGXReport
-	for _, report := range reports.List.Results {
+	for _, report := range reports.Data.List.Results {
 		for _, flowType := range report.Data.FundsFlowType {
 			if strings.Contains(strings.ToLower(flowType.Data.Data.Name), strings.ToLower(reportType)) {
 				filteredReports = append(filteredReports, report)

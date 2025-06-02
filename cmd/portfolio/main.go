@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"portfolio-manager/internal/analytics"
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
@@ -115,6 +116,27 @@ func main() {
 	// Create a new historical metrics service
 	historicalSvc := historical.NewService(metricsSvc, db, sched)
 
+	// Create analytics service if API key is configured
+	var analyticsSvc analytics.Service
+	geminiAPIKey := config.Analytics.GeminiAPIKey
+	if geminiAPIKey == "" {
+		// Try to get from environment variable
+		geminiAPIKey = os.Getenv("GEMINI_API_KEY")
+	}
+
+	if geminiAPIKey != "" {
+		sgxClient := analytics.NewSGXClient()
+		aiAnalyzer, err := analytics.NewGeminiAnalyzer(ctx, geminiAPIKey)
+		if err != nil {
+			logger.Error("Failed to create Gemini analyzer, analytics will be disabled:", err)
+		} else {
+			analyticsSvc = analytics.NewService(sgxClient, aiAnalyzer, config.Analytics.DataDir)
+			logger.Info("Analytics service initialized with Gemini AI")
+		}
+	} else {
+		logger.Info("Gemini API key not configured, analytics service disabled")
+	}
+
 	// Start metrics collection schedule if configured
 	if config.Metrics.Schedule != "" {
 		stopFn := historicalSvc.StartMetricsCollection(config.Metrics.Schedule)
@@ -123,7 +145,7 @@ func main() {
 
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc)
+	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc, analyticsSvc)
 
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)

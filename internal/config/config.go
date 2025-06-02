@@ -28,6 +28,12 @@ type MetricsConfig struct {
 	Schedule string `yaml:"schedule"`
 }
 
+// AnalyticsConfig nests all analytics-related configuration
+type AnalyticsConfig struct {
+	GeminiAPIKey string `yaml:"geminiApiKey"`
+	DataDir      string `yaml:"dataDir"`
+}
+
 // Config represents the application configuration.
 type Config struct {
 	VerboseLogging  bool            `yaml:"verboseLogging"`
@@ -40,6 +46,7 @@ type Config struct {
 	RefDataSeedPath string          `yaml:"refDataSeedPath"`
 	Dividends       DividendsConfig `yaml:"dividends"`
 	Metrics         MetricsConfig   `yaml:"metrics"`
+	Analytics       AnalyticsConfig `yaml:"analytics"`
 }
 
 // Implement the Stringer interface for Config.
@@ -91,6 +98,11 @@ func initializeConfig(data []byte) error {
 	// Set default for MetricsConfig if not provided
 	if cfg.Metrics.Schedule == "" {
 		cfg.Metrics.Schedule = "10 17 * * 1-5" // default: 5:10pm Mon-Fri
+	}
+
+	// Set defaults for AnalyticsConfig if not provided
+	if cfg.Analytics.DataDir == "" {
+		cfg.Analytics.DataDir = "./data"
 	}
 
 	instance = &cfg

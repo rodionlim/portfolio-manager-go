@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"portfolio-manager/internal/analytics"
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dividends"
 	"portfolio-manager/internal/fxinfer"
@@ -31,10 +32,11 @@ type Server struct {
 	fxinfer    *fxinfer.Service
 	metrics    *metrics.MetricsService
 	historical *historical.Service // add historical service
+	analytics  analytics.Service   // add analytics service
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service) *Server {
+func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service, analyticsSvc analytics.Service) *Server {
 	return &Server{
 		Addr:       addr,
 		mux:        http.NewServeMux(),
@@ -43,6 +45,7 @@ func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *port
 		fxinfer:    fxinferSvc,
 		metrics:    metricsSvc,
 		historical: historicalSvc,
+		analytics:  analyticsSvc,
 	}
 }
 
@@ -81,6 +84,9 @@ func (s *Server) Start(ctx context.Context) error {
 	metrics.RegisterHandlers(s.mux, s.metrics)
 	if s.historical != nil {
 		historical.RegisterHandlers(s.mux, s.historical)
+	}
+	if s.analytics != nil {
+		analytics.RegisterHandlers(s.mux, s.analytics)
 	}
 
 	// Swagger registration

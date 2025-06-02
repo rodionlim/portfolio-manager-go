@@ -79,6 +79,7 @@ portfolio-manager/
 ├── docs/
 │   └── swagger.json
 ├── internal/
+│   ├── analytics/
 │   ├── blotter/
 │   ├── config/
 │   ├── dal/
@@ -585,6 +586,30 @@ curl -X PUT http://localhost:8080/api/v1/historical/metrics \
 
 See also: Import/Export endpoints for batch operations.
 
+### Analytics - SGX Report Analysis
+
+Fetch and analyze the latest SGX report with AI insights:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/analytics/latest
+```
+
+Fetch and analyze the latest SGX report of a specific type:
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/analytics/latest?type=fund_flow"
+```
+
+Analyze an existing file in the data directory:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/analytics/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "./data/SGX_Fund_Flow_Report_2024.xlsx"
+  }'
+```
+
 ## Configurations
 
 Sample configurations
@@ -605,6 +630,9 @@ dividends:
   divWitholdingTaxIE: 0.15
 metrics:
   schedule: "10 17 * * 1-5" # daily at 5:10pm, Mon-Fri (excludes weekends)
+analytics:
+  geminiApiKey: "" # Get from Google AI Studio - required for analytics features
+  dataDir: "./data" # Directory to store downloaded SGX reports
 ```
 
 ## Roadmap

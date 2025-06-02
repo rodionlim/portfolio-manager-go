@@ -1,3 +1,14 @@
+## [1.3.0] - 2025-06-02
+
+### 🚀 Features
+
+- *(go)* Update go from 1.23 to 1.24 #47
+
+### 🐛 Bug Fixes
+
+- Set fx rate to 1 for SG Govies when base ccy is SGD #51
+- Handle 404 errors on all endpoints other than / root #17
+
 ## [1.2.2] - 2025-05-23
 
 ### 🐛 Bug Fixes

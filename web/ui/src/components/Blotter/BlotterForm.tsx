@@ -14,7 +14,7 @@ import { useForm } from "@mantine/form";
 import { DatePickerInput } from "@mantine/dates";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
-import { refDataByAssetClass } from "../../utils/referenceData";
+import { IsSGGovies, refDataByAssetClass } from "../../utils/referenceData";
 import { useLocation } from "react-router-dom";
 import { getUrl } from "../../utils/url";
 
@@ -93,10 +93,13 @@ export default function BlotterForm() {
   ) {
     const tradeTypeAction = !values.tradeId ? "add" : "update";
     const tradeTypeActionPastTense = !values.tradeId ? "added" : "updated";
+    const baseCcy = "SGD"; // TODO: make this dynamic based on user settings or location
 
     if (values.fx === 0) {
-      if (refData && refData[values.ticker]?.ccy) {
-        const baseCcy = "SGD";
+      // Check if it is SG Govies, if so, set FX to 1
+      if (IsSGGovies(values.ticker) && baseCcy === "SGD") {
+        values.fx = 1; // SG Govies are always in SGD
+      } else if (refData && refData[values.ticker]?.ccy) {
         const quoteCcy = refData[values.ticker].ccy;
         if (quoteCcy === baseCcy) {
           values.fx = 1;
@@ -215,7 +218,7 @@ export default function BlotterForm() {
           <Autocomplete
             withAsterisk
             label="Ticker"
-            placeholder="ticker to be added, e.g. es3.si"
+            placeholder="ticker to be added, e.g. es3.si, sbjun25"
             data={refDataByAssetClass(refData)}
             key={form.key("ticker")}
             {...form.getInputProps("ticker")}

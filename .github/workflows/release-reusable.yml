@@ -35,17 +35,25 @@ jobs:
         run: go mod download
       - name: Install swag
         run: go install github.com/swaggo/swag/cmd/swag@${{ env.SWAG_VERSION }}
-      - name: Generate a changelog and current version
+      - name: Generate full changelog
         uses: orhun/git-cliff-action@v4
-        id: git-cliff
+        id: git-cliff-full
         with:
           config: cliff.toml
           args: -v --bump --strip header
         env:
           OUTPUT: CHANGELOG.md
           GITHUB_REPO: ${{ github.repository }}
+      - name: Generate current release notes
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff-current
+        with:
+          config: cliff.toml
+          args: --unreleased --bump -v --strip header
+        env:
+          GITHUB_REPO: ${{ github.repository }}
       - name: Update version file
-        run: echo "${{ steps.git-cliff.outputs.version }}" | sed 's/^v//' > VERSION
+        run: echo "${{ steps.git-cliff-full.outputs.version }}" | sed 's/^v//' > VERSION
       - name: Update README version badge
         run: |
           VERSION=$(cat VERSION)
@@ -61,17 +69,17 @@ jobs:
           git add VERSION
           git add CHANGELOG.md
           git add README.md
-          git commit -m "Bump version to ${{ steps.git-cliff.outputs.version }} [skip ci]"
+          git commit -m "Bump version to ${{ steps.git-cliff-full.outputs.version }} [skip ci]"
           git push
       - name: Tag version
         run: |
-          git tag ${{ steps.git-cliff.outputs.version }}
+          git tag ${{ steps.git-cliff-full.outputs.version }}
           git push --tags
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.git-cliff.outputs.version }}
+          tag_name: ${{ steps.git-cliff-full.outputs.version }}
           files: portfolio-manager*
           make_latest: true
           draft: false
-          body: ${{ steps.git-cliff.outputs.content }}
+          body: ${{ steps.git-cliff-current.outputs.content }}

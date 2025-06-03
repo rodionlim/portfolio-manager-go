@@ -28,18 +28,32 @@ type MetricsConfig struct {
 	Schedule string `yaml:"schedule"`
 }
 
+// MarketDataConfig nests all market data-related configuration
+type MarketDataConfig struct {
+	RateLimitMs int `yaml:"rateLimitMs"` // Minimum milliseconds between Yahoo Finance requests
+}
+
+// AnalyticsConfig nests all analytics-related configuration
+type AnalyticsConfig struct {
+	GeminiAPIKey string `yaml:"geminiApiKey"`
+	GeminiModel  string `yaml:"geminiModel"`
+	DataDir      string `yaml:"dataDir"`
+}
+
 // Config represents the application configuration.
 type Config struct {
-	VerboseLogging  bool            `yaml:"verboseLogging"`
-	LogFilePath     string          `yaml:"logFilePath"`
-	Host            string          `yaml:"host"`
-	Port            string          `yaml:"port"`
-	BaseCcy         string          `yaml:"baseCcy"`
-	Db              string          `yaml:"db"`
-	DbPath          string          `yaml:"dbPath"`
-	RefDataSeedPath string          `yaml:"refDataSeedPath"`
-	Dividends       DividendsConfig `yaml:"dividends"`
-	Metrics         MetricsConfig   `yaml:"metrics"`
+	VerboseLogging  bool             `yaml:"verboseLogging"`
+	LogFilePath     string           `yaml:"logFilePath"`
+	Host            string           `yaml:"host"`
+	Port            string           `yaml:"port"`
+	BaseCcy         string           `yaml:"baseCcy"`
+	Db              string           `yaml:"db"`
+	DbPath          string           `yaml:"dbPath"`
+	RefDataSeedPath string           `yaml:"refDataSeedPath"`
+	Dividends       DividendsConfig  `yaml:"dividends"`
+	Metrics         MetricsConfig    `yaml:"metrics"`
+	MarketData      MarketDataConfig `yaml:"marketData"`
+	Analytics       AnalyticsConfig  `yaml:"analytics"`
 }
 
 // Implement the Stringer interface for Config.
@@ -91,6 +105,19 @@ func initializeConfig(data []byte) error {
 	// Set default for MetricsConfig if not provided
 	if cfg.Metrics.Schedule == "" {
 		cfg.Metrics.Schedule = "10 17 * * 1-5" // default: 5:10pm Mon-Fri
+	}
+
+	// Set defaults for AnalyticsConfig if not provided
+	if cfg.Analytics.DataDir == "" {
+		cfg.Analytics.DataDir = "./data"
+	}
+	if cfg.Analytics.GeminiModel == "" {
+		cfg.Analytics.GeminiModel = "gemini-1.5-flash" // default: fastest and most cost-effective model
+	}
+
+	// Set defaults for MarketDataConfig if not provided
+	if cfg.MarketData.RateLimitMs == 0 {
+		cfg.MarketData.RateLimitMs = 500 // default: 500ms between requests
 	}
 
 	instance = &cfg

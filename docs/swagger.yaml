@@ -1,5 +1,37 @@
 basePath: /
 definitions:
+  analytics.AnalyzeFileRequest:
+    properties:
+      filePath:
+        type: string
+    required:
+    - filePath
+    type: object
+  analytics.ReportAnalysis:
+    properties:
+      analysisDate:
+        type: integer
+      downloadUrl:
+        type: string
+      filePath:
+        type: string
+      keyInsights:
+        items:
+          type: string
+        type: array
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      reportDate:
+        type: integer
+      reportTitle:
+        type: string
+      reportType:
+        type: string
+      summary:
+        type: string
+    type: object
   blotter.Trade:
     properties:
       Account:
@@ -265,6 +297,66 @@ info:
   title: Portfolio Manager API
   version: "1.0"
 paths:
+  /api/v1/analytics/analyze:
+    post:
+      consumes:
+      - application/json
+      description: Analyzes an existing file in the data directory
+      parameters:
+      - description: File analysis request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/analytics.AnalyzeFileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/analytics.ReportAnalysis'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Analyze existing file
+      tags:
+      - analytics
+  /api/v1/analytics/latest:
+    get:
+      consumes:
+      - application/json
+      description: Fetches the latest SGX report of a specific type, downloads it,
+        and provides AI analysis
+      parameters:
+      - description: Report type (e.g., 'fund_flow', 'daily_momentum')
+        in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/analytics.ReportAnalysis'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get latest SGX report analysis by type
+      tags:
+      - analytics
   /api/v1/blotter/export:
     get:
       description: Export all trades to a CSV file

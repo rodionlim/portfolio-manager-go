@@ -31,7 +31,7 @@ func NewYahooFinance(db dal.Database) types.DataSource {
 			cache: cache.New(5*time.Minute, 10*time.Minute),
 		},
 		client: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 15 * time.Second, // Increased timeout for better reliability
 		},
 		logger: logging.GetLogger(),
 	}
@@ -47,7 +47,8 @@ func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax floa
 
 	// Fetch dividends from Yahoo Finance
 	url := fmt.Sprintf("https://finance.yahoo.com/quote/%s/history/?period1=511108200&period2=%d&filter=div", ticker, time.Now().Unix())
-	req, err := common.NewHttpRequestWithUserAgent("GET", url)
+
+	req, err := common.NewBrowserLikeRequest("GET", url)
 	if err != nil {
 		return nil, err
 	}
@@ -110,8 +111,9 @@ func (src *yahooFinance) GetAssetPrice(ticker string) (*types.AssetData, error) 
 	}
 
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s", ticker)
+	src.logger.Debugf("Fetching asset price from: %s", url)
 
-	req, err := common.NewHttpRequestWithUserAgent("GET", url)
+	req, err := common.NewBrowserLikeRequest("GET", url)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +166,12 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=1d",
 		ticker, fromDate, toDate)
 
-	req, err := common.NewHttpRequestWithUserAgent("GET", url)
+	src.logger.Debugf("Fetching historical data from: %s", url)
+
+	// Apply rate limiting before making the request
+	common.GetYahooRateLimiter().Wait()
+
+	req, err := common.NewBrowserLikeRequest("GET", url)
 	if err != nil {
 		return nil, err
 	}

@@ -119,7 +119,16 @@ export default function BlotterForm() {
             });
             throw new Error("Unable to fetch FX rate");
           }
-          const price = (await resp.json())[0]["Price"];
+          const vals = await resp.json();
+          if (Array.isArray(vals) && vals.length === 0) {
+            notifications.show({
+              color: "red",
+              title: "Error",
+              message: `No FX rate found for ${values.ticker} on ${dt}`,
+            });
+            throw new Error("No FX rate found");
+          }
+          const price = vals[0]["Price"];
           values.fx = price;
         }
       } else {

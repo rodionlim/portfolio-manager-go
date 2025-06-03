@@ -1,3 +1,9 @@
+## [1.4.1] - 2025-06-03
+
+### 🐛 Bug Fixes
+
+- *(ui)* UI was passing in wrong date when fetching non sgd fx rate in add_blotter due to UTC conversion #53
+
 ## [1.4.0] - 2025-06-03
 
 ### 🚀 Features

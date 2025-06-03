@@ -1,8 +1,10 @@
 package sources
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/logging"
@@ -37,6 +39,23 @@ func NewYahooFinance(db dal.Database) types.DataSource {
 	}
 }
 
+func readResponseBody(resp *http.Response) ([]byte, error) {
+	var reader io.Reader = resp.Body
+
+	// Handle gzip compression manually if needed
+	contentEncoding := resp.Header.Get("Content-Encoding")
+	if contentEncoding == "gzip" {
+		gzipReader, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+		}
+		defer gzipReader.Close()
+		reader = gzipReader
+	}
+
+	return io.ReadAll(reader)
+}
+
 // GetDividends implements types.DataSource.
 func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax float64) ([]types.DividendsMetadata, error) {
 	// Check cache first
@@ -63,7 +82,13 @@ func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax floa
 		return nil, fmt.Errorf("yahoo finance API returned status code: %d", resp.StatusCode)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	// Read and potentially decompress the response body
+	bodyBytes, err := readResponseBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
@@ -128,6 +153,12 @@ func (src *yahooFinance) GetAssetPrice(ticker string) (*types.AssetData, error) 
 		return nil, fmt.Errorf("yahoo finance API returned status code: %d", resp.StatusCode)
 	}
 
+	// Read and potentially decompress the response body
+	bodyBytes, err := readResponseBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
 	// Parse response and create StockData
 	var response struct {
 		Chart struct {
@@ -141,7 +172,9 @@ func (src *yahooFinance) GetAssetPrice(ticker string) (*types.AssetData, error) 
 		} `json:"chart"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.Unmarshal(bodyBytes, &response); err != nil {
+		src.logger.Errorf("Failed to decode JSON for %s. Error: %v", ticker, err)
+		src.logger.Errorf("Response body: %s", string(bodyBytes))
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
@@ -184,6 +217,12 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("yahoo finance API returned status code: %d", resp.StatusCode)
+	}
+
+	// Read and potentially decompress the response body
+	bodyBytes, err := readResponseBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// Parse response and create StockData array (Commented out most fields for brevity)
@@ -234,8 +273,11 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 		} `json:"chart"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	// Decode the JSON response
+	if err := json.Unmarshal(bodyBytes, &response); err != nil {
+		src.logger.Errorf("Failed to decode JSON for %s. Error: %v", ticker, err)
+		src.logger.Errorf("Response body: %s", string(bodyBytes))
+		return []*types.AssetData{}, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	if len(response.Chart.Result) == 0 {

@@ -149,6 +149,8 @@ func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*t
 		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
 			if data, err := yahoo.GetHistoricalData(tickerRef.YahooTicker, fromDate, toDate); err == nil {
 				return data, nil
+			} else {
+				logging.GetLogger().Errorf("Failed to fetch historical data from Yahoo Finance for %s: %v", tickerRef.YahooTicker, err)
 			}
 		}
 	}

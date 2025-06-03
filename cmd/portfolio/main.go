@@ -18,6 +18,7 @@ import (
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/internal/server"
 
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
@@ -94,6 +95,12 @@ func main() {
 	mdata, err := mdata.NewManager(db, rdata)
 	if err != nil {
 		logging.GetLogger().Fatalf("Failed to create market data manager")
+	}
+
+	// Configure market data rate limiting
+	if config.MarketData.RateLimitMs > 0 {
+		common.SetRateLimitInterval(config.MarketData.RateLimitMs)
+		logger.Infof("Set market data rate limit to %dms between requests", config.MarketData.RateLimitMs)
 	}
 
 	// Create a new dividends manager

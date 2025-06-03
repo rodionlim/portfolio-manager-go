@@ -5,6 +5,7 @@ This directory contains Git hooks for the Portfolio Manager Go project. Git hook
 ## Available Hooks
 
 ### pre-commit
+
 - **Purpose**: Prevents accidentally committing sensitive data like API keys
 - **Triggers**: Before each commit
 - **Checks**:
@@ -47,6 +48,7 @@ chmod +x .git/hooks/pre-commit
 ### Testing the pre-commit hook
 
 1. **Test with a real API key** (should be blocked):
+
    ```bash
    # Edit config.yaml and add a real-looking API key
    echo "geminiApiKey: AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" >> config.yaml
@@ -102,24 +104,30 @@ The application automatically reads from `GEMINI_API_KEY` environment variable w
 ## Troubleshooting
 
 ### Hook Not Running
+
 - Ensure the hook file is executable: `chmod +x .git/hooks/pre-commit`
 - Check if the hook file exists: `ls -la .git/hooks/pre-commit`
 - Verify you're in the correct Git repository
 
 ### False Positives
+
 If the hook incorrectly flags legitimate data:
+
 1. Check if the pattern matches the false positive criteria
 2. Update the hook's regex patterns if needed
 3. Use the interactive prompt to proceed (for non-API-key warnings)
 
 ### Hook Updates
+
 When hooks are updated in the repository:
+
 1. Run `hooks/setup.sh` again to install the latest versions
 2. Or manually copy the updated hook files to `.git/hooks/`
 
 ## Contributing
 
 When adding new hooks:
+
 1. Add the hook script to the `hooks/` directory
 2. Update this README with documentation
 3. Update the `setup.sh` script to handle the new hook

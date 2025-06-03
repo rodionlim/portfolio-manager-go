@@ -1,3 +1,16 @@
+## [1.4.0] - 2025-06-03
+
+### 🚀 Features
+
+- *(ai)* Add ai analytics tool #50
+- *(ai)* Update ai funds flow prompt to be more relevant to trading #50
+- *(ai)* Switch default model #50
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Rate limit yahoo finance historical queries and impersonate chrome #53
+- *(release)* Pipeline was uploading full changelog for each release instead of deltas
+
 ## [1.3.0] - 2025-06-02
 
 ### 🚀 Features

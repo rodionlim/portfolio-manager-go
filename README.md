@@ -349,6 +349,18 @@ curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/AAPL?start=2024
 curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/ES3.SI?start=20240101&end=20240501"
 ```
 
+### Fetch Historical FX Rates
+
+Get historical foreign exchange rates for currency pairs. This is particularly useful for retrieving FX rates for specific trade dates when adding blotter entries with foreign currency assets.
+
+```sh
+# Get USD-SGD FX rate for a specific date (YYYYMMDD format)
+curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/USD-SGD?start=20250602&end=20250602"
+
+# Get JPY-SGD FX rate for the last month
+curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/JPY-SGD?start=20240401&end=20240430"
+```
+
 ### Fetch Dividends
 
 ```sh

@@ -173,7 +173,6 @@ const BlotterTable: React.FC = () => {
       const selection = table.getSelectedRowModel().rows;
       if (selection.length > 0) {
         const ticker = selection[0];
-        console.log(ticker);
         navigate("/blotter/add_trade", {
           state: {
             ticker: ticker.original.Ticker,

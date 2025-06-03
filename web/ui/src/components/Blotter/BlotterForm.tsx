@@ -83,7 +83,7 @@ export default function BlotterForm() {
     transformValues: (values) => ({
       ...values,
       ticker: values.ticker.toUpperCase(),
-      date: values.date.toISOString().split(".")[0] + "Z",
+      date: values.date.toLocaleDateString("sv-SE") + "T00:00:00Z",
       price: values.price > 0 ? values.price : values.value / values.qty,
     }),
   });
@@ -106,11 +106,10 @@ export default function BlotterForm() {
         } else {
           const dt = values.date.replaceAll("-", "").slice(0, 8); // YYYYMMDD
           // fetch price as of historical date
-          const resp = await fetch(
-            getUrl(
-              `api/v1/mdata/price/historical/${quoteCcy}-SGD?start=${dt}&end=${dt}`
-            )
+          const url = getUrl(
+            `api/v1/mdata/price/historical/${quoteCcy}-SGD?start=${dt}&end=${dt}`
           );
+          const resp = await fetch(url);
           if (!resp.ok) {
             notifications.show({
               color: "red",

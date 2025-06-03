@@ -1,3 +1,9 @@
+## [1.4.2] - 2025-06-03
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Mocking browser and setting content type to gzip means handler should cater for gzipped responses #53
+
 ## [1.4.1] - 2025-06-03
 
 ### 🐛 Bug Fixes

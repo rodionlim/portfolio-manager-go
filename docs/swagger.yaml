@@ -334,7 +334,7 @@ paths:
       description: Fetches the latest SGX report of a specific type, downloads it,
         and provides AI analysis
       parameters:
-      - description: Report type (e.g., 'fund_flow', 'daily_momentum')
+      - description: Report type (e.g., 'fund%20flow', 'daily%20momentum')
         in: query
         name: type
         required: true
@@ -355,6 +355,27 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: Get latest SGX report analysis by type
+      tags:
+      - analytics
+  /api/v1/analytics/list:
+    get:
+      consumes:
+      - application/json
+      description: Lists all available SGX reports in the data directory
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of report file paths
+          schema:
+            items:
+              type: string
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: List all available SGX reports
       tags:
       - analytics
   /api/v1/blotter/export:

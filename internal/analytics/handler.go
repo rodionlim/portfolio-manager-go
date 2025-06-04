@@ -12,29 +12,27 @@ type AnalyzeFileRequest struct {
 	FilePath string `json:"filePath" binding:"required"`
 }
 
-// HandleGetLatestReport handles getting the latest SGX report analysis
-// @Summary Get latest SGX report analysis
-// @Description Fetches the latest SGX report, downloads it, and provides AI analysis
+// HandleListReports handles listing all available SGX reports
+// @Summary List all available SGX reports
+// @Description Lists all available SGX reports in the data directory
 // @Tags analytics
 // @Accept json
 // @Produce json
-// @Success 200 {object} ReportAnalysis
+// @Success 200 {array} string "List of report file paths"
 // @Failure 500 {object} common.ErrorResponse
-// @Router /api/v1/analytics/latest [get]
-func HandleGetLatestReport(service Service) http.HandlerFunc {
+// @Router /api/v1/analytics/list [get]
+func HandleListReports(service Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		analysis, err := service.FetchLatestReport(ctx)
+		reports, err := service.ListReportsInDataDir()
 		if err != nil {
-			logging.GetLogger().Error("Failed to fetch latest report:", err)
-			common.WriteJSONError(w, "Failed to fetch latest report: "+err.Error(), http.StatusInternalServerError)
+			logging.GetLogger().Error("Failed to list reports:", err)
+			common.WriteJSONError(w, "Failed to list reports: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(analysis); err != nil {
-			logging.GetLogger().Error("Failed to write analysis response as JSON:", err)
+		if err := json.NewEncoder(w).Encode(reports); err != nil {
+			logging.GetLogger().Error("Failed to write reports response as JSON:", err)
 			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
 		}
 	}
@@ -46,7 +44,7 @@ func HandleGetLatestReport(service Service) http.HandlerFunc {
 // @Tags analytics
 // @Accept json
 // @Produce json
-// @Param type query string true "Report type (e.g., 'fund_flow', 'daily_momentum')"
+// @Param type query string true "Report type (e.g., 'fund%20flow', 'daily%20momentum')"
 // @Success 200 {object} ReportAnalysis
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 500 {object} common.ErrorResponse
@@ -130,8 +128,17 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 		if reportType != "" {
 			HandleGetLatestReportByType(service).ServeHTTP(w, r)
 		} else {
-			HandleGetLatestReport(service).ServeHTTP(w, r)
+			common.WriteJSONError(w, "report type is required", http.StatusBadRequest)
+			return
 		}
+	})
+
+	mux.HandleFunc("/api/v1/analytics/list", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleListReports(service).ServeHTTP(w, r)
 	})
 
 	mux.HandleFunc("/api/v1/analytics/analyze", func(w http.ResponseWriter, r *http.Request) {

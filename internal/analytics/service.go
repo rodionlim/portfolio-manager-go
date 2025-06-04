@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"portfolio-manager/internal/dal"
 	"sort"
 	"strings"
 	"time"
@@ -17,7 +18,10 @@ type ServiceImpl struct {
 }
 
 // NewService creates a new analytics service
-func NewService(sgxClient SGXClient, aiAnalyzer AIAnalyzer, dataDir string) Service {
+func NewService(sgxClient SGXClient, aiAnalyzer AIAnalyzer, dataDir string, db dal.Database) Service {
+	// Set the database on the AI analyzer
+	aiAnalyzer.SetDatabase(db)
+
 	return &ServiceImpl{
 		sgxClient:  sgxClient,
 		aiAnalyzer: aiAnalyzer,
@@ -25,22 +29,21 @@ func NewService(sgxClient SGXClient, aiAnalyzer AIAnalyzer, dataDir string) Serv
 	}
 }
 
-// FetchLatestReport fetches the latest SGX report and analyzes it
-func (s *ServiceImpl) FetchLatestReport(ctx context.Context) (*ReportAnalysis, error) {
-	// Fetch reports from SGX
-	reports, err := s.sgxClient.FetchReports(ctx)
+// FetchReports fetches all available SGX reports and lists them
+func (s *ServiceImpl) ListReportsInDataDir() ([]string, error) {
+	files, err := filepath.Glob(filepath.Join(s.dataDir, "*"))
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch reports: %w", err)
+		return nil, err
 	}
 
-	if len(reports.Data.List.Results) == 0 {
-		return nil, fmt.Errorf("no reports found")
+	var reportFiles []string
+	for _, file := range files {
+		if !strings.HasSuffix(file, ".dat") { // Exclude .dat files
+			reportFiles = append(reportFiles, file)
+		}
 	}
 
-	// Find the latest report (they should already be sorted by date)
-	latestReport := reports.Data.List.Results[0]
-
-	return s.processReport(ctx, latestReport)
+	return reportFiles, nil
 }
 
 // FetchLatestReportByType fetches the latest report of a specific type

@@ -77,7 +77,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Report type (e.g., 'fund_flow', 'daily_momentum')",
+                        "description": "Report type (e.g., 'fund%20flow', 'daily%20momentum')",
                         "name": "type",
                         "in": "query",
                         "required": true
@@ -94,6 +94,38 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/list": {
+            "get": {
+                "description": "Lists all available SGX reports in the data directory",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "List all available SGX reports",
+                "responses": {
+                    "200": {
+                        "description": "List of report file paths",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {

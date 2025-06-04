@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"context"
+	"portfolio-manager/internal/dal"
 )
 
 // SGXReport represents a single SGX report from the API
@@ -81,15 +82,18 @@ type SGXClient interface {
 type AIAnalyzer interface {
 	// AnalyzeDocument analyzes a document and returns insights
 	AnalyzeDocument(ctx context.Context, filePath string, fileType string) (*ReportAnalysis, error)
+
+	// SetDatabase sets the database instance for storing analysis results
+	SetDatabase(db dal.Database)
 }
 
 // Service interface for the analytics service
 type Service interface {
-	// FetchLatestReport fetches the latest SGX report and analyzes it
-	FetchLatestReport(ctx context.Context) (*ReportAnalysis, error)
-
-	// FetchLatestReportByType fetches the latest report of a specific type
+	// FetchLatestReportByType fetches the latest report of a specific type and anlyzes it
 	FetchLatestReportByType(ctx context.Context, reportType string) (*ReportAnalysis, error)
+
+	// ListReportsInDataDir lists all available SGX reports in the data directory
+	ListReportsInDataDir() ([]string, error)
 
 	// AnalyzeExistingFile analyzes an existing file
 	AnalyzeExistingFile(ctx context.Context, filePath string) (*ReportAnalysis, error)

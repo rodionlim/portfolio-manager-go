@@ -6,6 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"portfolio-manager/internal/dal"
+	"portfolio-manager/internal/mocks"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -41,11 +44,20 @@ func (m *MockAIAnalyzer) AnalyzeDocument(ctx context.Context, filePath string, f
 	return args.Get(0).(*ReportAnalysis), args.Error(1)
 }
 
-func TestServiceImpl_FetchLatestReport(t *testing.T) {
+func (m *MockAIAnalyzer) SetDatabase(db dal.Database) {
+	m.Called(db)
+}
+
+func TestServiceImpl_FetchLatestReportByType(t *testing.T) {
 	// Arrange
 	mockSGXClient := new(MockSGXClient)
 	mockAIAnalyzer := new(MockAIAnalyzer)
-	service := NewService(mockSGXClient, mockAIAnalyzer, "./data")
+	mockDB := mocks.NewMockDatabase()
+
+	// Set up the SetDatabase expectation
+	mockAIAnalyzer.On("SetDatabase", mockDB).Return()
+
+	service := NewService(mockSGXClient, mockAIAnalyzer, "./data", mockDB)
 
 	mockReports := &SGXReportsResponse{
 		Data: struct {
@@ -206,7 +218,7 @@ func TestServiceImpl_FetchLatestReport(t *testing.T) {
 	mockAIAnalyzer.On("AnalyzeDocument", ctx, mock.AnythingOfType("string"), "xlsx").Return(mockAnalysis, nil)
 
 	// Act
-	result, err := service.FetchLatestReport(ctx)
+	result, err := service.FetchLatestReportByType(ctx, "fund flow")
 
 	// Assert
 	assert.NoError(t, err)
@@ -223,7 +235,12 @@ func TestServiceImpl_FetchLatestReport_NoReports(t *testing.T) {
 	// Arrange
 	mockSGXClient := new(MockSGXClient)
 	mockAIAnalyzer := new(MockAIAnalyzer)
-	service := NewService(mockSGXClient, mockAIAnalyzer, "./data")
+	mockDB := mocks.NewMockDatabase()
+
+	// Set up the SetDatabase expectation
+	mockAIAnalyzer.On("SetDatabase", mockDB).Return()
+
+	service := NewService(mockSGXClient, mockAIAnalyzer, "./data", mockDB)
 
 	mockReports := &SGXReportsResponse{
 		Data: struct {
@@ -255,7 +272,7 @@ func TestServiceImpl_FetchLatestReport_NoReports(t *testing.T) {
 	mockSGXClient.On("FetchReports", ctx).Return(mockReports, nil)
 
 	// Act
-	result, err := service.FetchLatestReport(ctx)
+	result, err := service.FetchLatestReportByType(ctx, "fund flow")
 
 	// Assert
 	assert.Error(t, err)
@@ -269,14 +286,19 @@ func TestServiceImpl_FetchLatestReport_SGXClientError(t *testing.T) {
 	// Arrange
 	mockSGXClient := new(MockSGXClient)
 	mockAIAnalyzer := new(MockAIAnalyzer)
-	service := NewService(mockSGXClient, mockAIAnalyzer, "./data")
+	mockDB := mocks.NewMockDatabase()
+
+	// Set up the SetDatabase expectation
+	mockAIAnalyzer.On("SetDatabase", mockDB).Return()
+
+	service := NewService(mockSGXClient, mockAIAnalyzer, "./data", mockDB)
 
 	ctx := context.Background()
 	expectedError := fmt.Errorf("SGX API error")
 	mockSGXClient.On("FetchReports", ctx).Return((*SGXReportsResponse)(nil), expectedError)
 
 	// Act
-	result, err := service.FetchLatestReport(ctx)
+	result, err := service.FetchLatestReportByType(ctx, "fund flow")
 
 	// Assert
 	assert.Error(t, err)
@@ -290,7 +312,12 @@ func TestServiceImpl_AnalyzeExistingFile(t *testing.T) {
 	// Arrange
 	mockSGXClient := new(MockSGXClient)
 	mockAIAnalyzer := new(MockAIAnalyzer)
-	service := NewService(mockSGXClient, mockAIAnalyzer, "./data")
+	mockDB := mocks.NewMockDatabase()
+
+	// Set up the SetDatabase expectation
+	mockAIAnalyzer.On("SetDatabase", mockDB).Return()
+
+	service := NewService(mockSGXClient, mockAIAnalyzer, "./data", mockDB)
 
 	mockAnalysis := &ReportAnalysis{
 		Summary:     "Analysis of existing file",

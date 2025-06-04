@@ -137,7 +137,7 @@ func main() {
 		if err != nil {
 			logger.Error("Failed to create Gemini analyzer, analytics will be disabled:", err)
 		} else {
-			analyticsSvc = analytics.NewService(sgxClient, aiAnalyzer, config.Analytics.DataDir)
+			analyticsSvc = analytics.NewService(sgxClient, aiAnalyzer, config.Analytics.DataDir, db)
 			logger.Info("Analytics service initialized with Gemini AI")
 		}
 	} else {

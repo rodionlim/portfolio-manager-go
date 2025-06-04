@@ -600,16 +600,16 @@ See also: Import/Export endpoints for batch operations.
 
 ### Analytics - SGX Report Analysis
 
-Fetch and analyze the latest SGX report with AI insights:
-
-```sh
-curl -X GET http://localhost:8080/api/v1/analytics/latest
-```
-
-Fetch and analyze the latest SGX report of a specific type:
+Fetch, download and analyze the latest SGX report of a specific type with AI Insight:
 
 ```sh
 curl -X GET "http://localhost:8080/api/v1/analytics/latest?type=fund%20flow"
+```
+
+List all downloaded SGX reports
+
+```sh
+curl -X GET http://localhost:8080/api/v1/analytics/list
 ```
 
 Analyze an existing file in the data directory:

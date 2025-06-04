@@ -95,7 +95,7 @@ type AIAnalyzer interface {
 
 // Service interface for the analytics service
 type Service interface {
-	// FetchLatestReportByType fetches the latest report of a specific type and anlyzes it
+	// FetchLatestReportByType fetches the latest report of a specific type and analyzes it
 	FetchLatestReportByType(ctx context.Context, reportType string) (*ReportAnalysis, error)
 
 	// ListReportsInDataDir lists all available SGX reports in the data directory

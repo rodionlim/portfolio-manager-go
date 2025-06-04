@@ -648,10 +648,13 @@ dividends:
   divWitholdingTaxIE: 0.15
 metrics:
   schedule: "10 17 * * 1-5" # daily at 5:10pm, Mon-Fri (excludes weekends)
+marketData:
+  rateLimitMs: 750 # Minimum milliseconds between Yahoo Finance requests (increased from default 500ms to avoid rate limiting)
 analytics:
   geminiApiKey: "" # Get from Google AI Studio - required for analytics features
-  geminiModel: "gemini-2.5-flash-preview-05-20" # Gemini model to use (docs: https://ai.google.dev/gemini-api/docs/models)
+  geminiModel: "gemini-2.0-flash-lite" # Gemini model to use (docs: https://ai.google.dev/gemini-api/docs/models)
   dataDir: "./data" # Directory to store downloaded SGX reports
+  schedule: "0 17 * * 1" # Weekly on Mondays at 5:00 PM
 ```
 
 ## Roadmap

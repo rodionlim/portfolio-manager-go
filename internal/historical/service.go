@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"portfolio-manager/internal/analytics"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/metrics"
 	"portfolio-manager/pkg/csvutil"
@@ -20,24 +21,56 @@ import (
 
 // Service implements the HistoricalMetricsManager interface
 type Service struct {
-	metricsService metrics.MetricsServicer
-	db             dal.Database
-	scheduler      scheduler.Scheduler
-	logger         *logging.Logger
-	collectionTask scheduler.TaskID
+	metricsService   metrics.MetricsServicer
+	analyticsService analytics.Service
+	db               dal.Database
+	scheduler        scheduler.Scheduler
+	logger           *logging.Logger
+	collectionTask   scheduler.TaskID
 }
 
 // NewService creates a new historical metrics service
 func NewService(
 	metricsService metrics.MetricsServicer,
+	analyticsService analytics.Service,
 	db dal.Database,
 	scheduler scheduler.Scheduler,
 ) *Service {
 	return &Service{
-		metricsService: metricsService,
-		db:             db,
-		scheduler:      scheduler,
-		logger:         logging.GetLogger(),
+		metricsService:   metricsService,
+		analyticsService: analyticsService,
+		db:               db,
+		scheduler:        scheduler,
+		logger:           logging.GetLogger(),
+	}
+}
+
+// StartSGXReportCollection starts collection of sgx report based on a cron expression
+func (s *Service) StartSGXReportCollection(cronExpr string) func() {
+	metricsTask := func(ctx context.Context) error {
+		analysis, err := s.analyticsService.FetchLatestReportByType(context.Background(), "fund flow")
+		if err != nil {
+			return fmt.Errorf("failed to collect SGX fund flow report: %w", err)
+		}
+		s.logger.Info("Successfully collected SGX fund flow reports for", analysis.ReportTitle)
+		return nil
+	}
+
+	sched, err := scheduler.NewCronSchedule(cronExpr)
+	if err != nil {
+		s.logger.Errorf("Invalid cron expression for sgx report collection: %v", err)
+		return func() {}
+	}
+
+	s.collectionTask = s.scheduler.ScheduleTaskFunc(metricsTask, sched)
+
+	s.logger.Infof("Started sgx report collection with cron schedule: %s", cronExpr)
+
+	return func() {
+		if s.collectionTask != "" {
+			s.scheduler.Unschedule(s.collectionTask)
+			s.logger.Info("Stopped sgx report collection")
+		}
 	}
 }
 

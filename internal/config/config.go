@@ -38,6 +38,7 @@ type AnalyticsConfig struct {
 	GeminiAPIKey string `yaml:"geminiApiKey"`
 	GeminiModel  string `yaml:"geminiModel"`
 	DataDir      string `yaml:"dataDir"`
+	Schedule     string `yaml:"schedule"` // Cron schedule for analytics tasks, i.e. SGX report collection
 }
 
 // Config represents the application configuration.
@@ -112,7 +113,7 @@ func initializeConfig(data []byte) error {
 		cfg.Analytics.DataDir = "./data"
 	}
 	if cfg.Analytics.GeminiModel == "" {
-		cfg.Analytics.GeminiModel = "gemini-1.5-flash" // default: fastest and most cost-effective model
+		cfg.Analytics.GeminiModel = "gemini-2.0-flash-lite" // default: fastest and most cost-effective model
 	}
 
 	// Set defaults for MarketDataConfig if not provided

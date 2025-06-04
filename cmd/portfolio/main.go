@@ -120,9 +120,6 @@ func main() {
 	// Create a new metrics service
 	metricsSvc := metrics.NewMetricsService(blotterSvc, portfolioSvc, dividendsSvc, mdata, rdata)
 
-	// Create a new historical metrics service
-	historicalSvc := historical.NewService(metricsSvc, db, sched)
-
 	// Create analytics service if API key is configured
 	var analyticsSvc analytics.Service
 	geminiAPIKey := config.Analytics.GeminiAPIKey
@@ -144,10 +141,21 @@ func main() {
 		logger.Info("Gemini API key not configured, analytics service disabled")
 	}
 
+	// Create a new historical metrics service
+	historicalSvc := historical.NewService(metricsSvc, analyticsSvc, db, sched)
+
 	// Start metrics collection schedule if configured
 	if config.Metrics.Schedule != "" {
 		stopFn := historicalSvc.StartMetricsCollection(config.Metrics.Schedule)
 		defer stopFn()
+	}
+
+	// Start analytics schedule if configured and Gemini API key is set
+	if config.Analytics.Schedule != "" && config.Analytics.GeminiAPIKey != "" {
+		stopFn := historicalSvc.StartSGXReportCollection(config.Analytics.Schedule)
+		defer stopFn()
+	} else {
+		logger.Info("Analytics collection schedule not configured or Gemini API key not set, skipping")
 	}
 
 	// Start the http server to serve requests

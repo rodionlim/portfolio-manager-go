@@ -56,6 +56,14 @@ func (m *MockAIAnalyzer) SetDatabase(db dal.Database) {
 	m.Called(db)
 }
 
+func (m *MockAIAnalyzer) GetAllAnalysisKeys() ([]string, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
 func TestServiceImpl_FetchLatestReportByType(t *testing.T) {
 	// Arrange
 	mockSGXClient := new(MockSGXClient)
@@ -344,6 +352,53 @@ func TestServiceImpl_AnalyzeExistingFile(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "Analysis of existing file", result.Summary)
+
+	mockAIAnalyzer.AssertExpectations(t)
+}
+
+func TestServiceImpl_ListAllAnalysis(t *testing.T) {
+	// Arrange
+	mockSGXClient := new(MockSGXClient)
+	mockAIAnalyzer := new(MockAIAnalyzer)
+	mockDB := mocks.NewMockDatabase()
+
+	// Set up the SetDatabase expectation
+	mockAIAnalyzer.On("SetDatabase", mockDB).Return()
+
+	service := NewService(mockSGXClient, mockAIAnalyzer, "./data", mockDB)
+
+	// Mock analysis keys and data
+	mockKeys := []string{
+		"ANALYTICS_SUMMARY:SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025.xlsx",
+		"ANALYTICS_SUMMARY:SGX_Fund_Flow_Weekly_Tracker_Week_of_19_May_2025.xlsx",
+	}
+
+	mockAnalysis1 := &ReportAnalysis{
+		Summary:     "Analysis 1",
+		KeyInsights: []string{"Insight 1"},
+		ReportTitle: "Fund Flow Week of 26 May 2025",
+	}
+
+	mockAnalysis2 := &ReportAnalysis{
+		Summary:     "Analysis 2",
+		KeyInsights: []string{"Insight 2"},
+		ReportTitle: "Fund Flow Week of 19 May 2025",
+	}
+
+	// Set up expectations
+	mockAIAnalyzer.On("GetAllAnalysisKeys").Return(mockKeys, nil)
+	mockAIAnalyzer.On("FetchAnalysisByFileName", "SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025.xlsx").Return(mockAnalysis1, nil)
+	mockAIAnalyzer.On("FetchAnalysisByFileName", "SGX_Fund_Flow_Weekly_Tracker_Week_of_19_May_2025.xlsx").Return(mockAnalysis2, nil)
+
+	// Act
+	result, err := service.ListAllAnalysis()
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Len(t, result, 2)
+	assert.Equal(t, "Analysis 1", result[0].Summary)
+	assert.Equal(t, "Analysis 2", result[1].Summary)
 
 	mockAIAnalyzer.AssertExpectations(t)
 }

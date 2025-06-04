@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/types"
 	"sort"
 	"strings"
 	"time"
@@ -155,4 +156,30 @@ func (s *ServiceImpl) AnalyzeExistingFile(ctx context.Context, filePath string) 
 	}
 
 	return analysis, nil
+}
+
+// ListAllAnalysis lists all available analysis reports that were previously stored in database
+func (s *ServiceImpl) ListAllAnalysis() ([]*ReportAnalysis, error) {
+	// Get all keys with the analytics summary prefix
+	keys, err := s.aiAnalyzer.GetAllAnalysisKeys()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get analysis keys: %w", err)
+	}
+
+	var analyses []*ReportAnalysis
+	for _, key := range keys {
+		// Extract filename from key (remove prefix)
+		prefix := fmt.Sprintf("%s:", types.AnalyticsSummaryKeyPrefix)
+		fileName := strings.TrimPrefix(key, prefix)
+
+		analysis, err := s.aiAnalyzer.FetchAnalysisByFileName(fileName)
+		if err != nil {
+			// Log error but continue with other analyses
+			continue
+		}
+
+		analyses = append(analyses, analysis)
+	}
+
+	return analyses, nil
 }

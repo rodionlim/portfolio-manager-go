@@ -137,6 +137,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/analytics/list_analysis": {
+            "get": {
+                "description": "Lists all analysis reports that were previously stored in the database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "List all available analysis reports",
+                "responses": {
+                    "200": {
+                        "description": "List of analysis reports",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/analytics.ReportAnalysis"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/blotter/export": {
             "get": {
                 "description": "Export all trades to a CSV file",

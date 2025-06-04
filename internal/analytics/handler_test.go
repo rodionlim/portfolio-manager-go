@@ -37,6 +37,11 @@ func (m *MockService) AnalyzeExistingFile(ctx context.Context, filePath string) 
 	return args.Get(0).(*ReportAnalysis), args.Error(1)
 }
 
+func (m *MockService) ListAllAnalysis() ([]*ReportAnalysis, error) {
+	args := m.Called()
+	return args.Get(0).([]*ReportAnalysis), args.Error(1)
+}
+
 func TestHandleAnalyzeExistingFile(t *testing.T) {
 	// Arrange
 	mockService := new(MockService)

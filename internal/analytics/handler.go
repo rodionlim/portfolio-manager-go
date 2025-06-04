@@ -115,6 +115,32 @@ func HandleAnalyzeExistingFile(service Service) http.HandlerFunc {
 	}
 }
 
+// HandleListAnalysis handles listing all available analysis reports
+// @Summary List all available analysis reports
+// @Description Lists all analysis reports that were previously stored in the database
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Success 200 {array} ReportAnalysis "List of analysis reports"
+// @Failure 500 {object} common.ErrorResponse
+// @Router /api/v1/analytics/list_analysis [get]
+func HandleListAnalysis(service Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		analyses, err := service.ListAllAnalysis()
+		if err != nil {
+			logging.GetLogger().Error("Failed to list analyses:", err)
+			common.WriteJSONError(w, "Failed to list analyses: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(analyses); err != nil {
+			logging.GetLogger().Error("Failed to write analyses response as JSON:", err)
+			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
+		}
+	}
+}
+
 // RegisterHandlers registers the analytics handlers
 func RegisterHandlers(mux *http.ServeMux, service Service) {
 	mux.HandleFunc("/api/v1/analytics/latest", func(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +159,7 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 		}
 	})
 
-	mux.HandleFunc("/api/v1/analytics/list", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/analytics/list_files", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -147,5 +173,13 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 			return
 		}
 		HandleAnalyzeExistingFile(service).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/analytics/list_analysis", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleListAnalysis(service).ServeHTTP(w, r)
 	})
 }

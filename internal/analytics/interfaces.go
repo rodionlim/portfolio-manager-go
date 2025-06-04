@@ -88,6 +88,9 @@ type AIAnalyzer interface {
 
 	// FetchAnalysisByFileName fetches analysis results by file name
 	FetchAnalysisByFileName(fileName string) (*ReportAnalysis, error)
+
+	// GetAllAnalysisKeys gets all analysis keys from the database
+	GetAllAnalysisKeys() ([]string, error)
 }
 
 // Service interface for the analytics service
@@ -97,6 +100,9 @@ type Service interface {
 
 	// ListReportsInDataDir lists all available SGX reports in the data directory
 	ListReportsInDataDir() ([]string, error)
+
+	// ListAllAnalysis lists all available analysis reports that was previously stored in database
+	ListAllAnalysis() ([]*ReportAnalysis, error)
 
 	// AnalyzeExistingFile analyzes an existing file
 	AnalyzeExistingFile(ctx context.Context, filePath string) (*ReportAnalysis, error)

@@ -159,19 +159,35 @@ Be concise and actionable with specific stock codes.`
 	return analysis, nil
 }
 
-// Fetch analysis from LevelDB by file name
+// FetchAnalysisByFileName fetches analysis results by file name from the database
 func (g *GeminiAnalyzer) FetchAnalysisByFileName(fileName string) (*ReportAnalysis, error) {
+	if g.db == nil {
+		return nil, fmt.Errorf("database not configured")
+	}
+
 	dbKey := fmt.Sprintf("%s:%s", types.AnalyticsSummaryKeyPrefix, fileName)
-	var analysisData interface{}
-	err := g.db.Get(dbKey, analysisData)
+	var analysis ReportAnalysis
+	err := g.db.Get(dbKey, &analysis)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch analysis from database: %w", err)
+		return nil, fmt.Errorf("analysis not found for file %s: %w", fileName, err)
 	}
-	analysis, ok := analysisData.(*ReportAnalysis)
-	if !ok {
-		return nil, fmt.Errorf("invalid analysis data type for file %s", fileName)
+
+	return &analysis, nil
+}
+
+// GetAllAnalysisKeys gets all analysis keys from the database
+func (g *GeminiAnalyzer) GetAllAnalysisKeys() ([]string, error) {
+	if g.db == nil {
+		return nil, fmt.Errorf("database not configured")
 	}
-	return analysis, nil
+
+	prefix := string(types.AnalyticsSummaryKeyPrefix)
+	keys, err := g.db.GetAllKeysWithPrefix(prefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get keys with prefix %s: %w", prefix, err)
+	}
+
+	return keys, nil
 }
 
 // Close closes the Gemini client (no-op for this implementation)

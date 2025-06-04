@@ -609,7 +609,7 @@ curl -X GET "http://localhost:8080/api/v1/analytics/latest?type=fund%20flow"
 List all downloaded SGX reports
 
 ```sh
-curl -X GET http://localhost:8080/api/v1/analytics/list
+curl -X GET http://localhost:8080/api/v1/analytics/list_files
 ```
 
 Analyze an existing file in the data directory:
@@ -620,6 +620,12 @@ curl -X POST http://localhost:8080/api/v1/analytics/analyze \
   -d '{
     "filePath": "./data/SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025.xlsx"
   }'
+```
+
+List all stored analysis results:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/analytics/list_analysis
 ```
 
 ## Configurations

@@ -44,6 +44,14 @@ func (m *MockAIAnalyzer) AnalyzeDocument(ctx context.Context, filePath string, f
 	return args.Get(0).(*ReportAnalysis), args.Error(1)
 }
 
+func (m *MockAIAnalyzer) FetchAnalysisByFileName(fileName string) (*ReportAnalysis, error) {
+	args := m.Called(fileName)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*ReportAnalysis), args.Error(1)
+}
+
 func (m *MockAIAnalyzer) SetDatabase(db dal.Database) {
 	m.Called(db)
 }
@@ -216,6 +224,7 @@ func TestServiceImpl_FetchLatestReportByType(t *testing.T) {
 	mockSGXClient.On("FetchReports", ctx).Return(mockReports, nil)
 	mockSGXClient.On("DownloadFile", ctx, "https://example.com/report.xlsx", mock.AnythingOfType("string")).Return(nil)
 	mockAIAnalyzer.On("AnalyzeDocument", ctx, mock.AnythingOfType("string"), "xlsx").Return(mockAnalysis, nil)
+	mockAIAnalyzer.On("FetchAnalysisByFileName", mock.AnythingOfType("string")).Return(nil, fmt.Errorf("not found"))
 
 	// Act
 	result, err := service.FetchLatestReportByType(ctx, "fund flow")

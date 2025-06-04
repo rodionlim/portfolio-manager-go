@@ -159,6 +159,21 @@ Be concise and actionable with specific stock codes.`
 	return analysis, nil
 }
 
+// Fetch analysis from LevelDB by file name
+func (g *GeminiAnalyzer) FetchAnalysisByFileName(fileName string) (*ReportAnalysis, error) {
+	dbKey := fmt.Sprintf("%s:%s", types.AnalyticsSummaryKeyPrefix, fileName)
+	var analysisData interface{}
+	err := g.db.Get(dbKey, analysisData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch analysis from database: %w", err)
+	}
+	analysis, ok := analysisData.(*ReportAnalysis)
+	if !ok {
+		return nil, fmt.Errorf("invalid analysis data type for file %s", fileName)
+	}
+	return analysis, nil
+}
+
 // Close closes the Gemini client (no-op for this implementation)
 func (g *GeminiAnalyzer) Close() error {
 	// The client doesn't have a Close method in this version

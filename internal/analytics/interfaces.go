@@ -85,6 +85,9 @@ type AIAnalyzer interface {
 
 	// SetDatabase sets the database instance for storing analysis results
 	SetDatabase(db dal.Database)
+
+	// FetchAnalysisByFileName fetches analysis results by file name
+	FetchAnalysisByFileName(fileName string) (*ReportAnalysis, error)
 }
 
 // Service interface for the analytics service

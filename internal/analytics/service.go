@@ -100,6 +100,12 @@ func (s *ServiceImpl) processReport(ctx context.Context, report SGXReport) (*Rep
 	safeFileName := generateSafeFileName(report.Data.Title, fileExt)
 	filePath := filepath.Join(s.dataDir, safeFileName)
 
+	// Check if the file already exists
+	analysis, err := s.aiAnalyzer.FetchAnalysisByFileName(safeFileName)
+	if err == nil && analysis != nil {
+		return analysis, nil // Return existing analysis if available
+	}
+
 	// Download the file
 	if err := s.sgxClient.DownloadFile(ctx, fileURL, filePath); err != nil {
 		return nil, fmt.Errorf("failed to download file: %w", err)
@@ -107,7 +113,7 @@ func (s *ServiceImpl) processReport(ctx context.Context, report SGXReport) (*Rep
 
 	// Analyze the file
 	fileType := strings.TrimPrefix(fileExt, ".")
-	analysis, err := s.aiAnalyzer.AnalyzeDocument(ctx, filePath, fileType)
+	analysis, err = s.aiAnalyzer.AnalyzeDocument(ctx, filePath, fileType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to analyze document: %w", err)
 	}

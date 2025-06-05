@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -17,13 +16,13 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) FetchLatestReport(ctx context.Context) (*ReportAnalysis, error) {
-	args := m.Called(ctx)
+func (m *MockService) FetchLatestReport() (*ReportAnalysis, error) {
+	args := m.Called()
 	return args.Get(0).(*ReportAnalysis), args.Error(1)
 }
 
-func (m *MockService) FetchLatestReportByType(ctx context.Context, reportType string) (*ReportAnalysis, error) {
-	args := m.Called(ctx, reportType)
+func (m *MockService) FetchLatestReportByType(reportType string) (*ReportAnalysis, error) {
+	args := m.Called(reportType)
 	return args.Get(0).(*ReportAnalysis), args.Error(1)
 }
 
@@ -32,8 +31,8 @@ func (m *MockService) ListReportsInDataDir() ([]string, error) {
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func (m *MockService) AnalyzeExistingFile(ctx context.Context, filePath string) (*ReportAnalysis, error) {
-	args := m.Called(ctx, filePath)
+func (m *MockService) AnalyzeExistingFile(filePath string) (*ReportAnalysis, error) {
+	args := m.Called(filePath)
 	return args.Get(0).(*ReportAnalysis), args.Error(1)
 }
 
@@ -51,7 +50,7 @@ func TestHandleAnalyzeExistingFile(t *testing.T) {
 		FilePath:    "./data/test.xlsx",
 	}
 
-	mockService.On("AnalyzeExistingFile", mock.Anything, "./data/test.xlsx").Return(mockAnalysis, nil)
+	mockService.On("AnalyzeExistingFile", "./data/test.xlsx").Return(mockAnalysis, nil)
 
 	// Create handler
 	handler := HandleAnalyzeExistingFile(mockService)

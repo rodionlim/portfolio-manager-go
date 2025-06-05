@@ -40,7 +40,7 @@ func NewGeminiAnalyzer(ctx context.Context, apiKey string, model string) (AIAnal
 }
 
 // AnalyzeDocument analyzes a document and returns insights
-func (g *GeminiAnalyzer) AnalyzeDocument(ctx context.Context, filePath string, fileType string) (*ReportAnalysis, error) {
+func (g *GeminiAnalyzer) AnalyzeDocument(filePath string, fileType string) (*ReportAnalysis, error) {
 	var fileData []byte
 	var mimeType string
 	var err error
@@ -102,7 +102,7 @@ Be concise and actionable with specific stock codes.`
 	}
 
 	// Generate content
-	resp, err := g.client.Models.GenerateContent(ctx, g.model, contents, config)
+	resp, err := g.client.Models.GenerateContent(context.Background(), g.model, contents, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate content: %w", err)
 	}

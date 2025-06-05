@@ -1,7 +1,6 @@
 package analytics
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"portfolio-manager/internal/dal"
@@ -48,9 +47,9 @@ func (s *ServiceImpl) ListReportsInDataDir() ([]string, error) {
 }
 
 // FetchLatestReportByType fetches the latest report of a specific type
-func (s *ServiceImpl) FetchLatestReportByType(ctx context.Context, reportType string) (*ReportAnalysis, error) {
+func (s *ServiceImpl) FetchLatestReportByType(reportType string) (*ReportAnalysis, error) {
 	// Fetch reports from SGX
-	reports, err := s.sgxClient.FetchReports(ctx)
+	reports, err := s.sgxClient.FetchReports()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch reports: %w", err)
 	}
@@ -75,11 +74,11 @@ func (s *ServiceImpl) FetchLatestReportByType(ctx context.Context, reportType st
 		return filteredReports[i].Data.ReportDate > filteredReports[j].Data.ReportDate
 	})
 
-	return s.processReport(ctx, filteredReports[0])
+	return s.processReport(filteredReports[0])
 }
 
 // processReport downloads and analyzes a single report
-func (s *ServiceImpl) processReport(ctx context.Context, report SGXReport) (*ReportAnalysis, error) {
+func (s *ServiceImpl) processReport(report SGXReport) (*ReportAnalysis, error) {
 	// Extract file information
 	fileURL := report.Data.Report.Data.File.Data.URL
 	fileMime := report.Data.Report.Data.File.Data.FileMime
@@ -108,13 +107,13 @@ func (s *ServiceImpl) processReport(ctx context.Context, report SGXReport) (*Rep
 	}
 
 	// Download the file
-	if err := s.sgxClient.DownloadFile(ctx, fileURL, filePath); err != nil {
+	if err := s.sgxClient.DownloadFile(fileURL, filePath); err != nil {
 		return nil, fmt.Errorf("failed to download file: %w", err)
 	}
 
 	// Analyze the file
 	fileType := strings.TrimPrefix(fileExt, ".")
-	analysis, err = s.aiAnalyzer.AnalyzeDocument(ctx, filePath, fileType)
+	analysis, err = s.aiAnalyzer.AnalyzeDocument(filePath, fileType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to analyze document: %w", err)
 	}
@@ -144,13 +143,13 @@ func (s *ServiceImpl) processReport(ctx context.Context, report SGXReport) (*Rep
 }
 
 // AnalyzeExistingFile analyzes an existing file
-func (s *ServiceImpl) AnalyzeExistingFile(ctx context.Context, filePath string) (*ReportAnalysis, error) {
+func (s *ServiceImpl) AnalyzeExistingFile(filePath string) (*ReportAnalysis, error) {
 	// Determine file type from extension
 	ext := strings.ToLower(filepath.Ext(filePath))
 	fileType := strings.TrimPrefix(ext, ".")
 
 	// Analyze the file
-	analysis, err := s.aiAnalyzer.AnalyzeDocument(ctx, filePath, fileType)
+	analysis, err := s.aiAnalyzer.AnalyzeDocument(filePath, fileType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to analyze existing file: %w", err)
 	}

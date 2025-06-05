@@ -1,7 +1,6 @@
 package analytics
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,10 +28,10 @@ func NewSGXClient() SGXClient {
 }
 
 // FetchReports fetches the latest SGX reports
-func (c *SGXClientImpl) FetchReports(ctx context.Context) (*SGXReportsResponse, error) {
+func (c *SGXClientImpl) FetchReports() (*SGXReportsResponse, error) {
 	url := "https://api2.sgx.com/content-api?queryId=54d7880bed915819b82da8c0cf77d10e299ea9cc%3Afunds_flow_reports_list&variables=%7B%22limit%22%3A20%2C%22offset%22%3A0%2C%22lang%22%3A%22EN%22%7D"
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -66,14 +65,14 @@ func (c *SGXClientImpl) FetchReports(ctx context.Context) (*SGXReportsResponse, 
 }
 
 // DownloadFile downloads a file from the given URL to the specified path
-func (c *SGXClientImpl) DownloadFile(ctx context.Context, url, filePath string) error {
+func (c *SGXClientImpl) DownloadFile(url, filePath string) error {
 	// Create the directory if it doesn't exist
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create download request: %w", err)
 	}

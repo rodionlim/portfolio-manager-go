@@ -1,7 +1,6 @@
 package analytics
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -18,16 +17,16 @@ type MockSGXClient struct {
 	mock.Mock
 }
 
-func (m *MockSGXClient) FetchReports(ctx context.Context) (*SGXReportsResponse, error) {
-	args := m.Called(ctx)
+func (m *MockSGXClient) FetchReports() (*SGXReportsResponse, error) {
+	args := m.Called()
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*SGXReportsResponse), args.Error(1)
 }
 
-func (m *MockSGXClient) DownloadFile(ctx context.Context, url, filePath string) error {
-	args := m.Called(ctx, url, filePath)
+func (m *MockSGXClient) DownloadFile(url, filePath string) error {
+	args := m.Called(url, filePath)
 	return args.Error(0)
 }
 
@@ -36,8 +35,8 @@ type MockAIAnalyzer struct {
 	mock.Mock
 }
 
-func (m *MockAIAnalyzer) AnalyzeDocument(ctx context.Context, filePath string, fileType string) (*ReportAnalysis, error) {
-	args := m.Called(ctx, filePath, fileType)
+func (m *MockAIAnalyzer) AnalyzeDocument(filePath string, fileType string) (*ReportAnalysis, error) {
+	args := m.Called(filePath, fileType)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -228,14 +227,13 @@ func TestServiceImpl_FetchLatestReportByType(t *testing.T) {
 		KeyInsights: []string{"Insight 1", "Insight 2"},
 	}
 
-	ctx := context.Background()
-	mockSGXClient.On("FetchReports", ctx).Return(mockReports, nil)
-	mockSGXClient.On("DownloadFile", ctx, "https://example.com/report.xlsx", mock.AnythingOfType("string")).Return(nil)
-	mockAIAnalyzer.On("AnalyzeDocument", ctx, mock.AnythingOfType("string"), "xlsx").Return(mockAnalysis, nil)
+	mockSGXClient.On("FetchReports").Return(mockReports, nil)
+	mockSGXClient.On("DownloadFile", "https://example.com/report.xlsx", mock.AnythingOfType("string")).Return(nil)
+	mockAIAnalyzer.On("AnalyzeDocument", mock.AnythingOfType("string"), "xlsx").Return(mockAnalysis, nil)
 	mockAIAnalyzer.On("FetchAnalysisByFileName", mock.AnythingOfType("string")).Return(nil, fmt.Errorf("not found"))
 
 	// Act
-	result, err := service.FetchLatestReportByType(ctx, "fund flow")
+	result, err := service.FetchLatestReportByType("fund flow")
 
 	// Assert
 	assert.NoError(t, err)
@@ -285,11 +283,10 @@ func TestServiceImpl_FetchLatestReport_NoReports(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	mockSGXClient.On("FetchReports", ctx).Return(mockReports, nil)
+	mockSGXClient.On("FetchReports").Return(mockReports, nil)
 
 	// Act
-	result, err := service.FetchLatestReportByType(ctx, "fund flow")
+	result, err := service.FetchLatestReportByType("fund flow")
 
 	// Assert
 	assert.Error(t, err)
@@ -310,12 +307,11 @@ func TestServiceImpl_FetchLatestReport_SGXClientError(t *testing.T) {
 
 	service := NewService(mockSGXClient, mockAIAnalyzer, "./data", mockDB)
 
-	ctx := context.Background()
 	expectedError := fmt.Errorf("SGX API error")
-	mockSGXClient.On("FetchReports", ctx).Return((*SGXReportsResponse)(nil), expectedError)
+	mockSGXClient.On("FetchReports").Return((*SGXReportsResponse)(nil), expectedError)
 
 	// Act
-	result, err := service.FetchLatestReportByType(ctx, "fund flow")
+	result, err := service.FetchLatestReportByType("fund flow")
 
 	// Assert
 	assert.Error(t, err)
@@ -341,12 +337,11 @@ func TestServiceImpl_AnalyzeExistingFile(t *testing.T) {
 		KeyInsights: []string{"Key finding 1", "Key finding 2"},
 	}
 
-	ctx := context.Background()
 	filePath := "./data/existing_report.xlsx"
-	mockAIAnalyzer.On("AnalyzeDocument", ctx, filePath, "xlsx").Return(mockAnalysis, nil)
+	mockAIAnalyzer.On("AnalyzeDocument", filePath, "xlsx").Return(mockAnalysis, nil)
 
 	// Act
-	result, err := service.AnalyzeExistingFile(ctx, filePath)
+	result, err := service.AnalyzeExistingFile(filePath)
 
 	// Assert
 	assert.NoError(t, err)

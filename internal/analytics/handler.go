@@ -51,15 +51,13 @@ func HandleListReports(service Service) http.HandlerFunc {
 // @Router /api/v1/analytics/latest [get]
 func HandleGetLatestReportByType(service Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
 		reportType := r.URL.Query().Get("type")
 		if reportType == "" {
 			common.WriteJSONError(w, "report type is required", http.StatusBadRequest)
 			return
 		}
 
-		analysis, err := service.FetchLatestReportByType(ctx, reportType)
+		analysis, err := service.FetchLatestReportByType(reportType)
 		if err != nil {
 			logging.GetLogger().Error("Failed to fetch latest report by type:", err)
 			common.WriteJSONError(w, "Failed to fetch latest report by type: "+err.Error(), http.StatusInternalServerError)
@@ -87,8 +85,6 @@ func HandleGetLatestReportByType(service Service) http.HandlerFunc {
 // @Router /api/v1/analytics/analyze [post]
 func HandleAnalyzeExistingFile(service Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
 		var req AnalyzeFileRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			common.WriteJSONError(w, "Invalid JSON body: "+err.Error(), http.StatusBadRequest)
@@ -100,7 +96,7 @@ func HandleAnalyzeExistingFile(service Service) http.HandlerFunc {
 			return
 		}
 
-		analysis, err := service.AnalyzeExistingFile(ctx, req.FilePath)
+		analysis, err := service.AnalyzeExistingFile(req.FilePath)
 		if err != nil {
 			logging.GetLogger().Error("Failed to analyze existing file:", err)
 			common.WriteJSONError(w, "Failed to analyze existing file: "+err.Error(), http.StatusInternalServerError)

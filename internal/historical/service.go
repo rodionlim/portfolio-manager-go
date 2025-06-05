@@ -48,7 +48,7 @@ func NewService(
 // StartSGXReportCollection starts collection of sgx report based on a cron expression
 func (s *Service) StartSGXReportCollection(cronExpr string) func() {
 	metricsTask := func(ctx context.Context) error {
-		analysis, err := s.analyticsService.FetchLatestReportByType(context.Background(), "fund flow")
+		analysis, err := s.analyticsService.FetchLatestReportByType("fund flow")
 		if err != nil {
 			return fmt.Errorf("failed to collect SGX fund flow report: %w", err)
 		}

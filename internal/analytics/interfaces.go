@@ -93,7 +93,10 @@ type AIAnalyzer interface {
 
 // Service interface for the analytics service
 type Service interface {
-	// FetchAndAnalyzeLatestReportByType fetches the latest report of a specific type and analyzes it
+	// DownloadLatestNReports downloads the latest N SGX reports and returns their file paths
+	DownloadLatestNReports(n int, reportType string) ([]string, error)
+
+	// FetchAndAnalyzeLatestReportByType downloads the latest report of a specific type and analyzes it
 	FetchAndAnalyzeLatestReportByType(reportType string) (*ReportAnalysis, error)
 
 	// ListReportsInDataDir lists all available SGX reports in the data directory

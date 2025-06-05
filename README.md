@@ -628,6 +628,18 @@ List all stored analysis results:
 curl -X GET http://localhost:8080/api/v1/analytics/list_analysis
 ```
 
+Download the latest N SGX reports:
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/analytics/download?n=5"
+```
+
+Download the latest N SGX reports filtered by type:
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/analytics/download?n=3&type=fund%20flow"
+```
+
 ## Configurations
 
 Sample configurations

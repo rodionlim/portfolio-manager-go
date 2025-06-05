@@ -16,6 +16,14 @@ type MockService struct {
 	mock.Mock
 }
 
+func (m *MockService) DownloadLatestNReports(n int, reportType string) ([]string, error) {
+	args := m.Called(n, reportType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
 func (m *MockService) FetchAndAnalyzeLatestReportByType(reportType string) (*ReportAnalysis, error) {
 	args := m.Called(reportType)
 	return args.Get(0).(*ReportAnalysis), args.Error(1)

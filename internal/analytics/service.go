@@ -47,6 +47,53 @@ func (s *ServiceImpl) ListReportsInDataDir() ([]string, error) {
 	return reportFiles, nil
 }
 
+// DownloadLatestNReports downloads the latest N SGX reports of a specific type
+func (s *ServiceImpl) DownloadLatestNReports(n int, reportType string) ([]string, error) {
+	// Fetch reports from SGX
+	reports, err := s.sgxClient.FetchReports()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch reports: %w", err)
+	}
+
+	var filteredReports []SGXReport
+
+	// If reportType is provided, filter by type; otherwise include all reports
+	if reportType != "" {
+		// Filter reports by type
+		for _, report := range reports.Data.List.Results {
+			for _, flowType := range report.Data.FundsFlowType {
+				if strings.Contains(strings.ToLower(flowType.Data.Data.Name), strings.ToLower(reportType)) {
+					filteredReports = append(filteredReports, report)
+					break
+				}
+			}
+		}
+	} else {
+		// Include all reports if no type filter is specified
+		filteredReports = reports.Data.List.Results
+	}
+
+	// Sort reports by report date (descending)
+	sort.Slice(filteredReports, func(i, j int) bool {
+		return filteredReports[i].Data.ReportDate > filteredReports[j].Data.ReportDate
+	})
+
+	if n > len(filteredReports) {
+		n = len(filteredReports) // Adjust n if it exceeds available reports
+	}
+
+	var downloadedFiles []string
+	for i := 0; i < n; i++ {
+		filePath, _, _, err := s.downloadReport(filteredReports[i])
+		if err != nil {
+			return nil, fmt.Errorf("failed to download report %d: %w", i+1, err)
+		}
+		downloadedFiles = append(downloadedFiles, filePath)
+	}
+
+	return downloadedFiles, nil
+}
+
 // FetchAndAnalyzeLatestReportByType fetches the latest report of a specific type and analyzes it
 func (s *ServiceImpl) FetchAndAnalyzeLatestReportByType(reportType string) (*ReportAnalysis, error) {
 	// Fetch reports from SGX

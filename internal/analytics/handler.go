@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
+	"strconv"
 )
 
 // AnalyzeFileRequest represents a request to analyze a file
@@ -137,6 +138,55 @@ func HandleListAnalysis(service Service) http.HandlerFunc {
 	}
 }
 
+// HandleDownloadLatestNReports handles downloading the latest N SGX reports
+// @Summary Download latest N SGX reports
+// @Description Downloads the latest N SGX reports from SGX and stores them in the data directory. Optionally filter by report type.
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Param n query int true "Number of latest reports to download"
+// @Param type query string false "Report type filter (e.g., 'fund%20flow', 'daily%20momentum'). If not provided, downloads all types."
+// @Success 200 {array} string "List of downloaded report file paths"
+// @Failure 400 {object} common.ErrorResponse
+// @Failure 500 {object} common.ErrorResponse
+// @Router /api/v1/analytics/download [get]
+func HandleDownloadLatestNReports(service Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		nStr := r.URL.Query().Get("n")
+		if nStr == "" {
+			common.WriteJSONError(w, "parameter 'n' is required", http.StatusBadRequest)
+			return
+		}
+
+		n, err := strconv.Atoi(nStr)
+		if err != nil {
+			common.WriteJSONError(w, "parameter 'n' must be a valid integer", http.StatusBadRequest)
+			return
+		}
+
+		if n <= 0 {
+			common.WriteJSONError(w, "parameter 'n' must be greater than 0", http.StatusBadRequest)
+			return
+		}
+
+		// Check if type parameter is provided for filtering by type
+		reportType := r.URL.Query().Get("type")
+
+		downloadedFiles, err := service.DownloadLatestNReports(n, reportType)
+		if err != nil {
+			logging.GetLogger().Error("Failed to download latest N reports:", err)
+			common.WriteJSONError(w, "Failed to download latest N reports: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(downloadedFiles); err != nil {
+			logging.GetLogger().Error("Failed to write download response as JSON:", err)
+			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
+		}
+	}
+}
+
 // RegisterHandlers registers the analytics handlers
 func RegisterHandlers(mux *http.ServeMux, service Service) {
 	mux.HandleFunc("/api/v1/analytics/latest", func(w http.ResponseWriter, r *http.Request) {
@@ -177,5 +227,13 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 			return
 		}
 		HandleListAnalysis(service).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/analytics/download", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleDownloadLatestNReports(service).ServeHTTP(w, r)
 	})
 }

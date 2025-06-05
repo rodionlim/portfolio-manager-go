@@ -62,7 +62,6 @@ type ReportAnalysis struct {
 	ReportDate   int64             `json:"reportDate"`
 	ReportTitle  string            `json:"reportTitle"`
 	ReportType   string            `json:"reportType"`
-	DownloadURL  string            `json:"downloadUrl"`
 	FilePath     string            `json:"filePath"`
 	AnalysisDate int64             `json:"analysisDate"`
 	Metadata     map[string]string `json:"metadata"`
@@ -94,8 +93,8 @@ type AIAnalyzer interface {
 
 // Service interface for the analytics service
 type Service interface {
-	// FetchLatestReportByType fetches the latest report of a specific type and analyzes it
-	FetchLatestReportByType(reportType string) (*ReportAnalysis, error)
+	// FetchAndAnalyzeLatestReportByType fetches the latest report of a specific type and analyzes it
+	FetchAndAnalyzeLatestReportByType(reportType string) (*ReportAnalysis, error)
 
 	// ListReportsInDataDir lists all available SGX reports in the data directory
 	ListReportsInDataDir() ([]string, error)

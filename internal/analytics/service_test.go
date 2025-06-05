@@ -63,7 +63,7 @@ func (m *MockAIAnalyzer) GetAllAnalysisKeys() ([]string, error) {
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func TestServiceImpl_FetchLatestReportByType(t *testing.T) {
+func TestServiceImpl_FetchAndAnalyzeLatestReportByType(t *testing.T) {
 	// Arrange
 	mockSGXClient := new(MockSGXClient)
 	mockAIAnalyzer := new(MockAIAnalyzer)
@@ -233,7 +233,7 @@ func TestServiceImpl_FetchLatestReportByType(t *testing.T) {
 	mockAIAnalyzer.On("FetchAnalysisByFileName", mock.AnythingOfType("string")).Return(nil, fmt.Errorf("not found"))
 
 	// Act
-	result, err := service.FetchLatestReportByType("fund flow")
+	result, err := service.FetchAndAnalyzeLatestReportByType("fund flow")
 
 	// Assert
 	assert.NoError(t, err)
@@ -286,7 +286,7 @@ func TestServiceImpl_FetchLatestReport_NoReports(t *testing.T) {
 	mockSGXClient.On("FetchReports").Return(mockReports, nil)
 
 	// Act
-	result, err := service.FetchLatestReportByType("fund flow")
+	result, err := service.FetchAndAnalyzeLatestReportByType("fund flow")
 
 	// Assert
 	assert.Error(t, err)
@@ -311,7 +311,7 @@ func TestServiceImpl_FetchLatestReport_SGXClientError(t *testing.T) {
 	mockSGXClient.On("FetchReports").Return((*SGXReportsResponse)(nil), expectedError)
 
 	// Act
-	result, err := service.FetchLatestReportByType("fund flow")
+	result, err := service.FetchAndAnalyzeLatestReportByType("fund flow")
 
 	// Assert
 	assert.Error(t, err)

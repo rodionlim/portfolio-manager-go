@@ -16,12 +16,7 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) FetchLatestReport() (*ReportAnalysis, error) {
-	args := m.Called()
-	return args.Get(0).(*ReportAnalysis), args.Error(1)
-}
-
-func (m *MockService) FetchLatestReportByType(reportType string) (*ReportAnalysis, error) {
+func (m *MockService) FetchAndAnalyzeLatestReportByType(reportType string) (*ReportAnalysis, error) {
 	args := m.Called(reportType)
 	return args.Get(0).(*ReportAnalysis), args.Error(1)
 }

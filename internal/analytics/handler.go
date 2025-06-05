@@ -57,7 +57,7 @@ func HandleGetLatestReportByType(service Service) http.HandlerFunc {
 			return
 		}
 
-		analysis, err := service.FetchLatestReportByType(reportType)
+		analysis, err := service.FetchAndAnalyzeLatestReportByType(reportType)
 		if err != nil {
 			logging.GetLogger().Error("Failed to fetch latest report by type:", err)
 			common.WriteJSONError(w, "Failed to fetch latest report by type: "+err.Error(), http.StatusInternalServerError)

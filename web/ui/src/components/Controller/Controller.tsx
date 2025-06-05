@@ -8,6 +8,7 @@ import ReferenceDataForm from "../ReferenceData/ReferenceDataForm";
 import PositionTable from "../Position/PositionTable";
 import DividendsView from "../Dividends/DividendsView";
 import MetricsView from "../Analytics/MetricsView";
+import ReportsView from "../Analytics/ReportsView";
 import Settings from "../Settings/Settings";
 
 const Controller: React.FC = () => {
@@ -22,6 +23,7 @@ const Controller: React.FC = () => {
       <Route path="/refdata" element={<ReferenceDataTable />} />
       <Route path="/positions" element={<PositionTable />} />
       <Route path="/analytics/metrics" element={<MetricsView />} />
+      <Route path="/analytics/reports" element={<ReportsView />} />
       <Route path="/settings" element={<Settings />} />
       <Route
         path="/*"

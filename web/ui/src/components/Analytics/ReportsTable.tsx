@@ -1,0 +1,446 @@
+import React, { useState, useEffect } from "react";
+import {
+  Table,
+  Button,
+  Group,
+  Modal,
+  TextInput,
+  NumberInput,
+  Alert,
+  Collapse,
+  Text,
+  Card,
+  Stack,
+  ActionIcon,
+  Badge,
+  Loader,
+  Box,
+} from "@mantine/core";
+import {
+  IconDownload,
+  IconChevronDown,
+  IconChevronRight,
+  IconInfoCircle,
+  IconFileText,
+} from "@tabler/icons-react";
+import { showNotification } from "@mantine/notifications";
+import { getUrl } from "../../utils/url";
+
+interface ReportFile {
+  path: string;
+  name: string;
+  hasAnalysis: boolean;
+  analysis?: ReportAnalysis;
+}
+
+interface ReportAnalysis {
+  summary: string;
+  keyInsights: string[];
+  reportDate: number;
+  reportTitle: string;
+  reportType: string;
+  filePath: string;
+  analysisDate: number;
+  metadata: Record<string, string>;
+}
+
+const ReportsTable: React.FC = () => {
+  const [reports, setReports] = useState<ReportFile[]>([]);
+  const [analyses, setAnalyses] = useState<ReportAnalysis[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
+  const [downloadCount, setDownloadCount] = useState(5);
+  const [reportType, setReportType] = useState<string>("");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  // Fetch downloaded reports from disk
+  const fetchReports = async () => {
+    try {
+      const response = await fetch(getUrl("/api/v1/analytics/list_files"));
+      if (!response.ok) throw new Error("Failed to fetch reports");
+      const reportPaths: string[] = await response.json();
+
+      const reportFiles = reportPaths.map((path) => ({
+        path,
+        name: path.split("/").pop() || path,
+        hasAnalysis: false,
+      }));
+
+      setReports(reportFiles);
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+      showNotification({
+        title: "Error",
+        message: "Failed to fetch reports",
+        color: "red",
+      });
+    }
+  };
+
+  // Fetch analysis results
+  const fetchAnalyses = async () => {
+    try {
+      const response = await fetch(getUrl("/api/v1/analytics/list_analysis"));
+      if (!response.ok) throw new Error("Failed to fetch analyses");
+      const analysisData: ReportAnalysis[] = await response.json();
+      setAnalyses(analysisData);
+      return analysisData;
+    } catch (error) {
+      console.error("Error fetching analyses:", error);
+      showNotification({
+        title: "Error",
+        message: "Failed to fetch analyses",
+        color: "red",
+      });
+      return [];
+    }
+  };
+
+  // Match reports with their analyses
+  const matchReportsWithAnalyses = (
+    reportFiles: ReportFile[],
+    analysisData: ReportAnalysis[]
+  ) => {
+    const updatedReports = reportFiles.map((report) => {
+      const analysis = analysisData.find((a) => {
+        const analysisFileName = a.filePath.split("/").pop();
+        return analysisFileName === report.name;
+      });
+
+      return {
+        ...report,
+        hasAnalysis: !!analysis,
+        analysis,
+      };
+    });
+
+    setReports(updatedReports);
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        await fetchReports();
+        const analysisData = await fetchAnalyses();
+
+        // Re-fetch reports to ensure we have the latest data before matching
+        const response = await fetch(getUrl("/api/v1/analytics/list_files"));
+        if (response.ok) {
+          const reportPaths: string[] = await response.json();
+          const reportFiles = reportPaths.map((path) => ({
+            path,
+            name: path.split("/").pop() || path,
+            hasAnalysis: false,
+          }));
+
+          matchReportsWithAnalyses(reportFiles, analysisData);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Download latest N reports
+  const handleDownloadReports = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        n: downloadCount.toString(),
+      });
+
+      if (reportType) {
+        params.append("type", reportType);
+      }
+
+      const response = await fetch(
+        getUrl(`/api/v1/analytics/download?${params}`)
+      );
+      if (!response.ok) throw new Error("Failed to download reports");
+
+      const downloadedFiles: string[] = await response.json();
+
+      showNotification({
+        title: "Success",
+        message: `Downloaded ${downloadedFiles.length} reports`,
+        color: "green",
+      });
+
+      setDownloadModalOpen(false);
+
+      // Refresh the reports list
+      await fetchReports();
+      const analysisData = await fetchAnalyses();
+
+      const updatedResponse = await fetch(
+        getUrl("/api/v1/analytics/list_files")
+      );
+      if (updatedResponse.ok) {
+        const reportPaths: string[] = await updatedResponse.json();
+        const reportFiles = reportPaths.map((path) => ({
+          path,
+          name: path.split("/").pop() || path,
+          hasAnalysis: false,
+        }));
+
+        matchReportsWithAnalyses(reportFiles, analysisData);
+      }
+    } catch (error) {
+      console.error("Error downloading reports:", error);
+      showNotification({
+        title: "Error",
+        message: "Failed to download reports",
+        color: "red",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Toggle row expansion
+  const toggleRowExpansion = (reportName: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(reportName)) {
+      newExpanded.delete(reportName);
+    } else {
+      newExpanded.add(reportName);
+    }
+    setExpandedRows(newExpanded);
+  };
+
+  // Format date
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp * 1000).toLocaleDateString();
+  };
+
+  // Render text with markdown-style formatting
+  const renderFormattedText = (text: string) => {
+    // Split text by ## headers and ** bold text, keeping the delimiters
+    const parts = text.split(/(##[^#\n]+|\*\*[^*]+\*\*)/g);
+
+    return parts.map((part, index) => {
+      if (part.startsWith("##")) {
+        // Header text - remove ## and render as heading
+        return (
+          <Text key={index} fw={700} size="md" mt="md" mb="sm" component="h4">
+            {part.replace(/##\s*/, "")}
+          </Text>
+        );
+      } else if (part.startsWith("**") && part.endsWith("**")) {
+        // Bold text - remove ** and render as bold
+        return (
+          <Text key={index} size="sm" fw={600} component="span">
+            {part.slice(2, -2)}
+          </Text>
+        );
+      } else {
+        // Regular text
+        return <span key={index}>{part}</span>;
+      }
+    });
+  };
+
+  return (
+    <Box>
+      <Group justify="space-between" mb="md">
+        <Text size="lg" fw={600}>
+          SGX Reports
+        </Text>
+        <Button
+          leftSection={<IconDownload size={16} />}
+          onClick={() => setDownloadModalOpen(true)}
+          loading={loading}
+        >
+          Download Reports
+        </Button>
+      </Group>
+
+      {loading && reports.length === 0 ? (
+        <Group justify="center" py="xl">
+          <Loader />
+          <Text>Loading reports...</Text>
+        </Group>
+      ) : (
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Report Name</Table.Th>
+              <Table.Th>Analysis Status</Table.Th>
+              <Table.Th>Actions</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {reports.map((report) => (
+              <React.Fragment key={report.name}>
+                <Table.Tr>
+                  <Table.Td>
+                    <Group gap="xs">
+                      <IconFileText size={16} />
+                      <Text>{report.name}</Text>
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    {report.hasAnalysis ? (
+                      <Badge color="green" size="sm">
+                        Analyzed
+                      </Badge>
+                    ) : (
+                      <Badge color="gray" size="sm">
+                        No Analysis
+                      </Badge>
+                    )}
+                  </Table.Td>
+                  <Table.Td>
+                    {report.hasAnalysis && (
+                      <ActionIcon
+                        variant="subtle"
+                        onClick={() => toggleRowExpansion(report.name)}
+                      >
+                        {expandedRows.has(report.name) ? (
+                          <IconChevronDown size={16} />
+                        ) : (
+                          <IconChevronRight size={16} />
+                        )}
+                      </ActionIcon>
+                    )}
+                  </Table.Td>
+                </Table.Tr>
+                {report.hasAnalysis &&
+                  expandedRows.has(report.name) &&
+                  report.analysis && (
+                    <Table.Tr>
+                      <Table.Td colSpan={3}>
+                        <Collapse in={expandedRows.has(report.name)}>
+                          <Card withBorder p="md" mt="xs">
+                            <Stack gap="sm">
+                              <Group>
+                                <Text fw={600}>Report Analysis</Text>
+                                <Badge variant="light" color="blue">
+                                  {report.analysis.reportType}
+                                </Badge>
+                              </Group>
+
+                              <Group>
+                                <Text size="sm" c="dimmed">
+                                  Report Date:{" "}
+                                  {formatDate(report.analysis.reportDate)}
+                                </Text>
+                                <Text size="sm" c="dimmed">
+                                  Analysis Date:{" "}
+                                  {formatDate(report.analysis.analysisDate)}
+                                </Text>
+                              </Group>
+
+                              <div>
+                                <Text fw={500} mb="xs">
+                                  Summary:
+                                </Text>
+                                <div
+                                  style={{
+                                    fontSize: "14px",
+                                    lineHeight: "1.5",
+                                  }}
+                                >
+                                  {renderFormattedText(
+                                    report.analysis.summary.replace(
+                                      "**1. CONCISE SUMMARY:**",
+                                      ""
+                                    )
+                                  )}
+                                </div>
+                              </div>
+
+                              {report.analysis.keyInsights.length > 0 && (
+                                <div>
+                                  <Text fw={500} mb="xs">
+                                    Key Insights:
+                                  </Text>
+                                  <Stack gap="xs">
+                                    {report.analysis.keyInsights.map(
+                                      (insight, index) => (
+                                        <Alert
+                                          key={index}
+                                          icon={<IconInfoCircle size={16} />}
+                                          variant="light"
+                                          color="blue"
+                                        >
+                                          {renderFormattedText(insight)}
+                                        </Alert>
+                                      )
+                                    )}
+                                  </Stack>
+                                </div>
+                              )}
+                            </Stack>
+                          </Card>
+                        </Collapse>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+              </React.Fragment>
+            ))}
+            {reports.length === 0 && !loading && (
+              <Table.Tr>
+                <Table.Td colSpan={3} style={{ textAlign: "center" }}>
+                  <Text c="dimmed" py="xl">
+                    No reports found. Click "Download Reports" to get started.
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
+            )}
+          </Table.Tbody>
+        </Table>
+      )}
+
+      {/* Download Modal */}
+      <Modal
+        opened={downloadModalOpen}
+        onClose={() => setDownloadModalOpen(false)}
+        title="Download SGX Reports"
+        size="md"
+      >
+        <Stack gap="md">
+          <NumberInput
+            label="Number of reports to download"
+            description="How many of the latest reports to download"
+            value={downloadCount}
+            onChange={(value) => setDownloadCount(Number(value))}
+            min={1}
+            max={20}
+            required
+          />
+
+          <TextInput
+            label="Report type filter (optional)"
+            description="Filter by report type (e.g., 'fund flow', 'daily momentum')"
+            placeholder="Leave empty to download all types"
+            value={reportType}
+            onChange={(event) => setReportType(event.currentTarget.value)}
+          />
+
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={() => setDownloadModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDownloadReports}
+              loading={loading}
+              leftSection={<IconDownload size={16} />}
+            >
+              Download
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </Box>
+  );
+};
+
+export default ReportsTable;

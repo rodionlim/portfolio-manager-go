@@ -39,7 +39,7 @@ func (s *ServiceImpl) ListReportsInDataDir() ([]string, error) {
 
 	var reportFiles []string
 	for _, file := range files {
-		if !strings.HasSuffix(file, ".dat") { // Exclude .dat files
+		if !strings.HasSuffix(file, ".dat") && !strings.HasSuffix(file, ".DS_Store") { // Exclude .dat and .DS_Store files
 			reportFiles = append(reportFiles, file)
 		}
 	}

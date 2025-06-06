@@ -1,3 +1,22 @@
+## [1.5.0] - 2025-06-06
+
+### 🚀 Features
+
+- *(ai)* List all sgx reports and store ai analysis in level db
+- *(ai)* Only download sgx reports if not processed previously
+- *(ai)* Add handler endpoint to fetch all previously stored ai analysis
+- *(historical)* Schedule the collection of sgx funds flow report and analysis
+- *(analytics)* Refactor process report into download and analyze report steps
+- *(ai)* Create endpoints to download sgx reports #57
+- *(ui)* Add new analytics reports component to view sgx reports
+- *(ai)* Allow analyzing multiple reports
+- *(ui)* Add functionality to run gemini analysis on downloaded reports
+- *(ai)* Fetch gemini api key via environment variable
+
+### 🐛 Bug Fixes
+
+- *(ai)* Remove context as input parameter
+
 ## [1.4.2] - 2025-06-03
 
 ### 🐛 Bug Fixes

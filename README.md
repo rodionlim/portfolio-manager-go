@@ -16,6 +16,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Store portfolio, reference, dividends and coupon data in leveldb for persistence
 - Display detailed information for individual and aggregated assets
 - Collect and display portfolio statistics such as IRR, MV, Price Paid
+- Integration with Gemini to derive trading insights via Analytics module
 - OpenAPI compliant for easy integration with other systems
 - UI for end users
 
@@ -26,12 +27,36 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 3. Run `make` to build and install the application
 4. Run the `portfolio-manager` binary to start the application. Pass in config flag `-config custom-config.yaml`
 
+### Environment Variables
+
+The application supports the following environment variables:
+
+- `GEMINI_API_KEY`: API key for Google Gemini AI service (used for SGX report analysis). If set, this will override the `geminiApiKey` setting in the config file.
+
 ### Proxmox VE Helper Scripts
 
 For home-labbers, helpers scripts are exposed to allow easy installation of `portfolio-manager` in lxc containers within Proxmox VE.
 
 ```sh
 bash -c "$(wget -qLO - https://github.com/rodionlim/portfolio-manager-go/raw/main/lxc/portfolio-manager.sh)"
+```
+
+#### Setting Environment Variables in Proxmox
+
+For Proxmox deployments, you can set environment variables directly in the systemd unit file. After installation, edit the service file:
+
+```sh
+# Edit the systemd service file
+sudo systemctl edit portfolio-manager --full
+
+# Add environment variables in the [Service] section:
+[Service]
+Environment="GEMINI_API_KEY=your_api_key_here"
+# ... other existing configuration
+
+# Reload and restart the service
+sudo systemctl daemon-reload
+sudo systemctl restart portfolio-manager
 ```
 
 ## Quickstart

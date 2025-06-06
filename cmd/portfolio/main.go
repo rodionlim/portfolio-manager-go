@@ -100,7 +100,7 @@ func main() {
 	// Configure market data rate limiting
 	if config.MarketData.RateLimitMs > 0 {
 		common.SetRateLimitInterval(config.MarketData.RateLimitMs)
-		logger.Infof("Set market data rate limit to %dms between requests", config.MarketData.RateLimitMs)
+		logger.Infof("Set market data rate limit (yahoo mdata source) to %dms between requests", config.MarketData.RateLimitMs)
 	}
 
 	// Create a new dividends manager
@@ -123,10 +123,6 @@ func main() {
 	// Create analytics service if API key is configured
 	var analyticsSvc analytics.Service
 	geminiAPIKey := config.Analytics.GeminiAPIKey
-	if geminiAPIKey == "" {
-		// Try to get from environment variable
-		geminiAPIKey = os.Getenv("GEMINI_API_KEY")
-	}
 
 	if geminiAPIKey != "" {
 		sgxClient := analytics.NewSGXClient()

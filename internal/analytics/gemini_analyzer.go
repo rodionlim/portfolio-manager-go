@@ -72,7 +72,7 @@ func (g *GeminiAnalyzer) AnalyzeDocument(filePath string, fileType string) (*Rep
    - Notable divergences between weekly and YTD patterns
    - 2 SPECIFIC BUY RECOMMENDATIONS based on: consistent institutional accumulation, favorable YTD trends, retail sentiment divergence, and average daily flow patterns
 
-2. KEY INSIGHTS (max 5 bullet points):
+2. KEY INSIGHTS (max 4 bullet points):
    - Institutional flow consistency patterns (weekly vs YTD alignment)
    - Significant retail vs institutional divergences (contrarian opportunities)  
    - Average daily flow anomalies vs current week performance

@@ -640,6 +640,18 @@ Download the latest N SGX reports filtered by type:
 curl -X GET "http://localhost:8080/api/v1/analytics/download?n=3&type=fund%20flow"
 ```
 
+Analyze the latest N SGX reports filtered by type:
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/analytics/analyze_latest?n=3&type=fund%20flow"
+```
+
+Analyze the latest N SGX reports with force reanalysis (This will use additional API limits unnecessarily):
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/analytics/analyze_latest?n=3&type=fund%20flow&force=true"
+```
+
 ## Configurations
 
 Sample configurations

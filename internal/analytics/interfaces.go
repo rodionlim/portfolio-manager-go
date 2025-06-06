@@ -96,6 +96,9 @@ type Service interface {
 	// DownloadLatestNReports downloads the latest N SGX reports and returns their file paths
 	DownloadLatestNReports(n int, reportType string) ([]string, error)
 
+	// AnalyzeLatestNReports analyzes the latest N SGX reports and returns their analysis results
+	AnalyzeLatestNReports(n int, reportType string, forceReanalysis bool) ([]*ReportAnalysis, error)
+
 	// FetchAndAnalyzeLatestReportByType downloads the latest report of a specific type and analyzes it
 	FetchAndAnalyzeLatestReportByType(reportType string) (*ReportAnalysis, error)
 

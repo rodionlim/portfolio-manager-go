@@ -94,6 +94,77 @@ func (s *ServiceImpl) DownloadLatestNReports(n int, reportType string) ([]string
 	return downloadedFiles, nil
 }
 
+// AnalyzeLatestNReports analyzes the latest N SGX reports and returns their analysis results
+func (s *ServiceImpl) AnalyzeLatestNReports(n int, reportType string, forceReanalysis bool) ([]*ReportAnalysis, error) {
+	// Fetch reports from SGX
+	reports, err := s.sgxClient.FetchReports()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch reports: %w", err)
+	}
+
+	var filteredReports []SGXReport
+
+	// If reportType is provided, filter by type; otherwise include all reports
+	if reportType != "" {
+		// Filter reports by type
+		for _, report := range reports.Data.List.Results {
+			for _, flowType := range report.Data.FundsFlowType {
+				if strings.Contains(strings.ToLower(flowType.Data.Data.Name), strings.ToLower(reportType)) {
+					filteredReports = append(filteredReports, report)
+					break
+				}
+			}
+		}
+	} else {
+		// Include all reports if no type filter is specified
+		filteredReports = reports.Data.List.Results
+	}
+
+	// Sort reports by report date (descending)
+	sort.Slice(filteredReports, func(i, j int) bool {
+		return filteredReports[i].Data.ReportDate > filteredReports[j].Data.ReportDate
+	})
+
+	if n > len(filteredReports) {
+		n = len(filteredReports) // Adjust n if it exceeds available reports
+	}
+
+	var analyses []*ReportAnalysis
+	for i := 0; i < n; i++ {
+		report := filteredReports[i]
+
+		// First, download the report
+		filePath, safeFileName, fileExt, err := s.downloadReport(report)
+		if err != nil {
+			return nil, fmt.Errorf("failed to download report %d: %w", i+1, err)
+		}
+
+		var analysis *ReportAnalysis
+
+		// Check if analysis already exists in database (unless force reanalysis is requested)
+		if !forceReanalysis {
+			existingAnalysis, err := s.aiAnalyzer.FetchAnalysisByFileName(safeFileName)
+			if err == nil && existingAnalysis != nil {
+				// Use existing analysis from database
+				analysis = existingAnalysis
+			}
+		}
+
+		// If no existing analysis or force reanalysis is requested, perform new analysis
+		if analysis == nil {
+			newAnalysis, err := s.analyzeReport(report, filePath, safeFileName, fileExt)
+			if err != nil {
+				return nil, fmt.Errorf("failed to analyze report %d: %w", i+1, err)
+			}
+			analysis = newAnalysis
+		}
+
+		analyses = append(analyses, analysis)
+	}
+
+	return analyses, nil
+}
+
 // FetchAndAnalyzeLatestReportByType fetches the latest report of a specific type and analyzes it
 func (s *ServiceImpl) FetchAndAnalyzeLatestReportByType(reportType string) (*ReportAnalysis, error) {
 	// Fetch reports from SGX

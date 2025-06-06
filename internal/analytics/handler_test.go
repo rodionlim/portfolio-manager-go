@@ -24,6 +24,14 @@ func (m *MockService) DownloadLatestNReports(n int, reportType string) ([]string
 	return args.Get(0).([]string), args.Error(1)
 }
 
+func (m *MockService) AnalyzeLatestNReports(n int, reportType string, force bool) ([]*ReportAnalysis, error) {
+	args := m.Called(n, reportType, force)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*ReportAnalysis), args.Error(1)
+}
+
 func (m *MockService) FetchAndAnalyzeLatestReportByType(reportType string) (*ReportAnalysis, error) {
 	args := m.Called(reportType)
 	return args.Get(0).(*ReportAnalysis), args.Error(1)

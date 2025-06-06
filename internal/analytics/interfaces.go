@@ -1,7 +1,7 @@
 package analytics
 
 import (
-	"context"
+	"portfolio-manager/internal/dal"
 )
 
 // SGXReport represents a single SGX report from the API
@@ -62,7 +62,6 @@ type ReportAnalysis struct {
 	ReportDate   int64             `json:"reportDate"`
 	ReportTitle  string            `json:"reportTitle"`
 	ReportType   string            `json:"reportType"`
-	DownloadURL  string            `json:"downloadUrl"`
 	FilePath     string            `json:"filePath"`
 	AnalysisDate int64             `json:"analysisDate"`
 	Metadata     map[string]string `json:"metadata"`
@@ -71,26 +70,44 @@ type ReportAnalysis struct {
 // SGXClient interface for fetching SGX reports
 type SGXClient interface {
 	// FetchReports fetches the latest SGX reports
-	FetchReports(ctx context.Context) (*SGXReportsResponse, error)
+	FetchReports() (*SGXReportsResponse, error)
 
 	// DownloadFile downloads a file from the given URL
-	DownloadFile(ctx context.Context, url, filePath string) error
+	DownloadFile(url, filePath string) error
 }
 
 // AIAnalyzer interface for analyzing documents with AI
 type AIAnalyzer interface {
 	// AnalyzeDocument analyzes a document and returns insights
-	AnalyzeDocument(ctx context.Context, filePath string, fileType string) (*ReportAnalysis, error)
+	AnalyzeDocument(filePath string, fileType string) (*ReportAnalysis, error)
+
+	// SetDatabase sets the database instance for storing analysis results
+	SetDatabase(db dal.Database)
+
+	// FetchAnalysisByFileName fetches analysis results by file name
+	FetchAnalysisByFileName(fileName string) (*ReportAnalysis, error)
+
+	// GetAllAnalysisKeys gets all analysis keys from the database
+	GetAllAnalysisKeys() ([]string, error)
 }
 
 // Service interface for the analytics service
 type Service interface {
-	// FetchLatestReport fetches the latest SGX report and analyzes it
-	FetchLatestReport(ctx context.Context) (*ReportAnalysis, error)
+	// DownloadLatestNReports downloads the latest N SGX reports and returns their file paths
+	DownloadLatestNReports(n int, reportType string) ([]string, error)
 
-	// FetchLatestReportByType fetches the latest report of a specific type
-	FetchLatestReportByType(ctx context.Context, reportType string) (*ReportAnalysis, error)
+	// AnalyzeLatestNReports analyzes the latest N SGX reports and returns their analysis results
+	AnalyzeLatestNReports(n int, reportType string, forceReanalysis bool) ([]*ReportAnalysis, error)
+
+	// FetchAndAnalyzeLatestReportByType downloads the latest report of a specific type and analyzes it
+	FetchAndAnalyzeLatestReportByType(reportType string) (*ReportAnalysis, error)
+
+	// ListReportsInDataDir lists all available SGX reports in the data directory
+	ListReportsInDataDir() ([]string, error)
+
+	// ListAllAnalysis lists all available analysis reports that was previously stored in database
+	ListAllAnalysis() ([]*ReportAnalysis, error)
 
 	// AnalyzeExistingFile analyzes an existing file
-	AnalyzeExistingFile(ctx context.Context, filePath string) (*ReportAnalysis, error)
+	AnalyzeExistingFile(filePath string) (*ReportAnalysis, error)
 }

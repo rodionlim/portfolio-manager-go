@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/types"
+	"regexp"
 	"strings"
 	"time"
 
@@ -18,6 +21,7 @@ import (
 type GeminiAnalyzer struct {
 	client *genai.Client
 	model  string
+	db     dal.Database
 }
 
 // NewGeminiAnalyzer creates a new Gemini AI analyzer
@@ -36,7 +40,7 @@ func NewGeminiAnalyzer(ctx context.Context, apiKey string, model string) (AIAnal
 }
 
 // AnalyzeDocument analyzes a document and returns insights
-func (g *GeminiAnalyzer) AnalyzeDocument(ctx context.Context, filePath string, fileType string) (*ReportAnalysis, error) {
+func (g *GeminiAnalyzer) AnalyzeDocument(filePath string, fileType string) (*ReportAnalysis, error) {
 	var fileData []byte
 	var mimeType string
 	var err error
@@ -68,11 +72,12 @@ func (g *GeminiAnalyzer) AnalyzeDocument(ctx context.Context, filePath string, f
    - Notable divergences between weekly and YTD patterns
    - 2 SPECIFIC BUY RECOMMENDATIONS based on: consistent institutional accumulation, favorable YTD trends, retail sentiment divergence, and average daily flow patterns
 
-2. KEY INSIGHTS (max 5 bullet points):
+2. KEY INSIGHTS (max 4 bullet points):
    - Institutional flow consistency patterns (weekly vs YTD alignment)
    - Significant retail vs institutional divergences (contrarian opportunities)  
    - Average daily flow anomalies vs current week performance
    - Momentum shifts in institutional positioning
+   - Sector-specific insights based on flow patterns
    - Risk signals from unusual flow patterns
 
 Consider ALL data: weekly flows, YTD flows, retail behavior, average daily volumes, and flow consistency.
@@ -97,7 +102,7 @@ Be concise and actionable with specific stock codes.`
 	}
 
 	// Generate content
-	resp, err := g.client.Models.GenerateContent(ctx, g.model, contents, config)
+	resp, err := g.client.Models.GenerateContent(context.Background(), g.model, contents, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate content: %w", err)
 	}
@@ -121,10 +126,16 @@ Be concise and actionable with specific stock codes.`
 	fileName := filepath.Base(filePath)
 	reportTitle := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 
+	// Extract report date from filename
+	reportDate, err := extractReportDateFromFilename(fileName)
+	if err != nil {
+		reportDate = time.Now().Unix() // Fallback to current time if extraction fails
+	}
+
 	analysis := &ReportAnalysis{
 		Summary:      summary,
 		KeyInsights:  keyInsights,
-		ReportDate:   time.Now().Unix(), // We'll update this when we have the actual report date
+		ReportDate:   reportDate,
 		ReportTitle:  reportTitle,
 		ReportType:   fileType,
 		FilePath:     filePath,
@@ -136,13 +147,87 @@ Be concise and actionable with specific stock codes.`
 		},
 	}
 
+	// Store analysis in LevelDB if database is available
+	if g.db != nil {
+		dbKey := fmt.Sprintf("%s:%s", types.AnalyticsSummaryKeyPrefix, fileName)
+		if err := g.db.Put(dbKey, analysis); err != nil {
+			// Log error but don't fail the analysis
+			fmt.Printf("Warning: failed to store analysis in database: %v\n", err)
+		}
+	}
+
 	return analysis, nil
+}
+
+// FetchAnalysisByFileName fetches analysis results by file name from the database
+func (g *GeminiAnalyzer) FetchAnalysisByFileName(fileName string) (*ReportAnalysis, error) {
+	if g.db == nil {
+		return nil, fmt.Errorf("database not configured")
+	}
+
+	dbKey := fmt.Sprintf("%s:%s", types.AnalyticsSummaryKeyPrefix, fileName)
+	var analysis ReportAnalysis
+	err := g.db.Get(dbKey, &analysis)
+	if err != nil {
+		return nil, fmt.Errorf("analysis not found for file %s: %w", fileName, err)
+	}
+
+	return &analysis, nil
+}
+
+// GetAllAnalysisKeys gets all analysis keys from the database
+func (g *GeminiAnalyzer) GetAllAnalysisKeys() ([]string, error) {
+	if g.db == nil {
+		return nil, fmt.Errorf("database not configured")
+	}
+
+	prefix := string(types.AnalyticsSummaryKeyPrefix)
+	keys, err := g.db.GetAllKeysWithPrefix(prefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get keys with prefix %s: %w", prefix, err)
+	}
+
+	return keys, nil
 }
 
 // Close closes the Gemini client (no-op for this implementation)
 func (g *GeminiAnalyzer) Close() error {
 	// The client doesn't have a Close method in this version
 	return nil
+}
+
+// SetDatabase sets the database instance for storing analysis results
+func (g *GeminiAnalyzer) SetDatabase(db dal.Database) {
+	g.db = db
+}
+
+// extractReportDateFromFilename extracts the date from SGX filename format
+// Example: "SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025.xlsx" -> "26_May_2025"
+func extractReportDateFromFilename(filename string) (int64, error) {
+	// Remove file extension
+	nameWithoutExt := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	// Regex to match the date pattern: dd_mmm_yyyy
+	re := regexp.MustCompile(`(\d{1,2})_([A-Za-z]{3})_(\d{4})`)
+	matches := re.FindStringSubmatch(nameWithoutExt)
+
+	if len(matches) != 4 {
+		return 0, fmt.Errorf("could not extract date from filename: %s", filename)
+	}
+
+	// Parse the date components
+	day := matches[1]
+	month := matches[2]
+	year := matches[3]
+
+	// Parse the date string
+	dateStr := fmt.Sprintf("%s %s %s", day, month, year)
+	parsedTime, err := time.Parse("2 Jan 2006", dateStr)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse date from filename: %w", err)
+	}
+
+	return parsedTime.Unix(), nil
 }
 
 // getMimeType returns the appropriate MIME type for the file

@@ -100,7 +100,7 @@ func main() {
 	// Configure market data rate limiting
 	if config.MarketData.RateLimitMs > 0 {
 		common.SetRateLimitInterval(config.MarketData.RateLimitMs)
-		logger.Infof("Set market data rate limit to %dms between requests", config.MarketData.RateLimitMs)
+		logger.Infof("Set market data rate limit (yahoo mdata source) to %dms between requests", config.MarketData.RateLimitMs)
 	}
 
 	// Create a new dividends manager
@@ -120,16 +120,9 @@ func main() {
 	// Create a new metrics service
 	metricsSvc := metrics.NewMetricsService(blotterSvc, portfolioSvc, dividendsSvc, mdata, rdata)
 
-	// Create a new historical metrics service
-	historicalSvc := historical.NewService(metricsSvc, db, sched)
-
 	// Create analytics service if API key is configured
 	var analyticsSvc analytics.Service
 	geminiAPIKey := config.Analytics.GeminiAPIKey
-	if geminiAPIKey == "" {
-		// Try to get from environment variable
-		geminiAPIKey = os.Getenv("GEMINI_API_KEY")
-	}
 
 	if geminiAPIKey != "" {
 		sgxClient := analytics.NewSGXClient()
@@ -137,17 +130,28 @@ func main() {
 		if err != nil {
 			logger.Error("Failed to create Gemini analyzer, analytics will be disabled:", err)
 		} else {
-			analyticsSvc = analytics.NewService(sgxClient, aiAnalyzer, config.Analytics.DataDir)
+			analyticsSvc = analytics.NewService(sgxClient, aiAnalyzer, config.Analytics.DataDir, db)
 			logger.Info("Analytics service initialized with Gemini AI")
 		}
 	} else {
 		logger.Info("Gemini API key not configured, analytics service disabled")
 	}
 
+	// Create a new historical metrics service
+	historicalSvc := historical.NewService(metricsSvc, analyticsSvc, db, sched)
+
 	// Start metrics collection schedule if configured
 	if config.Metrics.Schedule != "" {
 		stopFn := historicalSvc.StartMetricsCollection(config.Metrics.Schedule)
 		defer stopFn()
+	}
+
+	// Start analytics schedule if configured and Gemini API key is set
+	if config.Analytics.Schedule != "" && config.Analytics.GeminiAPIKey != "" {
+		stopFn := historicalSvc.StartSGXReportCollection(config.Analytics.Schedule)
+		defer stopFn()
+	} else {
+		logger.Info("Analytics collection schedule not configured or Gemini API key not set, skipping")
 	}
 
 	// Start the http server to serve requests

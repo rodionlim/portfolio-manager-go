@@ -6,10 +6,11 @@
 - Whenever adding a new handler endpoint, always update the swagger documentation for the endpoint (using swaggo comments above the handler).
 - Whenever you amend config.yaml or add new configuration to config.go, always update the Configurations section in README.md to reflect the latest config options and defaults.
 - When implementing getter methods that return collections (arrays/slices), always initialize with an empty collection (`[]Type{}`) rather than a nil slice to ensure JSON serialization produces an empty array (`[]`) instead of `null`. This maintains consistency with REST API best practices.
+- Whenever making calls to backend server from the front end, wrap the calls with getUrl function in web/ui/src/utils/url.ts
 
 ## Mocking Strategy
 
-When writing tests for this codebase, always use the testify mocking framework located in `internal/mocks/testify/` rather than the custom mock implementations in `internal/mocks/`.
+When writing tests for this codebase (this only includes modules that are outside web/ui, i.e. non ui components), always use the testify mocking framework located in `internal/mocks/testify/` rather than the custom mock implementations in `internal/mocks/`.
 
 The testify mocking framework is the preferred approach for several reasons:
 

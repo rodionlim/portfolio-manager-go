@@ -16,6 +16,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Store portfolio, reference, dividends and coupon data in leveldb for persistence
 - Display detailed information for individual and aggregated assets
 - Collect and display portfolio statistics such as IRR, MV, Price Paid
+- Integration with Gemini to derive trading insights via Analytics module
 - OpenAPI compliant for easy integration with other systems
 - UI for end users
 
@@ -26,12 +27,36 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 3. Run `make` to build and install the application
 4. Run the `portfolio-manager` binary to start the application. Pass in config flag `-config custom-config.yaml`
 
+### Environment Variables
+
+The application supports the following environment variables:
+
+- `GEMINI_API_KEY`: API key for Google Gemini AI service (used for SGX report analysis). If set, this will override the `geminiApiKey` setting in the config file.
+
 ### Proxmox VE Helper Scripts
 
 For home-labbers, helpers scripts are exposed to allow easy installation of `portfolio-manager` in lxc containers within Proxmox VE.
 
 ```sh
 bash -c "$(wget -qLO - https://github.com/rodionlim/portfolio-manager-go/raw/main/lxc/portfolio-manager.sh)"
+```
+
+#### Setting Environment Variables in Proxmox
+
+For Proxmox deployments, you can set environment variables directly in the systemd unit file. After installation, edit the service file:
+
+```sh
+# Edit the systemd service file
+sudo systemctl edit portfolio-manager --full
+
+# Add environment variables in the [Service] section:
+[Service]
+Environment="GEMINI_API_KEY=your_api_key_here"
+# ... other existing configuration
+
+# Reload and restart the service
+sudo systemctl daemon-reload
+sudo systemctl restart portfolio-manager
 ```
 
 ## Quickstart
@@ -600,16 +625,16 @@ See also: Import/Export endpoints for batch operations.
 
 ### Analytics - SGX Report Analysis
 
-Fetch and analyze the latest SGX report with AI insights:
-
-```sh
-curl -X GET http://localhost:8080/api/v1/analytics/latest
-```
-
-Fetch and analyze the latest SGX report of a specific type:
+Fetch, download and analyze the latest SGX report of a specific type with AI Insight:
 
 ```sh
 curl -X GET "http://localhost:8080/api/v1/analytics/latest?type=fund%20flow"
+```
+
+List all downloaded SGX reports
+
+```sh
+curl -X GET http://localhost:8080/api/v1/analytics/list_files
 ```
 
 Analyze an existing file in the data directory:
@@ -620,6 +645,36 @@ curl -X POST http://localhost:8080/api/v1/analytics/analyze \
   -d '{
     "filePath": "./data/SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025.xlsx"
   }'
+```
+
+List all stored analysis results:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/analytics/list_analysis
+```
+
+Download the latest N SGX reports:
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/analytics/download?n=5"
+```
+
+Download the latest N SGX reports filtered by type:
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/analytics/download?n=3&type=fund%20flow"
+```
+
+Analyze the latest N SGX reports filtered by type:
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/analytics/analyze_latest?n=3&type=fund%20flow"
+```
+
+Analyze the latest N SGX reports with force reanalysis (This will use additional API limits unnecessarily):
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/analytics/analyze_latest?n=3&type=fund%20flow&force=true"
 ```
 
 ## Configurations
@@ -642,10 +697,13 @@ dividends:
   divWitholdingTaxIE: 0.15
 metrics:
   schedule: "10 17 * * 1-5" # daily at 5:10pm, Mon-Fri (excludes weekends)
+marketData:
+  rateLimitMs: 750 # Minimum milliseconds between Yahoo Finance requests (increased from default 500ms to avoid rate limiting)
 analytics:
   geminiApiKey: "" # Get from Google AI Studio - required for analytics features
-  geminiModel: "gemini-2.5-flash-preview-05-20" # Gemini model to use (docs: https://ai.google.dev/gemini-api/docs/models)
+  geminiModel: "gemini-2.0-flash-lite" # Gemini model to use (docs: https://ai.google.dev/gemini-api/docs/models)
   dataDir: "./data" # Directory to store downloaded SGX reports
+  schedule: "0 17 * * 1" # Weekly on Mondays at 5:00 PM
 ```
 
 ## Roadmap

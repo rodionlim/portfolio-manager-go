@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
+	"strconv"
 )
 
 // AnalyzeFileRequest represents a request to analyze a file
@@ -12,29 +13,27 @@ type AnalyzeFileRequest struct {
 	FilePath string `json:"filePath" binding:"required"`
 }
 
-// HandleGetLatestReport handles getting the latest SGX report analysis
-// @Summary Get latest SGX report analysis
-// @Description Fetches the latest SGX report, downloads it, and provides AI analysis
+// HandleListReports handles listing all available SGX reports
+// @Summary List all available SGX reports
+// @Description Lists all available SGX reports in the data directory
 // @Tags analytics
 // @Accept json
 // @Produce json
-// @Success 200 {object} ReportAnalysis
+// @Success 200 {array} string "List of report file paths"
 // @Failure 500 {object} common.ErrorResponse
-// @Router /api/v1/analytics/latest [get]
-func HandleGetLatestReport(service Service) http.HandlerFunc {
+// @Router /api/v1/analytics/list [get]
+func HandleListReports(service Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		analysis, err := service.FetchLatestReport(ctx)
+		reports, err := service.ListReportsInDataDir()
 		if err != nil {
-			logging.GetLogger().Error("Failed to fetch latest report:", err)
-			common.WriteJSONError(w, "Failed to fetch latest report: "+err.Error(), http.StatusInternalServerError)
+			logging.GetLogger().Error("Failed to list reports:", err)
+			common.WriteJSONError(w, "Failed to list reports: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(analysis); err != nil {
-			logging.GetLogger().Error("Failed to write analysis response as JSON:", err)
+		if err := json.NewEncoder(w).Encode(reports); err != nil {
+			logging.GetLogger().Error("Failed to write reports response as JSON:", err)
 			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
 		}
 	}
@@ -46,22 +45,20 @@ func HandleGetLatestReport(service Service) http.HandlerFunc {
 // @Tags analytics
 // @Accept json
 // @Produce json
-// @Param type query string true "Report type (e.g., 'fund_flow', 'daily_momentum')"
+// @Param type query string true "Report type (e.g., 'fund%20flow', 'daily%20momentum')"
 // @Success 200 {object} ReportAnalysis
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 500 {object} common.ErrorResponse
 // @Router /api/v1/analytics/latest [get]
 func HandleGetLatestReportByType(service Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
 		reportType := r.URL.Query().Get("type")
 		if reportType == "" {
 			common.WriteJSONError(w, "report type is required", http.StatusBadRequest)
 			return
 		}
 
-		analysis, err := service.FetchLatestReportByType(ctx, reportType)
+		analysis, err := service.FetchAndAnalyzeLatestReportByType(reportType)
 		if err != nil {
 			logging.GetLogger().Error("Failed to fetch latest report by type:", err)
 			common.WriteJSONError(w, "Failed to fetch latest report by type: "+err.Error(), http.StatusInternalServerError)
@@ -89,8 +86,6 @@ func HandleGetLatestReportByType(service Service) http.HandlerFunc {
 // @Router /api/v1/analytics/analyze [post]
 func HandleAnalyzeExistingFile(service Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
 		var req AnalyzeFileRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			common.WriteJSONError(w, "Invalid JSON body: "+err.Error(), http.StatusBadRequest)
@@ -102,7 +97,7 @@ func HandleAnalyzeExistingFile(service Service) http.HandlerFunc {
 			return
 		}
 
-		analysis, err := service.AnalyzeExistingFile(ctx, req.FilePath)
+		analysis, err := service.AnalyzeExistingFile(req.FilePath)
 		if err != nil {
 			logging.GetLogger().Error("Failed to analyze existing file:", err)
 			common.WriteJSONError(w, "Failed to analyze existing file: "+err.Error(), http.StatusInternalServerError)
@@ -111,6 +106,141 @@ func HandleAnalyzeExistingFile(service Service) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(analysis); err != nil {
+			logging.GetLogger().Error("Failed to write analysis response as JSON:", err)
+			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
+		}
+	}
+}
+
+// HandleListAnalysis handles listing all available analysis reports
+// @Summary List all available analysis reports
+// @Description Lists all analysis reports that were previously stored in the database
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Success 200 {array} ReportAnalysis "List of analysis reports"
+// @Failure 500 {object} common.ErrorResponse
+// @Router /api/v1/analytics/list_analysis [get]
+func HandleListAnalysis(service Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		analyses, err := service.ListAllAnalysis()
+		if err != nil {
+			logging.GetLogger().Error("Failed to list analyses:", err)
+			common.WriteJSONError(w, "Failed to list analyses: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(analyses); err != nil {
+			logging.GetLogger().Error("Failed to write analyses response as JSON:", err)
+			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
+		}
+	}
+}
+
+// HandleDownloadLatestNReports handles downloading the latest N SGX reports
+// @Summary Download latest N SGX reports
+// @Description Downloads the latest N SGX reports from SGX and stores them in the data directory. Optionally filter by report type.
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Param n query int true "Number of latest reports to download"
+// @Param type query string false "Report type filter (e.g., 'fund%20flow', 'daily%20momentum'). If not provided, downloads all types."
+// @Success 200 {array} string "List of downloaded report file paths"
+// @Failure 400 {object} common.ErrorResponse
+// @Failure 500 {object} common.ErrorResponse
+// @Router /api/v1/analytics/download [get]
+func HandleDownloadLatestNReports(service Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		nStr := r.URL.Query().Get("n")
+		if nStr == "" {
+			common.WriteJSONError(w, "parameter 'n' is required", http.StatusBadRequest)
+			return
+		}
+
+		n, err := strconv.Atoi(nStr)
+		if err != nil {
+			common.WriteJSONError(w, "parameter 'n' must be a valid integer", http.StatusBadRequest)
+			return
+		}
+
+		if n <= 0 {
+			common.WriteJSONError(w, "parameter 'n' must be greater than 0", http.StatusBadRequest)
+			return
+		}
+
+		// Check if type parameter is provided for filtering by type
+		reportType := r.URL.Query().Get("type")
+
+		downloadedFiles, err := service.DownloadLatestNReports(n, reportType)
+		if err != nil {
+			logging.GetLogger().Error("Failed to download latest N reports:", err)
+			common.WriteJSONError(w, "Failed to download latest N reports: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(downloadedFiles); err != nil {
+			logging.GetLogger().Error("Failed to write download response as JSON:", err)
+			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
+		}
+	}
+}
+
+// HandleAnalyzeLatestNReports handles analyzing the latest N SGX reports
+// @Summary Analyze latest N SGX reports
+// @Description Downloads and analyzes the latest N SGX reports from SGX. Optionally filter by report type and force reanalysis.
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Param n query int true "Number of latest reports to analyze"
+// @Param type query string false "Report type filter (e.g., 'fund%20flow', 'daily%20momentum'). If not provided, analyzes all types."
+// @Param force query bool false "Force reanalysis even if analysis exists in database (default: false)"
+// @Success 200 {array} ReportAnalysis "List of analysis results"
+// @Failure 400 {object} common.ErrorResponse
+// @Failure 500 {object} common.ErrorResponse
+// @Router /api/v1/analytics/analyze_latest [get]
+func HandleAnalyzeLatestNReports(service Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		nStr := r.URL.Query().Get("n")
+		if nStr == "" {
+			common.WriteJSONError(w, "parameter 'n' is required", http.StatusBadRequest)
+			return
+		}
+
+		n, err := strconv.Atoi(nStr)
+		if err != nil {
+			common.WriteJSONError(w, "parameter 'n' must be a valid integer", http.StatusBadRequest)
+			return
+		}
+
+		if n <= 0 {
+			common.WriteJSONError(w, "parameter 'n' must be greater than 0", http.StatusBadRequest)
+			return
+		}
+
+		// Check if type parameter is provided for filtering by type
+		reportType := r.URL.Query().Get("type")
+
+		// Check if force reanalysis is requested
+		forceReanalysis := false
+		if forceStr := r.URL.Query().Get("force"); forceStr != "" {
+			forceReanalysis, err = strconv.ParseBool(forceStr)
+			if err != nil {
+				common.WriteJSONError(w, "parameter 'force' must be a valid boolean", http.StatusBadRequest)
+				return
+			}
+		}
+
+		analyses, err := service.AnalyzeLatestNReports(n, reportType, forceReanalysis)
+		if err != nil {
+			logging.GetLogger().Error("Failed to analyze latest N reports:", err)
+			common.WriteJSONError(w, "Failed to analyze latest N reports: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(analyses); err != nil {
 			logging.GetLogger().Error("Failed to write analysis response as JSON:", err)
 			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
 		}
@@ -130,8 +260,17 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 		if reportType != "" {
 			HandleGetLatestReportByType(service).ServeHTTP(w, r)
 		} else {
-			HandleGetLatestReport(service).ServeHTTP(w, r)
+			common.WriteJSONError(w, "report type is required", http.StatusBadRequest)
+			return
 		}
+	})
+
+	mux.HandleFunc("/api/v1/analytics/list_files", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleListReports(service).ServeHTTP(w, r)
 	})
 
 	mux.HandleFunc("/api/v1/analytics/analyze", func(w http.ResponseWriter, r *http.Request) {
@@ -140,5 +279,29 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 			return
 		}
 		HandleAnalyzeExistingFile(service).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/analytics/list_analysis", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleListAnalysis(service).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/analytics/download_latest_n", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleDownloadLatestNReports(service).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/analytics/analyze_latest_n", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleAnalyzeLatestNReports(service).ServeHTTP(w, r)
 	})
 }

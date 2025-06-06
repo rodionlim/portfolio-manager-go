@@ -24,6 +24,7 @@ type HistoricalMetricsManager interface {
 	GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetrics, error)
 	StartMetricsCollection(cronExpr string) func()
 	StopMetricsCollection()
+	StartSGXReportCollection(cronExpr string) func()
 }
 
 // TimestampedMetrics represents portfolio metrics with a timestamp (date only)

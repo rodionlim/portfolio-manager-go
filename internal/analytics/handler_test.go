@@ -2,9 +2,7 @@ package analytics
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,53 +16,40 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) FetchLatestReport(ctx context.Context) (*ReportAnalysis, error) {
-	args := m.Called(ctx)
-	return args.Get(0).(*ReportAnalysis), args.Error(1)
-}
-
-func (m *MockService) FetchLatestReportByType(ctx context.Context, reportType string) (*ReportAnalysis, error) {
-	args := m.Called(ctx, reportType)
-	return args.Get(0).(*ReportAnalysis), args.Error(1)
-}
-
-func (m *MockService) AnalyzeExistingFile(ctx context.Context, filePath string) (*ReportAnalysis, error) {
-	args := m.Called(ctx, filePath)
-	return args.Get(0).(*ReportAnalysis), args.Error(1)
-}
-
-func TestHandleGetLatestReport(t *testing.T) {
-	// Arrange
-	mockService := new(MockService)
-	mockAnalysis := &ReportAnalysis{
-		Summary:     "Test summary",
-		KeyInsights: []string{"Insight 1", "Insight 2"},
-		ReportTitle: "Test Report",
+func (m *MockService) DownloadLatestNReports(n int, reportType string) ([]string, error) {
+	args := m.Called(n, reportType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
 	}
+	return args.Get(0).([]string), args.Error(1)
+}
 
-	mockService.On("FetchLatestReport", mock.Anything).Return(mockAnalysis, nil)
+func (m *MockService) AnalyzeLatestNReports(n int, reportType string, force bool) ([]*ReportAnalysis, error) {
+	args := m.Called(n, reportType, force)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*ReportAnalysis), args.Error(1)
+}
 
-	// Create handler
-	handler := HandleGetLatestReport(mockService)
+func (m *MockService) FetchAndAnalyzeLatestReportByType(reportType string) (*ReportAnalysis, error) {
+	args := m.Called(reportType)
+	return args.Get(0).(*ReportAnalysis), args.Error(1)
+}
 
-	// Create request
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/analytics/latest", nil)
-	w := httptest.NewRecorder()
+func (m *MockService) ListReportsInDataDir() ([]string, error) {
+	args := m.Called()
+	return args.Get(0).([]string), args.Error(1)
+}
 
-	// Act
-	handler.ServeHTTP(w, req)
+func (m *MockService) AnalyzeExistingFile(filePath string) (*ReportAnalysis, error) {
+	args := m.Called(filePath)
+	return args.Get(0).(*ReportAnalysis), args.Error(1)
+}
 
-	// Assert
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-
-	var response ReportAnalysis
-	err := json.NewDecoder(w.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "Test summary", response.Summary)
-	assert.Equal(t, "Test Report", response.ReportTitle)
-
-	mockService.AssertExpectations(t)
+func (m *MockService) ListAllAnalysis() ([]*ReportAnalysis, error) {
+	args := m.Called()
+	return args.Get(0).([]*ReportAnalysis), args.Error(1)
 }
 
 func TestHandleAnalyzeExistingFile(t *testing.T) {
@@ -76,7 +61,7 @@ func TestHandleAnalyzeExistingFile(t *testing.T) {
 		FilePath:    "./data/test.xlsx",
 	}
 
-	mockService.On("AnalyzeExistingFile", mock.Anything, "./data/test.xlsx").Return(mockAnalysis, nil)
+	mockService.On("AnalyzeExistingFile", "./data/test.xlsx").Return(mockAnalysis, nil)
 
 	// Create handler
 	handler := HandleAnalyzeExistingFile(mockService)
@@ -125,27 +110,4 @@ func TestHandleAnalyzeExistingFile_InvalidJSON(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
-func TestHandleGetLatestReport_ServiceError(t *testing.T) {
-	// Arrange
-	mockService := new(MockService)
-	expectedError := fmt.Errorf("service error")
-
-	mockService.On("FetchLatestReport", mock.Anything).Return((*ReportAnalysis)(nil), expectedError)
-
-	// Create handler
-	handler := HandleGetLatestReport(mockService)
-
-	// Create request
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/analytics/latest", nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	handler.ServeHTTP(w, req)
-
-	// Assert
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-
-	mockService.AssertExpectations(t)
 }

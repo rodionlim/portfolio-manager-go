@@ -61,6 +61,118 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/analytics/analyze_latest": {
+            "get": {
+                "description": "Downloads and analyzes the latest N SGX reports from SGX. Optionally filter by report type and force reanalysis.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Analyze latest N SGX reports",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of latest reports to analyze",
+                        "name": "n",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Report type filter (e.g., 'fund%20flow', 'daily%20momentum'). If not provided, analyzes all types.",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Force reanalysis even if analysis exists in database (default: false)",
+                        "name": "force",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of analysis results",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/analytics.ReportAnalysis"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/download": {
+            "get": {
+                "description": "Downloads the latest N SGX reports from SGX and stores them in the data directory. Optionally filter by report type.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Download latest N SGX reports",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of latest reports to download",
+                        "name": "n",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Report type filter (e.g., 'fund%20flow', 'daily%20momentum'). If not provided, downloads all types.",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of downloaded report file paths",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/analytics/latest": {
             "get": {
                 "description": "Fetches the latest SGX report of a specific type, downloads it, and provides AI analysis",
@@ -77,7 +189,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Report type (e.g., 'fund_flow', 'daily_momentum')",
+                        "description": "Report type (e.g., 'fund%20flow', 'daily%20momentum')",
                         "name": "type",
                         "in": "query",
                         "required": true
@@ -94,6 +206,70 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/list": {
+            "get": {
+                "description": "Lists all available SGX reports in the data directory",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "List all available SGX reports",
+                "responses": {
+                    "200": {
+                        "description": "List of report file paths",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/analytics/list_analysis": {
+            "get": {
+                "description": "Lists all analysis reports that were previously stored in the database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "List all available analysis reports",
+                "responses": {
+                    "200": {
+                        "description": "List of analysis reports",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/analytics.ReportAnalysis"
+                            }
                         }
                     },
                     "500": {
@@ -1410,9 +1586,6 @@ const docTemplate = `{
             "properties": {
                 "analysisDate": {
                     "type": "integer"
-                },
-                "downloadUrl": {
-                    "type": "string"
                 },
                 "filePath": {
                     "type": "string"

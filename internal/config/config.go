@@ -9,6 +9,7 @@ import (
 
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/common"
+	"portfolio-manager/pkg/logging"
 
 	"gopkg.in/yaml.v2"
 )
@@ -38,6 +39,7 @@ type AnalyticsConfig struct {
 	GeminiAPIKey string `yaml:"geminiApiKey"`
 	GeminiModel  string `yaml:"geminiModel"`
 	DataDir      string `yaml:"dataDir"`
+	Schedule     string `yaml:"schedule"` // Cron schedule for analytics tasks, i.e. SGX report collection
 }
 
 // Config represents the application configuration.
@@ -111,8 +113,15 @@ func initializeConfig(data []byte) error {
 	if cfg.Analytics.DataDir == "" {
 		cfg.Analytics.DataDir = "./data"
 	}
+
+	// Set GeminiApiKey to environment variable if it exists
+	if os.Getenv("GEMINI_API_KEY") != "" {
+		logging.GetLogger().Info("Using GEMINI_API_KEY from environment variable")
+		cfg.Analytics.GeminiAPIKey = os.Getenv("GEMINI_API_KEY")
+	}
+
 	if cfg.Analytics.GeminiModel == "" {
-		cfg.Analytics.GeminiModel = "gemini-1.5-flash" // default: fastest and most cost-effective model
+		cfg.Analytics.GeminiModel = "gemini-2.0-flash-lite" // default: fastest and most cost-effective model
 	}
 
 	// Set defaults for MarketDataConfig if not provided

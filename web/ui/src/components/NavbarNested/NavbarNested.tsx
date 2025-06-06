@@ -38,6 +38,7 @@ const items = [
     initiallyOpened: false,
     links: [
       { label: "Metrics", link: "/analytics/metrics" },
+      { label: "Reports", link: "/analytics/reports" },
     ],
   },
   {

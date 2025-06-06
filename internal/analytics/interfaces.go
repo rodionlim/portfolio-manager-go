@@ -67,6 +67,26 @@ type ReportAnalysis struct {
 	Metadata     map[string]string `json:"metadata"`
 }
 
+// MostTradedStock represents a single entry in the 100 Most Traded Stocks worksheet
+type MostTradedStock struct {
+	StockName                       string   `json:"stockName"`
+	StockCode                       string   `json:"stockCode"`
+	YTDAvgDailyTurnoverSGDM         float64  `json:"ytdAvgDailyTurnoverSGDM"`
+	YTDInstitutionNetBuySellSGDM    float64  `json:"ytdInstitutionNetBuySellSGDM"`
+	Past5SessionsInstitutionNetSGDM float64  `json:"past5SessionsInstitutionNetSGDM"`
+	Sector                          string   `json:"sector"`
+	InstitutionNetBuySellChange     *float64 `json:"institutionNetBuySellChange,omitempty"` // Change from previous report
+}
+
+// MostTradedStocksReport represents the complete 100 Most Traded Stocks data from a report
+type MostTradedStocksReport struct {
+	ReportDate  string            `json:"reportDate"`
+	ReportTitle string            `json:"reportTitle"`
+	FilePath    string            `json:"filePath"`
+	Stocks      []MostTradedStock `json:"stocks"`
+	ExtractedAt int64             `json:"extractedAt"`
+}
+
 // SGXClient interface for fetching SGX reports
 type SGXClient interface {
 	// FetchReports fetches the latest SGX reports
@@ -110,4 +130,8 @@ type Service interface {
 
 	// AnalyzeExistingFile analyzes an existing file
 	AnalyzeExistingFile(filePath string) (*ReportAnalysis, error)
+
+	// ListAndExtractMostTradedStocks filters for SGX Fund Flow reports and extracts the "100 Most Traded Stocks" worksheet
+	// n - limit results to the latest n reports (0 means no limit)
+	ListAndExtractMostTradedStocks(n int) ([]*MostTradedStocksReport, error)
 }

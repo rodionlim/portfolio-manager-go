@@ -677,6 +677,16 @@ Analyze the latest N SGX reports with force reanalysis (This will use additional
 curl -X GET "http://localhost:8080/api/v1/analytics/analyze_latest?n=3&type=fund%20flow&force=true"
 ```
 
+Extract 100 Most Traded Stocks data from latest SGX Fund Flow Weekly Tracker reports:
+
+```sh
+# Get all available reports
+curl -X GET http://localhost:8080/api/v1/analytics/most_traded_stocks
+
+# Get only the latest 2 reports
+curl -X GET "http://localhost:8080/api/v1/analytics/most_traded_stocks?n=2"
+```
+
 ## Configurations
 
 Sample configurations

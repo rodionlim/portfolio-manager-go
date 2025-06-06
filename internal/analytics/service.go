@@ -7,8 +7,11 @@ import (
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/types"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/xuri/excelize/v2"
 )
 
 // ServiceImpl implements the analytics Service interface
@@ -313,4 +316,238 @@ func (s *ServiceImpl) ListAllAnalysis() ([]*ReportAnalysis, error) {
 	}
 
 	return analyses, nil
+}
+
+// ListAndExtractMostTradedStocks filters for SGX Fund Flow reports and extracts the "100 Most Traded Stocks" worksheet
+// n - limit results to the latest n reports (0 means no limit)
+func (s *ServiceImpl) ListAndExtractMostTradedStocks(n int) ([]*MostTradedStocksReport, error) {
+	// Get all files in data directory
+	files, err := s.ListReportsInDataDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list reports: %w", err)
+	}
+
+	var results []*MostTradedStocksReport
+
+	// Filter for SGX Fund Flow Weekly Tracker files
+	for _, filePath := range files {
+		fileName := filepath.Base(filePath)
+		if strings.Contains(fileName, "SGX_Fund_Flow_Weekly_Tracker") {
+			report, err := s.extractMostTradedStocksFromFile(filePath)
+			if err != nil {
+				// Log error but continue processing other files
+				continue
+			}
+			if report != nil {
+				results = append(results, report)
+			}
+		}
+	}
+
+	// Sort reports by report date (descending)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].ReportDate > results[j].ReportDate
+	})
+
+	// Limit results to latest n reports if n > 0
+	if n > 0 && len(results) > n {
+		results = results[:n]
+	}
+
+	// Calculate changes between consecutive reports
+	s.calculateInstitutionNetBuySellChanges(results)
+
+	return results, nil
+}
+
+// extractMostTradedStocksFromFile extracts the "100 Most Traded Stocks" data from a single XLSX file
+func (s *ServiceImpl) extractMostTradedStocksFromFile(filePath string) (*MostTradedStocksReport, error) {
+	// Open the Excel file
+	f, err := excelize.OpenFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open Excel file: %w", err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			// Log the error but don't fail the function
+		}
+	}()
+
+	// Find the worksheet containing "100 Most Traded Stocks"
+	sheetNames := f.GetSheetList()
+	var targetSheet string
+	for _, sheetName := range sheetNames {
+		if strings.Contains(strings.ToLower(sheetName), "100 most traded stocks") {
+			targetSheet = sheetName
+			break
+		}
+	}
+
+	if targetSheet == "" {
+		return nil, fmt.Errorf("worksheet '100 Most Traded Stocks' not found in file %s", filePath)
+	}
+
+	// Get all rows from the target sheet
+	rows, err := f.GetRows(targetSheet)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read rows from sheet %s: %w", targetSheet, err)
+	}
+
+	if len(rows) < 2 {
+		return nil, fmt.Errorf("insufficient data in sheet %s", targetSheet)
+	}
+
+	// Extract report date and title from filename
+	fileName := filepath.Base(filePath)
+	reportDate := extractDateFromSGXFilename(fileName)
+	reportTitle := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+
+	report := &MostTradedStocksReport{
+		ReportDate:  reportDate,
+		ReportTitle: reportTitle,
+		FilePath:    filePath,
+		Stocks:      []MostTradedStock{},
+		ExtractedAt: time.Now().Unix(),
+	}
+
+	// Find the header row (contains "Stock Code", "YTD Avg Daily Turnover", etc.)
+	headerRowIndex := -1
+	for i, row := range rows {
+		if len(row) > 1 && strings.Contains(strings.ToLower(strings.Join(row, " ")), "stock code") {
+			headerRowIndex = i
+			break
+		}
+	}
+
+	if headerRowIndex == -1 {
+		return nil, fmt.Errorf("header row not found in sheet %s", targetSheet)
+	}
+
+	// Parse the data rows
+	for i := headerRowIndex + 1; i < len(rows); i++ {
+		row := rows[i]
+
+		// Skip empty rows or rows with insufficient data
+		if len(row) < 6 || strings.TrimSpace(row[0]) == "" {
+			continue
+		}
+
+		// Skip definition/note rows
+		if strings.Contains(strings.ToLower(row[0]), "definition") ||
+			strings.Contains(strings.ToLower(row[0]), "note") ||
+			strings.Contains(strings.ToLower(row[0]), "all stocks") {
+			break
+		}
+
+		stock := MostTradedStock{
+			StockName: strings.TrimSpace(row[0]),
+			Sector:    "",
+		}
+
+		// Parse stock code (column 1)
+		if len(row) > 1 {
+			stock.StockCode = strings.TrimSpace(row[1])
+		}
+
+		// Parse YTD Avg Daily Turnover (column 2)
+		if len(row) > 2 {
+			if val, err := parseFloat(row[2]); err == nil {
+				stock.YTDAvgDailyTurnoverSGDM = val
+			}
+		}
+
+		// Parse YTD Institution Net Buy/Sell (column 3)
+		if len(row) > 3 {
+			if val, err := parseFloat(row[3]); err == nil {
+				stock.YTDInstitutionNetBuySellSGDM = val
+			}
+		}
+
+		// Parse Past 5 Sessions Institution Net (column 4)
+		if len(row) > 4 {
+			if val, err := parseFloat(row[4]); err == nil {
+				stock.Past5SessionsInstitutionNetSGDM = val
+			}
+		}
+
+		// Parse Sector (column 5)
+		if len(row) > 5 {
+			stock.Sector = strings.TrimSpace(row[5])
+		}
+
+		// Only add stocks with valid stock codes
+		if stock.StockCode != "" {
+			report.Stocks = append(report.Stocks, stock)
+		}
+	}
+
+	return report, nil
+}
+
+// extractDateFromSGXFilename extracts date from SGX filename format
+// Example: "SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025.xlsx" -> "26 May 2025"
+func extractDateFromSGXFilename(filename string) string {
+	// Remove extension
+	base := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	// Split by underscore and find the date part
+	parts := strings.Split(base, "_")
+
+	// Look for the pattern "Week_of_DD_MMM_YYYY"
+	for i := 0; i < len(parts)-3; i++ {
+		if parts[i] == "Week" && i+1 < len(parts) && parts[i+1] == "of" {
+			if i+4 < len(parts) {
+				// Return "DD MMM YYYY" format
+				return fmt.Sprintf("%s %s %s", parts[i+2], parts[i+3], parts[i+4])
+			}
+		}
+	}
+
+	return ""
+}
+
+// parseFloat parses a string to float64, handling common formatting issues
+func parseFloat(s string) (float64, error) {
+	// Clean the string
+	s = strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, ",", "")  // Remove commas
+	s = strings.ReplaceAll(s, "(", "-") // Convert (123) to -123
+	s = strings.ReplaceAll(s, ")", "")
+
+	if s == "" || s == "-" {
+		return 0, nil
+	}
+
+	return strconv.ParseFloat(s, 64)
+}
+
+// calculateInstitutionNetBuySellChanges calculates the change in YTDInstitutionNetBuySellSGDM
+// between consecutive reports for each stock
+func (s *ServiceImpl) calculateInstitutionNetBuySellChanges(reports []*MostTradedStocksReport) {
+	if len(reports) < 2 {
+		return // Need at least 2 reports to calculate changes
+	}
+
+	// Reports are sorted by date descending (newest first)
+	// We need to process from oldest to newest to calculate cumulative changes
+	for i := len(reports) - 1; i > 0; i-- {
+		currentReport := reports[i-1] // newer report
+		previousReport := reports[i]  // older report
+
+		// Create a map of stock code to previous values for quick lookup
+		previousValues := make(map[string]float64)
+		for _, stock := range previousReport.Stocks {
+			previousValues[stock.StockCode] = stock.YTDInstitutionNetBuySellSGDM
+		}
+
+		// Calculate changes for each stock in the current report
+		for j := range currentReport.Stocks {
+			stock := &currentReport.Stocks[j]
+			if previousValue, exists := previousValues[stock.StockCode]; exists {
+				change := stock.YTDInstitutionNetBuySellSGDM - previousValue
+				stock.InstitutionNetBuySellChange = &change
+			}
+			// If stock doesn't exist in previous report, leave change as nil
+		}
+	}
 }

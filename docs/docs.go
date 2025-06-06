@@ -61,6 +61,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/analytics/analyze_latest": {
+            "get": {
+                "description": "Downloads and analyzes the latest N SGX reports from SGX. Optionally filter by report type and force reanalysis.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Analyze latest N SGX reports",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of latest reports to analyze",
+                        "name": "n",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Report type filter (e.g., 'fund%20flow', 'daily%20momentum'). If not provided, analyzes all types.",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Force reanalysis even if analysis exists in database (default: false)",
+                        "name": "force",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of analysis results",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/analytics.ReportAnalysis"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/analytics/download": {
             "get": {
                 "description": "Downloads the latest N SGX reports from SGX and stores them in the data directory. Optionally filter by report type.",

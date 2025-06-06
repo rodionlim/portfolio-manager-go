@@ -15,6 +15,7 @@ import {
   Badge,
   Loader,
   Box,
+  Checkbox,
 } from "@mantine/core";
 import {
   IconDownload,
@@ -25,6 +26,45 @@ import {
 } from "@tabler/icons-react";
 import { showNotification } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
+
+// Sort reports by date descending (newest first)
+const sortReportsByDate = (reportFiles: ReportFile[]): ReportFile[] => {
+  return [...reportFiles].sort((a, b) => {
+    const extractDate = (filename: string) => {
+      // Extract date from filename like "SGX_Fund_Flow_Weekly_Tracker_Week_of_12_May_2025.xlsx"
+      const match = filename.match(/Week_of_(\d+)_(\w+)_(\d+)/);
+      if (match) {
+        const [, day, month, year] = match;
+        // Convert abbreviated month name to number
+        const monthAbbreviations = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        const monthIndex = monthAbbreviations.findIndex(
+          (m) => m.toLowerCase() === month.toLowerCase()
+        );
+        if (monthIndex !== -1) {
+          return new Date(parseInt(year), monthIndex, parseInt(day));
+        }
+      }
+      return new Date(0); // fallback for unparseable dates
+    };
+
+    const dateA = extractDate(a.name);
+    const dateB = extractDate(b.name);
+    return dateB.getTime() - dateA.getTime(); // descending order
+  });
+};
 
 interface ReportFile {
   path: string;
@@ -46,11 +86,12 @@ interface ReportAnalysis {
 
 const ReportsTable: React.FC = () => {
   const [reports, setReports] = useState<ReportFile[]>([]);
-  const [analyses, setAnalyses] = useState<ReportAnalysis[]>([]);
   const [loading, setLoading] = useState(false);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
   const [downloadCount, setDownloadCount] = useState(5);
-  const [reportType, setReportType] = useState<string>("");
+  const [reportType, setReportType] = useState<string>("fund flow");
+  const [analyzeReports, setAnalyzeReports] = useState(false);
+  const [forceReanalysis, setForceReanalysis] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   // Fetch downloaded reports from disk
@@ -66,7 +107,9 @@ const ReportsTable: React.FC = () => {
         hasAnalysis: false,
       }));
 
-      setReports(reportFiles);
+      // Sort reports by date descending and set state
+      const sortedReports = sortReportsByDate(reportFiles);
+      setReports(sortedReports);
     } catch (error) {
       console.error("Error fetching reports:", error);
       showNotification({
@@ -83,7 +126,6 @@ const ReportsTable: React.FC = () => {
       const response = await fetch(getUrl("/api/v1/analytics/list_analysis"));
       if (!response.ok) throw new Error("Failed to fetch analyses");
       const analysisData: ReportAnalysis[] = await response.json();
-      setAnalyses(analysisData);
       return analysisData;
     } catch (error) {
       console.error("Error fetching analyses:", error);
@@ -114,7 +156,9 @@ const ReportsTable: React.FC = () => {
       };
     });
 
-    setReports(updatedReports);
+    // Sort reports by date descending and set state
+    const sortedReports = sortReportsByDate(updatedReports);
+    setReports(sortedReports);
   };
 
   // Load data on component mount
@@ -157,12 +201,13 @@ const ReportsTable: React.FC = () => {
         params.append("type", reportType);
       }
 
-      const response = await fetch(
-        getUrl(`/api/v1/analytics/download?${params}`)
+      // First download the reports
+      const downloadResponse = await fetch(
+        getUrl(`/api/v1/analytics/download_latest_n?${params}`)
       );
-      if (!response.ok) throw new Error("Failed to download reports");
+      if (!downloadResponse.ok) throw new Error("Failed to download reports");
 
-      const downloadedFiles: string[] = await response.json();
+      const downloadedFiles: string[] = await downloadResponse.json();
 
       showNotification({
         title: "Success",
@@ -170,7 +215,45 @@ const ReportsTable: React.FC = () => {
         color: "green",
       });
 
+      // If analyze option is selected, also analyze the reports
+      if (analyzeReports) {
+        const analyzeParams = new URLSearchParams({
+          n: downloadCount.toString(),
+        });
+
+        if (reportType) {
+          analyzeParams.append("type", reportType);
+        }
+
+        if (forceReanalysis) {
+          analyzeParams.append("force", "true");
+        }
+
+        const analyzeResponse = await fetch(
+          getUrl(`/api/v1/analytics/analyze_latest_n?${analyzeParams}`)
+        );
+
+        if (analyzeResponse.ok) {
+          const analyses: ReportAnalysis[] = await analyzeResponse.json();
+          showNotification({
+            title: "Analysis Complete",
+            message: `Analyzed ${analyses.length} reports`,
+            color: "blue",
+          });
+        } else {
+          showNotification({
+            title: "Analysis Warning",
+            message: "Reports downloaded but analysis failed",
+            color: "yellow",
+          });
+        }
+      }
+
       setDownloadModalOpen(false);
+
+      // Reset form state
+      setAnalyzeReports(false);
+      setForceReanalysis(false);
 
       // Refresh the reports list
       await fetchReports();
@@ -399,7 +482,11 @@ const ReportsTable: React.FC = () => {
       {/* Download Modal */}
       <Modal
         opened={downloadModalOpen}
-        onClose={() => setDownloadModalOpen(false)}
+        onClose={() => {
+          setDownloadModalOpen(false);
+          setAnalyzeReports(false);
+          setForceReanalysis(false);
+        }}
         title="Download SGX Reports"
         size="md"
       >
@@ -410,22 +497,44 @@ const ReportsTable: React.FC = () => {
             value={downloadCount}
             onChange={(value) => setDownloadCount(Number(value))}
             min={1}
-            max={20}
+            max={52}
             required
           />
 
           <TextInput
-            label="Report type filter (optional)"
+            label="Report type filter"
             description="Filter by report type (e.g., 'fund flow', 'daily momentum')"
             placeholder="Leave empty to download all types"
             value={reportType}
             onChange={(event) => setReportType(event.currentTarget.value)}
           />
 
+          <Checkbox
+            label="Analyze reports after download"
+            description="Automatically analyze downloaded reports with AI"
+            checked={analyzeReports}
+            onChange={(event) => setAnalyzeReports(event.currentTarget.checked)}
+            mt="xs"
+          />
+
+          <Checkbox
+            label="Force re-analysis"
+            description="Force re-analysis with Gemini even if analysis already exists"
+            checked={forceReanalysis}
+            onChange={(event) =>
+              setForceReanalysis(event.currentTarget.checked)
+            }
+            disabled={!analyzeReports}
+          />
+
           <Group justify="flex-end">
             <Button
               variant="default"
-              onClick={() => setDownloadModalOpen(false)}
+              onClick={() => {
+                setDownloadModalOpen(false);
+                setAnalyzeReports(false);
+                setForceReanalysis(false);
+              }}
             >
               Cancel
             </Button>

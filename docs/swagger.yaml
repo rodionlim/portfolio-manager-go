@@ -325,6 +325,48 @@ paths:
       summary: Analyze existing file
       tags:
       - analytics
+  /api/v1/analytics/analyze_latest:
+    get:
+      consumes:
+      - application/json
+      description: Downloads and analyzes the latest N SGX reports from SGX. Optionally
+        filter by report type and force reanalysis.
+      parameters:
+      - description: Number of latest reports to analyze
+        in: query
+        name: "n"
+        required: true
+        type: integer
+      - description: Report type filter (e.g., 'fund%20flow', 'daily%20momentum').
+          If not provided, analyzes all types.
+        in: query
+        name: type
+        type: string
+      - description: 'Force reanalysis even if analysis exists in database (default:
+          false)'
+        in: query
+        name: force
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of analysis results
+          schema:
+            items:
+              $ref: '#/definitions/analytics.ReportAnalysis'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Analyze latest N SGX reports
+      tags:
+      - analytics
   /api/v1/analytics/download:
     get:
       consumes:

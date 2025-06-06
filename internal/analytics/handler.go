@@ -289,7 +289,7 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 		HandleListAnalysis(service).ServeHTTP(w, r)
 	})
 
-	mux.HandleFunc("/api/v1/analytics/download", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/analytics/download_latest_n", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -297,7 +297,7 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 		HandleDownloadLatestNReports(service).ServeHTTP(w, r)
 	})
 
-	mux.HandleFunc("/api/v1/analytics/analyze_latest", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/analytics/analyze_latest_n", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return

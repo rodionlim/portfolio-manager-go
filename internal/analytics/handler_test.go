@@ -37,6 +37,14 @@ func (m *MockService) FetchAndAnalyzeLatestReportByType(reportType string) (*Rep
 	return args.Get(0).(*ReportAnalysis), args.Error(1)
 }
 
+func (m *MockService) ListAndExtractMostTradedStocks(n int) ([]*MostTradedStocksReport, error) {
+	args := m.Called(n)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*MostTradedStocksReport), args.Error(1)
+}
+
 func (m *MockService) ListReportsInDataDir() ([]string, error) {
 	args := m.Called()
 	return args.Get(0).([]string), args.Error(1)

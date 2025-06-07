@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,11 +28,42 @@ func NewSGXClient() SGXClient {
 	}
 }
 
+// SGXQueryParams represents the variables for SGX API queries
+type SGXQueryParams struct {
+	Limit  int    `json:"limit"`
+	Offset int    `json:"offset"`
+	Lang   string `json:"lang"`
+}
+
 // FetchReports fetches the latest SGX reports
 func (c *SGXClientImpl) FetchReports() (*SGXReportsResponse, error) {
-	url := "https://api2.sgx.com/content-api?queryId=54d7880bed915819b82da8c0cf77d10e299ea9cc%3Afunds_flow_reports_list&variables=%7B%22limit%22%3A20%2C%22offset%22%3A0%2C%22lang%22%3A%22EN%22%7D"
+	// Query parameters in human-readable format
+	queryID := "54d7880bed915819b82da8c0cf77d10e299ea9cc:funds_flow_reports_list"
+	params := SGXQueryParams{
+		Limit:  50,
+		Offset: 0,
+		Lang:   "EN",
+	}
 
-	req, err := http.NewRequest("GET", url, nil)
+	// Convert params to JSON
+	paramsJSON, err := json.Marshal(params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query parameters: %w", err)
+	}
+
+	// Build URL with proper encoding
+	baseURL := "https://api2.sgx.com/content-api"
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
+	}
+
+	query := u.Query()
+	query.Set("queryId", queryID)
+	query.Set("variables", string(paramsJSON))
+	u.RawQuery = query.Encode()
+
+	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

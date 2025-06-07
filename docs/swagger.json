@@ -275,6 +275,52 @@
                 }
             }
         },
+        "/api/v1/analytics/most_traded_stocks": {
+            "get": {
+                "description": "Filters for SGX Fund Flow Weekly Tracker reports and extracts the \"100 Most Traded Stocks\" worksheet data",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Extract 100 Most Traded Stocks data from SGX Fund Flow reports",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit results to latest n reports (0 or not provided means no limit)",
+                        "name": "n",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of 100 Most Traded Stocks reports",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/analytics.MostTradedStocksReport"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/blotter/export": {
             "get": {
                 "description": "Export all trades to a CSV file",
@@ -1572,6 +1618,56 @@
             "properties": {
                 "filePath": {
                     "type": "string"
+                }
+            }
+        },
+        "analytics.MostTradedStock": {
+            "type": "object",
+            "properties": {
+                "institutionNetBuySellChange": {
+                    "description": "Change from previous report",
+                    "type": "number"
+                },
+                "past5SessionsInstitutionNetSGDM": {
+                    "type": "number"
+                },
+                "sector": {
+                    "type": "string"
+                },
+                "stockCode": {
+                    "type": "string"
+                },
+                "stockName": {
+                    "type": "string"
+                },
+                "ytdAvgDailyTurnoverSGDM": {
+                    "type": "number"
+                },
+                "ytdInstitutionNetBuySellSGDM": {
+                    "type": "number"
+                }
+            }
+        },
+        "analytics.MostTradedStocksReport": {
+            "type": "object",
+            "properties": {
+                "extractedAt": {
+                    "type": "integer"
+                },
+                "filePath": {
+                    "type": "string"
+                },
+                "reportDate": {
+                    "type": "string"
+                },
+                "reportTitle": {
+                    "type": "string"
+                },
+                "stocks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/analytics.MostTradedStock"
+                    }
                 }
             }
         },

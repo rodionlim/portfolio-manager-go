@@ -247,6 +247,46 @@ func HandleAnalyzeLatestNReports(service Service) http.HandlerFunc {
 	}
 }
 
+// HandleListAndExtractMostTradedStocks handles extracting the "100 Most Traded Stocks" data from SGX Fund Flow reports
+// @Summary Extract 100 Most Traded Stocks data from SGX Fund Flow reports
+// @Description Filters for SGX Fund Flow Weekly Tracker reports and extracts the "100 Most Traded Stocks" worksheet data
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Param n query int false "Limit results to latest n reports (0 or not provided means no limit)"
+// @Success 200 {array} MostTradedStocksReport "List of 100 Most Traded Stocks reports"
+// @Failure 400 {object} common.ErrorResponse
+// @Failure 500 {object} common.ErrorResponse
+// @Router /api/v1/analytics/most_traded_stocks [get]
+func HandleListAndExtractMostTradedStocks(service Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Parse the optional 'n' query parameter
+		n := 0
+		if nParam := r.URL.Query().Get("n"); nParam != "" {
+			var err error
+			n, err = strconv.Atoi(nParam)
+			if err != nil || n < 0 {
+				logging.GetLogger().Error("Invalid 'n' parameter:", err)
+				common.WriteJSONError(w, "Invalid 'n' parameter: must be a non-negative integer", http.StatusBadRequest)
+				return
+			}
+		}
+
+		reports, err := service.ListAndExtractMostTradedStocks(n)
+		if err != nil {
+			logging.GetLogger().Error("Failed to extract most traded stocks:", err)
+			common.WriteJSONError(w, "Failed to extract most traded stocks: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(reports); err != nil {
+			logging.GetLogger().Error("Failed to write most traded stocks response as JSON:", err)
+			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
+		}
+	}
+}
+
 // RegisterHandlers registers the analytics handlers
 func RegisterHandlers(mux *http.ServeMux, service Service) {
 	mux.HandleFunc("/api/v1/analytics/latest", func(w http.ResponseWriter, r *http.Request) {
@@ -303,5 +343,13 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 			return
 		}
 		HandleAnalyzeLatestNReports(service).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/analytics/most_traded_stocks", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleListAndExtractMostTradedStocks(service).ServeHTTP(w, r)
 	})
 }

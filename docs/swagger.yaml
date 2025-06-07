@@ -7,6 +7,39 @@ definitions:
     required:
     - filePath
     type: object
+  analytics.MostTradedStock:
+    properties:
+      institutionNetBuySellChange:
+        description: Change from previous report
+        type: number
+      past5SessionsInstitutionNetSGDM:
+        type: number
+      sector:
+        type: string
+      stockCode:
+        type: string
+      stockName:
+        type: string
+      ytdAvgDailyTurnoverSGDM:
+        type: number
+      ytdInstitutionNetBuySellSGDM:
+        type: number
+    type: object
+  analytics.MostTradedStocksReport:
+    properties:
+      extractedAt:
+        type: integer
+      filePath:
+        type: string
+      reportDate:
+        type: string
+      reportTitle:
+        type: string
+      stocks:
+        items:
+          $ref: '#/definitions/analytics.MostTradedStock'
+        type: array
+    type: object
   analytics.ReportAnalysis:
     properties:
       analysisDate:
@@ -474,6 +507,38 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: List all available analysis reports
+      tags:
+      - analytics
+  /api/v1/analytics/most_traded_stocks:
+    get:
+      consumes:
+      - application/json
+      description: Filters for SGX Fund Flow Weekly Tracker reports and extracts the
+        "100 Most Traded Stocks" worksheet data
+      parameters:
+      - description: Limit results to latest n reports (0 or not provided means no
+          limit)
+        in: query
+        name: "n"
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of 100 Most Traded Stocks reports
+          schema:
+            items:
+              $ref: '#/definitions/analytics.MostTradedStocksReport'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Extract 100 Most Traded Stocks data from SGX Fund Flow reports
       tags:
       - analytics
   /api/v1/blotter/export:

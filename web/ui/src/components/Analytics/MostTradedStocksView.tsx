@@ -420,7 +420,8 @@ const MostTradedStocksView: React.FC = () => {
                       <HoverCard.Dropdown>
                         <Stack gap="xs">
                           <Text fw={600} size="sm">
-                            {stock.stockName} ({stock.stockCode})
+                            {stock.stockName} ({stock.stockCode}) -{" "}
+                            {stock.sector}
                           </Text>
                           <Group justify="space-between">
                             <Text size="xs" c="dimmed">

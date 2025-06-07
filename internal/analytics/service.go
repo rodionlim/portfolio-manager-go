@@ -86,7 +86,7 @@ func (s *ServiceImpl) DownloadLatestNReports(n int, reportType string) ([]string
 	}
 
 	var downloadedFiles []string
-	for i := 0; i < n; i++ {
+	for i := range n {
 		filePath, _, _, err := s.downloadReport(filteredReports[i])
 		if err != nil {
 			return nil, fmt.Errorf("failed to download report %d: %w", i+1, err)

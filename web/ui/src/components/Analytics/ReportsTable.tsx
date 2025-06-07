@@ -353,7 +353,7 @@ const ReportsTable: React.FC = () => {
             <Table.Tr>
               <Table.Th>Report Name</Table.Th>
               <Table.Th>Analysis Status</Table.Th>
-              <Table.Th>Actions</Table.Th>
+              <Table.Th>Analysis</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -495,10 +495,14 @@ const ReportsTable: React.FC = () => {
             label="Number of reports to download"
             description="How many of the latest reports to download"
             value={downloadCount}
-            onChange={(value) => setDownloadCount(Number(value))}
+            onChange={(value) => setDownloadCount(Number(value) || 1)}
             min={1}
             max={52}
             required
+            allowNegative={false}
+            allowDecimal={false}
+            clampBehavior="none"
+            placeholder="Enter number of reports"
           />
 
           <TextInput

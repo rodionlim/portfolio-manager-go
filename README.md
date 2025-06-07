@@ -47,16 +47,18 @@ For Proxmox deployments, you can set environment variables directly in the syste
 
 ```sh
 # Edit the systemd service file
-sudo systemctl edit portfolio-manager --full
+sudo systemctl edit PortfolioManager --full
 
-# Add environment variables in the [Service] section:
+# Check environment variables file in the [Service] section:
 [Service]
-Environment="GEMINI_API_KEY=your_api_key_here"
-# ... other existing configuration
+EnvironmentFile=/etc/sysconfig/PortfolioManager
+
+# Create an env file with the following
+GEMINI_API_KEY=your_api_key_here
 
 # Reload and restart the service
 sudo systemctl daemon-reload
-sudo systemctl restart portfolio-manager
+sudo systemctl restart PortfolioManager
 ```
 
 ## Quickstart
@@ -248,6 +250,47 @@ User can view aggregated dividends by year with more details such as dividend yi
 Users can visualize portfolio performance over time with both market value and IRR (Internal Rate of Return) plotted together.
 
 ![Metrics Chart](docs/MetricsChart.png)
+
+### Analytics Heat Map
+
+Users can visualize the most commonly traded stocks using a heat map showing institutional net buy/sell values with customizable sorting methods and stock selection.
+
+![Heatmap](docs/Heatmap.png)
+
+#### Sorting Methods
+
+The heat map supports three different sorting methods:
+
+1. **Absolute**: Sorts stocks by their absolute YTD institutional net buy/sell amounts (highest absolute values first)
+
+2. **Percentage**: Sorts stocks by percentage change from the earliest to latest report period
+
+3. **Momentum**: Sorts stocks by a momentum score that combines both absolute change and consistency
+
+#### Momentum Calculation
+
+The momentum score is calculated using the following formula:
+
+```
+Momentum Score = (Absolute Change × 0.7) + (Consistency Score × |Absolute Change| × 0.3)
+```
+
+Where:
+
+- **Absolute Change**: Latest YTD value - Earliest YTD value
+- **Consistency Score**: Ratio of periods showing positive trend (0 to 1)
+  - Calculated as: Number of periods with positive change ÷ Total periods
+  - A stock with consistent upward movement across all periods gets a score of 1.0
+  - A stock with no positive periods gets a score of 0.0
+
+**Example**: If a stock has:
+
+- Absolute change of +50M SGD
+- Positive movement in 8 out of 10 periods (consistency = 0.8)
+
+Then: Momentum Score = (50 × 0.7) + (0.8 × 50 × 0.3) = 35 + 12 = 47
+
+This approach prioritizes stocks with both significant absolute changes and consistent directional movement, helping identify stocks with strong institutional buying/selling momentum rather than just one-time large movements.
 
 ### Settings
 
@@ -543,6 +586,8 @@ curl -X POST http://localhost:8080/api/v1/dividends -H "Content-Type: applicatio
 ```
 
 ### Autoclose expired positions
+
+Tbills, SSB that has expired should have a corresponding "sell" blotter entry that can be infered automatically based on the reference data
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/portfolio/cleanup

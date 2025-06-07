@@ -1,3 +1,14 @@
+## [1.6.0] - 2025-06-07
+
+### 🚀 Features
+
+- *(analytics)* Concatenate most commonly traded stocks across multiple funds flow report
+- *(ui)* Add heat map of most traded stocks #59
+
+### 🐛 Bug Fixes
+
+- *(sgx)* Increase query limits on sgx reports #57
+
 ## [1.5.0] - 2025-06-06
 
 ### 🚀 Features

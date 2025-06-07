@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
 	"sort"
 	"strconv"
@@ -52,6 +53,8 @@ func (s *ServiceImpl) ListReportsInDataDir() ([]string, error) {
 
 // DownloadLatestNReports downloads the latest N SGX reports of a specific type
 func (s *ServiceImpl) DownloadLatestNReports(n int, reportType string) ([]string, error) {
+	logger := logging.GetLogger()
+
 	// Fetch reports from SGX
 	reports, err := s.sgxClient.FetchReports()
 	if err != nil {
@@ -82,8 +85,11 @@ func (s *ServiceImpl) DownloadLatestNReports(n int, reportType string) ([]string
 	})
 
 	if n > len(filteredReports) {
+		logger.Warnf("Requested %d reports, but only %d available. Adjusting to available count.", n, len(filteredReports))
 		n = len(filteredReports) // Adjust n if it exceeds available reports
 	}
+
+	logger.Infof("Downloading latest %d reports of type '%s'", n, reportType)
 
 	var downloadedFiles []string
 	for i := range n {

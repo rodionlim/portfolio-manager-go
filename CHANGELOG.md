@@ -1,3 +1,9 @@
+## [1.6.1] - 2025-06-07
+
+### 🐛 Bug Fixes
+
+- *(ui)* Add sector to most traded stocks report
+
 ## [1.6.0] - 2025-06-07
 
 ### 🚀 Features

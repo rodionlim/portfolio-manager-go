@@ -1,3 +1,12 @@
+## [1.6.2] - 2025-06-10
+
+### 🐛 Bug Fixes
+
+- *(refdata)* Handle missing id when adding new ref data
+- *(refdata)* Update redux store when upserting ref data
+- *(ui)* Add a loading indicator to positions table
+- *(pipelines)* Revert action-gh-release to an older version
+
 ## [1.6.1] - 2025-06-07
 
 ### 🐛 Bug Fixes

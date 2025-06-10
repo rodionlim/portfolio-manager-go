@@ -46,6 +46,8 @@ const PositionTable: React.FC = () => {
       }
       return resp.json();
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   // Add this function to handle navigation
@@ -288,7 +290,11 @@ const PositionTable: React.FC = () => {
       showColumnFilters: true,
       sorting: [{ id: "Mv", desc: true }],
     },
-    state: { density: "xs" },
+    state: {
+      density: "xs",
+      isLoading: isLoading,
+      showLoadingOverlay: isLoading,
+    },
     enableRowSelection: true,
     positionToolbarAlertBanner: "bottom",
     renderTopToolbarCustomActions: ({ table }) => {
@@ -322,7 +328,7 @@ const PositionTable: React.FC = () => {
     },
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  // Remove the separate loading check since the table handles it now
   if (error) return <div>Error loading positions</div>;
 
   return (

@@ -109,10 +109,10 @@ export default function ReferenceDataForm() {
         }
         return resp.json();
       })
-      .then((data) => {
+      .then((_) => {
         notifications.show({
           title: "Reference Data successfully added",
-          message: `Reference Data [${data.id}] was successfully ${actionPastTense}`,
+          message: `Reference Data [${values.underlying_ticker}] was successfully ${actionPastTense}`,
           autoClose: 6000,
         });
       })

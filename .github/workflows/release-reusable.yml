@@ -76,7 +76,7 @@ jobs:
           git tag ${{ steps.git-cliff-full.outputs.version }}
           git push --tags
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.2.2
         with:
           tag_name: ${{ steps.git-cliff-full.outputs.version }}
           files: portfolio-manager*

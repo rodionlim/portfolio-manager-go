@@ -14,6 +14,9 @@ import { useForm } from "@mantine/form";
 import { DatePickerInput } from "@mantine/dates";
 import { useLocation } from "react-router-dom";
 import { getUrl } from "../../utils/url";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../../store";
+import { fetchReferenceData } from "../../slices/referenceDataSlice";
 
 const assetClassOptions = ["bond", "cash", "cmdty", "crypto", "eq", "fx"];
 
@@ -51,6 +54,7 @@ const domicileOptions = ["SG", "US", "HK", "IE"];
 
 export default function ReferenceDataForm() {
   const location = useLocation();
+  const dispatch = useDispatch<AppDispatch>();
 
   const form = useForm({
     mode: "uncontrolled",
@@ -109,12 +113,13 @@ export default function ReferenceDataForm() {
         }
         return resp.json();
       })
-      .then((data) => {
+      .then((_) => {
         notifications.show({
           title: "Reference Data successfully added",
-          message: `Reference Data [${data.id}] was successfully ${actionPastTense}`,
+          message: `Reference Data [${values.underlying_ticker}] was successfully ${actionPastTense}`,
           autoClose: 6000,
         });
+        dispatch(fetchReferenceData());
       })
       .catch((error) => {
         console.error(error);

@@ -3,6 +3,7 @@ package blotter
 import (
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
@@ -20,7 +21,7 @@ type TradeRequest struct {
 	Price       float64 `json:"price"`
 	Fx          float64 `json:"fx"`
 	Yield       float64 `json:"yield"`
-	Trader      string  `json:"trader"`
+	Book        string  `json:"book"`
 	Broker      string  `json:"broker"`
 	Account     string  `json:"account"`
 	Status      string  `json:"status"`
@@ -60,7 +61,7 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 			tradeRequest.Side,
 			tradeRequest.Quantity,
 			tradeRequest.Ticker,
-			tradeRequest.Trader,
+			tradeRequest.Book,
 			tradeRequest.Broker,
 			tradeRequest.Account,
 			tradeRequest.Status,
@@ -119,7 +120,7 @@ func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 			tradeRequest.Side,
 			tradeRequest.Quantity,
 			tradeRequest.Ticker,
-			tradeRequest.Trader,
+			tradeRequest.Book,
 			tradeRequest.Broker,
 			tradeRequest.Account,
 			tradeRequest.Status,
@@ -211,6 +212,7 @@ func HandleTradeDeleteAll(blotter *TradeBlotter) http.HandlerFunc {
 func HandleTradeGet(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		trades := blotter.GetTrades()
+		fmt.Printf("%+v", trades)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(trades)
 	}

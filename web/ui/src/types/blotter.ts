@@ -2,7 +2,7 @@ export interface Trade {
   TradeID: string;
   TradeDate: string;
   Ticker: string;
-  Trader: string;
+  Book: string;
   Broker: string;
   Account: string;
   Quantity: number;

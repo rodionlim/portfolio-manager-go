@@ -92,7 +92,7 @@ func (s *Service) StoreCurrentMetrics() error {
 	}
 
 	// Generate key for LevelDB
-	// Format: metrics:portfolio:YYYY-MM-DD
+	// Format: metrics:book:YYYY-MM-DD
 	key := fmt.Sprintf("%s:%s:%s",
 		types.KeyPrefixHistoricalMetrics,
 		"portfolio",

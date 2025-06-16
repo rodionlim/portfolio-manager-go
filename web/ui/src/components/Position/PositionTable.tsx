@@ -15,7 +15,7 @@ import { IconHistory, IconCoins } from "@tabler/icons-react";
 interface Position {
   Ticker: string;
   Name: string;
-  Trader: string;
+  Book: string;
   Ccy: string;
   AssetClass: string;
   AssetSubClass: string;

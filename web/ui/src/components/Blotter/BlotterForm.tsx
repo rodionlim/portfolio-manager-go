@@ -21,7 +21,7 @@ import { getUrl } from "../../utils/url";
 export default function BlotterForm() {
   const location = useLocation();
 
-  const defaultTrader = localStorage.getItem("defaultTrader") || "TraderA";
+  const defaultBook = localStorage.getItem("defaultBook") || "Main";
   const defaultBroker = localStorage.getItem("defaultBroker") || "DBS";
   const defaultAccount = localStorage.getItem("defaultAccount") || "CDP";
 
@@ -41,7 +41,7 @@ export default function BlotterForm() {
           return date;
         })(),
       ticker: location.state?.ticker || "",
-      trader: location.state?.trader || defaultTrader,
+      book: location.state?.book || defaultBook,
       broker: location.state?.broker || defaultBroker,
       account: location.state?.account || defaultAccount,
       status: location.state?.status || "open",
@@ -144,7 +144,7 @@ export default function BlotterForm() {
       id: values.tradeId,
       tradeDate: values.date, // need to convert to 2024-12-09T00:00:00Z
       ticker: values.ticker,
-      trader: values.trader,
+      book: values.book,
       broker: values.broker,
       account: values.account,
       status: values.status,
@@ -193,7 +193,7 @@ export default function BlotterForm() {
   const handleSubmit = (
     values: Omit<typeof form.values, "date"> & { date: string }
   ) => {
-    localStorage.setItem("defaultTrader", values.trader);
+    localStorage.setItem("defaultBook", values.book);
     localStorage.setItem("defaultBroker", values.broker);
     upsertTrade(values); // TODO: add error handling
   };
@@ -233,10 +233,10 @@ export default function BlotterForm() {
           />
           <TextInput
             withAsterisk
-            label="Trader"
-            placeholder="trader to be added, e.g. Trader A"
-            key={form.key("trader")}
-            {...form.getInputProps("trader")}
+            label="Book"
+            placeholder="book to be added, e.g. Main Book"
+            key={form.key("book")}
+            {...form.getInputProps("book")}
           />
           <TextInput
             withAsterisk

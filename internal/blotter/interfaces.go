@@ -25,3 +25,8 @@ type TradeImporter interface {
 	ImportFromCSVFile(filepath string) error
 	ImportFromCSVReader(reader *csv.Reader) error
 }
+
+// TradeMigrator provides functionality for migrating trade data between schema versions
+type TradeMigrator interface {
+	RenameFromDB() error
+}

@@ -94,7 +94,7 @@ const BlotterTable: React.FC = () => {
       { accessorKey: "TradeDate", header: "Date" },
       { accessorKey: "Ticker", header: "Ticker" },
       { accessorKey: "Side", header: "Side" },
-      // { accessorKey: "Trader", header: "Trader" },
+      { accessorKey: "Book", header: "Book" },
       // { accessorKey: "Broker", header: "Broker" },
       { accessorKey: "Account", header: "Account" },
       { accessorKey: "Quantity", header: "Quantity" },
@@ -178,7 +178,7 @@ const BlotterTable: React.FC = () => {
             ticker: ticker.original.Ticker,
             broker: ticker.original.Broker,
             account: ticker.original.Account,
-            trader: ticker.original.Trader,
+            book: ticker.original.Book,
           },
         });
       } else {
@@ -230,7 +230,7 @@ const BlotterTable: React.FC = () => {
           tradeId: selection.TradeID,
           date: new Date(selection.TradeDate),
           ticker: selection.Ticker,
-          trader: selection.Trader,
+          book: selection.Book,
           broker: selection.Broker,
           account: selection.Account,
           qty: selection.Quantity,

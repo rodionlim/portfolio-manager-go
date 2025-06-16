@@ -35,7 +35,7 @@ func cleanupTempDB(t *testing.T, db dal.Database, dbPath string) {
 }
 
 func createTestTrade() (*blotter.Trade, error) {
-	return blotter.NewTrade("buy", 100, "AAPL", "traderA", "dbs", "cdp", blotter.StatusOpen, "", 150.0, 1, 0.0, time.Now())
+	return blotter.NewTrade("buy", 100, "AAPL", "bookA", "dbs", "cdp", blotter.StatusOpen, "", 150.0, 1, 0.0, time.Now())
 }
 
 func createMockCSVFile(t *testing.T, content [][]string) string {
@@ -105,7 +105,7 @@ func TestRemoveTrade(t *testing.T) {
 }
 
 func TestCreateTradeWithInvalidSide(t *testing.T) {
-	trade, err := blotter.NewTrade("buysell", 100, "AAPL", "traderA", "dbs", "cdp", blotter.StatusOpen, "", 150.0, 1, 0.0, time.Now())
+	trade, err := blotter.NewTrade("buysell", 100, "AAPL", "bookA", "dbs", "cdp", blotter.StatusOpen, "", 150.0, 1, 0.0, time.Now())
 	assert.Error(t, err)
 	assert.Nil(t, trade)
 }
@@ -226,9 +226,9 @@ func TestImportFromCSVFile(t *testing.T) {
 
 	// Create mock CSV content
 	csvContent := [][]string{
-		{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account", "Status", "Fx"},
-		{"2023-10-12T07:20:50Z", "AAPL", "buy", "100", "150.0", "0.0", "trader1", "broker1", "cdp", "", "1"},
-		{"2023-10-12T07:20:50Z", "GOOG", "sell", "200", "186.53", "", "trader2", "broker2", "cdp", "", "1"},
+		{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Book", "Broker", "Account", "Status", "Fx"},
+		{"2023-10-12T07:20:50Z", "AAPL", "buy", "100", "150.0", "0.0", "book1", "broker1", "cdp", "", "1"},
+		{"2023-10-12T07:20:50Z", "GOOG", "sell", "200", "186.53", "", "book2", "broker2", "cdp", "", "1"},
 	}
 
 	// Create mock CSV file
@@ -253,7 +253,7 @@ func TestImportFromCSVFile(t *testing.T) {
 			Price:       150.0,
 			Fx:          1,
 			Yield:       0.0,
-			Trader:      "trader1",
+			Book:        "book1",
 			Broker:      "broker1",
 			Account:     "cdp",
 			Status:      blotter.StatusOpen,
@@ -267,7 +267,7 @@ func TestImportFromCSVFile(t *testing.T) {
 			Price:       186.53,
 			Fx:          1,
 			Yield:       0.0,
-			Trader:      "trader2",
+			Book:        "book2",
 			Broker:      "broker2",
 			Account:     "cdp",
 			Status:      blotter.StatusOpen,
@@ -277,4 +277,58 @@ func TestImportFromCSVFile(t *testing.T) {
 
 	trades := blotterSvc.GetTrades()
 	assert.Equal(t, len(expectedTrades), len(trades))
+}
+
+func TestRenameFromDB(t *testing.T) {
+	db, dbPath := setupTempDB(t)
+	defer cleanupTempDB(t, db, dbPath)
+
+	// Create an old trade with "Trader" field and save it directly to database
+	oldTradeData := map[string]any{
+		"TradeID":     "test-trade-123",
+		"TradeDate":   "2023-01-01T10:00:00Z",
+		"Ticker":      "AAPL",
+		"Side":        "buy",
+		"Quantity":    100.0,
+		"Price":       150.0,
+		"Fx":          1.0,
+		"Yield":       0.0,
+		"Trader":      "trader-old-name", // Old field name
+		"Broker":      "dbs",
+		"Account":     "cdp",
+		"Status":      "open",
+		"OrigTradeID": "",
+		"SeqNum":      1,
+	}
+
+	// Save old trade format directly to database
+	tradeKey := "TRADE:AAPL:1:test-trade-123"
+	err := db.Put(tradeKey, oldTradeData)
+	assert.NoError(t, err)
+
+	// Create blotter and test migration
+	blotterSvc := blotter.NewBlotter(db)
+	blotterSvc.LoadFromDB()
+
+	// Test RenameFromDB - should migrate Trader -> Book
+	err = blotterSvc.RenameFromDB()
+	assert.NoError(t, err)
+
+	// Verify trade was loaded and migrated
+	blotterSvc = blotter.NewBlotter(db)
+	blotterSvc.LoadFromDB()
+	trades := blotterSvc.GetTrades()
+	assert.Equal(t, 1, len(trades))
+
+	trade := trades[0]
+	assert.Equal(t, "test-trade-123", trade.TradeID)
+	assert.Equal(t, "AAPL", trade.Ticker)
+	assert.Equal(t, "trader-old-name", trade.Book) // Should be migrated from Trader field
+	assert.Equal(t, "dbs", trade.Broker)
+
+	// Verify the migration was persisted to database
+	var migratedTrade blotter.Trade
+	err = db.Get(tradeKey, &migratedTrade)
+	assert.NoError(t, err)
+	assert.Equal(t, "trader-old-name", migratedTrade.Book)
 }

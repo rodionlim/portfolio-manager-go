@@ -272,10 +272,11 @@ const BlotterTable: React.FC = () => {
   // Add the export handler function
   const handleExportCSV = () => {
     const url = getUrl("/api/v1/blotter/export");
+
     // Create a hidden link and click it to trigger download
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "trades.csv");
+    link.setAttribute("download", "trades.csv"); // filename is determined by api server
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

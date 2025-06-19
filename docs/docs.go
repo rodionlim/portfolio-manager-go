@@ -339,7 +339,7 @@ const docTemplate = `{
                 "summary": "Export trades to CSV",
                 "responses": {
                     "200": {
-                        "description": "trades.csv",
+                        "description": "trades_YYYYMMDD.csv",
                         "schema": {
                             "type": "file"
                         }

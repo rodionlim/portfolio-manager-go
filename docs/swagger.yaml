@@ -548,7 +548,7 @@ paths:
       - text/csv
       responses:
         "200":
-          description: trades.csv
+          description: trades_YYYYMMDD.csv
           schema:
             type: file
         "500":

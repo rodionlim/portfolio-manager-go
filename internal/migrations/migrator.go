@@ -30,7 +30,7 @@ func NewMigrator(db dal.Database) *Migrator {
 
 // Migrate runs all necessary migrations for the current version
 func (m *Migrator) Migrate() error {
-	logging.GetLogger().Info("Starting database migrations")
+	logging.GetLogger().Info("Starting schema migrations")
 
 	currentVersion := m.lastMigrationApplied
 	logging.GetLogger().Infof("Current migration version: %s", currentVersion)
@@ -46,7 +46,7 @@ func (m *Migrator) Migrate() error {
 
 	// Subsequent migrations should be added here as needed
 
-	logging.GetLogger().Infof("Database migrations completed successfully. Last migration applied: %s", m.lastMigrationApplied)
+	logging.GetLogger().Infof("Scehma migrations completed successfully. Last migration applied: %s", m.lastMigrationApplied)
 	return nil
 }
 

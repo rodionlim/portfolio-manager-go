@@ -1,3 +1,23 @@
+## [1.7.0] - 2025-06-19
+
+### 🚀 Features
+
+- Rename trader to book across portfolio and blotter
+- *(migrations)* Create new migrations struct to handle migrations
+- *(migrations)* Add step to migrate portfolio positions in v1.7.0
+- *(rdata)* Add uol to seed
+- *(migrations)* Wire up to always run when entrypoint is called
+- *(blotter)* Export csv should postfix yyyymmdd
+- *(ui)* Allow granular view of positions by book #62
+
+### 🐛 Bug Fixes
+
+- *(blotter)* Updating trades didn't persist to db #65
+
+### ⚙️ Miscellaneous Tasks
+
+- *(migrations)* Small refactor in docs
+
 ## [1.6.2] - 2025-06-10
 
 ### 🐛 Bug Fixes

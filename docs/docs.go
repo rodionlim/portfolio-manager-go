@@ -339,7 +339,7 @@ const docTemplate = `{
                 "summary": "Export trades to CSV",
                 "responses": {
                     "200": {
-                        "description": "trades.csv",
+                        "description": "trades_YYYYMMDD.csv",
                         "schema": {
                             "type": "file"
                         }
@@ -1716,16 +1716,20 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "Account",
+                "Book",
                 "Broker",
                 "Quantity",
                 "Side",
                 "Ticker",
-                "TradeDate",
-                "Trader"
+                "TradeDate"
             ],
             "properties": {
                 "Account": {
                     "description": "Account associated with the trade (CDP, MIP, Custodian)",
+                    "type": "string"
+                },
+                "Book": {
+                    "description": "Book associated with the trade",
                     "type": "string"
                 },
                 "Broker": {
@@ -1773,10 +1777,6 @@ const docTemplate = `{
                     "description": "Unique identifier for the trade",
                     "type": "string"
                 },
-                "Trader": {
-                    "description": "Trader who executed the trade",
-                    "type": "string"
-                },
                 "Yield": {
                     "description": "Yield of the asset",
                     "type": "number"
@@ -1787,6 +1787,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "account": {
+                    "type": "string"
+                },
+                "book": {
                     "type": "string"
                 },
                 "broker": {
@@ -1821,9 +1824,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tradeDate": {
-                    "type": "string"
-                },
-                "trader": {
                     "type": "string"
                 },
                 "yield": {
@@ -1936,6 +1936,9 @@ const docTemplate = `{
                 "avgPx": {
                     "type": "number"
                 },
+                "book": {
+                    "type": "string"
+                },
                 "ccy": {
                     "type": "string"
                 },
@@ -1962,9 +1965,6 @@ const docTemplate = `{
                 },
                 "totalPaid": {
                     "type": "number"
-                },
-                "trader": {
-                    "type": "string"
                 }
             }
         },

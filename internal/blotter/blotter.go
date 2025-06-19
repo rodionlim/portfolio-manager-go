@@ -167,7 +167,7 @@ func (b *TradeBlotter) UpdateTrade(trade Trade) error {
 	// Remove trade from the trades slice
 	for i, t := range b.trades {
 		if t.TradeID == trade.TradeID {
-			b.trades = append(b.trades[:i], b.trades[i+1:]...)
+			b.trades = slices.Delete(b.trades, i, i+1)
 			break
 		}
 	}
@@ -180,6 +180,13 @@ func (b *TradeBlotter) UpdateTrade(trade Trade) error {
 	b.trades = append(b.trades, trade)
 	b.tradesByID[trade.TradeID] = &trade
 	b.tradesByTicker[trade.Ticker] = append(b.tradesByTicker[trade.Ticker], trade)
+
+	// Write updated trade to the database
+	tradeKey := generateTradeKey(trade)
+	err := b.db.Put(tradeKey, trade)
+	if err != nil {
+		return err
+	}
 
 	// Publish an update trade event
 	b.PublishUpdateTradeEvent(trade, originalTrade)
@@ -339,7 +346,7 @@ func generateTradeKey(trade Trade) string {
 func removeTradeFromSlice(trades []Trade, tradeID string) []Trade {
 	for i, t := range trades {
 		if t.TradeID == tradeID {
-			return append(trades[:i], trades[i+1:]...)
+			return slices.Delete(trades, i, i+1)
 		}
 	}
 	return trades
@@ -368,7 +375,7 @@ type Trade struct {
 	Price       float64 `json:"Price" validate:"gte=0"`        // Price per unit of the asset
 	Fx          float64 `json:"Fx"`                            // FX rate for the trade
 	Yield       float64 `json:"Yield"`                         // Yield of the asset
-	Trader      string  `json:"Trader" validate:"required"`    // Trader who executed the trade
+	Book        string  `json:"Book" validate:"required"`      // Book associated with the trade
 	Broker      string  `json:"Broker" validate:"required"`    // Broker who executed the trade
 	Account     string  `json:"Account" validate:"required"`   // Account associated with the trade (CDP, MIP, Custodian)
 	Status      string  `json:"Status"`                        // Status of the trade (e.g. Open, AutoClosed, Closed), autoclosed if the trade is closed by the system automatically upon expiry (e.g. MAS Bills), closed if the trade is closed manually
@@ -387,7 +394,7 @@ func (t Trade) Clone() Trade {
 		Price:       t.Price,
 		Fx:          t.Fx,
 		Yield:       t.Yield,
-		Trader:      t.Trader,
+		Book:        t.Book,
 		Broker:      t.Broker,
 		Account:     t.Account,
 		Status:      t.Status,
@@ -397,7 +404,7 @@ func (t Trade) Clone() Trade {
 }
 
 // NewTrade creates a new Trade instance.
-func NewTrade(side string, quantity float64, ticker, trader, broker, account, status, origTradeId string, price, fx float64, yield float64, tradeDate time.Time) (*Trade, error) {
+func NewTrade(side string, quantity float64, ticker, book, broker, account, status, origTradeId string, price, fx float64, yield float64, tradeDate time.Time) (*Trade, error) {
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
 	}
@@ -415,7 +422,7 @@ func NewTrade(side string, quantity float64, ticker, trader, broker, account, st
 		Price:       price,
 		Fx:          fx,
 		Yield:       yield,
-		Trader:      trader,
+		Book:        book,
 		Broker:      broker,
 		Account:     account,
 		Status:      status,
@@ -427,7 +434,7 @@ func NewTrade(side string, quantity float64, ticker, trader, broker, account, st
 }
 
 // NewTradeWithID creates a new Trade instance with a given trade ID, mainly for updating purposes
-func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trader, broker, account, status, origTradeId string, price, fx float64, yield float64, seqNum int, tradeDate time.Time) (*Trade, error) {
+func NewTradeWithID(tradeID string, side string, quantity float64, ticker, book, broker, account, status, origTradeId string, price, fx float64, yield float64, seqNum int, tradeDate time.Time) (*Trade, error) {
 
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
@@ -446,7 +453,7 @@ func NewTradeWithID(tradeID string, side string, quantity float64, ticker, trade
 		Price:       price,
 		Fx:          fx,
 		Yield:       yield,
-		Trader:      trader,
+		Book:        book,
 		Broker:      broker,
 		Account:     account,
 		Status:      status,
@@ -479,7 +486,7 @@ func validateTrade(trade Trade) error {
 // For backup purposes without intention of migrating to a different system, the author suggests to backup the leveldb instead of migrating via csv files
 
 // ImportFromCSV imports trades from a CSV file and adds them to the blotter.
-// Expected CSV format: TradeDate,Ticker,Side,Quantity,Price,Yield,Trader,Broker,Account,Status,Fx
+// Expected CSV format: TradeDate,Ticker,Side,Quantity,Price,Yield,Book,Broker,Account,Status,Fx
 func (b *TradeBlotter) ImportFromCSVFile(filepath string) (int, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
@@ -501,7 +508,7 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) (int, error) {
 		return 0, fmt.Errorf("error reading CSV header: %w", err)
 	}
 
-	expectedHeaders := []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Trader", "Broker", "Account", "Status", "Fx"}
+	expectedHeaders := []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Book", "Broker", "Account", "Status", "Fx"}
 	fxRateMissing := false
 	if len(header) == len(expectedHeaders)-1 {
 		// for backwards compatibility, assume fx rate is not present
@@ -570,7 +577,7 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) (int, error) {
 			row[2], // Side
 			quantity,
 			row[1], // Ticker
-			row[6], // Trader
+			row[6], // Book
 			row[7], // Broker
 			row[8], // Account
 			status, // Status
@@ -622,7 +629,7 @@ func (b *TradeBlotter) ExportToCSVBytes() ([]byte, error) {
 			csvutil.FormatFloat(trade.Quantity, 4),
 			csvutil.FormatFloat(trade.Price, 4),
 			csvutil.FormatFloat(trade.Yield, 4),
-			trade.Trader,
+			trade.Book,
 			trade.Broker,
 			trade.Account,
 			trade.Status,

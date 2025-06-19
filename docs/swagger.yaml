@@ -68,6 +68,9 @@ definitions:
       Account:
         description: Account associated with the trade (CDP, MIP, Custodian)
         type: string
+      Book:
+        description: Book associated with the trade
+        type: string
       Broker:
         description: Broker who executed the trade
         type: string
@@ -105,24 +108,23 @@ definitions:
       TradeID:
         description: Unique identifier for the trade
         type: string
-      Trader:
-        description: Trader who executed the trade
-        type: string
       Yield:
         description: Yield of the asset
         type: number
     required:
     - Account
+    - Book
     - Broker
     - Quantity
     - Side
     - Ticker
     - TradeDate
-    - Trader
     type: object
   blotter.TradeRequest:
     properties:
       account:
+        type: string
+      book:
         type: string
       broker:
         type: string
@@ -146,8 +148,6 @@ definitions:
       ticker:
         type: string
       tradeDate:
-        type: string
-      trader:
         type: string
       yield:
         type: number
@@ -221,6 +221,8 @@ definitions:
         type: string
       avgPx:
         type: number
+      book:
+        type: string
       ccy:
         type: string
       dividends:
@@ -239,8 +241,6 @@ definitions:
         type: string
       totalPaid:
         type: number
-      trader:
-        type: string
     type: object
   rdata.SuccessResponse:
     properties:
@@ -548,7 +548,7 @@ paths:
       - text/csv
       responses:
         "200":
-          description: trades.csv
+          description: trades_YYYYMMDD.csv
           schema:
             type: file
         "500":

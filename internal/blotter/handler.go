@@ -20,7 +20,7 @@ type TradeRequest struct {
 	Price       float64 `json:"price"`
 	Fx          float64 `json:"fx"`
 	Yield       float64 `json:"yield"`
-	Trader      string  `json:"trader"`
+	Book        string  `json:"book"`
 	Broker      string  `json:"broker"`
 	Account     string  `json:"account"`
 	Status      string  `json:"status"`
@@ -60,7 +60,7 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 			tradeRequest.Side,
 			tradeRequest.Quantity,
 			tradeRequest.Ticker,
-			tradeRequest.Trader,
+			tradeRequest.Book,
 			tradeRequest.Broker,
 			tradeRequest.Account,
 			tradeRequest.Status,
@@ -119,7 +119,7 @@ func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 			tradeRequest.Side,
 			tradeRequest.Quantity,
 			tradeRequest.Ticker,
-			tradeRequest.Trader,
+			tradeRequest.Book,
 			tradeRequest.Broker,
 			tradeRequest.Account,
 			tradeRequest.Status,
@@ -308,7 +308,7 @@ func HandleTradeImportCSVStream(blotter *TradeBlotter) http.HandlerFunc {
 // @Description Export all trades to a CSV file
 // @Tags trades
 // @Produce  text/csv
-// @Success 200 {file} file "trades.csv"
+// @Success 200 {file} file "trades_YYYYMMDD.csv"
 // @Failure 500 {object} common.ErrorResponse "Failed to export trades"
 // @Router /api/v1/blotter/export [get]
 func HandleTradeExportCSV(blotter *TradeBlotter) http.HandlerFunc {
@@ -320,8 +320,13 @@ func HandleTradeExportCSV(blotter *TradeBlotter) http.HandlerFunc {
 			return
 		}
 
+		// Generate filename with current date in YYYYMMDD format
+		now := time.Now()
+		dateString := now.Format("20060102") // Go's reference time format for YYYYMMDD
+		filename := "trades_" + dateString + ".csv"
+
 		w.Header().Set("Content-Type", "text/csv")
-		w.Header().Set("Content-Disposition", "attachment; filename=trades.csv")
+		w.Header().Set("Content-Disposition", "attachment; filename="+filename)
 
 		w.Write(trades)
 	}

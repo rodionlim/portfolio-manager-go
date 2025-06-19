@@ -18,24 +18,8 @@ import (
 	"portfolio-manager/pkg/types"
 )
 
-type Position struct {
-	Ticker        string
-	Trader        string
-	Ccy           string
-	AssetClass    string
-	AssetSubClass string
-	Qty           float64
-	Mv            float64
-	PnL           float64
-	Dividends     float64
-	AvgPx         float64
-	Px            float64
-	TotalPaid     float64
-	FxRate        float64
-}
-
 type Portfolio struct {
-	positions       map[string]map[string]*Position // map[trader]map[ticker]*Position
+	positions       map[string]map[string]*Position // map[book]map[ticker]*Position
 	currentSeqNum   int                             // used as a pointer to point to the last blotter trade that was processed
 	db              dal.Database
 	blotter         *blotter.TradeBlotter
@@ -209,7 +193,7 @@ func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 	blotterSvc.Subscribe(blotter.UpdateTradeEvent, event.NewEventHandler(func(e event.Event) {
 		trade := e.Data.(blotter.TradeEventPayload).Trade
 		originalTrade := e.Data.(blotter.TradeEventPayload).OriginalTrade
-		p.logger.Infof("Received 'UPDATE' trade event. tradeID: %s ticker: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.TradeDate)
+		p.logger.Infof("Received 'UPDATE' trade event. tradeID: %s ticker: %s, book: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.Book, trade.TradeDate)
 
 		reverseTradeSide(&originalTrade)
 
@@ -308,18 +292,18 @@ func (p *Portfolio) updatePositionFromDb(position *Position) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	trader := position.Trader
+	book := position.Book
 	ticker := position.Ticker
 
-	if _, ok := p.positions[trader]; !ok {
-		p.positions[trader] = make(map[string]*Position)
+	if _, ok := p.positions[book]; !ok {
+		p.positions[book] = make(map[string]*Position)
 	}
 
-	if _, ok := p.positions[trader][ticker]; !ok {
-		p.positions[trader][ticker] = &Position{Ticker: ticker, Trader: trader}
+	if _, ok := p.positions[book][ticker]; !ok {
+		p.positions[book][ticker] = &Position{Ticker: ticker, Book: book}
 	}
 
-	positionToUpdate := p.positions[trader][ticker]
+	positionToUpdate := p.positions[book][ticker]
 	positionToUpdate.Qty = position.Qty
 	positionToUpdate.Mv = position.Mv
 	positionToUpdate.PnL = position.PnL
@@ -335,7 +319,7 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	trader := trade.Trader
+	book := trade.Book
 	ticker := trade.Ticker
 
 	qty := trade.Quantity
@@ -343,15 +327,15 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 		qty = qty * -1
 	}
 
-	if _, ok := p.positions[trader]; !ok {
-		p.positions[trader] = make(map[string]*Position)
+	if _, ok := p.positions[book]; !ok {
+		p.positions[book] = make(map[string]*Position)
 	}
 
-	if _, ok := p.positions[trader][ticker]; !ok {
-		p.positions[trader][ticker] = &Position{Ticker: ticker, Trader: trader}
+	if _, ok := p.positions[book][ticker]; !ok {
+		p.positions[book][ticker] = &Position{Ticker: ticker, Book: book}
 	}
 
-	position := p.positions[trader][ticker]
+	position := p.positions[book][ticker]
 
 	totalPaid := position.TotalPaid + trade.Price*qty // qty is negative for sell trades
 	position.TotalPaid = totalPaid
@@ -378,25 +362,25 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 	return nil
 }
 
-func (p *Portfolio) GetPosition(trader, ticker string) (*Position, error) {
+func (p *Portfolio) GetPosition(book, ticker string) (*Position, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if tickers, ok := p.positions[trader]; ok {
+	if tickers, ok := p.positions[book]; ok {
 		if position, ok := tickers[ticker]; ok {
 			err := p.enrichPosition(position)
 			return position, err
 		}
 	}
-	return nil, fmt.Errorf("position not found for trader %s and ticker %s", trader, ticker)
+	return nil, fmt.Errorf("position not found for book %s and ticker %s", book, ticker)
 }
 
-func (p *Portfolio) GetPositions(trader string) ([]*Position, error) {
+func (p *Portfolio) GetPositions(book string) ([]*Position, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	var positions []*Position
-	if tickers, ok := p.positions[trader]; ok {
+	if tickers, ok := p.positions[book]; ok {
 		for _, position := range tickers {
 			positions = append(positions, position)
 		}
@@ -410,8 +394,8 @@ func (p *Portfolio) GetAllPositions() ([]*Position, error) {
 	defer p.mu.Unlock()
 
 	var positions []*Position
-	for _, traders := range p.positions {
-		for _, position := range traders {
+	for _, books := range p.positions {
+		for _, position := range books {
 			positions = append(positions, position)
 		}
 	}
@@ -530,5 +514,5 @@ func (p *Portfolio) saveSeqNumToDAL(seqNum int) {
 
 // generatePositionKey generates a unique key for the position.
 func generatePositionKey(trade *blotter.Trade) string {
-	return fmt.Sprintf("%s:%s:%s", types.PositionKeyPrefix, trade.Trader, trade.Ticker)
+	return fmt.Sprintf("%s:%s:%s", types.PositionKeyPrefix, trade.Book, trade.Ticker)
 }

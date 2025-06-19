@@ -188,7 +188,7 @@ func exportTradesToCSV(trades []blotter.Trade) ([]byte, error) {
 			csvutil.FormatFloat(trade.Quantity, 4),
 			csvutil.FormatFloat(trade.Price, 4),
 			csvutil.FormatFloat(trade.Yield, 4),
-			trade.Trader,
+			trade.Book,
 			trade.Broker,
 			trade.Account,
 			trade.Status,

@@ -15,4 +15,5 @@ const (
 	DividendsCustomKeyPrefix   dbKey = "DIVIDENDS_CUSTOM"
 	KeyPrefixHistoricalMetrics dbKey = "METRICS" // Key prefix for historical metrics
 	AnalyticsSummaryKeyPrefix  dbKey = "ANALYTICS_SUMMARY"
+	MigrationKeyPrefix         dbKey = "MIGRATION" // Key prefix for migration tracking
 )

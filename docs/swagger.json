@@ -333,7 +333,7 @@
                 "summary": "Export trades to CSV",
                 "responses": {
                     "200": {
-                        "description": "trades.csv",
+                        "description": "trades_YYYYMMDD.csv",
                         "schema": {
                             "type": "file"
                         }
@@ -1710,16 +1710,20 @@
             "type": "object",
             "required": [
                 "Account",
+                "Book",
                 "Broker",
                 "Quantity",
                 "Side",
                 "Ticker",
-                "TradeDate",
-                "Trader"
+                "TradeDate"
             ],
             "properties": {
                 "Account": {
                     "description": "Account associated with the trade (CDP, MIP, Custodian)",
+                    "type": "string"
+                },
+                "Book": {
+                    "description": "Book associated with the trade",
                     "type": "string"
                 },
                 "Broker": {
@@ -1767,10 +1771,6 @@
                     "description": "Unique identifier for the trade",
                     "type": "string"
                 },
-                "Trader": {
-                    "description": "Trader who executed the trade",
-                    "type": "string"
-                },
                 "Yield": {
                     "description": "Yield of the asset",
                     "type": "number"
@@ -1781,6 +1781,9 @@
             "type": "object",
             "properties": {
                 "account": {
+                    "type": "string"
+                },
+                "book": {
                     "type": "string"
                 },
                 "broker": {
@@ -1815,9 +1818,6 @@
                     "type": "string"
                 },
                 "tradeDate": {
-                    "type": "string"
-                },
-                "trader": {
                     "type": "string"
                 },
                 "yield": {
@@ -1930,6 +1930,9 @@
                 "avgPx": {
                     "type": "number"
                 },
+                "book": {
+                    "type": "string"
+                },
                 "ccy": {
                     "type": "string"
                 },
@@ -1956,9 +1959,6 @@
                 },
                 "totalPaid": {
                     "type": "number"
-                },
-                "trader": {
-                    "type": "string"
                 }
             }
         },

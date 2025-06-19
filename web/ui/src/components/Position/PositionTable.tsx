@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   MantineReactTable,
   MRT_ColumnDef,
@@ -15,7 +15,7 @@ import { IconHistory, IconCoins } from "@tabler/icons-react";
 interface Position {
   Ticker: string;
   Name: string;
-  Trader: string;
+  Book: string;
   Ccy: string;
   AssetClass: string;
   AssetSubClass: string;
@@ -31,6 +31,7 @@ interface Position {
 const PositionTable: React.FC = () => {
   const navigate = useNavigate();
   const refData = useSelector((state: RootState) => state.referenceData.data);
+  const [filteredPositions, setFilteredPositions] = useState<Position[]>([]);
 
   const {
     data: rawPositions = [],
@@ -113,8 +114,11 @@ const PositionTable: React.FC = () => {
     );
   }, [rawPositions, refData]);
 
+  // Calculate totals based on filtered positions
   const totals = useMemo(() => {
-    const res = rawPositions.reduce(
+    const positions =
+      filteredPositions.length > 0 ? filteredPositions : aggregatedPositions;
+    const res = positions.reduce(
       (acc, row) => {
         acc.Mv += row.Mv * row.FxRate;
         acc.Pnl += row.PnL * row.FxRate;
@@ -129,11 +133,14 @@ const PositionTable: React.FC = () => {
       { Mv: 0, MvLessGovies: 0, Pnl: 0, Dividends: 0 }
     );
     return res;
-  }, [rawPositions]);
+  }, [filteredPositions, aggregatedPositions]);
 
   const columns = useMemo<MRT_ColumnDef<Position>[]>(
     () => [
-      { accessorKey: "Ticker", header: "Ticker" },
+      {
+        accessorKey: "Ticker",
+        header: "Ticker",
+      },
       {
         accessorKey: "Name",
         header: "Name",
@@ -148,6 +155,7 @@ const PositionTable: React.FC = () => {
           );
         },
       },
+      { accessorKey: "Book", header: "Book" },
       {
         accessorKey: "Px",
         header: "Current Px",
@@ -327,6 +335,14 @@ const PositionTable: React.FC = () => {
       );
     },
   });
+
+  // Update filtered positions when table filters change
+  useEffect(() => {
+    const filtered = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+    setFilteredPositions(filtered);
+  }, [table.getFilteredRowModel().rows]);
 
   // Remove the separate loading check since the table handles it now
   if (error) return <div>Error loading positions</div>;

@@ -44,9 +44,9 @@ func (m *Migrator) Migrate() error {
 		logging.GetLogger().Info("Skipping v1.7.0 migration (already applied or version is higher)")
 	}
 
-	// Subsequent migrations should be added here as needed
+	// Subsequent migrations should be added here as needed in future
 
-	logging.GetLogger().Infof("Scehma migrations completed successfully. Last migration applied: %s", m.lastMigrationApplied)
+	logging.GetLogger().Infof("All schema migrations completed successfully. Last migration applied: %s", m.lastMigrationApplied)
 	return nil
 }
 

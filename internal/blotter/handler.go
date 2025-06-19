@@ -3,7 +3,6 @@ package blotter
 import (
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
@@ -212,7 +211,6 @@ func HandleTradeDeleteAll(blotter *TradeBlotter) http.HandlerFunc {
 func HandleTradeGet(blotter *TradeBlotter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		trades := blotter.GetTrades()
-		fmt.Printf("%+v", trades)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(trades)
 	}

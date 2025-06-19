@@ -15,6 +15,7 @@ import (
 	"portfolio-manager/internal/fxinfer"
 	"portfolio-manager/internal/historical"
 	"portfolio-manager/internal/metrics"
+	"portfolio-manager/internal/migrations"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/internal/server"
 
@@ -72,6 +73,12 @@ func main() {
 		logger.Fatalf("Unsupported database type: %s", config.Db)
 	}
 	defer db.Close()
+
+	// Start version check to ensure schema is updated to the latest supported by the application
+	migrator := migrations.NewMigrator(db)
+	if migrator.Migrate() != nil {
+		logger.Fatalf("Failed to migrate schema to the latest version: %s", err)
+	}
 
 	// Create a new scheduler
 	sched := scheduler.NewScheduler()

@@ -167,7 +167,7 @@ func (b *TradeBlotter) UpdateTrade(trade Trade) error {
 	// Remove trade from the trades slice
 	for i, t := range b.trades {
 		if t.TradeID == trade.TradeID {
-			b.trades = append(b.trades[:i], b.trades[i+1:]...)
+			b.trades = slices.Delete(b.trades, i, i+1)
 			break
 		}
 	}
@@ -180,6 +180,13 @@ func (b *TradeBlotter) UpdateTrade(trade Trade) error {
 	b.trades = append(b.trades, trade)
 	b.tradesByID[trade.TradeID] = &trade
 	b.tradesByTicker[trade.Ticker] = append(b.tradesByTicker[trade.Ticker], trade)
+
+	// Write updated trade to the database
+	tradeKey := generateTradeKey(trade)
+	err := b.db.Put(tradeKey, trade)
+	if err != nil {
+		return err
+	}
 
 	// Publish an update trade event
 	b.PublishUpdateTradeEvent(trade, originalTrade)

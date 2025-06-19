@@ -18,22 +18,6 @@ import (
 	"portfolio-manager/pkg/types"
 )
 
-type Position struct {
-	Ticker        string
-	Book          string
-	Ccy           string
-	AssetClass    string
-	AssetSubClass string
-	Qty           float64
-	Mv            float64
-	PnL           float64
-	Dividends     float64
-	AvgPx         float64
-	Px            float64
-	TotalPaid     float64
-	FxRate        float64
-}
-
 type Portfolio struct {
 	positions       map[string]map[string]*Position // map[book]map[ticker]*Position
 	currentSeqNum   int                             // used as a pointer to point to the last blotter trade that was processed

@@ -121,9 +121,14 @@ func parseVersion(version string) [3]int {
 func (m *Migrator) migrateV170() error {
 	logging.GetLogger().Info("Running v1.7.0 migrations")
 
-	// Migrate Trader field to Book field in trades
-	if err := m.migrateTraderToBook(); err != nil {
-		return fmt.Errorf("failed to migrate Trader to Book: %w", err)
+	// Migrate Trader field to Book field in blotter trades
+	if err := m.migrateTraderToBookInBlotter(); err != nil {
+		return fmt.Errorf("failed to migrate Trader to Book in blotter: %w", err)
+	}
+
+	// Migrate Trader field to Book field in portfolio positions
+	if err := m.migrateTraderToBookInPosition(); err != nil {
+		return fmt.Errorf("failed to migrate Trader to Book in positions: %w", err)
 	}
 
 	m.lastMigrationApplied = "1.7.0"
@@ -137,7 +142,7 @@ func (m *Migrator) migrateV170() error {
 }
 
 // migrateTraderToBook migrates old "Trader" field to new "Book" field in trade records
-func (m *Migrator) migrateTraderToBook() error {
+func (m *Migrator) migrateTraderToBookInBlotter() error {
 	tradeKeys, err := m.db.GetAllKeysWithPrefix(string(types.TradeKeyPrefix))
 	if err != nil {
 		return err
@@ -225,6 +230,98 @@ func (m *Migrator) migrateTraderToBook() error {
 		logging.GetLogger().Infof("Migration completed: %d trades migrated from Trader to Book field", migratedCount)
 	} else {
 		logging.GetLogger().Info("No trades required migration from Trader to Book field")
+	}
+
+	return nil
+}
+
+// migrateTraderToBookInPosition migrates old "Trader" field to new "Book" field in position records
+func (m *Migrator) migrateTraderToBookInPosition() error {
+	// REF: fmt.Sprintf("%s:%s:%s", types.PositionKeyPrefix, trade.Trader/Book, trade.Ticker)
+	positionKeys, err := m.db.GetAllKeysWithPrefix(string(types.PositionKeyPrefix))
+	if err != nil {
+		return err
+	}
+
+	if len(positionKeys) == 0 {
+		logging.GetLogger().Info("No position records found, skipping Trader->Book migration")
+		return nil
+	}
+
+	migratedCount := 0
+	for _, key := range positionKeys {
+		// Define old position structure with Trader field
+		var oldPosition struct {
+			Ticker        string  `json:"Ticker"`
+			Trader        string  `json:"Trader"` // Old field name
+			Book          string  `json:"Book"`   // New field name (may be empty in old records)
+			Ccy           string  `json:"Ccy"`
+			AssetClass    string  `json:"AssetClass"`
+			AssetSubClass string  `json:"AssetSubClass"`
+			Qty           float64 `json:"Qty"`
+			Mv            float64 `json:"Mv"`
+			PnL           float64 `json:"PnL"`
+			Dividends     float64 `json:"Dividends"`
+			AvgPx         float64 `json:"AvgPx"`
+			Px            float64 `json:"Px"`
+			TotalPaid     float64 `json:"TotalPaid"`
+			FxRate        float64 `json:"FxRate"`
+		}
+
+		// Try to load the position data
+		err := m.db.Get(key, &oldPosition)
+		if err != nil {
+			return fmt.Errorf("failed to load position from key %s: %w", key, err)
+		}
+
+		// Check if migration is needed (Book is empty but Trader has value)
+		if oldPosition.Book == "" && oldPosition.Trader != "" {
+			// Create the migrated position structure
+			migratedPosition := struct {
+				Ticker        string  `json:"Ticker"`
+				Book          string  `json:"Book"`
+				Ccy           string  `json:"Ccy"`
+				AssetClass    string  `json:"AssetClass"`
+				AssetSubClass string  `json:"AssetSubClass"`
+				Qty           float64 `json:"Qty"`
+				Mv            float64 `json:"Mv"`
+				PnL           float64 `json:"PnL"`
+				Dividends     float64 `json:"Dividends"`
+				AvgPx         float64 `json:"AvgPx"`
+				Px            float64 `json:"Px"`
+				TotalPaid     float64 `json:"TotalPaid"`
+				FxRate        float64 `json:"FxRate"`
+			}{
+				Ticker:        oldPosition.Ticker,
+				Book:          oldPosition.Trader, // Migrate Trader -> Book
+				Ccy:           oldPosition.Ccy,
+				AssetClass:    oldPosition.AssetClass,
+				AssetSubClass: oldPosition.AssetSubClass,
+				Qty:           oldPosition.Qty,
+				Mv:            oldPosition.Mv,
+				PnL:           oldPosition.PnL,
+				Dividends:     oldPosition.Dividends,
+				AvgPx:         oldPosition.AvgPx,
+				Px:            oldPosition.Px,
+				TotalPaid:     oldPosition.TotalPaid,
+				FxRate:        oldPosition.FxRate,
+			}
+
+			// Save the migrated position back to database
+			err = m.db.Put(key, migratedPosition)
+			if err != nil {
+				return fmt.Errorf("failed to save migrated position %s: %w", oldPosition.Ticker, err)
+			}
+
+			migratedCount++
+			logging.GetLogger().Infof("Migrated position %s: Trader '%s' -> Book '%s'", oldPosition.Ticker, oldPosition.Trader, migratedPosition.Book)
+		}
+	}
+
+	if migratedCount > 0 {
+		logging.GetLogger().Infof("Migration completed: %d positions migrated from Trader to Book field", migratedCount)
+	} else {
+		logging.GetLogger().Info("No positions required migration from Trader to Book field")
 	}
 
 	return nil

@@ -193,7 +193,7 @@ func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 	blotterSvc.Subscribe(blotter.UpdateTradeEvent, event.NewEventHandler(func(e event.Event) {
 		trade := e.Data.(blotter.TradeEventPayload).Trade
 		originalTrade := e.Data.(blotter.TradeEventPayload).OriginalTrade
-		p.logger.Infof("Received 'UPDATE' trade event. tradeID: %s ticker: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.TradeDate)
+		p.logger.Infof("Received 'UPDATE' trade event. tradeID: %s ticker: %s, book: %s, tradeDate: %s", trade.TradeID, trade.Ticker, trade.Book, trade.TradeDate)
 
 		reverseTradeSide(&originalTrade)
 

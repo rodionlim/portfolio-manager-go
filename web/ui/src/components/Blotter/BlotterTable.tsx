@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Box, Button, FileInput } from "@mantine/core";
 import { IconUpload } from "@tabler/icons-react";
 import {
@@ -12,6 +12,7 @@ import { notifications } from "@mantine/notifications";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getUrl } from "../../utils/url";
 import { Trade } from "../../types/blotter";
+import BlotterBulkUpdateModal from "./BlotterBulkUpdateModal";
 
 const fetchTrades = async (): Promise<Trade[]> => {
   return fetch(getUrl("/api/v1/blotter/trade"))
@@ -75,6 +76,8 @@ const uploadTradesCSV = async (file: File): Promise<{ message: string }> => {
 const BlotterTable: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [bulkUpdateModalOpened, setBulkUpdateModalOpened] = useState(false);
+  const [selectedTrades, setSelectedTrades] = useState<Trade[]>([]);
 
   // Extract ticker filter from location state or search params
   const searchParams = new URLSearchParams(location.search);
@@ -145,11 +148,13 @@ const BlotterTable: React.FC = () => {
         </Button>
         <Button
           color="blue"
-          disabled={!(table.getSelectedRowModel().rows.length === 1)}
+          disabled={table.getSelectedRowModel().rows.length === 0}
           onClick={handleUpdateTrade(table)}
           variant="filled"
         >
-          Update Trade
+          {table.getSelectedRowModel().rows.length === 1
+            ? "Update Trade"
+            : "Bulk Update"}
         </Button>
         <Button color="gray" variant="outline" onClick={handleExportCSV}>
           Export CSV
@@ -218,28 +223,35 @@ const BlotterTable: React.FC = () => {
     };
   };
 
-  // handle add trade allows routing to the update trade page
+  // handle update trade - either single trade update (navigation) or bulk update (modal)
   const handleUpdateTrade = (table: MRT_TableInstance<Trade>): (() => void) => {
     return () => {
-      // first check if there is any selections
-      const selection = table
-        .getSelectedRowModel()
-        .rows.map((trade) => trade.original)[0];
-      navigate("/blotter/update_trade", {
-        state: {
-          tradeId: selection.TradeID,
-          date: new Date(selection.TradeDate),
-          ticker: selection.Ticker,
-          book: selection.Book,
-          broker: selection.Broker,
-          account: selection.Account,
-          qty: selection.Quantity,
-          price: selection.Price,
-          fx: selection.Fx,
-          tradeType: selection.TradeType,
-          seqNum: selection.SeqNum,
-        },
-      });
+      const selectedRows = table.getSelectedRowModel().rows;
+
+      if (selectedRows.length === 1) {
+        // Single trade update - navigate to form
+        const selection = selectedRows[0].original;
+        navigate("/blotter/update_trade", {
+          state: {
+            tradeId: selection.TradeID,
+            date: new Date(selection.TradeDate),
+            ticker: selection.Ticker,
+            book: selection.Book,
+            broker: selection.Broker,
+            account: selection.Account,
+            qty: selection.Quantity,
+            price: selection.Price,
+            fx: selection.Fx,
+            tradeType: selection.TradeType,
+            seqNum: selection.SeqNum,
+          },
+        });
+      } else if (selectedRows.length > 1) {
+        // Bulk update - open modal
+        const trades = selectedRows.map((row) => row.original);
+        setSelectedTrades(trades);
+        setBulkUpdateModalOpened(true);
+      }
     };
   };
 
@@ -288,6 +300,12 @@ const BlotterTable: React.FC = () => {
   return (
     <div>
       <MantineReactTable table={table} />
+      <BlotterBulkUpdateModal
+        opened={bulkUpdateModalOpened}
+        onClose={() => setBulkUpdateModalOpened(false)}
+        selectedTrades={selectedTrades}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 };

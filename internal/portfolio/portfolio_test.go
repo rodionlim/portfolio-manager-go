@@ -465,6 +465,100 @@ func TestSubscribeToBlotterWithTradeUpdate(t *testing.T) {
 	assert.Equal(t, 150.0, position.AvgPx)
 }
 
+func TestSubscribeToBlotterWithBookUpdate(t *testing.T) {
+	p, mockDB := createTestPortfolio()
+	blotterSvc := blotter.NewBlotter(mockDB)
+
+	p.SubscribeToBlotter(blotterSvc)
+
+	trade, _ := blotter.NewTrade(
+		blotter.TradeSideBuy,
+		100,
+		"AAPL",
+		"book1",
+		"broker1",
+		"cdp",
+		blotter.StatusOpen,
+		"",
+		150.0,
+		1,
+		0.0,
+		time.Now(),
+	)
+
+	err := blotterSvc.AddTrade(*trade)
+	assert.NoError(t, err)
+
+	trade2, _ := blotter.NewTrade(
+		blotter.TradeSideBuy,
+		300,
+		"AAPL",
+		"book1",
+		"broker1",
+		"cdp",
+		blotter.StatusOpen,
+		"",
+		150.0,
+		1,
+		0.0,
+		time.Now(),
+	)
+
+	err = blotterSvc.AddTrade(*trade2)
+	assert.NoError(t, err)
+
+	trade, _ = blotter.NewTradeWithID(
+		trade.TradeID,
+		blotter.TradeSideBuy,
+		100,
+		"AAPL",
+		"book2",
+		"broker1",
+		"cdp",
+		blotter.StatusOpen,
+		"",
+		150.0,
+		1,
+		0.0,
+		1,
+		time.Now(),
+	)
+
+	err = blotterSvc.UpdateTrade(*trade)
+	assert.NoError(t, err)
+
+	trade2, _ = blotter.NewTradeWithID(
+		trade2.TradeID,
+		blotter.TradeSideBuy,
+		300,
+		"AAPL",
+		"book2",
+		"broker1",
+		"cdp",
+		blotter.StatusOpen,
+		"",
+		150.0,
+		1,
+		0.0,
+		1,
+		time.Now(),
+	)
+
+	err = blotterSvc.UpdateTrade(*trade2)
+	assert.NoError(t, err)
+
+	// Give some time for the event to be processed
+	time.Sleep(100 * time.Millisecond)
+
+	position, err := p.GetPosition("book2", "AAPL")
+	assert.NoError(t, err)
+	assert.Equal(t, 400.0, position.Qty)
+
+	position, err = p.GetPosition("book1", "AAPL")
+	assert.NoError(t, err)
+	assert.Equal(t, 0.0, position.Qty)
+}
+
 // Helper function to handle error in test data setup
 func must[T any](v T, err error) T {
 	if err != nil {

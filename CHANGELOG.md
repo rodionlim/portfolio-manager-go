@@ -1,3 +1,18 @@
+## [1.8.0] - 2025-06-25
+
+### 🚀 Features
+
+- *(ui)* Add pnl column to historical metrics
+- *(ui)* Improve mobile ux experience by auto collapsing navbar on click
+
+### 🐛 Bug Fixes
+
+- *(ui)* Positions and dividends throwing error due to incorrect aggregation
+
+### 📚 Documentation
+
+- Minor tweak
+
 ## [1.7.0] - 2025-06-19
 
 ### 🚀 Features

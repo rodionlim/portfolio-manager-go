@@ -78,7 +78,7 @@ const PositionTable: React.FC = () => {
     if (!rawPositions) return [];
     return Object.values(
       rawPositions.reduce((acc: Record<string, Position>, curr: Position) => {
-        let tickerKey = curr.Ticker;
+        let tickerKey = curr.Ticker; // Normalize ticker key to refdata
         let tickerName: string;
 
         // If it's a mas tbill, set key to "TBill".
@@ -99,14 +99,16 @@ const PositionTable: React.FC = () => {
           tickerName = refData?.[tickerKey]?.name ?? "";
         }
 
-        if (acc[tickerKey]) {
-          acc[tickerKey].Qty += curr.Qty;
-          acc[tickerKey].Mv += curr.Mv * curr.FxRate;
-          acc[tickerKey].PnL += curr.PnL;
-          acc[tickerKey].Dividends += curr.Dividends;
-          acc[tickerKey].Name = tickerName;
+        const key = `${tickerKey}-${curr.Book}`; // Aggregate by Ticker and Book
+
+        if (acc[key]) {
+          acc[key].Qty += curr.Qty;
+          acc[key].Mv += curr.Mv * curr.FxRate;
+          acc[key].PnL += curr.PnL;
+          acc[key].Dividends += curr.Dividends;
+          acc[key].Name = tickerName;
         } else {
-          acc[tickerKey] = { ...curr, Ticker: tickerKey, Name: tickerName };
+          acc[key] = { ...curr, Ticker: tickerKey, Name: tickerName };
         }
 
         return acc;

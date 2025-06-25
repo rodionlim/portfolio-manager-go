@@ -43,8 +43,8 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
   const fetchPositions = async (): Promise<Position[]> => {
     try {
       const resp = await fetch(getUrl("/api/v1/portfolio/positions"));
-      const uniqueTickers: Position[] = await resp.json();
-      return uniqueTickers;
+      const tickers: Position[] = await resp.json();
+      return tickers;
     } catch (error: any) {
       console.error("Error fetching positions:", error);
       notifications.show({
@@ -62,7 +62,8 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
 
     try {
       const resp = await fetch(getUrl(`/api/v1/dividends/${ticker}`));
-      return await resp.json();
+      const dividends = await resp.json();
+      return dividends;
     } catch (error: any) {
       console.error("Error fetching dividends:", error);
       notifications.show({
@@ -141,7 +142,7 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
 
   // Calculate totals
   const totalAmount = useMemo(() => {
-    return dividends.reduce((sum, div) => sum + div.Amount, 0);
+    return (dividends || []).reduce((sum, div) => sum + div.Amount, 0);
   }, [dividends]);
 
   // Define table columns
@@ -203,10 +204,14 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
       >
         <Select
           placeholder="Select ticker..."
-          data={positions.map((position) => ({
-            label: position.Ticker,
-            value: position.Ticker,
-          }))}
+          data={Array.from(
+            new Set(positions.map((position) => position.Ticker))
+          )
+            .sort()
+            .map((ticker) => ({
+              label: ticker,
+              value: ticker,
+            }))}
           value={selectedTicker}
           onChange={setSelectedTicker}
           style={{ width: "300px" }}
@@ -245,7 +250,7 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
         </Text>
       )}
       {selectedTicker &&
-        dividends.length === 0 &&
+        (dividends || []).length === 0 &&
         !isLoadingDividends &&
         !dividendsError && (
           <Text c="dimmed" ta="center" mt="md">

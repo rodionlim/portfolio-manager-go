@@ -237,11 +237,35 @@ const MetricsTable: React.FC = () => {
         },
       },
       {
+        id: "pnl",
+        header: "P&L",
+        accessorFn: (row) => {
+          const mv = row.metrics.mv;
+          const pricePaid = row.metrics.pricePaid;
+          const totalDividends = row.metrics.totalDividends;
+          return mv - pricePaid + totalDividends;
+        },
+        Cell: ({ cell }) => {
+          const pnl = cell.getValue<number>();
+          const color = pnl >= 0 ? "green" : "red";
+          return (
+            <span style={{ color }}>
+              $
+              {pnl.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          );
+        },
+      },
+      {
         accessorKey: "metrics.irr",
         header: "IRR",
         Cell: ({ cell }) => {
           const irr = cell.getValue<number>();
-          return `${(irr * 100).toFixed(2)}%`;
+          const color = irr >= 0 ? "green" : "red";
+          return <span style={{ color }}>{(irr * 100).toFixed(2)}%</span>;
         },
       },
     ],

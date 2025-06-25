@@ -53,8 +53,14 @@ const items = [
   { label: "Settings", icon: IconAdjustments, link: "/settings" },
 ];
 
-const NavbarNested: React.FC = () => {
-  const links = items.map((item) => <LinksGroup {...item} key={item.label} />);
+interface NavbarNestedProps {
+  onLinkClick?: () => void;
+}
+
+const NavbarNested: React.FC<NavbarNestedProps> = ({ onLinkClick }) => {
+  const links = items.map((item) => (
+    <LinksGroup {...item} key={item.label} onLinkClick={onLinkClick} />
+  ));
 
   return (
     <nav className={classes.navbar}>

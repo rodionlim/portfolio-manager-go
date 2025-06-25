@@ -524,7 +524,11 @@ const DividendsAggregatedTable: React.FC = () => {
   const table = useMantineReactTable({
     columns,
     data: aggregatedData,
-    state: { density: "xs" },
+    state: {
+      density: "xs",
+      isLoading: isLoading,
+      showLoadingOverlay: isLoading,
+    },
     enablePagination: false,
     enableColumnFilters: false,
     enableGlobalFilter: false,

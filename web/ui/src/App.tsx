@@ -84,7 +84,7 @@ function App() {
               </Group>
             </AppShellHeader>
             <AppShellNavbar>
-              <NavbarNested />
+              <NavbarNested onLinkClick={() => isMobile && setOpened(false)} />
             </AppShellNavbar>
             <AppShellMain>
               <Controller />

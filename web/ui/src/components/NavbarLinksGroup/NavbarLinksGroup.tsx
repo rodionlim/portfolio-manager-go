@@ -10,6 +10,7 @@ interface LinksGroupProps {
   initiallyOpened?: boolean;
   links?: { label: string; link: string }[];
   link?: string;
+  onLinkClick?: () => void;
 }
 
 export function LinksGroup({
@@ -18,11 +19,17 @@ export function LinksGroup({
   initiallyOpened,
   links,
   link,
+  onLinkClick,
 }: LinksGroupProps) {
   const hasLinks = Array.isArray(links);
   const [opened, setOpened] = useState(initiallyOpened || false);
   const items = (hasLinks ? links : []).map((link) => (
-    <Link className={classes.link} to={link.link} key={link.label}>
+    <Link
+      className={classes.link}
+      to={link.link}
+      key={link.label}
+      onClick={onLinkClick}
+    >
       {link.label}
     </Link>
   ));
@@ -32,7 +39,15 @@ export function LinksGroup({
     <>
       <UnstyledButton
         onClick={() => {
-          hasLinks ? setOpened((o) => !o) : navigate(link!);
+          if (hasLinks) {
+            setOpened((o) => !o);
+          } else {
+            navigate(link!);
+            // Add a small delay to ensure navigation completes before navbar closes
+            setTimeout(() => {
+              onLinkClick?.();
+            }, 50);
+          }
         }}
         className={classes.control}
       >

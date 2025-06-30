@@ -1273,7 +1273,7 @@ const docTemplate = `{
         },
         "/api/v1/metrics": {
             "get": {
-                "description": "Get the Internal Rate of Return (IRR), MV, Price Paid for the entire portfolio",
+                "description": "Get the Internal Rate of Return (IRR), MV, Price Paid for the entire portfolio or a specific book",
                 "produces": [
                     "application/json"
                 ],
@@ -1281,6 +1281,14 @@ const docTemplate = `{
                     "metrics"
                 ],
                 "summary": "Get portfolio IRR",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metrics by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "The portfolio metrics, including IRR, cash flows and others",

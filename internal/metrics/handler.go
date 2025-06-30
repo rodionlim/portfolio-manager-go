@@ -9,15 +9,19 @@ import (
 
 // HandleGetPortfolioMetrics handles getting the portfolio metrics including IRR
 // @Summary Get portfolio IRR
-// @Description Get the Internal Rate of Return (IRR), MV, Price Paid for the entire portfolio
+// @Description Get the Internal Rate of Return (IRR), MV, Price Paid for the entire portfolio or a specific book
 // @Tags metrics
 // @Produce json
+// @Param book_filter query string false "Filter metrics by book (optional)"
 // @Success 200 {object} MetricsResult "The portfolio metrics, including IRR, cash flows and others"
 // @Failure 500 {object} common.ErrorResponse "Failed to calculate portoflio metrics"
 // @Router /api/v1/metrics [get]
 func HandleGetPortfolioMetrics(service *MetricsService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		result, err := service.CalculatePortfolioMetrics()
+		// Get book_filter query parameter
+		bookFilter := r.URL.Query().Get("book_filter")
+
+		result, err := service.CalculatePortfolioMetrics(bookFilter)
 		if err != nil {
 			logging.GetLogger().Error("Failed to calculate IRR:", err)
 			common.WriteJSONError(w, "Failed to calculate portfolio IRR: "+err.Error(), http.StatusInternalServerError)

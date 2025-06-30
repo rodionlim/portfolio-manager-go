@@ -77,7 +77,7 @@ func (s *Service) StartSGXReportCollection(cronExpr string) func() {
 // StoreCurrentMetrics stores the current portfolio metrics with the current timestamp
 func (s *Service) StoreCurrentMetrics() error {
 	// Get current metrics
-	result, err := s.metricsService.CalculatePortfolioMetrics()
+	result, err := s.metricsService.CalculatePortfolioMetrics("")
 	if err != nil {
 		return fmt.Errorf("failed to calculate metrics: %w", err)
 	}

@@ -78,6 +78,31 @@ func TestCalculateDividendsForSingleTickerBuysAndSells(t *testing.T) {
 	assert.Equal(t, expectedDividends, dividends)
 }
 
+func TestCalculateDividendsForSingleBookBuysAndSells(t *testing.T) {
+	dm, _, blotterMgr, err := setup()
+
+	blotterMgr.SetTrades("AAPL", []blotter.Trade{
+		{Ticker: "AAPL", Book: "tactical", TradeDate: "2022-12-31", Quantity: 100, TradeID: "1", Side: blotter.TradeSideBuy},
+		{Ticker: "AAPL", Book: "strategic", TradeDate: "2022-12-31", Quantity: 100, TradeID: "1", Side: blotter.TradeSideBuy}, // This trade should not affect the tactical book
+		{Ticker: "AAPL", Book: "tactical", TradeDate: "2023-01-15", Quantity: 200, TradeID: "2", Side: blotter.TradeSideBuy},
+		{Ticker: "AAPL", Book: "tactical", TradeDate: "2023-01-16", Quantity: 300, TradeID: "3", Side: blotter.TradeSideSell},
+	})
+
+	assert.NoError(t, err)
+
+	dividends, err := dm.CalculateDividendsForSingleBook("tactical")
+	assert.NoError(t, err)
+	assert.Len(t, dividends, 1)
+
+	expectedDividends := map[string][]Dividends{
+		"AAPL": {
+			{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0, Qty: 100},
+		},
+	}
+
+	assert.Equal(t, expectedDividends, dividends)
+}
+
 func TestCalculateDividendsForSSB(t *testing.T) {
 	dm, mdataMgr, blotterMgr, err := setup()
 	assert.NoError(t, err)

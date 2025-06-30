@@ -114,6 +114,7 @@ portfolio-manager/
 │   ├── fxinfer/
 │   ├── historical/
 │   ├── metrics/
+│   ├── migrations/
 │   ├── mocks/
 │   ├── portfolio/
 │   └── server/
@@ -396,6 +397,20 @@ curl -X GET http://localhost:8080/api/v1/blotter/trade
 
 ```sh
 curl -X GET http://localhost:8080/api/v1/portfolio/positions
+```
+
+### Portfolio Metrics
+
+Get portfolio metrics (IRR, Market Value, Price Paid) for the entire portfolio:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/metrics
+```
+
+Get portfolio metrics filtered by a specific book:
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/metrics?book_filter=tactical"
 ```
 
 ### Fetch Asset Prices

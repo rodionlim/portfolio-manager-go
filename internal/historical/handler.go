@@ -15,9 +15,7 @@ import (
 // @Success 200 {array} TimestampedMetrics "List of historical portfolio metrics by date"
 // @Failure 500 {object} common.ErrorResponse "Failed to get historical metrics"
 // @Router /api/v1/historical/metrics [get]
-func HandleGetMetrics(service interface {
-	GetMetrics() ([]TimestampedMetrics, error)
-}) http.HandlerFunc {
+func HandleGetMetrics(service HistoricalMetricsGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		metrics, err := service.GetMetrics()
 		if err != nil {
@@ -39,9 +37,7 @@ func HandleGetMetrics(service interface {
 // @Success 200 {string} string "CSV file with historical metrics"
 // @Failure 500 {object} common.ErrorResponse "Failed to export historical metrics"
 // @Router /api/v1/historical/metrics/export [get]
-func HandleExportMetricsCSV(service interface {
-	ExportMetricsToCSV() ([]byte, error)
-}) http.HandlerFunc {
+func HandleExportMetricsCSV(service HistoricalMetricsCsvManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		csvBytes, err := service.ExportMetricsToCSV()
 		if err != nil {

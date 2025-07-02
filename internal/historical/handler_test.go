@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -15,6 +16,11 @@ type mockHistoricalService struct {
 
 func (m *mockHistoricalService) GetMetrics() ([]TimestampedMetrics, error) {
 	args := m.Called()
+	return args.Get(0).([]TimestampedMetrics), args.Error(1)
+}
+
+func (m *mockHistoricalService) GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetrics, error) {
+	args := m.Called(start, end)
 	return args.Get(0).([]TimestampedMetrics), args.Error(1)
 }
 

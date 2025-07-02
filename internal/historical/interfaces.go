@@ -36,7 +36,7 @@ type HistoricalMetricsGetter interface {
 }
 
 type HistoricalMetricsSetter interface {
-	StoreCurrentMetrics() error
+	StoreCurrentMetrics(book_filter string) error // set book_filter to "" to get metrics for all books
 }
 
 type HistoricalMetricsCsvManager interface {

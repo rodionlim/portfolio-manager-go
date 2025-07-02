@@ -74,12 +74,12 @@ func (s *Service) StartSGXReportCollection(cronExpr string) func() {
 	}
 }
 
-// StoreCurrentMetrics stores the current portfolio metrics with the current timestamp
-func (s *Service) StoreCurrentMetrics() error {
+// StoreCurrentMetrics stores the current portfolio/book metrics with the current timestamp
+func (s *Service) StoreCurrentMetrics(book_filter string) error {
 	// Get current metrics
-	result, err := s.metricsService.CalculatePortfolioMetrics("")
+	result, err := s.metricsService.CalculatePortfolioMetrics(book_filter)
 	if err != nil {
-		return fmt.Errorf("failed to calculate metrics: %w", err)
+		return fmt.Errorf("failed to calculate [book_filter: %s] metrics: %w", book_filter, err)
 	}
 
 	// Create timestamped metrics (date only)
@@ -102,10 +102,10 @@ func (s *Service) StoreCurrentMetrics() error {
 	// Store in LevelDB
 	err = s.db.Put(key, timestampedMetrics)
 	if err != nil {
-		return fmt.Errorf("failed to store metrics: %w", err)
+		return fmt.Errorf("failed to store metrics [book_filter: %s]: %w", book_filter, err)
 	}
 
-	s.logger.Infof("Stored portfolio metrics for timestamp %s", now.Format(time.RFC3339))
+	s.logger.Infof("Stored portfolio metrics [book_filter: %s] for timestamp %s", book_filter, now.Format(time.RFC3339))
 	return nil
 }
 
@@ -168,9 +168,9 @@ func (s *Service) GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetr
 }
 
 // StartMetricsCollection starts collection of metrics based on a cron expression
-func (s *Service) StartMetricsCollection(cronExpr string) func() {
+func (s *Service) StartMetricsCollection(cronExpr string, book_filter string) func() {
 	metricsTask := func(ctx context.Context) error {
-		return s.StoreCurrentMetrics()
+		return s.StoreCurrentMetrics(book_filter)
 	}
 
 	sched, err := scheduler.NewCronSchedule(cronExpr)

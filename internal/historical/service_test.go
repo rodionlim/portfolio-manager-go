@@ -71,7 +71,7 @@ func TestStoreCurrentMetrics(t *testing.T) {
 	}
 
 	// Call the method under test
-	err := service.StoreCurrentMetrics()
+	err := service.StoreCurrentMetrics("")
 
 	// Assertions
 	assert.NoError(t, err)

@@ -94,7 +94,7 @@ func (s *Service) StoreCurrentMetrics() error {
 	// Generate key for LevelDB
 	// Format: metrics:book:YYYY-MM-DD
 	key := fmt.Sprintf("%s:%s:%s",
-		types.KeyPrefixHistoricalMetrics,
+		types.HistoricalMetricsKeyPrefix,
 		"portfolio",
 		dateOnly.Format("2006-01-02"),
 	)
@@ -111,7 +111,7 @@ func (s *Service) StoreCurrentMetrics() error {
 
 // GetMetrics retrieves all historical metrics
 func (s *Service) GetMetrics() ([]TimestampedMetrics, error) {
-	prefix := fmt.Sprintf("%s:%s:", types.KeyPrefixHistoricalMetrics, "portfolio")
+	prefix := fmt.Sprintf("%s:%s:", types.HistoricalMetricsKeyPrefix, "portfolio")
 	keys, err := s.db.GetAllKeysWithPrefix(prefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get metrics keys: %w", err)
@@ -133,7 +133,7 @@ func (s *Service) GetMetrics() ([]TimestampedMetrics, error) {
 
 // GetMetricsByDateRange retrieves historical metrics for a given time range
 func (s *Service) GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetrics, error) {
-	prefix := fmt.Sprintf("%s:%s:", types.KeyPrefixHistoricalMetrics, "portfolio")
+	prefix := fmt.Sprintf("%s:%s:", types.HistoricalMetricsKeyPrefix, "portfolio")
 	keys, err := s.db.GetAllKeysWithPrefix(prefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get metrics keys: %w", err)
@@ -289,7 +289,7 @@ func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 			Metrics:   metrics,
 		}
 		// Store in DB (overwrite if exists)
-		key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", ts.Format("2006-01-02"))
+		key := fmt.Sprintf("%s:%s:%s", types.HistoricalMetricsKeyPrefix, "portfolio", ts.Format("2006-01-02"))
 		if err := s.db.Put(key, tm); err != nil {
 			return count, err
 		}
@@ -300,7 +300,7 @@ func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 
 // UpsertMetric inserts or updates a single historical metric in the database
 func (s *Service) UpsertMetric(metric TimestampedMetrics) error {
-	key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", metric.Timestamp.Format("2006-01-02"))
+	key := fmt.Sprintf("%s:%s:%s", types.HistoricalMetricsKeyPrefix, "portfolio", metric.Timestamp.Format("2006-01-02"))
 	return s.db.Put(key, metric)
 }
 
@@ -317,7 +317,7 @@ func (s *Service) DeleteMetric(timestamp string) error {
 
 	// Create the key for the database - use the date part only
 	dateOnly := time.Date(parsedTime.Year(), parsedTime.Month(), parsedTime.Day(), 0, 0, 0, 0, parsedTime.Location())
-	key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", dateOnly.Format("2006-01-02"))
+	key := fmt.Sprintf("%s:%s:%s", types.HistoricalMetricsKeyPrefix, "portfolio", dateOnly.Format("2006-01-02"))
 
 	// Check if the metric exists by trying to get it
 	var metric TimestampedMetrics

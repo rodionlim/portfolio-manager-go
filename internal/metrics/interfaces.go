@@ -34,6 +34,7 @@ type MetricsResult struct {
 type MetricResultsWithCashFlows struct {
 	Metrics   MetricsResult `json:"metrics"`
 	CashFlows []CashFlow    `json:"cashFlows"`
+	Label     string        `json:"label"` // Optional label for the metrics, e.g. book name, empty for entire portfolio
 }
 
 // MetricsCalculator defines the interface for portfolio metrics calculations

@@ -54,6 +54,11 @@ func (m *MetricsService) CalculatePortfolioMetrics(book_filter string) (MetricRe
 
 	book_filter = strings.ToLower(book_filter)
 
+	// Set metrics label if book_filter is provided
+	if book_filter != "" {
+		result.Label = book_filter
+	}
+
 	// 1. Add all filtered trades as cash flows (buys are negative, sells are positive)
 	trades := m.blotterSvc.GetTrades()
 	if book_filter != "" {

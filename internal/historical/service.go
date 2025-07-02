@@ -114,8 +114,12 @@ func (s *Service) StoreCurrentMetrics(book_filter string) error {
 }
 
 // GetMetrics retrieves all historical metrics
-func (s *Service) GetMetrics() ([]TimestampedMetrics, error) {
-	prefix := fmt.Sprintf("%s:%s:", types.HistoricalMetricsKeyPrefix, "portfolio")
+func (s *Service) GetMetrics(book_filter string) ([]TimestampedMetrics, error) {
+	label := book_filter
+	if book_filter == "" {
+		label = "portfolio"
+	}
+	prefix := fmt.Sprintf("%s:%s:", types.HistoricalMetricsKeyPrefix, label)
 	keys, err := s.db.GetAllKeysWithPrefix(prefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get metrics keys: %w", err)
@@ -136,8 +140,13 @@ func (s *Service) GetMetrics() ([]TimestampedMetrics, error) {
 }
 
 // GetMetricsByDateRange retrieves historical metrics for a given time range
-func (s *Service) GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetrics, error) {
-	prefix := fmt.Sprintf("%s:%s:", types.HistoricalMetricsKeyPrefix, "portfolio")
+func (s *Service) GetMetricsByDateRange(book_filter string, start, end time.Time) ([]TimestampedMetrics, error) {
+	label := book_filter
+	if book_filter == "" {
+		label = "portfolio"
+	}
+
+	prefix := fmt.Sprintf("%s:%s:", types.HistoricalMetricsKeyPrefix, label)
 	keys, err := s.db.GetAllKeysWithPrefix(prefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get metrics keys: %w", err)
@@ -216,7 +225,7 @@ func (s *Service) ExportMetricsToCSV() ([]byte, error) {
 		return nil, err
 	}
 
-	metrics, err := s.GetMetrics()
+	metrics, err := s.GetMetrics("")
 	if err != nil {
 		return nil, err
 	}

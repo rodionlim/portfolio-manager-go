@@ -14,20 +14,20 @@ type mockHistoricalService struct {
 	mock.Mock
 }
 
-func (m *mockHistoricalService) GetMetrics() ([]TimestampedMetrics, error) {
-	args := m.Called()
+func (m *mockHistoricalService) GetMetrics(book_filter string) ([]TimestampedMetrics, error) {
+	args := m.Called(book_filter)
 	return args.Get(0).([]TimestampedMetrics), args.Error(1)
 }
 
-func (m *mockHistoricalService) GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetrics, error) {
-	args := m.Called(start, end)
+func (m *mockHistoricalService) GetMetricsByDateRange(book_filter string, start, end time.Time) ([]TimestampedMetrics, error) {
+	args := m.Called(book_filter, start, end)
 	return args.Get(0).([]TimestampedMetrics), args.Error(1)
 }
 
 func TestHandleGetMetrics_Success(t *testing.T) {
 	mockSvc := new(mockHistoricalService)
 	metrics := []TimestampedMetrics{{}}
-	mockSvc.On("GetMetrics").Return(metrics, nil)
+	mockSvc.On("GetMetrics", "").Return(metrics, nil)
 
 	req := httptest.NewRequest("GET", "/api/v1/historical/metrics", nil)
 	rr := httptest.NewRecorder()
@@ -41,7 +41,7 @@ func TestHandleGetMetrics_Success(t *testing.T) {
 func TestHandleGetMetrics_Error(t *testing.T) {
 	mockSvc := new(mockHistoricalService)
 	// Return an empty slice for the first return value, not nil
-	mockSvc.On("GetMetrics").Return([]TimestampedMetrics{}, assert.AnError)
+	mockSvc.On("GetMetrics", "").Return([]TimestampedMetrics{}, assert.AnError)
 
 	req := httptest.NewRequest("GET", "/api/v1/historical/metrics", nil)
 	rr := httptest.NewRecorder()
@@ -55,7 +55,7 @@ func TestHandleGetMetrics_Error(t *testing.T) {
 func TestHandleGetMetrics_EmptyResult(t *testing.T) {
 	mockSvc := new(mockHistoricalService)
 	// Return an empty slice, not nil
-	mockSvc.On("GetMetrics").Return([]TimestampedMetrics{}, nil)
+	mockSvc.On("GetMetrics", "").Return([]TimestampedMetrics{}, nil)
 
 	req := httptest.NewRequest("GET", "/api/v1/historical/metrics", nil)
 	rr := httptest.NewRecorder()

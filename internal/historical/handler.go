@@ -17,7 +17,7 @@ import (
 // @Router /api/v1/historical/metrics [get]
 func HandleGetMetrics(service HistoricalMetricsGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		metrics, err := service.GetMetrics()
+		metrics, err := service.GetMetrics("")
 		if err != nil {
 			common.WriteJSONError(w, "Failed to get historical metrics: "+err.Error(), http.StatusInternalServerError)
 			return

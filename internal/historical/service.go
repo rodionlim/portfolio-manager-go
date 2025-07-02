@@ -26,7 +26,7 @@ type Service struct {
 	db               dal.Database
 	scheduler        scheduler.Scheduler
 	logger           *logging.Logger
-	collectionTask   scheduler.TaskID
+	collectionTasks  []scheduler.TaskID
 }
 
 // NewService creates a new historical metrics service
@@ -62,15 +62,14 @@ func (s *Service) StartSGXReportCollection(cronExpr string) func() {
 		return func() {}
 	}
 
-	s.collectionTask = s.scheduler.ScheduleTaskFunc(metricsTask, sched)
+	taskId := s.scheduler.ScheduleTaskFunc(metricsTask, sched)
+	s.collectionTasks = append(s.collectionTasks, taskId)
 
 	s.logger.Infof("Started sgx report collection with cron schedule: %s", cronExpr)
 
 	return func() {
-		if s.collectionTask != "" {
-			s.scheduler.Unschedule(s.collectionTask)
-			s.logger.Info("Stopped sgx report collection")
-		}
+		s.scheduler.Unschedule(taskId)
+		s.logger.Info("Stopped sgx report collection")
 	}
 }
 
@@ -91,21 +90,26 @@ func (s *Service) StoreCurrentMetrics(book_filter string) error {
 		Metrics:   result.Metrics,
 	}
 
+	label := "portfolio"
+	if book_filter != "" {
+		label = book_filter
+	}
+
 	// Generate key for LevelDB
 	// Format: metrics:book:YYYY-MM-DD
 	key := fmt.Sprintf("%s:%s:%s",
 		types.HistoricalMetricsKeyPrefix,
-		"portfolio",
+		label,
 		dateOnly.Format("2006-01-02"),
 	)
 
 	// Store in LevelDB
 	err = s.db.Put(key, timestampedMetrics)
 	if err != nil {
-		return fmt.Errorf("failed to store metrics [book_filter: %s]: %w", book_filter, err)
+		return fmt.Errorf("failed to store metrics [book_filter: %s]: %w", label, err)
 	}
 
-	s.logger.Infof("Stored portfolio metrics [book_filter: %s] for timestamp %s", book_filter, now.Format(time.RFC3339))
+	s.logger.Infof("Stored portfolio metrics [book_filter: %s] for timestamp %s", label, now.Format(time.RFC3339))
 	return nil
 }
 
@@ -179,25 +183,27 @@ func (s *Service) StartMetricsCollection(cronExpr string, book_filter string) fu
 		return func() {}
 	}
 
-	s.collectionTask = s.scheduler.ScheduleTaskFunc(metricsTask, sched)
+	taskId := s.scheduler.ScheduleTaskFunc(metricsTask, sched)
+	s.collectionTasks = append(s.collectionTasks, taskId)
 
-	s.logger.Infof("Started metrics collection with cron schedule: %s", cronExpr)
+	s.logger.Infof("Started metrics collection [book_filter: %s] with cron schedule: %s", book_filter, cronExpr)
 
 	return func() {
-		if s.collectionTask != "" {
-			s.scheduler.Unschedule(s.collectionTask)
-			s.logger.Info("Stopped metrics collection")
-		}
+		s.scheduler.Unschedule(taskId)
+		s.logger.Infof("Stopped metrics collection [book filter: %s]", book_filter)
 	}
 }
 
 // StopMetricsCollection stops the periodic collection of metrics
 func (s *Service) StopMetricsCollection() {
-	if s.collectionTask != "" {
-		s.scheduler.Unschedule(s.collectionTask)
-		s.collectionTask = ""
-		s.logger.Info("Stopped metrics collection")
+	s.logger.Info("Stopping metrics collection")
+	// Unschedule all collection tasks
+	for _, taskId := range s.collectionTasks {
+		if ok := s.scheduler.Unschedule(taskId); !ok {
+			s.logger.Warnf("Failed to unschedule task %s", taskId)
+		}
 	}
+	s.collectionTasks = []scheduler.TaskID{}
 }
 
 // ExportMetricsToCSV exports all historical metrics to a CSV file in memory and returns it as a byte slice.

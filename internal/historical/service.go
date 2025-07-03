@@ -216,6 +216,7 @@ func (s *Service) StopMetricsCollection() {
 }
 
 // ExportMetricsToCSV exports all historical metrics to a CSV file in memory and returns it as a byte slice.
+// TODO: add book_filter support to export metrics for a specific book
 func (s *Service) ExportMetricsToCSV() ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
@@ -249,6 +250,7 @@ func (s *Service) ExportMetricsToCSV() ([]byte, error) {
 }
 
 // ImportMetricsFromCSVFile imports historical metrics from a CSV file and adds them to the database.
+// TODO: add book_filter support to import metrics for a specific book
 func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 	reader := csv.NewReader(file)
 	header, err := reader.Read()
@@ -314,12 +316,14 @@ func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 }
 
 // UpsertMetric inserts or updates a single historical metric in the database
+// TODO: add book_filter support to upsert metrics for a specific book
 func (s *Service) UpsertMetric(metric TimestampedMetrics) error {
 	key := fmt.Sprintf("%s:%s:%s", types.HistoricalMetricsKeyPrefix, "portfolio", metric.Timestamp.Format("2006-01-02"))
 	return s.db.Put(key, metric)
 }
 
 // DeleteMetric deletes a historical metric by timestamp
+// TODO: add book_filter support to delete metrics for a specific book
 func (s *Service) DeleteMetric(timestamp string) error {
 	s.logger.Info(fmt.Sprintf("Deleting historical metric for timestamp: %s", timestamp))
 
@@ -354,6 +358,7 @@ func (s *Service) DeleteMetric(timestamp string) error {
 }
 
 // DeleteMetrics deletes multiple historical metrics by their timestamps
+// TODO: add book_filter support to delete metrics for a specific book
 func (s *Service) DeleteMetrics(timestamps []string) (DeleteMetricsResponse, error) {
 	s.logger.Info(fmt.Sprintf("Batch deleting %d historical metrics", len(timestamps)))
 

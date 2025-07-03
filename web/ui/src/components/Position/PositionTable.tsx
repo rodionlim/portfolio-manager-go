@@ -12,6 +12,8 @@ import { getUrl } from "../../utils/url";
 import { useNavigate } from "react-router-dom";
 import { IconHistory, IconCoins } from "@tabler/icons-react";
 
+import classes from "../../styles.module.css";
+
 interface Position {
   Ticker: string;
   Name: string;
@@ -142,6 +144,20 @@ const PositionTable: React.FC = () => {
       {
         accessorKey: "Ticker",
         header: "Ticker",
+        Footer: () => (
+          <Text
+            size="sm"
+            className={classes["default-xs-font-size"]}
+            fw={500}
+            c={totals.Pnl > 0 ? "green" : "blue"}
+          >
+            {"P&L: $" +
+              totals.Pnl.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+          </Text>
+        ),
       },
       {
         accessorKey: "Name",

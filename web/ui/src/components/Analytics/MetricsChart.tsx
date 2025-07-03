@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   createChart,
@@ -8,12 +8,12 @@ import {
   LineSeries,
   AreaSeries,
 } from "lightweight-charts";
-import { Box, Title, Text, Paper } from "@mantine/core";
+import { Box, Title, Text, Paper, Select, Stack } from "@mantine/core";
 import { getUrl } from "../../utils/url";
 import { notifications } from "@mantine/notifications";
 import { TimestampedMetrics } from "./types";
 
-interface MarketValueData {
+interface ValueData {
   time: UTCTimestamp;
   value: number;
 }
@@ -25,6 +25,8 @@ interface IRRData {
 
 const MetricsChart: React.FC = () => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<any>(null); // To keep chart instance for resizing
+  const [leftAxisSelection, setLeftAxisSelection] = useState<string>("PnL");
 
   // Fetch all historical metrics, reusing the same query function from MetricsTable
   const fetchHistoricalMetrics = async (): Promise<TimestampedMetrics[]> => {
@@ -70,7 +72,8 @@ const MetricsChart: React.FC = () => {
     if (!chartContainerRef.current || historicalMetrics.length === 0) return;
 
     // Convert API data to chart series data format
-    const marketValueData: MarketValueData[] = [];
+    const marketValueData: ValueData[] = [];
+    const pnlData: ValueData[] = [];
     const irrData: IRRData[] = [];
 
     // Process and sort data by timestamp
@@ -86,6 +89,13 @@ const MetricsChart: React.FC = () => {
       marketValueData.push({
         time: timestamp,
         value: item.metrics.mv,
+      });
+      pnlData.push({
+        time: timestamp,
+        value:
+          item.metrics.mv +
+          item.metrics.totalDividends -
+          item.metrics.pricePaid,
       });
       irrData.push({
         time: timestamp,
@@ -110,17 +120,7 @@ const MetricsChart: React.FC = () => {
         secondsVisible: false,
       },
     });
-
-    // Handle window resize
-    const handleResize = () => {
-      if (chartContainerRef.current && chart) {
-        chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-        });
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
+    chartRef.current = chart;
 
     // Add Market Value series
     const marketValueSeries = chart.addSeries(AreaSeries, {
@@ -134,8 +134,25 @@ const MetricsChart: React.FC = () => {
         type: "custom",
         formatter: pxFormatter,
       },
+      visible: leftAxisSelection === "MV",
     });
     marketValueSeries.setData(marketValueData);
+
+    // Add PnL series
+    const pnlSeries = chart.addSeries(AreaSeries, {
+      lineColor: "#4CAF50", // Green color for PnL
+      topColor: "rgba(76, 175, 80, 0.4)",
+      bottomColor: "rgba(76, 175, 80, 0.0)",
+      lineWidth: 2,
+      title: "PnL",
+      priceScaleId: "left",
+      priceFormat: {
+        type: "custom",
+        formatter: pxFormatter,
+      },
+      visible: leftAxisSelection === "PnL",
+    });
+    pnlSeries.setData(pnlData);
 
     // Add IRR series with separate scale
     const irrSeries = chart.addSeries(LineSeries, {
@@ -147,17 +164,14 @@ const MetricsChart: React.FC = () => {
         type: "percent",
         precision: 2,
       },
+      visible: true,
     });
     irrSeries.setData(irrData);
 
     // Configure separate price scales for both series
     chart.priceScale("left").applyOptions({
-      scaleMargins: {
-        top: 0.1,
-        bottom: 0.3,
-      },
       borderVisible: true,
-      borderColor: "#2962FF",
+      borderColor: leftAxisSelection === "MV" ? "#2962FF" : "#4CAF50",
       mode: PriceScaleMode.Normal,
       visible: true,
       autoScale: true,
@@ -175,15 +189,25 @@ const MetricsChart: React.FC = () => {
       autoScale: true,
     });
 
-    // Fit content
     chart.timeScale().fitContent();
 
-    // Clean up on unmount
+    // Use ResizeObserver for robust resizing
+    const resizeObserver = new window.ResizeObserver(() => {
+      if (chartContainerRef.current && chart) {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+        chart.timeScale().fitContent();
+      }
+    });
+    resizeObserver.observe(chartContainerRef.current);
+
+    // Clean up
     return () => {
-      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
       chart.remove();
     };
-  }, [historicalMetrics]);
+  }, [historicalMetrics, leftAxisSelection]);
 
   // Handle loading states
   if (isLoading) return <div>Loading historical metrics chart...</div>;
@@ -205,10 +229,28 @@ const MetricsChart: React.FC = () => {
         Portfolio Performance Chart
       </Title>
       <Paper p="md" withBorder>
-        <div ref={chartContainerRef} />
+        <Stack>
+          <Box mb="sm">
+            <Select
+              label="Left Axis Metric"
+              value={leftAxisSelection}
+              onChange={(value) => setLeftAxisSelection(value || "PnL")}
+              data={[
+                { value: "MV", label: "Market Value" },
+                { value: "PnL", label: "P&L" },
+              ]}
+              w={200}
+            />
+          </Box>
+          <Box
+            ref={chartContainerRef}
+            style={{ width: "100%", minHeight: 500, minWidth: 0 }}
+          />
+        </Stack>
         <Text size="xs" c="dimmed" mt="xs">
-          Market Value shown as blue area (left scale), IRR shown as red line
-          (right scale)
+          {leftAxisSelection === "MV" ? "Market Value" : "P&L"} shown as{" "}
+          {leftAxisSelection === "MV" ? "blue" : "green"} area (left scale), IRR
+          shown as red line (right scale)
         </Text>
       </Paper>
     </Box>

@@ -1,3 +1,26 @@
+## [1.9.0] - 2025-07-03
+
+### 🚀 Features
+
+- *(metrics)* Enhance metrics to allow filtering by book #72
+- *(metrics)* Add book label to metrics
+- *(hist)* Refactor interfaces to smaller components
+- *(hist)* Allow optional book_filter parameter when storing metrics
+- *(hist)* Allow optional book_filter parameters when getting metrics
+- *(ui)* Add optionality to plot pnl against irr #75
+- *(ui)* Add p&l to the left bottom of the screen for mobile view
+- *(ui)* Add all dividends view #73
+
+### 🐛 Bug Fixes
+
+- *(hist)* Unschedule was not stopping all scheduled tasks
+- *(ui)* Handle sgx report naming change and add unit tests #74
+
+### ⚙️ Miscellaneous Tasks
+
+- *(ui)* Update mantine to v7.17.8
+- *(metrics)* Add todos on metric by book
+
 ## [1.8.0] - 2025-06-25
 
 ### 🚀 Features

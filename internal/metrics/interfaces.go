@@ -34,6 +34,7 @@ type MetricsResult struct {
 type MetricResultsWithCashFlows struct {
 	Metrics   MetricsResult `json:"metrics"`
 	CashFlows []CashFlow    `json:"cashFlows"`
+	Label     string        `json:"label"` // Optional label for the metrics, e.g. book name, empty for entire portfolio
 }
 
 // MetricsCalculator defines the interface for portfolio metrics calculations
@@ -46,5 +47,6 @@ type MetricsCalculator interface {
 type MetricsServicer interface {
 	// CalculatePortfolioMetrics computes the XIRR for the portfolio using all trades, dividends, and current market value as final cash flow
 	// It also stores other metrics such as price paid, market value of portfolio and total dividends
-	CalculatePortfolioMetrics() (MetricResultsWithCashFlows, error)
+	// If book_filter is specified, it filters trades by the given book
+	CalculatePortfolioMetrics(book_filter string) (MetricResultsWithCashFlows, error)
 }

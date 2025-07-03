@@ -2,6 +2,7 @@
 package historical
 
 import (
+	"mime/multipart"
 	"portfolio-manager/internal/metrics"
 	"time"
 )
@@ -12,19 +13,35 @@ type TimeSeriesKey struct {
 	Date time.Time // Date of the snapshot
 }
 
-// HistoricalMetricsManager defines the interface for managing historical metrics
-// Updated to match the implementation in service.go
+// Historical* interfaces for managing historical metrics
 // - GetMetrics() fetches all metrics
 // - GetMetricsByDateRange(start, end) fetches by date range
-// - StartMetricsCollection uses a cron expression
-// - StopMetricsCollection stops the collection
-type HistoricalMetricsManager interface {
-	StoreCurrentMetrics() error
-	GetMetrics() ([]TimestampedMetrics, error)
-	GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetrics, error)
+// - StartMetricsCollection uses a cron expression to start collection of metrics
+// - StopMetricsCollection stops the collection of metrics
+// - StartSGXReportCollection uses a cron expression to start collection of SGX reports
+// - StoreCurrentMetrics stores the current metrics
+// - ExportMetricsToCSV exports metrics to CSV
+
+type HistoricalMetricsScheduler interface {
 	StartMetricsCollection(cronExpr string) func()
 	StopMetricsCollection()
+}
+
+type HistoricalReportsScheduler interface {
 	StartSGXReportCollection(cronExpr string) func()
+}
+type HistoricalMetricsGetter interface {
+	GetMetrics(book_filter string) ([]TimestampedMetrics, error) // set book_filter to "" to get metrics for all books
+	GetMetricsByDateRange(book_filter string, start, end time.Time) ([]TimestampedMetrics, error)
+}
+
+type HistoricalMetricsSetter interface {
+	StoreCurrentMetrics(book_filter string) error // set book_filter to "" to get metrics for all books
+}
+
+type HistoricalMetricsCsvManager interface {
+	ExportMetricsToCSV() ([]byte, error)
+	ImportMetricsFromCSVFile(file multipart.File) (int, error)
 }
 
 // TimestampedMetrics represents portfolio metrics with a timestamp (date only)

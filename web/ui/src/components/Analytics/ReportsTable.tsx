@@ -28,7 +28,7 @@ import { showNotification } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
 
 // Sort reports by date descending (newest first)
-const sortReportsByDate = (reportFiles: ReportFile[]): ReportFile[] => {
+export const sortReportsByDate = (reportFiles: ReportFile[]): ReportFile[] => {
   return [...reportFiles].sort((a, b) => {
     const extractDate = (filename: string) => {
       // Extract date from filename like "SGX_Fund_Flow_Weekly_Tracker_Week_of_12_May_2025.xlsx"
@@ -51,7 +51,7 @@ const sortReportsByDate = (reportFiles: ReportFile[]): ReportFile[] => {
           "Dec",
         ];
         const monthIndex = monthAbbreviations.findIndex(
-          (m) => m.toLowerCase() === month.toLowerCase()
+          (m) => m.toLowerCase() === month.toLowerCase().slice(0, 3)
         );
         if (monthIndex !== -1) {
           return new Date(parseInt(year), monthIndex, parseInt(day));
@@ -66,14 +66,14 @@ const sortReportsByDate = (reportFiles: ReportFile[]): ReportFile[] => {
   });
 };
 
-interface ReportFile {
+export interface ReportFile {
   path: string;
   name: string;
   hasAnalysis: boolean;
   analysis?: ReportAnalysis;
 }
 
-interface ReportAnalysis {
+export interface ReportAnalysis {
   summary: string;
   keyInsights: string[];
   reportDate: number;

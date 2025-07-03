@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Tabs } from "@mantine/core";
 import DividendsTable from "./DividendsTable";
 import DividendsAggregatedTable from "./DividendsAggregatedTable";
+import DividendsAll from "./DividendsAll";
 import { useLocation } from "react-router-dom";
 
 // Interface for location state containing ticker information
@@ -27,6 +28,7 @@ const DividendsView: React.FC = () => {
       <Tabs.List>
         <Tabs.Tab value="ticker">Dividends by Ticker</Tabs.Tab>
         <Tabs.Tab value="yearly">Yearly Summary</Tabs.Tab>
+        <Tabs.Tab value="all">All Dividends</Tabs.Tab>
       </Tabs.List>
 
       <Tabs.Panel value="ticker" pt="md">
@@ -37,6 +39,10 @@ const DividendsView: React.FC = () => {
 
       <Tabs.Panel value="yearly" pt="md">
         {activeTab === "yearly" && <DividendsAggregatedTable />}
+      </Tabs.Panel>
+
+      <Tabs.Panel value="all" pt="md">
+        {activeTab === "all" && <DividendsAll />}
       </Tabs.Panel>
     </Tabs>
   );

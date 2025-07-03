@@ -71,7 +71,7 @@ func TestStoreCurrentMetrics(t *testing.T) {
 	}
 
 	// Call the method under test
-	err := service.StoreCurrentMetrics()
+	err := service.StoreCurrentMetrics("")
 
 	// Assertions
 	assert.NoError(t, err)
@@ -115,7 +115,7 @@ func TestGetMetrics(t *testing.T) {
 		logger:         nil,
 	}
 
-	results, err := service.GetMetrics()
+	results, err := service.GetMetrics("")
 	assert.NoError(t, err)
 	assert.Len(t, results, 3)
 	mockDB.AssertExpectations(t)
@@ -159,7 +159,7 @@ func TestGetMetricsByDateRange(t *testing.T) {
 		logger:         nil,
 	}
 
-	results, err := service.GetMetricsByDateRange(startDate, endDate)
+	results, err := service.GetMetricsByDateRange("", startDate, endDate)
 	assert.NoError(t, err)
 	assert.Len(t, results, 3)
 	mockDB.AssertExpectations(t)

@@ -26,7 +26,7 @@ type Service struct {
 	db               dal.Database
 	scheduler        scheduler.Scheduler
 	logger           *logging.Logger
-	collectionTask   scheduler.TaskID
+	collectionTasks  []scheduler.TaskID
 }
 
 // NewService creates a new historical metrics service
@@ -62,24 +62,23 @@ func (s *Service) StartSGXReportCollection(cronExpr string) func() {
 		return func() {}
 	}
 
-	s.collectionTask = s.scheduler.ScheduleTaskFunc(metricsTask, sched)
+	taskId := s.scheduler.ScheduleTaskFunc(metricsTask, sched)
+	s.collectionTasks = append(s.collectionTasks, taskId)
 
 	s.logger.Infof("Started sgx report collection with cron schedule: %s", cronExpr)
 
 	return func() {
-		if s.collectionTask != "" {
-			s.scheduler.Unschedule(s.collectionTask)
-			s.logger.Info("Stopped sgx report collection")
-		}
+		s.scheduler.Unschedule(taskId)
+		s.logger.Info("Stopped sgx report collection")
 	}
 }
 
-// StoreCurrentMetrics stores the current portfolio metrics with the current timestamp
-func (s *Service) StoreCurrentMetrics() error {
+// StoreCurrentMetrics stores the current portfolio/book metrics with the current timestamp
+func (s *Service) StoreCurrentMetrics(book_filter string) error {
 	// Get current metrics
-	result, err := s.metricsService.CalculatePortfolioMetrics()
+	result, err := s.metricsService.CalculatePortfolioMetrics(book_filter)
 	if err != nil {
-		return fmt.Errorf("failed to calculate metrics: %w", err)
+		return fmt.Errorf("failed to calculate [book_filter: %s] metrics: %w", book_filter, err)
 	}
 
 	// Create timestamped metrics (date only)
@@ -91,27 +90,36 @@ func (s *Service) StoreCurrentMetrics() error {
 		Metrics:   result.Metrics,
 	}
 
+	label := "portfolio"
+	if book_filter != "" {
+		label = book_filter
+	}
+
 	// Generate key for LevelDB
 	// Format: metrics:book:YYYY-MM-DD
 	key := fmt.Sprintf("%s:%s:%s",
-		types.KeyPrefixHistoricalMetrics,
-		"portfolio",
+		types.HistoricalMetricsKeyPrefix,
+		label,
 		dateOnly.Format("2006-01-02"),
 	)
 
 	// Store in LevelDB
 	err = s.db.Put(key, timestampedMetrics)
 	if err != nil {
-		return fmt.Errorf("failed to store metrics: %w", err)
+		return fmt.Errorf("failed to store metrics [book_filter: %s]: %w", label, err)
 	}
 
-	s.logger.Infof("Stored portfolio metrics for timestamp %s", now.Format(time.RFC3339))
+	s.logger.Infof("Stored portfolio metrics [book_filter: %s] for timestamp %s", label, now.Format(time.RFC3339))
 	return nil
 }
 
 // GetMetrics retrieves all historical metrics
-func (s *Service) GetMetrics() ([]TimestampedMetrics, error) {
-	prefix := fmt.Sprintf("%s:%s:", types.KeyPrefixHistoricalMetrics, "portfolio")
+func (s *Service) GetMetrics(book_filter string) ([]TimestampedMetrics, error) {
+	label := book_filter
+	if book_filter == "" {
+		label = "portfolio"
+	}
+	prefix := fmt.Sprintf("%s:%s:", types.HistoricalMetricsKeyPrefix, label)
 	keys, err := s.db.GetAllKeysWithPrefix(prefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get metrics keys: %w", err)
@@ -132,8 +140,13 @@ func (s *Service) GetMetrics() ([]TimestampedMetrics, error) {
 }
 
 // GetMetricsByDateRange retrieves historical metrics for a given time range
-func (s *Service) GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetrics, error) {
-	prefix := fmt.Sprintf("%s:%s:", types.KeyPrefixHistoricalMetrics, "portfolio")
+func (s *Service) GetMetricsByDateRange(book_filter string, start, end time.Time) ([]TimestampedMetrics, error) {
+	label := book_filter
+	if book_filter == "" {
+		label = "portfolio"
+	}
+
+	prefix := fmt.Sprintf("%s:%s:", types.HistoricalMetricsKeyPrefix, label)
 	keys, err := s.db.GetAllKeysWithPrefix(prefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get metrics keys: %w", err)
@@ -168,9 +181,9 @@ func (s *Service) GetMetricsByDateRange(start, end time.Time) ([]TimestampedMetr
 }
 
 // StartMetricsCollection starts collection of metrics based on a cron expression
-func (s *Service) StartMetricsCollection(cronExpr string) func() {
+func (s *Service) StartMetricsCollection(cronExpr string, book_filter string) func() {
 	metricsTask := func(ctx context.Context) error {
-		return s.StoreCurrentMetrics()
+		return s.StoreCurrentMetrics(book_filter)
 	}
 
 	sched, err := scheduler.NewCronSchedule(cronExpr)
@@ -179,28 +192,31 @@ func (s *Service) StartMetricsCollection(cronExpr string) func() {
 		return func() {}
 	}
 
-	s.collectionTask = s.scheduler.ScheduleTaskFunc(metricsTask, sched)
+	taskId := s.scheduler.ScheduleTaskFunc(metricsTask, sched)
+	s.collectionTasks = append(s.collectionTasks, taskId)
 
-	s.logger.Infof("Started metrics collection with cron schedule: %s", cronExpr)
+	s.logger.Infof("Started metrics collection [book_filter: %s] with cron schedule: %s", book_filter, cronExpr)
 
 	return func() {
-		if s.collectionTask != "" {
-			s.scheduler.Unschedule(s.collectionTask)
-			s.logger.Info("Stopped metrics collection")
-		}
+		s.scheduler.Unschedule(taskId)
+		s.logger.Infof("Stopped metrics collection [book filter: %s]", book_filter)
 	}
 }
 
 // StopMetricsCollection stops the periodic collection of metrics
 func (s *Service) StopMetricsCollection() {
-	if s.collectionTask != "" {
-		s.scheduler.Unschedule(s.collectionTask)
-		s.collectionTask = ""
-		s.logger.Info("Stopped metrics collection")
+	s.logger.Info("Stopping metrics collection")
+	// Unschedule all collection tasks
+	for _, taskId := range s.collectionTasks {
+		if ok := s.scheduler.Unschedule(taskId); !ok {
+			s.logger.Warnf("Failed to unschedule task %s", taskId)
+		}
 	}
+	s.collectionTasks = []scheduler.TaskID{}
 }
 
 // ExportMetricsToCSV exports all historical metrics to a CSV file in memory and returns it as a byte slice.
+// TODO: add book_filter support to export metrics for a specific book
 func (s *Service) ExportMetricsToCSV() ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
@@ -210,7 +226,7 @@ func (s *Service) ExportMetricsToCSV() ([]byte, error) {
 		return nil, err
 	}
 
-	metrics, err := s.GetMetrics()
+	metrics, err := s.GetMetrics("")
 	if err != nil {
 		return nil, err
 	}
@@ -234,6 +250,7 @@ func (s *Service) ExportMetricsToCSV() ([]byte, error) {
 }
 
 // ImportMetricsFromCSVFile imports historical metrics from a CSV file and adds them to the database.
+// TODO: add book_filter support to import metrics for a specific book
 func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 	reader := csv.NewReader(file)
 	header, err := reader.Read()
@@ -289,7 +306,7 @@ func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 			Metrics:   metrics,
 		}
 		// Store in DB (overwrite if exists)
-		key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", ts.Format("2006-01-02"))
+		key := fmt.Sprintf("%s:%s:%s", types.HistoricalMetricsKeyPrefix, "portfolio", ts.Format("2006-01-02"))
 		if err := s.db.Put(key, tm); err != nil {
 			return count, err
 		}
@@ -299,12 +316,14 @@ func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 }
 
 // UpsertMetric inserts or updates a single historical metric in the database
+// TODO: add book_filter support to upsert metrics for a specific book
 func (s *Service) UpsertMetric(metric TimestampedMetrics) error {
-	key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", metric.Timestamp.Format("2006-01-02"))
+	key := fmt.Sprintf("%s:%s:%s", types.HistoricalMetricsKeyPrefix, "portfolio", metric.Timestamp.Format("2006-01-02"))
 	return s.db.Put(key, metric)
 }
 
 // DeleteMetric deletes a historical metric by timestamp
+// TODO: add book_filter support to delete metrics for a specific book
 func (s *Service) DeleteMetric(timestamp string) error {
 	s.logger.Info(fmt.Sprintf("Deleting historical metric for timestamp: %s", timestamp))
 
@@ -317,7 +336,7 @@ func (s *Service) DeleteMetric(timestamp string) error {
 
 	// Create the key for the database - use the date part only
 	dateOnly := time.Date(parsedTime.Year(), parsedTime.Month(), parsedTime.Day(), 0, 0, 0, 0, parsedTime.Location())
-	key := fmt.Sprintf("%s:%s:%s", types.KeyPrefixHistoricalMetrics, "portfolio", dateOnly.Format("2006-01-02"))
+	key := fmt.Sprintf("%s:%s:%s", types.HistoricalMetricsKeyPrefix, "portfolio", dateOnly.Format("2006-01-02"))
 
 	// Check if the metric exists by trying to get it
 	var metric TimestampedMetrics
@@ -339,6 +358,7 @@ func (s *Service) DeleteMetric(timestamp string) error {
 }
 
 // DeleteMetrics deletes multiple historical metrics by their timestamps
+// TODO: add book_filter support to delete metrics for a specific book
 func (s *Service) DeleteMetrics(timestamps []string) (DeleteMetricsResponse, error) {
 	s.logger.Info(fmt.Sprintf("Batch deleting %d historical metrics", len(timestamps)))
 

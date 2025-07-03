@@ -30,3 +30,13 @@ func (m *MockDividendsManager) CalculateDividendsForSingleTicker(ticker string) 
 	}
 	return result.([]dividends.Dividends), args.Error(1)
 }
+
+// CalculateDividendsForSingleBook mocks the CalculateDividendsForSingleBook method
+func (m *MockDividendsManager) CalculateDividendsForSingleBook(book string) (map[string][]dividends.Dividends, error) {
+	args := m.Called(book)
+	result := args.Get(0)
+	if result == nil {
+		return nil, args.Error(1)
+	}
+	return result.(map[string][]dividends.Dividends), args.Error(1)
+}

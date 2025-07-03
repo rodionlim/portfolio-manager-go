@@ -8,6 +8,7 @@ import (
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/maksim77/goxirr"
@@ -41,7 +42,8 @@ func NewMetricsService(
 
 // CalculatePortfolioMetrics computes the XIRR for the portfolio using all trades, dividends, and current market value as final cash flow
 // It also stores other metrics such as price paid, market value of portfolio and total dividends
-func (m *MetricsService) CalculatePortfolioMetrics() (MetricResultsWithCashFlows, error) {
+// If book_filter is specified, it filters trades by the given book
+func (m *MetricsService) CalculatePortfolioMetrics(book_filter string) (MetricResultsWithCashFlows, error) {
 	var cashflows goxirr.Transactions
 	var result MetricResultsWithCashFlows
 	result.Metrics = MetricsResult{}
@@ -50,8 +52,26 @@ func (m *MetricsService) CalculatePortfolioMetrics() (MetricResultsWithCashFlows
 	var pricePaid float64
 	var totalDividends float64
 
-	// 1. Add all trades as cash flows (buys are negative, sells are positive)
+	book_filter = strings.ToLower(book_filter)
+
+	// Set metrics label if book_filter is provided
+	if book_filter != "" {
+		result.Label = book_filter
+	}
+
+	// 1. Add all filtered trades as cash flows (buys are negative, sells are positive)
 	trades := m.blotterSvc.GetTrades()
+	if book_filter != "" {
+		// Filter trades by book if specified
+		var filteredTrades []blotter.Trade
+		for _, trade := range trades {
+			if strings.ToLower(trade.Book) == book_filter {
+				filteredTrades = append(filteredTrades, trade)
+			}
+		}
+		trades = filteredTrades
+	}
+
 	for _, trade := range trades {
 		tradeDate, err := time.Parse(time.RFC3339, trade.TradeDate)
 		if err != nil {
@@ -82,7 +102,13 @@ func (m *MetricsService) CalculatePortfolioMetrics() (MetricResultsWithCashFlows
 	result.Metrics.PricePaid = -pricePaid
 
 	// 2. Add all dividends as positive cash flows
-	divs, err := m.dividendsManager.CalculateDividendsForAllTickers()
+	var divs map[string][]dividends.Dividends
+	var err error
+	if book_filter != "" {
+		divs, err = m.dividendsManager.CalculateDividendsForSingleBook(book_filter)
+	} else {
+		divs, err = m.dividendsManager.CalculateDividendsForAllTickers()
+	}
 	if err != nil {
 		return MetricResultsWithCashFlows{}, err
 	}
@@ -149,6 +175,15 @@ func (m *MetricsService) CalculatePortfolioMetrics() (MetricResultsWithCashFlows
 	positions, err := m.portfolioSvc.GetAllPositions()
 	if err != nil {
 		return MetricResultsWithCashFlows{}, err
+	}
+	if book_filter != "" {
+		var filteredPositions []*portfolio.Position
+		for _, position := range positions {
+			if strings.ToLower(position.Book) == book_filter {
+				filteredPositions = append(filteredPositions, position)
+			}
+		}
+		positions = filteredPositions
 	}
 
 	totalMarketValue := 0.0

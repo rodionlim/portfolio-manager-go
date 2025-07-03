@@ -97,7 +97,7 @@ func TestCalculateIRR(t *testing.T) {
 	service := metrics.NewMetricsService(mockBlotter, mockPortfolio, mockDividends, mockMdataSvc, mockRdataSvc)
 
 	// Test the CalculatePortfolioMetrics method
-	res, err := service.CalculatePortfolioMetrics()
+	res, err := service.CalculatePortfolioMetrics("")
 
 	// Verify expectations
 	mockBlotter.AssertExpectations(t)
@@ -146,7 +146,7 @@ func TestCalculateIRR_Error(t *testing.T) {
 	service := metrics.NewMetricsService(mockBlotter, mockPortfolio, mockDividends, mockMdataSvc, mockRdataSvc)
 
 	// Test the CalculateIRR method
-	irr, err := service.CalculatePortfolioMetrics()
+	irr, err := service.CalculatePortfolioMetrics("")
 
 	// Verify expectations
 	mockBlotter.AssertExpectations(t)
@@ -205,7 +205,7 @@ func TestCalculateIRR_SimpleProfitWithDividend(t *testing.T) {
 	mockMdataSvc.On("GetAssetPrice", "USD-SGD").Return(usdSgdRate, nil)
 
 	service := metrics.NewMetricsService(mockBlotter, mockPortfolio, mockDividends, mockMdataSvc, mockRdataSvc)
-	res, err := service.CalculatePortfolioMetrics()
+	res, err := service.CalculatePortfolioMetrics("")
 
 	mockBlotter.AssertExpectations(t)
 	mockDividends.AssertExpectations(t)

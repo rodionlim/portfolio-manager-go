@@ -6,24 +6,24 @@
   "scripts": {
     "dev": "vite dev",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run --reporter verbose"
   },
   "dependencies": {
-    "@mantine/core": "^7.15.2",
-    "@mantine/dates": "^7.15.2",
-    "@mantine/form": "^7.15.2",
-    "@mantine/hooks": "^7.15.2",
-    "@mantine/notifications": "^7.15.2",
-    "@mantine/vanilla-extract": "^7.15.2",
+    "@mantine/core": "^7.17.8",
+    "@mantine/dates": "^7.17.8",
+    "@mantine/form": "^7.17.8",
+    "@mantine/hooks": "^7.17.8",
+    "@mantine/notifications": "^7.17.8",
+    "@mantine/vanilla-extract": "^7.17.8",
     "@reduxjs/toolkit": "^2.5.0",
     "@tabler/icons-react": "^3.29.0",
     "@tanstack/react-query": "^5.64.2",
-    "@uiw/react-heat-map": "^2.3.3",
     "@vanilla-extract/css": "^1.17.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
-    "lightweight-charts": "^5.0.6",
-    "mantine-react-table": "^2.0.0-beta.7",
+    "lightweight-charts": "^5.0.8",
+    "mantine-react-table": "^2.0.0-beta.9",
     "react": "^18.2",
     "react-dom": "^18.2",
     "react-redux": "^9.2.0",
@@ -38,6 +38,7 @@
     "postcss-preset-mantine": "1.17.0",
     "postcss-simple-vars": "^7.0.1",
     "typescript": "^5.7.3",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "vitest": "^3.2.4"
   }
 }

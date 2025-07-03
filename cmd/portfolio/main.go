@@ -149,7 +149,8 @@ func main() {
 
 	// Start metrics collection schedule if configured
 	if config.Metrics.Schedule != "" {
-		stopFn := historicalSvc.StartMetricsCollection(config.Metrics.Schedule)
+		// Start metrics collection without book filters to collect metrics for aggregated portfolio
+		stopFn := historicalSvc.StartMetricsCollection(config.Metrics.Schedule, "")
 		defer stopFn()
 	}
 

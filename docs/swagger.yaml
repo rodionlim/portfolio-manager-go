@@ -1174,7 +1174,12 @@ paths:
   /api/v1/metrics:
     get:
       description: Get the Internal Rate of Return (IRR), MV, Price Paid for the entire
-        portfolio
+        portfolio or a specific book
+      parameters:
+      - description: Filter metrics by book (optional)
+        in: query
+        name: book_filter
+        type: string
       produces:
       - application/json
       responses:

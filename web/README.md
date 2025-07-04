@@ -43,3 +43,13 @@ npm run build
 ```
 
 This will create a `build` directory inside the `web/ui` directory with the production build of the application.
+
+### Testing
+
+Testing is done via `vitest`.
+
+To run specific tests
+
+```sh
+npm run test ReportsTable
+```

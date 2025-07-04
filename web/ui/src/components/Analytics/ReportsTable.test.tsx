@@ -1,5 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { sortReportsByDate, ReportFile } from "./ReportsTable";
+import {
+  shortenReportName,
+  sortReportsByDate,
+  ReportFile,
+} from "./ReportsTable";
+
+describe("shortenReportName", () => {
+  it("should shorten report names correctly", () => {
+    const input = "SGX_Fund_Flow_Weekly_Tracker_Week_of_23_June_2025.xlsx";
+    const expected = "SGX_FF_23_June_2025.xlsx";
+    expect(shortenReportName(input)).toBe(expected);
+  });
+
+  it("should handle names with different date formats", () => {
+    const input = "SGX_Fund_Flow_Weekly_Tracker_Week_of_31_Mar_2025.xlsx";
+    const expected = "SGX_FF_31_Mar_2025.xlsx";
+    expect(shortenReportName(input)).toBe(expected);
+  });
+});
 
 describe("sortReportsByDate", () => {
   it("should sort reports by date descending (newest first)", () => {

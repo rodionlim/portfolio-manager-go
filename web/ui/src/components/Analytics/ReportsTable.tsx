@@ -26,6 +26,33 @@ import {
 } from "@tabler/icons-react";
 import { showNotification } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
+import { useMediaQuery } from "@mantine/hooks";
+
+export interface ReportFile {
+  path: string;
+  name: string;
+  hasAnalysis: boolean;
+  analysis?: ReportAnalysis;
+}
+
+export interface ReportAnalysis {
+  summary: string;
+  keyInsights: string[];
+  reportDate: number;
+  reportTitle: string;
+  reportType: string;
+  filePath: string;
+  analysisDate: number;
+  metadata: Record<string, string>;
+}
+
+export const shortenReportName = (name: string): string => {
+  // Shorten report names to fit in table cells, e.g. "SGX_Fund_Flow_Weekly_Tracker_Week_of_12_May_2025.xlsx"
+  return name.replace(
+    /(Fund_Flow_Weekly[A-Za-z_]+)\d{1,2}_[A-Za-z]{3}/,
+    (match, p1) => match.replace(p1, "FF_")
+  );
+};
 
 // Sort reports by date descending (newest first)
 export const sortReportsByDate = (reportFiles: ReportFile[]): ReportFile[] => {
@@ -66,24 +93,6 @@ export const sortReportsByDate = (reportFiles: ReportFile[]): ReportFile[] => {
   });
 };
 
-export interface ReportFile {
-  path: string;
-  name: string;
-  hasAnalysis: boolean;
-  analysis?: ReportAnalysis;
-}
-
-export interface ReportAnalysis {
-  summary: string;
-  keyInsights: string[];
-  reportDate: number;
-  reportTitle: string;
-  reportType: string;
-  filePath: string;
-  analysisDate: number;
-  metadata: Record<string, string>;
-}
-
 const ReportsTable: React.FC = () => {
   const [reports, setReports] = useState<ReportFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -93,6 +102,8 @@ const ReportsTable: React.FC = () => {
   const [analyzeReports, setAnalyzeReports] = useState(false);
   const [forceReanalysis, setForceReanalysis] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   // Fetch downloaded reports from disk
   const fetchReports = async () => {
@@ -331,7 +342,7 @@ const ReportsTable: React.FC = () => {
     <Box>
       <Group justify="space-between" mb="md">
         <Text size="lg" fw={600}>
-          SGX Reports
+          Reports
         </Text>
         <Button
           leftSection={<IconDownload size={16} />}
@@ -363,7 +374,11 @@ const ReportsTable: React.FC = () => {
                   <Table.Td>
                     <Group gap="xs">
                       <IconFileText size={16} />
-                      <Text>{report.name}</Text>
+                      <Text>
+                        {isMobile
+                          ? shortenReportName(report.name)
+                          : report.name}
+                      </Text>
                     </Group>
                   </Table.Td>
                   <Table.Td>

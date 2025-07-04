@@ -520,7 +520,7 @@ Get all historical metrics:
 curl -X GET http://localhost:8080/api/v1/historical/metrics
 ```
 
-Export historical metrics as CSV:
+Export historical metrics as CSV: (takes in book_filter as an optional query parameter)
 
 ```sh
 curl -X GET http://localhost:8080/api/v1/historical/metrics/export
@@ -549,6 +549,22 @@ curl -X POST http://localhost:8080/api/v1/historical/metrics \
   }'
 ```
 
+Insert or update a historical metric for a specific book:
+
+```sh
+curl -X POST "http://localhost:8080/api/v1/historical/metrics?book_filter=tactical" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2024-05-15T00:00:00Z",
+    "metrics": {
+      "irr": 0.12,
+      "pricePaid": 50000,
+      "mv": 55000,
+      "totalDividends": 1200
+    }
+  }'
+```
+
 Delete historical metrics:
 
 ```sh
@@ -560,6 +576,44 @@ curl -X POST http://localhost:8080/api/v1/historical/metrics/delete \
       "2024-06-15T00:00:00Z"
     ]
   }'
+```
+
+Delete historical metrics for a specific book:
+
+```sh
+curl -X POST "http://localhost:8080/api/v1/historical/metrics/delete?book_filter=tactical" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamps": [
+      "2024-05-15T00:00:00Z",
+      "2024-06-15T00:00:00Z"
+    ]
+  }'
+```
+
+### Historical Metrics Jobs (Custom Scheduling)
+
+Create a custom metrics collection job for a specific book, using the default schedule (Same as entire portfolio):
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cronExpr": "",
+    "bookFilter": "tactical"
+  }'
+```
+
+List all custom metrics jobs:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics/jobs
+```
+
+Delete a custom metrics job:
+
+```sh
+curl -X DELETE http://localhost:8080/api/v1/historical/metrics/jobs/tactical
 ```
 
 ### Add Reference Data
@@ -624,6 +678,12 @@ Fetch all historical portfolio metrics (date-stamped portfolio metrics).
 curl -X GET http://localhost:8080/api/v1/historical/metrics
 ```
 
+Fetch historical portfolio metrics filtered by book:
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/historical/metrics?book_filter=tactical"
+```
+
 ### Import Historical Portfolio Metrics from CSV
 
 Import historical portfolio metrics (date-stamped portfolio metrics) from a CSV file. The CSV should have the following headers:
@@ -674,6 +734,24 @@ curl -X POST http://localhost:8080/api/v1/historical/metrics \
   }'
 
 curl -X PUT http://localhost:8080/api/v1/historical/metrics \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2025-05-11T00:00:00Z",
+    "metrics": {"irr": 0.2, "pricePaid": 10000, "mv": 12000, "totalDividends": 500}
+  }'
+```
+
+Sample curl (insert or update for a specific book):
+
+```sh
+curl -X POST "http://localhost:8080/api/v1/historical/metrics?book_filter=tactical" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2025-05-11T00:00:00Z",
+    "metrics": {"irr": 0.2, "pricePaid": 10000, "mv": 12000, "totalDividends": 500}
+  }'
+
+curl -X PUT "http://localhost:8080/api/v1/historical/metrics?book_filter=tactical" \
   -H "Content-Type: application/json" \
   -d '{
     "timestamp": "2025-05-11T00:00:00Z",

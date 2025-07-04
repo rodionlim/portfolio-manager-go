@@ -758,7 +758,7 @@ const docTemplate = `{
         },
         "/api/v1/historical/metrics": {
             "get": {
-                "description": "Get all historical portfolio metrics (date-stamped portfolio metrics)",
+                "description": "Get all historical portfolio metrics (date-stamped portfolio metrics), optionally filtered by book",
                 "produces": [
                     "application/json"
                 ],
@@ -766,6 +766,14 @@ const docTemplate = `{
                     "historical"
                 ],
                 "summary": "Get historical portfolio metrics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metrics by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of historical portfolio metrics by date",
@@ -785,7 +793,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Insert or update a single historical portfolio metric (date-stamped portfolio metric)",
+                "description": "Insert or update a single historical portfolio metric (date-stamped portfolio metric), optionally filtered by book",
                 "consumes": [
                     "application/json"
                 ],
@@ -797,6 +805,12 @@ const docTemplate = `{
                 ],
                 "summary": "Upsert a historical portfolio metric",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metric by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    },
                     {
                         "description": "Historical metric",
                         "name": "metric",
@@ -829,7 +843,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Insert or update a single historical portfolio metric (date-stamped portfolio metric)",
+                "description": "Insert or update a single historical portfolio metric (date-stamped portfolio metric), optionally filtered by book",
                 "consumes": [
                     "application/json"
                 ],
@@ -841,6 +855,12 @@ const docTemplate = `{
                 ],
                 "summary": "Upsert a historical portfolio metric",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metric by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    },
                     {
                         "description": "Historical metric",
                         "name": "metric",
@@ -875,7 +895,7 @@ const docTemplate = `{
         },
         "/api/v1/historical/metrics/delete": {
             "post": {
-                "description": "Delete one or more historical portfolio metrics by their timestamps",
+                "description": "Delete one or more historical portfolio metrics by their timestamps, optionally filtered by book",
                 "consumes": [
                     "application/json"
                 ],
@@ -887,6 +907,12 @@ const docTemplate = `{
                 ],
                 "summary": "Delete historical portfolio metrics",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metrics by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    },
                     {
                         "description": "List of timestamps to delete",
                         "name": "request",
@@ -929,6 +955,14 @@ const docTemplate = `{
                     "historical"
                 ],
                 "summary": "Export historical portfolio metrics as CSV",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metrics by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "CSV file with historical metrics",
@@ -983,6 +1017,120 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to import historical metrics",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/metrics/jobs": {
+            "get": {
+                "description": "List all custom metrics jobs (excluding the default portfolio job)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "List all custom metrics jobs",
+                "responses": {
+                    "200": {
+                        "description": "List of custom metrics jobs",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/historical.MetricsJob"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to list metrics jobs",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new custom metrics job with a cron expression and book filter",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Create a custom metrics job",
+                "parameters": [
+                    {
+                        "description": "Metrics job request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/historical.CreateMetricsJobRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created metrics job",
+                        "schema": {
+                            "$ref": "#/definitions/historical.MetricsJob"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create metrics job",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/metrics/jobs/{bookFilter}": {
+            "delete": {
+                "description": "Delete a custom metrics job by book filter",
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Delete a custom metrics job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book filter",
+                        "name": "bookFilter",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Metrics job deleted successfully"
+                    },
+                    "400": {
+                        "description": "Invalid book filter",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Metrics job not found",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete metrics job",
                         "schema": {
                             "$ref": "#/definitions/common.ErrorResponse"
                         }
@@ -1872,6 +2020,19 @@ const docTemplate = `{
                 }
             }
         },
+        "historical.CreateMetricsJobRequest": {
+            "type": "object",
+            "properties": {
+                "bookFilter": {
+                    "description": "Required",
+                    "type": "string"
+                },
+                "cronExpr": {
+                    "description": "Optional, uses default if empty",
+                    "type": "string"
+                }
+            }
+        },
         "historical.DeleteMetricsRequest": {
             "type": "object",
             "properties": {
@@ -1897,6 +2058,22 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "historical.MetricsJob": {
+            "type": "object",
+            "properties": {
+                "bookFilter": {
+                    "description": "Filter for specific book",
+                    "type": "string"
+                },
+                "cronExpr": {
+                    "description": "Cron expression for scheduling",
+                    "type": "string"
+                },
+                "taskId": {
+                    "type": "string"
                 }
             }
         },

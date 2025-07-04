@@ -154,6 +154,18 @@ func main() {
 		defer stopFn()
 	}
 
+	customMetricsJob, err := historicalSvc.ListMetricsJobs()
+	if err != nil {
+		logger.Error("Failed to list custom metrics jobs:", err)
+	} else {
+		logger.Infof("Custom metrics jobs: %v", customMetricsJob)
+		// Start each custom metrics job
+		for _, job := range customMetricsJob {
+			stopFn := historicalSvc.StartMetricsCollection(job.CronExpr, job.BookFilter)
+			defer stopFn()
+		}
+	}
+
 	// Start analytics schedule if configured and Gemini API key is set
 	if config.Analytics.Schedule != "" && config.Analytics.GeminiAPIKey != "" {
 		stopFn := historicalSvc.StartSGXReportCollection(config.Analytics.Schedule)

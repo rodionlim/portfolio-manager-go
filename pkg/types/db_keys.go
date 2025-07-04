@@ -15,6 +15,8 @@ const (
 	DividendsCustomKeyPrefix   dbKey = "DIVIDENDS_CUSTOM"
 	HistoricalMetricsKeyPrefix dbKey = "METRICS" // Key prefix for historical metrics
 	AnalyticsSummaryKeyPrefix  dbKey = "ANALYTICS_SUMMARY"
-	MigrationKeyPrefix         dbKey = "MIGRATION"     // Key prefix for migration tracking
-	ScheduledJobKeyPrefix      dbKey = "SCHEDULED_JOB" // Key prefix for registered scheduled jobs
+	MigrationKeyPrefix         dbKey = "MIGRATION" // Key prefix for migration tracking
+
+	ScheduledJobKeyPrefix     dbKey = "SCHEDULED_JOB"   // Key prefix for registered scheduled jobs
+	CustomMetricsJobKeyPrefix dbKey = "METRICS_BY_BOOK" // Key prefix for custom metrics jobs
 )

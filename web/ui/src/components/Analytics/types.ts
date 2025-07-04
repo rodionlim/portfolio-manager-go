@@ -10,3 +10,9 @@ export interface TimestampedMetrics {
   timestamp: string;
   metrics: Metrics;
 }
+
+export interface MetricsJob {
+  BookFilter: string;
+  CronExpr: string;
+  TaskId: string;
+}

@@ -1,3 +1,16 @@
+## [1.10.0] - 2025-07-04
+
+### 🚀 Features
+
+- *(hist)* Add new endpoints to create delete and list custom metrics jobs #72
+- *(ui)* Allow metrics to respect book filters #72
+- *(hist)* Add book filters to import and export csv #72
+- *(hist)* Allow import and export historical metrics csv with book filters #72
+
+### ⚙️ Miscellaneous Tasks
+
+- *(seed)* Add st and sia engineering to seed
+
 ## [1.9.1] - 2025-07-04
 
 ### 🐛 Bug Fixes

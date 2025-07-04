@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   createChart,
@@ -8,10 +8,10 @@ import {
   LineSeries,
   AreaSeries,
 } from "lightweight-charts";
-import { Box, Title, Text, Paper, Select, Stack } from "@mantine/core";
+import { Box, Title, Text, Paper, Select, Stack, Group } from "@mantine/core";
 import { getUrl } from "../../utils/url";
 import { notifications } from "@mantine/notifications";
-import { TimestampedMetrics } from "./types";
+import { TimestampedMetrics, MetricsJob } from "./types";
 
 interface ValueData {
   time: UTCTimestamp;
@@ -27,11 +27,51 @@ const MetricsChart: React.FC = () => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null); // To keep chart instance for resizing
   const [leftAxisSelection, setLeftAxisSelection] = useState<string>("PnL");
+  const [selectedBookFilter, setSelectedBookFilter] = useState<string | null>(
+    "None"
+  );
+
+  // Fetch metrics jobs to populate book filter dropdown
+  const fetchMetricsJobs = async (): Promise<MetricsJob[]> => {
+    try {
+      const resp = await fetch(getUrl("/api/v1/historical/metrics/jobs"));
+      return await resp.json();
+    } catch (error: any) {
+      console.error("Error fetching metrics jobs:", error);
+      return [];
+    }
+  };
+
+  // Query to fetch metrics jobs
+  const { data: metricsJobs = [] } = useQuery({
+    queryKey: ["metricsJobs"],
+    queryFn: fetchMetricsJobs,
+  });
+
+  // Create book filter options
+  const bookFilterOptions = useMemo(() => {
+    const options = [{ value: "None", label: "None" }];
+    metricsJobs.forEach((job) => {
+      if (!options.find((opt) => opt.value === job.BookFilter)) {
+        options.push({ value: job.BookFilter, label: job.BookFilter });
+      }
+    });
+    return options;
+  }, [metricsJobs]);
 
   // Fetch all historical metrics, reusing the same query function from MetricsTable
   const fetchHistoricalMetrics = async (): Promise<TimestampedMetrics[]> => {
     try {
-      const resp = await fetch(getUrl("/api/v1/historical/metrics"));
+      const bookFilter =
+        selectedBookFilter === "None" ? "" : selectedBookFilter || "";
+      const url = bookFilter
+        ? getUrl(
+            `/api/v1/historical/metrics?book_filter=${encodeURIComponent(
+              bookFilter
+            )}`
+          )
+        : getUrl("/api/v1/historical/metrics");
+      const resp = await fetch(url);
       return await resp.json();
     } catch (error: any) {
       console.error("Error fetching historical metrics:", error);
@@ -64,7 +104,7 @@ const MetricsChart: React.FC = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["historicalMetrics"],
+    queryKey: ["historicalMetrics", selectedBookFilter],
     queryFn: fetchHistoricalMetrics,
   });
 
@@ -216,6 +256,15 @@ const MetricsChart: React.FC = () => {
   if (historicalMetrics.length === 0 && !isLoading && !error) {
     return (
       <Paper p="xl" withBorder>
+        <Select
+          label="Book Filter"
+          placeholder="Select book filter"
+          data={bookFilterOptions}
+          value={selectedBookFilter}
+          onChange={setSelectedBookFilter}
+          clearable={false}
+          w={200}
+        />
         <Text c="dimmed" ta="center">
           No historical metrics records found to display chart
         </Text>
@@ -230,7 +279,7 @@ const MetricsChart: React.FC = () => {
       </Title>
       <Paper p="md" withBorder>
         <Stack>
-          <Box mb="sm">
+          <Group gap="md" align="flex-end">
             <Select
               label="Left Axis Metric"
               value={leftAxisSelection}
@@ -241,7 +290,16 @@ const MetricsChart: React.FC = () => {
               ]}
               w={200}
             />
-          </Box>
+            <Select
+              label="Book Filter"
+              placeholder="Select book filter"
+              data={bookFilterOptions}
+              value={selectedBookFilter}
+              onChange={setSelectedBookFilter}
+              clearable={false}
+              w={200}
+            />
+          </Group>
           <Box
             ref={chartContainerRef}
             style={{ width: "100%", minHeight: 500, minWidth: 0 }}

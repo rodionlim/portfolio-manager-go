@@ -44,13 +44,17 @@ type HistoricalMetricsScheduler interface {
 type HistoricalReportsScheduler interface {
 	StartSGXReportCollection(cronExpr string) func()
 }
+
 type HistoricalMetricsGetter interface {
-	GetMetrics(book_filter string) ([]TimestampedMetrics, error) // set book_filter to "" to get metrics for all books
+	GetMetrics(book_filter string) ([]TimestampedMetrics, error)
 	GetMetricsByDateRange(book_filter string, start, end time.Time) ([]TimestampedMetrics, error)
 }
 
 type HistoricalMetricsSetter interface {
-	StoreCurrentMetrics(book_filter string) error // set book_filter to "" to get metrics for all books
+	StoreCurrentMetrics(book_filter string) error
+	UpsertMetric(metric TimestampedMetrics, book_filter string) error
+	DeleteMetric(timestamp string, book_filter string) error
+	DeleteMetrics(timestamps []string, book_filter string) (DeleteMetricsResponse, error)
 }
 
 type HistoricalMetricsCsvManager interface {

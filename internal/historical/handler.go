@@ -9,15 +9,17 @@ import (
 
 // HandleGetMetrics handles the GET /api/v1/historical/metrics endpoint
 // @Summary Get historical portfolio metrics
-// @Description Get all historical portfolio metrics (date-stamped portfolio metrics)
+// @Description Get all historical portfolio metrics (date-stamped portfolio metrics), optionally filtered by book
 // @Tags historical
 // @Produce json
+// @Param book_filter query string false "Filter metrics by book (optional)"
 // @Success 200 {array} TimestampedMetrics "List of historical portfolio metrics by date"
 // @Failure 500 {object} common.ErrorResponse "Failed to get historical metrics"
 // @Router /api/v1/historical/metrics [get]
 func HandleGetMetrics(service HistoricalMetricsGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		metrics, err := service.GetMetrics("")
+		bookFilter := r.URL.Query().Get("book_filter")
+		metrics, err := service.GetMetrics(bookFilter)
 		if err != nil {
 			common.WriteJSONError(w, "Failed to get historical metrics: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -87,26 +89,26 @@ func HandleImportMetricsCSV(service interface {
 
 // HandleUpsertMetric handles inserting or updating a single historical metric
 // @Summary Upsert a historical portfolio metric
-// @Description Insert or update a single historical portfolio metric (date-stamped portfolio metric)
+// @Description Insert or update a single historical portfolio metric (date-stamped portfolio metric), optionally filtered by book
 // @Tags historical
 // @Accept json
 // @Produce json
+// @Param book_filter query string false "Filter metric by book (optional)"
 // @Param metric body TimestampedMetrics true "Historical metric"
 // @Success 201 {object} TimestampedMetrics
 // @Failure 400 {object} common.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} common.ErrorResponse "Failed to upsert historical metric"
 // @Router /api/v1/historical/metrics [post]
 // @Router /api/v1/historical/metrics [put]
-func HandleUpsertMetric(service interface {
-	UpsertMetric(metric TimestampedMetrics) error
-}) http.HandlerFunc {
+func HandleUpsertMetric(service HistoricalMetricsSetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		bookFilter := r.URL.Query().Get("book_filter")
 		var metric TimestampedMetrics
 		if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
 			common.WriteJSONError(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
-		err := service.UpsertMetric(metric)
+		err := service.UpsertMetric(metric, bookFilter)
 		if err != nil {
 			common.WriteJSONError(w, "Failed to upsert historical metric: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -118,19 +120,19 @@ func HandleUpsertMetric(service interface {
 
 // HandleDeleteMetrics handles deleting one or more historical metrics
 // @Summary Delete historical portfolio metrics
-// @Description Delete one or more historical portfolio metrics by their timestamps
+// @Description Delete one or more historical portfolio metrics by their timestamps, optionally filtered by book
 // @Tags historical
 // @Accept json
 // @Produce json
+// @Param book_filter query string false "Filter metrics by book (optional)"
 // @Param request body DeleteMetricsRequest true "List of timestamps to delete"
 // @Success 200 {object} DeleteMetricsResponse "Result of the deletion operation"
 // @Failure 400 {object} common.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} common.ErrorResponse "Failed to delete historical metrics"
 // @Router /api/v1/historical/metrics/delete [post]
-func HandleDeleteMetrics(service interface {
-	DeleteMetrics(timestamps []string) (DeleteMetricsResponse, error)
-}) http.HandlerFunc {
+func HandleDeleteMetrics(service HistoricalMetricsSetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		bookFilter := r.URL.Query().Get("book_filter")
 		var request DeleteMetricsRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			common.WriteJSONError(w, "Invalid request payload: "+err.Error(), http.StatusBadRequest)
@@ -142,7 +144,7 @@ func HandleDeleteMetrics(service interface {
 			return
 		}
 
-		response, err := service.DeleteMetrics(request.Timestamps)
+		response, err := service.DeleteMetrics(request.Timestamps, bookFilter)
 		if err != nil {
 			common.WriteJSONError(w, "Failed to delete historical metrics: "+err.Error(), http.StatusInternalServerError)
 			return

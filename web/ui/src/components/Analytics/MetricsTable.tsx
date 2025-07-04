@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Text, Box, Button, Group, Modal } from "@mantine/core";
+import { Text, Box, Button, Group, Modal, Select, Stack } from "@mantine/core";
 import {
   MantineReactTable,
   MRT_ColumnDef,
@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
 import { IconDownload, IconUpload, IconTrash } from "@tabler/icons-react";
-import { TimestampedMetrics } from "./types";
+import { TimestampedMetrics, MetricsJob } from "./types";
 
 interface DeleteMetricsResponse {
   deleted: number;
@@ -25,11 +25,51 @@ const MetricsTable: React.FC = () => {
     []
   );
   const [isBatchDelete, setIsBatchDelete] = useState(false);
+  const [selectedBookFilter, setSelectedBookFilter] = useState<string | null>(
+    "None"
+  );
+
+  // Fetch metrics jobs to populate book filter dropdown
+  const fetchMetricsJobs = async (): Promise<MetricsJob[]> => {
+    try {
+      const resp = await fetch(getUrl("/api/v1/historical/metrics/jobs"));
+      return await resp.json();
+    } catch (error: any) {
+      console.error("Error fetching metrics jobs:", error);
+      return [];
+    }
+  };
+
+  // Query to fetch metrics jobs
+  const { data: metricsJobs = [] } = useQuery({
+    queryKey: ["metricsJobs"],
+    queryFn: fetchMetricsJobs,
+  });
+
+  // Create book filter options
+  const bookFilterOptions = useMemo(() => {
+    const options = [{ value: "None", label: "None" }];
+    metricsJobs.forEach((job) => {
+      if (!options.find((opt) => opt.value === job.BookFilter)) {
+        options.push({ value: job.BookFilter, label: job.BookFilter });
+      }
+    });
+    return options;
+  }, [metricsJobs]);
 
   // Fetch all historical metrics
   const fetchHistoricalMetrics = async (): Promise<TimestampedMetrics[]> => {
     try {
-      const resp = await fetch(getUrl("/api/v1/historical/metrics"));
+      const bookFilter =
+        selectedBookFilter === "None" ? "" : selectedBookFilter || "";
+      const url = bookFilter
+        ? getUrl(
+            `/api/v1/historical/metrics?book_filter=${encodeURIComponent(
+              bookFilter
+            )}`
+          )
+        : getUrl("/api/v1/historical/metrics");
+      const resp = await fetch(url);
       return await resp.json();
     } catch (error: any) {
       console.error("Error fetching historical metrics:", error);
@@ -78,16 +118,23 @@ const MetricsTable: React.FC = () => {
   // Simplified delete process to use a single endpoint
   const deleteMetrics = async (timestamps: string[]) => {
     try {
-      const response = await fetch(
-        getUrl(`/api/v1/historical/metrics/delete`),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ timestamps }),
-        }
-      );
+      const bookFilter =
+        selectedBookFilter === "None" ? "" : selectedBookFilter || "";
+      const url = bookFilter
+        ? getUrl(
+            `/api/v1/historical/metrics/delete?book_filter=${encodeURIComponent(
+              bookFilter
+            )}`
+          )
+        : getUrl(`/api/v1/historical/metrics/delete`);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ timestamps }),
+      });
 
       if (!response.ok) {
         throw new Error(`Delete failed with status: ${response.status}`);
@@ -190,7 +237,7 @@ const MetricsTable: React.FC = () => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["historicalMetrics"],
+    queryKey: ["historicalMetrics", selectedBookFilter],
     queryFn: fetchHistoricalMetrics,
   });
 
@@ -295,56 +342,67 @@ const MetricsTable: React.FC = () => {
           alignItems: "center",
         }}
       >
-        <Group>
-          <Button
-            onClick={exportMetricsCSV}
-            leftSection={<IconDownload size={18} />}
-            variant="outline"
-          >
-            Export CSV
-          </Button>
-          <Button
-            onClick={handleUploadClick}
-            leftSection={<IconUpload size={18} />}
-            variant="outline"
-          >
-            Import CSV
-          </Button>
-          <Button
-            onClick={() => {
-              const selectedRows = table.getSelectedRowModel().rows;
-              if (selectedRows.length === 1) {
-                // Single selection
-                setSelectedMetric(selectedRows[0].original);
-                setSelectedMetrics([]);
-                setIsBatchDelete(false);
-                setDeleteModalOpen(true);
-              } else if (selectedRows.length > 1) {
-                // Multiple selection
-                setSelectedMetric(null);
-                setSelectedMetrics(selectedRows.map((row) => row.original));
-                setIsBatchDelete(true);
-                setDeleteModalOpen(true);
-              }
-            }}
-            leftSection={<IconTrash size={18} />}
-            variant="outline"
-            color="red"
-            disabled={table.getSelectedRowModel().rows.length === 0}
-          >
-            Delete{" "}
-            {table.getSelectedRowModel().rows.length > 1
-              ? `Selected (${table.getSelectedRowModel().rows.length})`
-              : "Record"}
-          </Button>
-          <input
-            ref={uploadFileRef}
-            type="file"
-            accept=".csv"
-            onChange={handleFileUpload}
-            style={{ display: "none" }}
+        <Stack>
+          <Select
+            description="Book Filter"
+            placeholder="Select book filter"
+            data={bookFilterOptions}
+            value={selectedBookFilter}
+            onChange={setSelectedBookFilter}
+            clearable={false}
+            size="xs"
           />
-        </Group>
+          <Group>
+            <Button
+              onClick={exportMetricsCSV}
+              leftSection={<IconDownload size={18} />}
+              variant="outline"
+            >
+              Export CSV
+            </Button>
+            <Button
+              onClick={handleUploadClick}
+              leftSection={<IconUpload size={18} />}
+              variant="outline"
+            >
+              Import CSV
+            </Button>
+            <Button
+              onClick={() => {
+                const selectedRows = table.getSelectedRowModel().rows;
+                if (selectedRows.length === 1) {
+                  // Single selection
+                  setSelectedMetric(selectedRows[0].original);
+                  setSelectedMetrics([]);
+                  setIsBatchDelete(false);
+                  setDeleteModalOpen(true);
+                } else if (selectedRows.length > 1) {
+                  // Multiple selection
+                  setSelectedMetric(null);
+                  setSelectedMetrics(selectedRows.map((row) => row.original));
+                  setIsBatchDelete(true);
+                  setDeleteModalOpen(true);
+                }
+              }}
+              leftSection={<IconTrash size={18} />}
+              variant="outline"
+              color="red"
+              disabled={table.getSelectedRowModel().rows.length === 0}
+            >
+              Delete{" "}
+              {table.getSelectedRowModel().rows.length > 1
+                ? `Selected (${table.getSelectedRowModel().rows.length})`
+                : "Record"}
+            </Button>
+            <input
+              ref={uploadFileRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFileUpload}
+              style={{ display: "none" }}
+            />
+          </Group>
+        </Stack>
       </Box>
     ),
   });

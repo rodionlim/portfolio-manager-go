@@ -845,7 +845,13 @@ paths:
       - dividends
   /api/v1/historical/metrics:
     get:
-      description: Get all historical portfolio metrics (date-stamped portfolio metrics)
+      description: Get all historical portfolio metrics (date-stamped portfolio metrics),
+        optionally filtered by book
+      parameters:
+      - description: Filter metrics by book (optional)
+        in: query
+        name: book_filter
+        type: string
       produces:
       - application/json
       responses:
@@ -866,8 +872,12 @@ paths:
       consumes:
       - application/json
       description: Insert or update a single historical portfolio metric (date-stamped
-        portfolio metric)
+        portfolio metric), optionally filtered by book
       parameters:
+      - description: Filter metric by book (optional)
+        in: query
+        name: book_filter
+        type: string
       - description: Historical metric
         in: body
         name: metric
@@ -896,8 +906,12 @@ paths:
       consumes:
       - application/json
       description: Insert or update a single historical portfolio metric (date-stamped
-        portfolio metric)
+        portfolio metric), optionally filtered by book
       parameters:
+      - description: Filter metric by book (optional)
+        in: query
+        name: book_filter
+        type: string
       - description: Historical metric
         in: body
         name: metric
@@ -926,8 +940,13 @@ paths:
     post:
       consumes:
       - application/json
-      description: Delete one or more historical portfolio metrics by their timestamps
+      description: Delete one or more historical portfolio metrics by their timestamps,
+        optionally filtered by book
       parameters:
+      - description: Filter metrics by book (optional)
+        in: query
+        name: book_filter
+        type: string
       - description: List of timestamps to delete
         in: body
         name: request

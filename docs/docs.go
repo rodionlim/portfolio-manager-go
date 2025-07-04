@@ -758,7 +758,7 @@ const docTemplate = `{
         },
         "/api/v1/historical/metrics": {
             "get": {
-                "description": "Get all historical portfolio metrics (date-stamped portfolio metrics)",
+                "description": "Get all historical portfolio metrics (date-stamped portfolio metrics), optionally filtered by book",
                 "produces": [
                     "application/json"
                 ],
@@ -766,6 +766,14 @@ const docTemplate = `{
                     "historical"
                 ],
                 "summary": "Get historical portfolio metrics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metrics by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of historical portfolio metrics by date",
@@ -785,7 +793,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Insert or update a single historical portfolio metric (date-stamped portfolio metric)",
+                "description": "Insert or update a single historical portfolio metric (date-stamped portfolio metric), optionally filtered by book",
                 "consumes": [
                     "application/json"
                 ],
@@ -797,6 +805,12 @@ const docTemplate = `{
                 ],
                 "summary": "Upsert a historical portfolio metric",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metric by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    },
                     {
                         "description": "Historical metric",
                         "name": "metric",
@@ -829,7 +843,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Insert or update a single historical portfolio metric (date-stamped portfolio metric)",
+                "description": "Insert or update a single historical portfolio metric (date-stamped portfolio metric), optionally filtered by book",
                 "consumes": [
                     "application/json"
                 ],
@@ -841,6 +855,12 @@ const docTemplate = `{
                 ],
                 "summary": "Upsert a historical portfolio metric",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metric by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    },
                     {
                         "description": "Historical metric",
                         "name": "metric",
@@ -875,7 +895,7 @@ const docTemplate = `{
         },
         "/api/v1/historical/metrics/delete": {
             "post": {
-                "description": "Delete one or more historical portfolio metrics by their timestamps",
+                "description": "Delete one or more historical portfolio metrics by their timestamps, optionally filtered by book",
                 "consumes": [
                     "application/json"
                 ],
@@ -887,6 +907,12 @@ const docTemplate = `{
                 ],
                 "summary": "Delete historical portfolio metrics",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metrics by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    },
                     {
                         "description": "List of timestamps to delete",
                         "name": "request",

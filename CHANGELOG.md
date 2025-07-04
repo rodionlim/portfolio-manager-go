@@ -1,3 +1,9 @@
+## [1.9.1] - 2025-07-04
+
+### 🐛 Bug Fixes
+
+- *(ui)* Add report name shortening functionality and testing instructions
+
 ## [1.9.0] - 2025-07-03
 
 ### 🚀 Features

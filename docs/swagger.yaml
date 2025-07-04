@@ -975,6 +975,11 @@ paths:
     get:
       description: Export all historical portfolio metrics (date-stamped portfolio
         metrics) as a CSV file
+      parameters:
+      - description: Filter metrics by book (optional)
+        in: query
+        name: book_filter
+        type: string
       produces:
       - text/csv
       responses:

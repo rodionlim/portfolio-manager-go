@@ -520,7 +520,7 @@ Get all historical metrics:
 curl -X GET http://localhost:8080/api/v1/historical/metrics
 ```
 
-Export historical metrics as CSV:
+Export historical metrics as CSV: (takes in book_filter as an optional query parameter)
 
 ```sh
 curl -X GET http://localhost:8080/api/v1/historical/metrics/export

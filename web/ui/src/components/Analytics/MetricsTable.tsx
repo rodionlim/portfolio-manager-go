@@ -85,7 +85,17 @@ const MetricsTable: React.FC = () => {
   // Export metrics to CSV
   const exportMetricsCSV = async () => {
     try {
-      const response = await fetch(getUrl("/api/v1/historical/metrics/export"));
+      const bookFilter =
+        selectedBookFilter === "None" ? "" : selectedBookFilter || "";
+      const queryUrl = bookFilter
+        ? getUrl(
+            `/api/v1/historical/metrics/export?book_filter=${encodeURIComponent(
+              bookFilter
+            )}`
+          )
+        : getUrl("/api/v1/historical/metrics/export");
+
+      const response = await fetch(queryUrl);
 
       if (!response.ok) {
         throw new Error(`Export failed with status: ${response.status}`);
@@ -205,6 +215,7 @@ const MetricsTable: React.FC = () => {
       );
 
       if (!response.ok) {
+        if (uploadFileRef.current) uploadFileRef.current.value = "";
         throw new Error(`Upload failed with status: ${response.status}`);
       }
 

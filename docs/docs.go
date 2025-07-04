@@ -955,6 +955,14 @@ const docTemplate = `{
                     "historical"
                 ],
                 "summary": "Export historical portfolio metrics as CSV",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter metrics by book (optional)",
+                        "name": "book_filter",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "CSV file with historical metrics",

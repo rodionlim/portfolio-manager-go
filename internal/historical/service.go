@@ -259,6 +259,10 @@ func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 		return 0, err
 	}
 	expectedHeaders := []string{"Date", "IRR", "PricePaid", "MV", "TotalDividends", "BookFilter"}
+	if len(header) < len(expectedHeaders) {
+		return 0, fmt.Errorf("invalid CSV header length: expected at least %d columns, got %d", len(expectedHeaders), len(header))
+	}
+
 	for i, h := range expectedHeaders {
 		if header[i] != h {
 			return 0, fmt.Errorf("invalid CSV header: expected %s at position %d, got %s", h, i, header[i])

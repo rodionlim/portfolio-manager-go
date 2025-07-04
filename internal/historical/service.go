@@ -218,17 +218,16 @@ func (s *Service) StopMetricsCollection() {
 }
 
 // ExportMetricsToCSV exports all historical metrics to a CSV file in memory and returns it as a byte slice.
-// TODO: add book_filter support to export metrics for a specific book
-func (s *Service) ExportMetricsToCSV() ([]byte, error) {
+func (s *Service) ExportMetricsToCSV(book_filter string) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
-	headers := []string{"Date", "IRR", "PricePaid", "MV", "TotalDividends"}
+	headers := []string{"Date", "IRR", "PricePaid", "MV", "TotalDividends", "BookFilter"}
 	if err := writer.Write(headers); err != nil {
 		return nil, err
 	}
 
-	metrics, err := s.GetMetrics("")
+	metrics, err := s.GetMetrics(book_filter)
 	if err != nil {
 		return nil, err
 	}
@@ -239,6 +238,7 @@ func (s *Service) ExportMetricsToCSV() ([]byte, error) {
 			csvutil.FormatFloat(m.Metrics.PricePaid, 2),
 			csvutil.FormatFloat(m.Metrics.MV, 2),
 			csvutil.FormatFloat(m.Metrics.TotalDividends, 2),
+			book_filter,
 		}
 		if err := writer.Write(record); err != nil {
 			return nil, err
@@ -252,14 +252,13 @@ func (s *Service) ExportMetricsToCSV() ([]byte, error) {
 }
 
 // ImportMetricsFromCSVFile imports historical metrics from a CSV file and adds them to the database.
-// TODO: add book_filter support to import metrics for a specific book
 func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 	reader := csv.NewReader(file)
 	header, err := reader.Read()
 	if err != nil {
 		return 0, err
 	}
-	expectedHeaders := []string{"Date", "IRR", "PricePaid", "MV", "TotalDividends"}
+	expectedHeaders := []string{"Date", "IRR", "PricePaid", "MV", "TotalDividends", "BookFilter"}
 	for i, h := range expectedHeaders {
 		if header[i] != h {
 			return 0, fmt.Errorf("invalid CSV header: expected %s at position %d, got %s", h, i, header[i])
@@ -274,7 +273,7 @@ func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 		if err != nil {
 			return count, err
 		}
-		if len(row) < 5 {
+		if len(row) < 6 {
 			return count, fmt.Errorf("invalid row length: %v", row)
 		}
 		ts, err := time.Parse("2006-01-02", row[0])
@@ -297,6 +296,7 @@ func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 		if err != nil {
 			return count, fmt.Errorf("invalid TotalDividends: %w", err)
 		}
+		label := s.transformBookFilter(row[5])
 		metrics := metrics.MetricsResult{
 			IRR:            irr,
 			PricePaid:      pricePaid,
@@ -308,7 +308,7 @@ func (s *Service) ImportMetricsFromCSVFile(file multipart.File) (int, error) {
 			Metrics:   metrics,
 		}
 		// Store in DB (overwrite if exists)
-		key := fmt.Sprintf("%s:%s:%s", types.HistoricalMetricsKeyPrefix, "portfolio", ts.Format("2006-01-02"))
+		key := fmt.Sprintf("%s:%s:%s", types.HistoricalMetricsKeyPrefix, label, ts.Format("2006-01-02"))
 		if err := s.db.Put(key, tm); err != nil {
 			return count, err
 		}

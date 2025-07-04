@@ -58,7 +58,7 @@ type HistoricalMetricsSetter interface {
 }
 
 type HistoricalMetricsCsvManager interface {
-	ExportMetricsToCSV() ([]byte, error)
+	ExportMetricsToCSV(book_filter string) ([]byte, error)
 	ImportMetricsFromCSVFile(file multipart.File) (int, error)
 }
 

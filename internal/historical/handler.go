@@ -2,7 +2,6 @@ package historical
 
 import (
 	"encoding/json"
-	"mime/multipart"
 	"net/http"
 	"portfolio-manager/pkg/common"
 )
@@ -36,12 +35,14 @@ func HandleGetMetrics(service HistoricalMetricsGetter) http.HandlerFunc {
 // @Description Export all historical portfolio metrics (date-stamped portfolio metrics) as a CSV file
 // @Tags historical
 // @Produce text/csv
+// @Param book_filter query string false "Filter metrics by book (optional)"
 // @Success 200 {string} string "CSV file with historical metrics"
 // @Failure 500 {object} common.ErrorResponse "Failed to export historical metrics"
 // @Router /api/v1/historical/metrics/export [get]
 func HandleExportMetricsCSV(service HistoricalMetricsCsvManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		csvBytes, err := service.ExportMetricsToCSV()
+		bookFilter := r.URL.Query().Get("book_filter")
+		csvBytes, err := service.ExportMetricsToCSV(bookFilter)
 		if err != nil {
 			common.WriteJSONError(w, "Failed to export historical metrics: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -63,9 +64,7 @@ func HandleExportMetricsCSV(service HistoricalMetricsCsvManager) http.HandlerFun
 // @Failure 400 {object} common.ErrorResponse "Invalid file or format"
 // @Failure 500 {object} common.ErrorResponse "Failed to import historical metrics"
 // @Router /api/v1/historical/metrics/import [post]
-func HandleImportMetricsCSV(service interface {
-	ImportMetricsFromCSVFile(file multipart.File) (int, error)
-}) http.HandlerFunc {
+func HandleImportMetricsCSV(service HistoricalMetricsCsvManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseMultipartForm(10 << 20) // 10MB max
 		if err != nil {

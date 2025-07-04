@@ -14,6 +14,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var DefaultMetricsSchedule string
+
 // DividendsConfig nests all dividend-related configuration
 // Withholding tax rates are in decimal (e.g., 0.15 for 15%)
 type DividendsConfig struct {
@@ -108,6 +110,8 @@ func initializeConfig(data []byte) error {
 	if cfg.Metrics.Schedule == "" {
 		cfg.Metrics.Schedule = "10 17 * * 1-5" // default: 5:10pm Mon-Fri
 	}
+	// Always set DefaultMetricsSchedule to the effective schedule (user-provided or default)
+	DefaultMetricsSchedule = cfg.Metrics.Schedule
 
 	// Set defaults for AnalyticsConfig if not provided
 	if cfg.Analytics.DataDir == "" {

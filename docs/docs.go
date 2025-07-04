@@ -990,6 +990,120 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/historical/metrics/jobs": {
+            "get": {
+                "description": "List all custom metrics jobs (excluding the default portfolio job)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "List all custom metrics jobs",
+                "responses": {
+                    "200": {
+                        "description": "List of custom metrics jobs",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/historical.MetricsJob"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to list metrics jobs",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new custom metrics job with a cron expression and book filter",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Create a custom metrics job",
+                "parameters": [
+                    {
+                        "description": "Metrics job request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/historical.CreateMetricsJobRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created metrics job",
+                        "schema": {
+                            "$ref": "#/definitions/historical.MetricsJob"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create metrics job",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/metrics/jobs/{bookFilter}": {
+            "delete": {
+                "description": "Delete a custom metrics job by book filter",
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Delete a custom metrics job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book filter",
+                        "name": "bookFilter",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Metrics job deleted successfully"
+                    },
+                    "400": {
+                        "description": "Invalid book filter",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Metrics job not found",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete metrics job",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mdata/dividends/import": {
             "post": {
                 "description": "Handles the import of dividend data from an uploaded CSV file for a multiple tickers",
@@ -1872,6 +1986,19 @@ const docTemplate = `{
                 }
             }
         },
+        "historical.CreateMetricsJobRequest": {
+            "type": "object",
+            "properties": {
+                "bookFilter": {
+                    "description": "Required",
+                    "type": "string"
+                },
+                "cronExpr": {
+                    "description": "Optional, uses default if empty",
+                    "type": "string"
+                }
+            }
+        },
         "historical.DeleteMetricsRequest": {
             "type": "object",
             "properties": {
@@ -1897,6 +2024,22 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "historical.MetricsJob": {
+            "type": "object",
+            "properties": {
+                "bookFilter": {
+                    "description": "Filter for specific book",
+                    "type": "string"
+                },
+                "cronExpr": {
+                    "description": "Cron expression for scheduling",
+                    "type": "string"
+                },
+                "taskId": {
+                    "type": "string"
                 }
             }
         },

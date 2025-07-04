@@ -4,6 +4,7 @@ package historical
 import (
 	"mime/multipart"
 	"portfolio-manager/internal/metrics"
+	"portfolio-manager/pkg/scheduler"
 	"time"
 )
 
@@ -13,17 +14,30 @@ type TimeSeriesKey struct {
 	Date time.Time // Date of the snapshot
 }
 
+type MetricsJob struct {
+	BookFilter string // Filter for specific book
+	CronExpr   string // Cron expression for scheduling
+	TaskId     scheduler.TaskID
+}
+
 // Historical* interfaces for managing historical metrics
 // - GetMetrics() fetches all metrics
 // - GetMetricsByDateRange(start, end) fetches by date range
+// - CreateMetricsJob creates a new custom metrics job with a cron expression and book filter. Set cron expression to empty to use the default schedule in config
+// - DeleteMetricsJob deletes a custom metrics job by book filter
+// - ListMetricsJobs lists all custom metrics jobs
 // - StartMetricsCollection uses a cron expression to start collection of metrics
 // - StopMetricsCollection stops the collection of metrics
-// - StartSGXReportCollection uses a cron expression to start collection of SGX reports
 // - StoreCurrentMetrics stores the current metrics
 // - ExportMetricsToCSV exports metrics to CSV
 
+// - StartSGXReportCollection uses a cron expression to start collection of SGX reports
+
 type HistoricalMetricsScheduler interface {
-	StartMetricsCollection(cronExpr string) func()
+	CreateMetricsJob(cronExpr string, book_filter string) (*MetricsJob, error)
+	DeleteMetricsJob(book_filter string) error
+	ListMetricsJobs() ([]MetricsJob, error)
+	StartMetricsCollection(cronExpr string, book_filter string) func()
 	StopMetricsCollection()
 }
 

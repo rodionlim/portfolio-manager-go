@@ -562,6 +562,31 @@ curl -X POST http://localhost:8080/api/v1/historical/metrics/delete \
   }'
 ```
 
+### Historical Metrics Jobs (Custom Scheduling)
+
+Create a custom metrics collection job for a specific book, using the default schedule (Same as entire portfolio):
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cronExpr": "",
+    "bookFilter": "tactical"
+  }'
+```
+
+List all custom metrics jobs:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics/jobs
+```
+
+Delete a custom metrics job:
+
+```sh
+curl -X DELETE http://localhost:8080/api/v1/historical/metrics/jobs/tactical
+```
+
 ### Add Reference Data
 
 ```sh

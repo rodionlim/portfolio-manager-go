@@ -153,6 +153,102 @@ func HandleDeleteMetrics(service interface {
 	}
 }
 
+// CreateMetricsJobRequest represents the request to create a metrics job
+type CreateMetricsJobRequest struct {
+	CronExpr   string `json:"cronExpr"`   // Optional, uses default if empty
+	BookFilter string `json:"bookFilter"` // Required
+}
+
+// HandleCreateMetricsJob handles the POST /api/v1/historical/metrics/jobs endpoint
+// @Summary Create a custom metrics job
+// @Description Create a new custom metrics job with a cron expression and book filter
+// @Tags historical
+// @Accept json
+// @Produce json
+// @Param request body CreateMetricsJobRequest true "Metrics job request"
+// @Success 201 {object} MetricsJob "Created metrics job"
+// @Failure 400 {object} common.ErrorResponse "Invalid request payload"
+// @Failure 500 {object} common.ErrorResponse "Failed to create metrics job"
+// @Router /api/v1/historical/metrics/jobs [post]
+func HandleCreateMetricsJob(service HistoricalMetricsScheduler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req CreateMetricsJobRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			common.WriteJSONError(w, "Invalid request payload: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if req.BookFilter == "" {
+			common.WriteJSONError(w, "bookFilter is required", http.StatusBadRequest)
+			return
+		}
+
+		job, err := service.CreateMetricsJob(req.CronExpr, req.BookFilter)
+		if err != nil {
+			common.WriteJSONError(w, "Failed to create metrics job: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(job)
+	}
+}
+
+// HandleDeleteMetricsJob handles the DELETE /api/v1/historical/metrics/jobs/{bookFilter} endpoint
+// @Summary Delete a custom metrics job
+// @Description Delete a custom metrics job by book filter
+// @Tags historical
+// @Param bookFilter path string true "Book filter"
+// @Success 204 "Metrics job deleted successfully"
+// @Failure 400 {object} common.ErrorResponse "Invalid book filter"
+// @Failure 404 {object} common.ErrorResponse "Metrics job not found"
+// @Failure 500 {object} common.ErrorResponse "Failed to delete metrics job"
+// @Router /api/v1/historical/metrics/jobs/{bookFilter} [delete]
+func HandleDeleteMetricsJob(service HistoricalMetricsScheduler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Extract book filter from URL path
+		bookFilter := r.URL.Path[len("/api/v1/historical/metrics/jobs/"):]
+		if bookFilter == "" {
+			common.WriteJSONError(w, "Book filter is required", http.StatusBadRequest)
+			return
+		}
+
+		err := service.DeleteMetricsJob(bookFilter)
+		if err != nil {
+			if err.Error() == "metrics job not found for book_filter: "+bookFilter {
+				common.WriteJSONError(w, "Metrics job not found", http.StatusNotFound)
+				return
+			}
+			common.WriteJSONError(w, "Failed to delete metrics job: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// HandleListMetricsJobs handles the GET /api/v1/historical/metrics/jobs endpoint
+// @Summary List all custom metrics jobs
+// @Description List all custom metrics jobs (excluding the default portfolio job)
+// @Tags historical
+// @Produce json
+// @Success 200 {array} MetricsJob "List of custom metrics jobs"
+// @Failure 500 {object} common.ErrorResponse "Failed to list metrics jobs"
+// @Router /api/v1/historical/metrics/jobs [get]
+func HandleListMetricsJobs(service HistoricalMetricsScheduler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		jobs, err := service.ListMetricsJobs()
+		if err != nil {
+			common.WriteJSONError(w, "Failed to list metrics jobs: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(jobs)
+	}
+}
+
 // RegisterHandlers registers the historical metrics handlers
 func RegisterHandlers(mux *http.ServeMux, service *Service) {
 	mux.HandleFunc("/api/v1/historical/metrics", func(w http.ResponseWriter, r *http.Request) {
@@ -187,5 +283,24 @@ func RegisterHandlers(mux *http.ServeMux, service *Service) {
 			return
 		}
 		HandleDeleteMetrics(service).ServeHTTP(w, r)
+	})
+
+	// Register metrics jobs endpoints
+	mux.HandleFunc("/api/v1/historical/metrics/jobs", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			HandleCreateMetricsJob(service).ServeHTTP(w, r)
+		case http.MethodGet:
+			HandleListMetricsJobs(service).ServeHTTP(w, r)
+		default:
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	mux.HandleFunc("/api/v1/historical/metrics/jobs/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			HandleDeleteMetricsJob(service).ServeHTTP(w, r)
+		} else {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
 	})
 }

@@ -173,6 +173,15 @@ definitions:
       qty:
         type: number
     type: object
+  historical.CreateMetricsJobRequest:
+    properties:
+      bookFilter:
+        description: Required
+        type: string
+      cronExpr:
+        description: Optional, uses default if empty
+        type: string
+    type: object
   historical.DeleteMetricsRequest:
     properties:
       timestamps:
@@ -190,6 +199,17 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  historical.MetricsJob:
+    properties:
+      bookFilter:
+        description: Filter for specific book
+        type: string
+      cronExpr:
+        description: Cron expression for scheduling
+        type: string
+      taskId:
+        type: string
     type: object
   historical.TimestampedMetrics:
     properties:
@@ -979,6 +999,82 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: Import historical portfolio metrics from CSV
+      tags:
+      - historical
+  /api/v1/historical/metrics/jobs:
+    get:
+      description: List all custom metrics jobs (excluding the default portfolio job)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of custom metrics jobs
+          schema:
+            items:
+              $ref: '#/definitions/historical.MetricsJob'
+            type: array
+        "500":
+          description: Failed to list metrics jobs
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: List all custom metrics jobs
+      tags:
+      - historical
+    post:
+      consumes:
+      - application/json
+      description: Create a new custom metrics job with a cron expression and book
+        filter
+      parameters:
+      - description: Metrics job request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/historical.CreateMetricsJobRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created metrics job
+          schema:
+            $ref: '#/definitions/historical.MetricsJob'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to create metrics job
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Create a custom metrics job
+      tags:
+      - historical
+  /api/v1/historical/metrics/jobs/{bookFilter}:
+    delete:
+      description: Delete a custom metrics job by book filter
+      parameters:
+      - description: Book filter
+        in: path
+        name: bookFilter
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Metrics job deleted successfully
+        "400":
+          description: Invalid book filter
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "404":
+          description: Metrics job not found
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to delete metrics job
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Delete a custom metrics job
       tags:
       - historical
   /api/v1/mdata/dividends/{ticker}:

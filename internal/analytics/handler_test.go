@@ -45,6 +45,14 @@ func (m *MockService) ListAndExtractMostTradedStocks(n int) ([]*MostTradedStocks
 	return args.Get(0).([]*MostTradedStocksReport), args.Error(1)
 }
 
+func (m *MockService) ListAndExtractSectorFundsFlow(n int) ([]*SectorFundsFlowReport, error) {
+	args := m.Called(n)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*SectorFundsFlowReport), args.Error(1)
+}
+
 func (m *MockService) ListReportsInDataDir() ([]string, error) {
 	args := m.Called()
 	return args.Get(0).([]string), args.Error(1)
@@ -118,4 +126,81 @@ func TestHandleAnalyzeExistingFile_InvalidJSON(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleListAndExtractSectorFundsFlow(t *testing.T) {
+	// Arrange
+	mockService := new(MockService)
+
+	// Mock data
+	mockReport := &SectorFundsFlowReport{
+		ReportDate:        "26 May 2025",
+		ReportTitle:       "SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025",
+		FilePath:          "./data/test.xlsx",
+		WeekEndingDate:    "26-May-25",
+		OverallNetBuySell: 40.6,
+		SectorFlows: []SectorFlow{
+			{SectorName: "Financial Services", NetBuySellSGDM: 103.1},
+			{SectorName: "Industrials", NetBuySellSGDM: 42.9},
+		},
+		ExtractedAt: 1625097600,
+	}
+
+	// Set up expectations
+	mockService.On("ListAndExtractSectorFundsFlow", 1).Return([]*SectorFundsFlowReport{mockReport}, nil)
+
+	// Create handler
+	handler := HandleListAndExtractSectorFundsFlow(mockService)
+
+	// Create test request
+	req, err := http.NewRequest("GET", "/api/v1/analytics/sector_funds_flow?n=1", nil)
+	assert.NoError(t, err)
+
+	// Create response recorder
+	rr := httptest.NewRecorder()
+
+	// Act
+	handler.ServeHTTP(rr, req)
+
+	// Assert
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+
+	// Verify response contains valid JSON
+	var response []SectorFundsFlowReport
+	err = json.Unmarshal(rr.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Len(t, response, 1)
+
+	// Verify structure of first report
+	report := response[0]
+	assert.Equal(t, "26 May 2025", report.ReportDate)
+	assert.Equal(t, "SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025", report.ReportTitle)
+	assert.NotEmpty(t, report.SectorFlows)
+	assert.Equal(t, 2, len(report.SectorFlows))
+
+	mockService.AssertExpectations(t)
+}
+
+func TestHandleListAndExtractSectorFundsFlow_InvalidParam(t *testing.T) {
+	// Arrange
+	mockService := new(MockService)
+
+	// Create handler
+	handler := HandleListAndExtractSectorFundsFlow(mockService)
+
+	// Create test request with invalid n parameter
+	req, err := http.NewRequest("GET", "/api/v1/analytics/sector_funds_flow?n=invalid", nil)
+	assert.NoError(t, err)
+
+	// Create response recorder
+	rr := httptest.NewRecorder()
+
+	// Act
+	handler.ServeHTTP(rr, req)
+
+	// Assert
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	mockService.AssertExpectations(t)
 }

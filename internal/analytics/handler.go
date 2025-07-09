@@ -287,6 +287,46 @@ func HandleListAndExtractMostTradedStocks(service Service) http.HandlerFunc {
 	}
 }
 
+// HandleListAndExtractSectorFundsFlow handles extracting the "Institutional" sector funds flow data from SGX Fund Flow reports
+// @Summary Extract Institutional sector funds flow data from SGX Fund Flow reports
+// @Description Filters for SGX Fund Flow Weekly Tracker reports and extracts the "Institutional" worksheet data showing weekly institutional flow by sector
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Param n query int false "Limit results to latest n reports (0 or not provided means no limit)"
+// @Success 200 {array} SectorFundsFlowReport "List of sector funds flow reports"
+// @Failure 400 {object} common.ErrorResponse
+// @Failure 500 {object} common.ErrorResponse
+// @Router /api/v1/analytics/sector_funds_flow [get]
+func HandleListAndExtractSectorFundsFlow(service Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Parse the optional 'n' query parameter
+		n := 0
+		if nParam := r.URL.Query().Get("n"); nParam != "" {
+			var err error
+			n, err = strconv.Atoi(nParam)
+			if err != nil || n < 0 {
+				logging.GetLogger().Error("Invalid 'n' parameter:", err)
+				common.WriteJSONError(w, "Invalid 'n' parameter: must be a non-negative integer", http.StatusBadRequest)
+				return
+			}
+		}
+
+		reports, err := service.ListAndExtractSectorFundsFlow(n)
+		if err != nil {
+			logging.GetLogger().Error("Failed to extract sector funds flow:", err)
+			common.WriteJSONError(w, "Failed to extract sector funds flow: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(reports); err != nil {
+			logging.GetLogger().Error("Failed to write sector funds flow response as JSON:", err)
+			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
+		}
+	}
+}
+
 // RegisterHandlers registers the analytics handlers
 func RegisterHandlers(mux *http.ServeMux, service Service) {
 	mux.HandleFunc("/api/v1/analytics/latest", func(w http.ResponseWriter, r *http.Request) {
@@ -351,5 +391,13 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 			return
 		}
 		HandleListAndExtractMostTradedStocks(service).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/analytics/sector_funds_flow", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleListAndExtractSectorFundsFlow(service).ServeHTTP(w, r)
 	})
 }

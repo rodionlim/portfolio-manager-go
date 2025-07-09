@@ -327,6 +327,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/analytics/sector_funds_flow": {
+            "get": {
+                "description": "Filters for SGX Fund Flow Weekly Tracker reports and extracts the \"Institutional\" worksheet data showing weekly institutional flow by sector",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Extract Institutional sector funds flow data from SGX Fund Flow reports",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit results to latest n reports (0 or not provided means no limit)",
+                        "name": "n",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of sector funds flow reports",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/analytics.SectorFundsFlowReport"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/blotter/export": {
             "get": {
                 "description": "Export all trades to a CSV file",
@@ -1864,6 +1910,46 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "summary": {
+                    "type": "string"
+                }
+            }
+        },
+        "analytics.SectorFlow": {
+            "type": "object",
+            "properties": {
+                "netBuySellSGDM": {
+                    "type": "number"
+                },
+                "sectorName": {
+                    "type": "string"
+                }
+            }
+        },
+        "analytics.SectorFundsFlowReport": {
+            "type": "object",
+            "properties": {
+                "extractedAt": {
+                    "type": "integer"
+                },
+                "filePath": {
+                    "type": "string"
+                },
+                "overallNetBuySell": {
+                    "type": "number"
+                },
+                "reportDate": {
+                    "type": "string"
+                },
+                "reportTitle": {
+                    "type": "string"
+                },
+                "sectorFlows": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/analytics.SectorFlow"
+                    }
+                },
+                "weekEndingDate": {
                     "type": "string"
                 }
             }

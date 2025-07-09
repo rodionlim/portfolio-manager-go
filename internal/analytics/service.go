@@ -557,3 +557,173 @@ func (s *ServiceImpl) calculateInstitutionNetBuySellChanges(reports []*MostTrade
 		}
 	}
 }
+
+// ListAndExtractSectorFundsFlow filters for SGX Fund Flow reports and extracts the "Institutional" worksheet
+// n - limit results to the latest n reports (0 means no limit)
+func (s *ServiceImpl) ListAndExtractSectorFundsFlow(n int) ([]*SectorFundsFlowReport, error) {
+	// Get all files in data directory
+	files, err := s.ListReportsInDataDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list reports: %w", err)
+	}
+
+	var results []*SectorFundsFlowReport
+
+	// Filter for SGX Fund Flow Weekly Tracker files
+	for _, filePath := range files {
+		fileName := filepath.Base(filePath)
+		if strings.Contains(fileName, "SGX_Fund_Flow_Weekly_Tracker") {
+			report, err := s.extractSectorFundsFlowFromFile(filePath)
+			if err != nil {
+				// Log error but continue processing other files
+				continue
+			}
+			if report != nil {
+				results = append(results, report)
+			}
+		}
+	}
+
+	// Sort reports by report date (descending)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].ReportDate > results[j].ReportDate
+	})
+
+	// Limit results to latest n reports if n > 0
+	if n > 0 && len(results) > n {
+		results = results[:n]
+	}
+
+	return results, nil
+}
+
+// extractSectorFundsFlowFromFile extracts the "Institutional" data from a single XLSX file
+func (s *ServiceImpl) extractSectorFundsFlowFromFile(filePath string) (*SectorFundsFlowReport, error) {
+	// Open the Excel file
+	f, err := excelize.OpenFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open Excel file: %w", err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			// Log the error but don't fail the function
+		}
+	}()
+
+	// Find the worksheet containing "Institutional"
+	sheetNames := f.GetSheetList()
+	var targetSheet string
+	for _, sheetName := range sheetNames {
+		if strings.Contains(strings.ToLower(sheetName), "institutional") {
+			targetSheet = sheetName
+			break
+		}
+	}
+
+	if targetSheet == "" {
+		return nil, fmt.Errorf("worksheet 'Institutional' not found in file %s", filePath)
+	}
+
+	// Get all rows from the target sheet
+	rows, err := f.GetRows(targetSheet)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read rows from sheet %s: %w", targetSheet, err)
+	}
+
+	if len(rows) < 3 {
+		return nil, fmt.Errorf("insufficient data in sheet %s", targetSheet)
+	}
+
+	// Extract report date and title from filename
+	fileName := filepath.Base(filePath)
+	reportDate := extractDateFromSGXFilename(fileName)
+	reportTitle := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+
+	report := &SectorFundsFlowReport{
+		ReportDate:  reportDate,
+		ReportTitle: reportTitle,
+		FilePath:    filePath,
+		SectorFlows: []SectorFlow{},
+		ExtractedAt: time.Now().Unix(),
+	}
+
+	// Find the header row with sector names
+	var sectorHeaders []string
+	headerRowIndex := -1
+
+	for i, row := range rows {
+		if len(row) > 3 && strings.Contains(strings.ToLower(strings.Join(row, " ")), "consumer cyclicals") {
+			headerRowIndex = i
+			// Extract sector names from header row (skip first 2 columns: Overall and Date)
+			for j := 2; j < len(row); j++ {
+				if strings.TrimSpace(row[j]) != "" {
+					sectorHeaders = append(sectorHeaders, strings.TrimSpace(row[j]))
+				}
+			}
+			break
+		}
+	}
+
+	if headerRowIndex == -1 || len(sectorHeaders) == 0 {
+		return nil, fmt.Errorf("sector header row not found in sheet %s", targetSheet)
+	}
+
+	// Find the last data row before notes/definitions
+	var lastDataRow []string
+	var weekEndingDate string
+	var overallNetBuySell float64
+
+	for i := headerRowIndex + 1; i < len(rows); i++ {
+		row := rows[i]
+
+		// Skip empty rows
+		if len(row) < 2 || strings.TrimSpace(row[0]) == "" {
+			continue
+		}
+
+		// Stop if we hit source/definition/note rows
+		if strings.Contains(strings.ToLower(row[0]), "source") ||
+			strings.Contains(strings.ToLower(row[0]), "definition") ||
+			strings.Contains(strings.ToLower(row[0]), "note") ||
+			strings.Contains(strings.ToLower(strings.Join(row, " ")), "https://") {
+			break
+		}
+
+		// This is a data row, keep track of it (we want the last one)
+		lastDataRow = row
+
+		// Parse overall net buy/sell (first column)
+		if val, err := parseFloat(row[0]); err == nil {
+			overallNetBuySell = val
+		}
+
+		// Parse date (second column)
+		if len(row) > 1 {
+			weekEndingDate = strings.TrimSpace(row[1])
+		}
+	}
+
+	if len(lastDataRow) == 0 {
+		return nil, fmt.Errorf("no data rows found in sheet %s", targetSheet)
+	}
+
+	// Set the extracted values
+	report.WeekEndingDate = weekEndingDate
+	report.OverallNetBuySell = overallNetBuySell
+
+	// Parse sector flows from the last data row (starting from column 2)
+	for i, sectorName := range sectorHeaders {
+		columnIndex := i + 2 // Skip overall and date columns
+		if columnIndex < len(lastDataRow) {
+			if val, err := parseFloat(lastDataRow[columnIndex]); err == nil {
+				sectorFlow := SectorFlow{
+					SectorName:     sectorName,
+					NetBuySellSGDM: val,
+				}
+				report.SectorFlows = append(report.SectorFlows, sectorFlow)
+			}
+		}
+	}
+
+	return report, nil
+}

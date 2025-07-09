@@ -825,6 +825,16 @@ curl -X GET http://localhost:8080/api/v1/analytics/most_traded_stocks
 curl -X GET "http://localhost:8080/api/v1/analytics/most_traded_stocks?n=2"
 ```
 
+Extract Institutional sector funds flow data from latest SGX Fund Flow Weekly Tracker reports:
+
+```sh
+# Get all available sector funds flow reports
+curl -X GET http://localhost:8080/api/v1/analytics/sector_funds_flow
+
+# Get only the latest 3 reports
+curl -X GET "http://localhost:8080/api/v1/analytics/sector_funds_flow?n=3"
+```
+
 ## Configurations
 
 Sample configurations

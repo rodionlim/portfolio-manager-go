@@ -397,3 +397,53 @@ func TestServiceImpl_ListAllAnalysis(t *testing.T) {
 
 	mockAIAnalyzer.AssertExpectations(t)
 }
+
+func TestServiceImpl_ExtractSectorFundsFlowFromFile(t *testing.T) {
+	// Arrange
+	mockSGXClient := new(MockSGXClient)
+	mockAIAnalyzer := new(MockAIAnalyzer)
+	mockDB := mocks.NewMockDatabase()
+
+	// Set up the SetDatabase expectation
+	mockAIAnalyzer.On("SetDatabase", mockDB).Return()
+
+	service := NewService(mockSGXClient, mockAIAnalyzer, "./../../data", mockDB).(*ServiceImpl)
+
+	testFilePath := "./../../data/SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025.xlsx"
+
+	// Act
+	report, err := service.extractSectorFundsFlowFromFile(testFilePath)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, report)
+
+	// Verify basic report information
+	assert.Equal(t, "26 May 2025", report.ReportDate)
+	assert.Equal(t, "SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025", report.ReportTitle)
+	assert.Equal(t, testFilePath, report.FilePath)
+	assert.NotEmpty(t, report.WeekEndingDate)
+	assert.NotZero(t, report.ExtractedAt)
+
+	// Verify sector flows
+	assert.NotEmpty(t, report.SectorFlows)
+	assert.Equal(t, len(report.SectorFlows), 12, "Should have 12 sectors")
+
+	// Verify each sector flow has required fields
+	for _, flow := range report.SectorFlows {
+		assert.NotEmpty(t, flow.SectorName, "Sector name should not be empty")
+		assert.IsType(t, float64(0), flow.NetBuySellSGDM, "Net buy/sell should be a float64")
+	}
+
+	// Test specific extraction - the overall net buy/sell should be a reasonable number
+	assert.IsType(t, float64(0), report.OverallNetBuySell)
+
+	assert.Equal(t, "26 May 2025", report.ReportDate, "Report date should match the file name")
+	assert.Equal(t, "26-May-25", report.WeekEndingDate, "Week ending date should match the file name")
+	assert.Equal(t, -18.8, report.SectorFlows[0].NetBuySellSGDM, "Consumer Cyclicals net buy/sell should match expected value")
+	assert.Equal(t, "Consumer Cyclicals", report.SectorFlows[0].SectorName, "First sector should be Consumer Cyclicals")
+	assert.Equal(t, 13.7, report.SectorFlows[len(report.SectorFlows)-1].NetBuySellSGDM, "Last sector net buy/sell should match expected value")
+	assert.Equal(t, "Utilities", report.SectorFlows[len(report.SectorFlows)-1].SectorName, "Last sector should be Utilities")
+
+	mockAIAnalyzer.AssertExpectations(t)
+}

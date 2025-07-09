@@ -63,6 +63,32 @@ definitions:
       summary:
         type: string
     type: object
+  analytics.SectorFlow:
+    properties:
+      netBuySellSGDM:
+        type: number
+      sectorName:
+        type: string
+    type: object
+  analytics.SectorFundsFlowReport:
+    properties:
+      extractedAt:
+        type: integer
+      filePath:
+        type: string
+      overallNetBuySell:
+        type: number
+      reportDate:
+        type: string
+      reportTitle:
+        type: string
+      sectorFlows:
+        items:
+          $ref: '#/definitions/analytics.SectorFlow'
+        type: array
+      weekEndingDate:
+        type: string
+    type: object
   blotter.Trade:
     properties:
       Account:
@@ -559,6 +585,38 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: Extract 100 Most Traded Stocks data from SGX Fund Flow reports
+      tags:
+      - analytics
+  /api/v1/analytics/sector_funds_flow:
+    get:
+      consumes:
+      - application/json
+      description: Filters for SGX Fund Flow Weekly Tracker reports and extracts the
+        "Institutional" worksheet data showing weekly institutional flow by sector
+      parameters:
+      - description: Limit results to latest n reports (0 or not provided means no
+          limit)
+        in: query
+        name: "n"
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of sector funds flow reports
+          schema:
+            items:
+              $ref: '#/definitions/analytics.SectorFundsFlowReport'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Extract Institutional sector funds flow data from SGX Fund Flow reports
       tags:
       - analytics
   /api/v1/blotter/export:

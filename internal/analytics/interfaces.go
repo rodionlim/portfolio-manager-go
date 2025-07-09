@@ -87,6 +87,23 @@ type MostTradedStocksReport struct {
 	ExtractedAt int64             `json:"extractedAt"`
 }
 
+// SectorFundsFlowReport represents the institutional funds flow by sector for a specific report
+type SectorFundsFlowReport struct {
+	ReportDate        string       `json:"reportDate"`
+	ReportTitle       string       `json:"reportTitle"`
+	FilePath          string       `json:"filePath"`
+	WeekEndingDate    string       `json:"weekEndingDate"`
+	OverallNetBuySell float64      `json:"overallNetBuySell"`
+	SectorFlows       []SectorFlow `json:"sectorFlows"`
+	ExtractedAt       int64        `json:"extractedAt"`
+}
+
+// SectorFlow represents the institutional net buy/sell amount for a specific sector
+type SectorFlow struct {
+	SectorName     string  `json:"sectorName"`
+	NetBuySellSGDM float64 `json:"netBuySellSGDM"`
+}
+
 // SGXClient interface for fetching SGX reports
 type SGXClient interface {
 	// FetchReports fetches the latest SGX reports
@@ -134,4 +151,8 @@ type Service interface {
 	// ListAndExtractMostTradedStocks filters for SGX Fund Flow reports and extracts the "100 Most Traded Stocks" worksheet
 	// n - limit results to the latest n reports (0 means no limit)
 	ListAndExtractMostTradedStocks(n int) ([]*MostTradedStocksReport, error)
+
+	// ListAndExtractSectorFundsFlow filters for SGX Fund Flow reports and extracts the "Institutional" worksheet
+	// n - limit results to the latest n reports (0 means no limit)
+	ListAndExtractSectorFundsFlow(n int) ([]*SectorFundsFlowReport, error)
 }

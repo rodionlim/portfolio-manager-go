@@ -1,3 +1,9 @@
+## [1.11.0] - 2025-07-09
+
+### 🚀 Features
+
+- *(analytics)* Add sector funds flow parsing backend handlers and ui component #79
+
 ## [1.10.0] - 2025-07-04
 
 ### 🚀 Features

@@ -1,11 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Container, Title, Text, Stack, Tabs } from "@mantine/core";
+import { useLocation } from "react-router-dom";
 import ReportsTable from "./ReportsTable";
-import MostTradedStocksView from "./MostTradedStocksView";
+import SGXMostTradedStocksView from "./SGXMostTradedStocksView";
 import SGXSectorView from "./SGXSectorView";
 
 const ReportsView: React.FC = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<string | null>("reports");
+
+  // Handle navigation state to switch tabs
+  useEffect(() => {
+    const navigationState = location.state as { activeTab?: string } | null;
+    if (navigationState?.activeTab) {
+      setActiveTab(navigationState.activeTab);
+    }
+  }, [location.state]);
 
   return (
     <Container size="xl">
@@ -32,7 +42,7 @@ const ReportsView: React.FC = () => {
           </Tabs.Panel>
 
           <Tabs.Panel value="visualization" pt="md">
-            {activeTab === "visualization" && <MostTradedStocksView />}
+            {activeTab === "visualization" && <SGXMostTradedStocksView />}
           </Tabs.Panel>
 
           <Tabs.Panel value="sectors" pt="md">

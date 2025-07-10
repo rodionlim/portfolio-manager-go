@@ -14,6 +14,7 @@ import {
 } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 import { getUrl } from "../../utils/url";
+import { useNavigate } from "react-router-dom";
 
 interface SectorFlow {
   sectorName: string;
@@ -31,11 +32,22 @@ interface SectorFundsFlowReport {
 }
 
 const SGXSectorView: React.FC = () => {
+  const navigate = useNavigate();
   const [topCount, setTopCount] = useState<string>("12");
   const [sortMode, setSortMode] = useState<string>("absolute");
   const [reports, setReports] = useState<SectorFundsFlowReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleSectorClick = (sectorName: string) => {
+    // Navigate to stocks view with sector filter
+    navigate("/analytics/reports", {
+      state: {
+        selectedSector: sectorName,
+        activeTab: "visualization", // Switch to Most Traded Stocks tab
+      },
+    });
+  };
 
   useEffect(() => {
     fetchSectorFundsFlow();
@@ -250,6 +262,22 @@ const SGXSectorView: React.FC = () => {
   };
 
   // Helper function to get percentage change for a sector
+  /**
+   * Calculates the percentage change in cumulative net buy/sell value (SGD millions)
+   * for a given sector over the available reports.
+   *
+   * The calculation compares the cumulative value from the first half of the reports
+   * (earliest period) to the cumulative value from all reports (latest period).
+   *
+   * - If the earliest cumulative value is significant (absolute value > 1),
+   *   returns the percentage change between latest and earliest cumulative values.
+   * - If the earliest cumulative value is negligible but the latest is significant,
+   *   returns 1000 or -1000 to indicate a large relative change.
+   * - Returns 0 if both cumulative values are negligible or if there are no reports.
+   *
+   * @param sectorName - The name of the sector to calculate the percentage change for.
+   * @returns The percentage change in cumulative net buy/sell value for the sector.
+   */
   const getSectorPercentageChange = (sectorName: string): number => {
     if (reports.length === 0) return 0;
 
@@ -364,6 +392,17 @@ const SGXSectorView: React.FC = () => {
         </Group>
       </Group>
 
+      <Alert
+        icon={<IconInfoCircle size="1rem" />}
+        title="Interactive Analysis"
+        color="blue"
+        variant="light"
+        mb="md"
+      >
+        Click on any sector header to drill down and view individual stocks
+        within that sector.
+      </Alert>
+
       <ScrollArea>
         <Box style={{ minWidth: Math.max(800, topSectors.length * 140) }}>
           <Table
@@ -403,12 +442,23 @@ const SGXSectorView: React.FC = () => {
                             writingMode: "vertical-rl",
                             textOrientation: "mixed",
                             padding: "8px 4px",
-                            cursor: "help",
+                            cursor: "pointer",
+                            transition: "background-color 0.2s ease",
+                          }}
+                          onClick={() => handleSectorClick(sector.sectorName)}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f8f9fa";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "white";
                           }}
                         >
                           <div style={{ transform: "rotate(180deg)" }}>
-                            <Text size="xs" fw={600}>
+                            <Text size="xs" fw={600} c="blue.6">
                               {sector.sectorName}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              ({percentageChange.toFixed(1)}%)
                             </Text>
                           </div>
                         </Table.Th>
@@ -515,11 +565,11 @@ const SGXSectorView: React.FC = () => {
       <Group gap="xs" align="center">
         <Text size="xs" c="dimmed">
           {sortMode === "absolute" &&
-            "Legend: Sorted by cumulative institutional net buy/sell (highest cumulative inflows left)"}
+            "Legend: Sorted by cumulative institutional net buy/sell (highest cumulative inflows are sorted to the left)"}
           {sortMode === "relative" &&
-            "Legend: Sorted by latest week's institutional net buy/sell (highest weekly inflows left)"}
+            "Legend: Sorted by latest week's institutional net buy/sell (highest weekly inflows are sorted to the left)"}
           {sortMode === "percentage" &&
-            "Legend: Sorted by percentage change in cumulative flows (highest growth left)"}
+            "Legend: Sorted by percentage change in cumulative flows (highest growth are sorted to the left)"}
         </Text>
       </Group>
 

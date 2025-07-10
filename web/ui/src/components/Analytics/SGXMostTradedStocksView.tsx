@@ -14,9 +14,11 @@ import {
   Badge,
   Box,
   HoverCard,
+  MultiSelect,
 } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 import { getUrl } from "../../utils/url";
+import { useLocation } from "react-router-dom";
 
 interface MostTradedStock {
   stockName: string;
@@ -36,12 +38,24 @@ interface MostTradedStocksReport {
   extractedAt: number;
 }
 
-const MostTradedStocksView: React.FC = () => {
+const SGXMostTradedStocksView: React.FC = () => {
+  const location = useLocation();
   const [topCount, setTopCount] = useState<string>("10");
   const [sortMode, setSortMode] = useState<string>("absolute");
   const [reports, setReports] = useState<MostTradedStocksReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
+
+  // Get navigation state (sector filter from SGXSectorView)
+  const navigationState = location.state as { selectedSector?: string } | null;
+
+  useEffect(() => {
+    // Set initial sector filter if coming from navigation
+    if (navigationState?.selectedSector) {
+      setSelectedSectors([navigationState.selectedSector]);
+    }
+  }, [navigationState]);
 
   useEffect(() => {
     fetchMostTradedStocks();
@@ -97,6 +111,33 @@ const MostTradedStocksView: React.FC = () => {
 
     // Use white text for darker backgrounds
     return normalizedValue > 0.6 ? "#ffffff" : "#374151";
+  };
+
+  // Get unique sectors from all reports
+  const getUniqueSectors = (): string[] => {
+    if (reports.length === 0) return [];
+
+    const sectors = new Set<string>();
+    reports.forEach((report) => {
+      report.stocks.forEach((stock) => {
+        if (stock.sector && stock.sector.trim()) {
+          sectors.add(stock.sector.trim());
+        }
+      });
+    });
+
+    return Array.from(sectors).sort();
+  };
+
+  // Apply sector filtering to stocks
+  const applyFiltering = (stocks: MostTradedStock[]): MostTradedStock[] => {
+    if (selectedSectors.length === 0) {
+      return stocks;
+    }
+
+    return stocks.filter((stock) =>
+      selectedSectors.includes(stock.sector?.trim() || "")
+    );
   };
 
   // Process and sort stocks
@@ -210,12 +251,15 @@ const MostTradedStocksView: React.FC = () => {
         sortedStocks = latestReport.stocks;
     }
 
-    const count = parseInt(topCount);
+    // Apply sector filtering
+    const filteredStocks = applyFiltering(sortedStocks);
+
+    const count = Math.min(parseInt(topCount), filteredStocks.length);
     const halfCount = Math.floor(count / 2);
 
     // Take top buyers and top sellers
-    const topHalf = sortedStocks.slice(0, halfCount);
-    const bottomHalf = sortedStocks.slice(-halfCount);
+    const topHalf = filteredStocks.slice(0, halfCount);
+    const bottomHalf = filteredStocks.slice(-halfCount);
 
     return [...topHalf, ...bottomHalf];
   };
@@ -320,10 +364,30 @@ const MostTradedStocksView: React.FC = () => {
           <Text size="sm" c="dimmed">
             YTD Institution Net Buy/Sell (SGD Million) - Latest {reports.length}{" "}
             reports
+            {selectedSectors.length > 0 && (
+              <Text component="span" c="blue">
+                {" "}
+                • Filtered by {selectedSectors.length} sector
+                {selectedSectors.length !== 1 ? "s" : ""}
+              </Text>
+            )}
           </Text>
         </div>
 
         <Group gap="md" align="flex-end">
+          <MultiSelect
+            label="Filter by Sectors"
+            placeholder={
+              selectedSectors.length === 0
+                ? "All sectors"
+                : `${selectedSectors.length} selected`
+            }
+            value={selectedSectors}
+            onChange={setSelectedSectors}
+            data={getUniqueSectors()}
+            clearable
+          />
+
           <Select
             label="Sort Method"
             value={sortMode}
@@ -543,4 +607,4 @@ const MostTradedStocksView: React.FC = () => {
   );
 };
 
-export default MostTradedStocksView;
+export default SGXMostTradedStocksView;

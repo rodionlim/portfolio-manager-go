@@ -1,3 +1,9 @@
+## [1.12.0] - 2025-07-10
+
+### 🚀 Features
+
+- *(ui)* Add sector filters on 100 most traded reports #84
+
 ## [1.11.0] - 2025-07-09
 
 ### 🚀 Features

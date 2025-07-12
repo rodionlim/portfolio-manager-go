@@ -131,6 +131,12 @@ func initializeConfig(data []byte) error {
 		cfg.Analytics.DataDir = "./data"
 	}
 
+	// Set analytics schedule (SGX report collection cron) to environment variables if it exists
+	if os.Getenv("ANALYTICS_SCHEDULE") != "" {
+		cfg.Analytics.Schedule = os.Getenv("ANALYTICS_SCHEDULE")
+		logging.GetLogger().Info("Using ANALYTICS_SCHEDULE from environment variable")
+	}
+
 	// Set GeminiApiKey to environment variable if it exists
 	if os.Getenv("GEMINI_API_KEY") != "" {
 		logging.GetLogger().Info("Using GEMINI_API_KEY from environment variable")

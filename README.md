@@ -34,6 +34,8 @@ The application supports the following environment variables:
 
 - `GEMINI_API_KEY`: API key for Google Gemini AI service (used for SGX report analysis). If set, this will override the `geminiApiKey` setting in the config file.
 
+- `ANALYTICS_SCHEDULE`: Cron expression for scheduling the collection of SGX Reports, If set, this will override the `analytics.schedule` settings in the config file.
+
 ### Proxmox VE Helper Scripts
 
 For home-labbers, helpers scripts are exposed to allow easy installation of `portfolio-manager` in lxc containers within Proxmox VE.

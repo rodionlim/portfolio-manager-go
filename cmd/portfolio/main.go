@@ -174,9 +174,19 @@ func main() {
 		logger.Info("Analytics collection schedule not configured or Gemini API key not set, skipping")
 	}
 
+	// Create MCP server if enabled
+	var mcpServer *server.MCPServer
+	mcpAddr := fmt.Sprintf("%s:%s", config.MCP.Host, config.MCP.Port)
+	if config.MCP.Enabled {
+		mcpServer = server.NewMCPServer(mcpAddr, blotterSvc, portfolioSvc)
+		logger.Infof("MCP server enabled and will start on %s", mcpAddr)
+	} else {
+		logger.Info("MCP server disabled")
+	}
+
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc, analyticsSvc)
+	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc, analyticsSvc, mcpServer)
 
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)

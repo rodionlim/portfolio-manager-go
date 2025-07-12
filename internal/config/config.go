@@ -31,6 +31,13 @@ type MetricsConfig struct {
 	Schedule string `yaml:"schedule"`
 }
 
+// MCPConfig nests all MCP server-related configuration
+type MCPConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Host    string `yaml:"host"`
+	Port    string `yaml:"port"`
+}
+
 // MarketDataConfig nests all market data-related configuration
 type MarketDataConfig struct {
 	RateLimitMs int `yaml:"rateLimitMs"` // Minimum milliseconds between Yahoo Finance requests
@@ -55,6 +62,7 @@ type Config struct {
 	DbPath          string           `yaml:"dbPath"`
 	RefDataSeedPath string           `yaml:"refDataSeedPath"`
 	Dividends       DividendsConfig  `yaml:"dividends"`
+	MCP             MCPConfig        `yaml:"mcp"`
 	Metrics         MetricsConfig    `yaml:"metrics"`
 	MarketData      MarketDataConfig `yaml:"marketData"`
 	Analytics       AnalyticsConfig  `yaml:"analytics"`
@@ -105,6 +113,11 @@ func initializeConfig(data []byte) error {
 
 	// Set defaults for DividendsConfig if not provided
 	// (all default to 0)
+
+	// Set defaults for MCPConfig if not provided
+	if cfg.MCP.Port == "" {
+		cfg.MCP.Port = "8081" // default MCP port
+	}
 
 	// Set default for MetricsConfig if not provided
 	if cfg.Metrics.Schedule == "" {

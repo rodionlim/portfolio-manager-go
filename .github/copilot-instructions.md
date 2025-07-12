@@ -58,3 +58,35 @@ func TestSomething(t *testing.T) {
 ```
 
 Existing tests may still use the old approach, but all new tests should use the testify framework.
+
+## MCP Server Integration
+
+This project includes a Model Context Protocol (MCP) server that allows LLMs to interact with portfolio data. The MCP server runs alongside the HTTP server when enabled in configuration.
+
+### Key Points:
+
+- MCP server is optional and can be enabled/disabled via `config.yaml` (`mcp.enabled`)
+- Runs on a separate port from the main HTTP server (default: 8081, configurable via `mcp.port`)
+- Provides tools for querying blotter trades and portfolio positions
+- Uses the `github.com/mark3labs/mcp-go` library for MCP protocol implementation
+- Tool handlers follow the pattern from `cmd/mcp/main.go` using `request.RequireString()` for parameter extraction
+
+### Available MCP Tools:
+
+- `query_blotter_trades`: Query trades with filters (ticker, date range, trade type, limit)
+- `get_portfolio_positions`: Get portfolio positions by book
+
+### Configuration Example:
+
+```yaml
+mcp:
+  enabled: true
+  port: 8081
+```
+
+When adding new MCP tools:
+
+1. Add the tool definition in `registerTools()` method in `internal/server/mcp.go`
+2. Implement the handler function following the existing pattern
+3. Use `request.RequireString()` for parameter extraction
+4. Return JSON responses using `mcp.NewToolResultText()`

@@ -41,7 +41,7 @@ func TestStart(t *testing.T) {
 	}
 
 	ctx := context.WithValue(context.Background(), types.LoggerKey, logger)
-	srv := NewServer(":0", nil, nil, nil, nil, nil, nil) // Use port 0 to get an available port
+	srv := NewServer(":0", nil, nil, nil, nil, nil, nil, nil) // Use port 0 to get an available port
 
 	go func() {
 		// don't need to check for errors here since we check the handlers after

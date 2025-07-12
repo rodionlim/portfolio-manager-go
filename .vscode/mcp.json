@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "portfolio-manager-mcp": {
+      "url": "http://localhost:8081/mcp",
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}

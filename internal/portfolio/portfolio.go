@@ -380,7 +380,13 @@ func (p *Portfolio) GetPositions(book string) ([]*Position, error) {
 	defer p.mu.Unlock()
 
 	var positions []*Position
-	if tickers, ok := p.positions[book]; ok {
+	if book == "" {
+		for _, tickers := range p.positions {
+			for _, position := range tickers {
+				positions = append(positions, position)
+			}
+		}
+	} else if tickers, ok := p.positions[book]; ok {
 		for _, position := range tickers {
 			positions = append(positions, position)
 		}

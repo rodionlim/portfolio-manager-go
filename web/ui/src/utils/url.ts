@@ -5,7 +5,7 @@ export function getUrl(apiPath: string = "api/v1/refdata"): string {
   }
 
   // In development mode, use a fixed backend URL
-  if (process.env.NODE_ENV === "development") {
+  if (import.meta.env.DEV) {
     return `http://localhost:8080/${apiPath}`;
   }
 

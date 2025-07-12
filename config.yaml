@@ -6,6 +6,10 @@ baseCcy: SGD
 db: leveldb
 dbPath: ./portfolio-manager.db
 refDataSeedPath: "./seed/refdata.yaml"
+mcp:
+  enabled: true
+  host: 0.0.0.0
+  port: 8081
 dividends:
   withholdingTaxSG: 0
   withholdingTaxUS: 0.3

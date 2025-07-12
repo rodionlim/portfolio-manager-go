@@ -31,12 +31,13 @@ type Server struct {
 	portfolio  *portfolio.Portfolio
 	fxinfer    *fxinfer.Service
 	metrics    *metrics.MetricsService
-	historical *historical.Service // add historical service
-	analytics  analytics.Service   // add analytics service
+	historical *historical.Service
+	analytics  analytics.Service
+	mcpServer  *MCPServer
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service, analyticsSvc analytics.Service) *Server {
+func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service, analyticsSvc analytics.Service, mcpSvc *MCPServer) *Server {
 	return &Server{
 		Addr:       addr,
 		mux:        http.NewServeMux(),
@@ -46,6 +47,7 @@ func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *port
 		metrics:    metricsSvc,
 		historical: historicalSvc,
 		analytics:  analyticsSvc,
+		mcpServer:  mcpSvc,
 	}
 }
 
@@ -59,7 +61,7 @@ func upcheckHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "I'm up!")
 }
 
-// Start starts the HTTP server.
+// Start starts the HTTP server and optionally the MCP server.
 func (s *Server) Start(ctx context.Context) error {
 	logger := ctx.Value(types.LoggerKey).(*logging.Logger)
 
@@ -97,5 +99,16 @@ func (s *Server) Start(ctx context.Context) error {
 
 	logger.Info("Starting server on", fmt.Sprintf("http://%s", s.Addr))
 	logger.Info("Swagger UI available at", fmt.Sprintf("http://%s/swagger/index.html", s.Addr))
+
+	// Start MCP server in a goroutine if it's provided
+	if s.mcpServer != nil {
+		go func() {
+			if err := s.mcpServer.Start(ctx); err != nil {
+				logger.Error("MCP server error:", err)
+			}
+		}()
+	}
+
+	// Start HTTP server (blocking call)
 	return http.ListenAndServe(s.Addr, loggedCorsMux)
 }

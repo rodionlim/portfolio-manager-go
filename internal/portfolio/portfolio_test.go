@@ -171,6 +171,11 @@ func TestGetPositions(t *testing.T) {
 	allPositions, err := p.GetAllPositions()
 	assert.NoError(t, err)
 	assert.Len(t, allPositions, 3)
+
+	// Test GetPositions for "" book
+	emptyBookPositions, err := p.GetPositions("")
+	assert.NoError(t, err)
+	assert.Len(t, emptyBookPositions, 3)
 }
 
 func TestLoadPositions(t *testing.T) {

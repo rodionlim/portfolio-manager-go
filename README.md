@@ -19,6 +19,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Integration with Gemini to derive trading insights via Analytics module
 - OpenAPI compliant for easy integration with other systems
 - UI for end users
+- MCP (Model Context Protocol) server for LLM integration
 
 ## Installation
 
@@ -32,6 +33,8 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 The application supports the following environment variables:
 
 - `GEMINI_API_KEY`: API key for Google Gemini AI service (used for SGX report analysis). If set, this will override the `geminiApiKey` setting in the config file.
+
+- `ANALYTICS_SCHEDULE`: Cron expression for scheduling the collection of SGX Reports, If set, this will override the `analytics.schedule` settings in the config file.
 
 ### Proxmox VE Helper Scripts
 
@@ -118,6 +121,8 @@ portfolio-manager/
 │   ├── mocks/
 │   ├── portfolio/
 │   └── server/
+│       ├── server.go    # Main HTTP server
+│       └── mcp.go       # MCP server integration
 ├── lxc/
 ├── pkg/
 │   ├── common/
@@ -162,6 +167,71 @@ mockService.On("MethodName", arg1, arg2).Return(expectedResult)
 // Later verify expectations
 mockService.AssertExpectations(t)
 ```
+
+## MCP Server Integration
+
+This project includes a **Model Context Protocol (MCP) server** that enables Large Language Models (LLMs) to interact directly with your portfolio data. This allows you to query your portfolio using natural language through compatible LLM interfaces.
+
+### Configuration
+
+Enable the MCP server by setting the following in your `config.yaml`:
+
+```yaml
+mcp:
+  enabled: true
+  port: 8081
+```
+
+### Available Tools
+
+The MCP server provides the following tools for LLM interaction:
+
+#### 1. Query Blotter Trades (`query_blotter_trades`)
+
+Query your trading history with flexible filtering options:
+
+- **ticker**: Filter by specific ticker symbol
+- **start_date**: Filter trades from a specific date (YYYY-MM-DD format)
+- **end_date**: Filter trades up to a specific date (YYYY-MM-DD format)
+- **trade_type**: Filter by trade type (BUY or SELL)
+- **limit**: Limit the number of results (default: 100)
+
+#### 2. Get Portfolio Positions (`get_portfolio_positions`)
+
+Retrieve current portfolio positions with market values and P&L:
+
+- **book**: Filter by specific book/account (optional, returns all books if not specified)
+
+### Usage Examples
+
+Once configured and running, you can interact with your portfolio data through any MCP-compatible LLM interface. Example queries:
+
+- "Show me all my Apple trades from last month"
+- "What are my current positions in the tech book?"
+- "List all sell trades for the past quarter"
+- "Show me my portfolio positions with current market values"
+
+### Potential Use Cases
+
+The MCP server opens up numerous possibilities for LLM-powered portfolio analysis:
+
+#### **Real-time Portfolio Queries**
+
+- Ask natural language questions about your holdings
+- Get instant summaries of positions, P&L, and performance
+- Query specific trades or transactions with flexible criteria
+
+#### **Investment Research & Analysis**
+
+- Analyze trading patterns and performance trends
+- Generate custom reports and summaries
+
+#### **Risk Management**
+
+- Monitor portfolio concentration and exposure
+- Identify underperforming positions or sectors
+
+The MCP server essentially transforms your portfolio manager into an AI-queryable database, making your investment data accessible through natural language interfaces and enabling sophisticated AI-powered analysis workflows.
 
 ## Built-in Scheduler (Cron-based)
 
@@ -835,6 +905,45 @@ curl -X GET http://localhost:8080/api/v1/analytics/sector_funds_flow
 curl -X GET "http://localhost:8080/api/v1/analytics/sector_funds_flow?n=3"
 ```
 
+### Sample API Calls
+
+Here are some example `curl` commands to interact with the application:
+
+#### Health Check
+
+```sh
+curl http://localhost:8080/healthz
+```
+
+#### Get Portfolio Positions
+
+```sh
+curl http://localhost:8080/api/v1/portfolio/positions
+```
+
+#### Get Blotter Trades
+
+```sh
+curl http://localhost:8080/api/v1/blotter/trades
+```
+
+#### Add a Trade
+
+```sh
+curl -X POST http://localhost:8080/api/v1/blotter/trades \
+  -H "Content-Type: application/json" \
+  -d '{
+    "TradeDate": "2024-01-15",
+    "Ticker": "AAPL",
+    "Side": "BUY",
+    "Quantity": 100,
+    "Price": 150.00,
+    "Book": "portfolio1",
+    "Broker": "broker1",
+    "Account": "account1"
+  }'
+```
+
 ## Configurations
 
 Sample configurations
@@ -848,6 +957,9 @@ baseCcy: SGD
 db: leveldb
 dbPath: ./portfolio-manager.db
 refDataSeedPath: "./seed/refdata.yaml"
+mcp:
+  enabled: false # Enable/disable MCP server
+  port: 8081 # MCP server port
 dividends:
   divWitholdingTaxSG: 0
   divWitholdingTaxUS: 0.3

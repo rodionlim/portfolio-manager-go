@@ -1,3 +1,14 @@
+## [1.13.0] - 2025-07-12
+
+### 🚀 Features
+
+- *(mcp)* Add mcp server #82
+- *(analytics)* Make cron default schedule an env var as well #88
+
+### 🐛 Bug Fixes
+
+- *(portfolio)* Pass in empty book does not return all positions in GetPositions
+
 ## [1.12.0] - 2025-07-10
 
 ### 🚀 Features

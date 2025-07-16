@@ -72,14 +72,14 @@ func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax floa
 		return nil, err
 	}
 
-	resp, err := src.client.Do(req)
+	resp, err := common.DoWithRetry(src.client, req, 3, 3000*time.Millisecond, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch data: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("yahoo finance API returned status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("yahoo finance API returned status code: %d, url: %s", resp.StatusCode, url)
 	}
 
 	// Read and potentially decompress the response body
@@ -150,7 +150,7 @@ func (src *yahooFinance) GetAssetPrice(ticker string) (*types.AssetData, error) 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("yahoo finance API returned status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("yahoo finance API returned status code: %d, url: %s", resp.StatusCode, url)
 	}
 
 	// Read and potentially decompress the response body
@@ -216,7 +216,7 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("yahoo finance API returned status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("yahoo finance API returned status code: %d, url: %s", resp.StatusCode, url)
 	}
 
 	// Read and potentially decompress the response body

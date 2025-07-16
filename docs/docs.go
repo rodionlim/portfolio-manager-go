@@ -755,7 +755,7 @@ const docTemplate = `{
                     "500": {
                         "description": "failed to calculate dividends",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     }
                 }

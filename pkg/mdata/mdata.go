@@ -212,11 +212,13 @@ func (m *Manager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerRefere
 		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
 			if data, err := yahoo.GetDividendsMetadata(tickerRef.YahooTicker, witholdingTax); err == nil {
 				return data, nil
+			} else {
+				logging.GetLogger().Errorf("Failed to fetch dividends metadata from Yahoo Finance for %s: %v", tickerRef.YahooTicker, err)
 			}
 		}
 	}
 
-	return nil, errors.New("unable to fetch dividends from any source")
+	return nil, fmt.Errorf("unable to fetch dividends [%s] from any source", tickerRef.ID)
 }
 
 // ImportCustomDividendsFromCSVReader imports custom dividends metadata from a CSV reader

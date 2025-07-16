@@ -67,9 +67,14 @@ const DividendsAggregatedTable: React.FC = () => {
         fetch(getUrl("/api/v1/blotter/fx")),
       ]);
 
-      const dividends = await dividendsResp.json();
+      if (!dividendsResp.ok) {
+        const errorData = await dividendsResp.json();
+        throw new Error(errorData?.message || "Failed to fetch dividends");
+      }
+
       const trades = await tradesResp.json();
       const fx = await fxResp.json();
+      const dividends = await dividendsResp.json();
 
       return { dividends, trades, fx };
     } catch (error: any) {
@@ -78,6 +83,7 @@ const DividendsAggregatedTable: React.FC = () => {
         color: "red",
         title: "Error",
         message: `Unable to fetch data: ${error.message}`,
+        autoClose: 15000,
       });
       return { dividends: {}, trades: [], fx: {} };
     }

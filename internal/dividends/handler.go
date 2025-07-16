@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
 	"strings"
 )
@@ -41,14 +42,14 @@ func HandleGetDividends(manager *DividendsManager) http.HandlerFunc {
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} map[string][]Dividends "Mapping of ticker to dividends"
-// @Failure 500 {string} string "failed to calculate dividends"
+// @Failure 500 {object} common.ErrorResponse "failed to calculate dividends"
 // @Router /api/v1/dividends [get]
 func HandleGetAllDividends(manager *DividendsManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dividends, err := manager.CalculateDividendsForAllTickers()
 		if err != nil {
 			logging.GetLogger().Error("Failed to calculate dividends", err)
-			http.Error(w, "failed to calculate dividends for all tickers", http.StatusInternalServerError)
+			common.WriteJSONError(w, fmt.Sprintf("Failed to calculate dividends for all tickers [%v]", err), http.StatusInternalServerError)
 			return
 		}
 

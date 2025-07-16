@@ -1,3 +1,17 @@
+## [1.14.0] - 2025-07-16
+
+### 🚀 Features
+
+- *(deps)* Upgrade vite from v5 to v7
+
+### 🐛 Bug Fixes
+
+- *(dividends)* Add retry to yahoo dividends endpoint
+
+### ⚙️ Miscellaneous Tasks
+
+- *(ai)* Add instructions to github copilot agent mode
+
 ## [1.13.0] - 2025-07-12
 
 ### 🚀 Features

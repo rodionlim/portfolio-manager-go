@@ -6,6 +6,7 @@ import (
 	"portfolio-manager/internal/blotter"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/common"
+	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
 	"strings"
@@ -63,6 +64,7 @@ func (dm *DividendsManager) CalculateDividendsForAllTickers() (map[string][]Divi
 
 	dividendsMap := make(map[string][]Dividends)
 	for _, ticker := range tickers {
+		logging.GetLogger().Infof("Fetching dividends for ticker: %s", ticker)
 		dividends, err := dm.CalculateDividendsForSingleTicker(ticker)
 		if err != nil {
 			return nil, err
@@ -82,7 +84,7 @@ func (dm *DividendsManager) CalculateDividendsForAllTickers() (map[string][]Divi
 func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]Dividends, error) {
 	ticker = strings.ToUpper(ticker)
 
-	// Get dividends.sg ticker from ticker reference
+	// Get ticker reference
 	tickerRef, err := dm.rdata.GetTicker(ticker)
 	if err != nil {
 		return nil, err
@@ -153,7 +155,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleBook(book string) (map[st
 	validTickers := make(map[string]bool)
 
 	for _, trade := range allTrades {
-		if strings.ToLower(trade.Book) == strings.ToLower(book) {
+		if strings.EqualFold(trade.Book, book) {
 			ticker := strings.ToUpper(trade.Ticker)
 			bookTrades[ticker] = append(bookTrades[ticker], trade)
 

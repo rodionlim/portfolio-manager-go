@@ -27,6 +27,10 @@ const DividendsAll: React.FC = () => {
   const fetchAllDividends = async (): Promise<Record<string, Dividend[]>> => {
     try {
       const resp = await fetch(getUrl("/api/v1/dividends"));
+      if (!resp.ok) {
+        const errorData = await resp.json();
+        throw new Error(errorData?.message || "Failed to fetch dividends");
+      }
       return await resp.json();
     } catch (error: any) {
       console.error("Error fetching all dividends:", error);
@@ -35,7 +39,7 @@ const DividendsAll: React.FC = () => {
         title: "Error",
         message: `Unable to fetch dividends: ${error.message}`,
       });
-      return {};
+      throw error;
     }
   };
 
@@ -47,6 +51,8 @@ const DividendsAll: React.FC = () => {
   } = useQuery({
     queryKey: ["allDividends"],
     queryFn: fetchAllDividends,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 
   // Flatten and sort dividends by ExDate in descending order

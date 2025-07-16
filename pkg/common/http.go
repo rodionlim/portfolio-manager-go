@@ -27,7 +27,7 @@ type RateLimiter struct {
 
 // Global rate limiter for Yahoo Finance requests
 var yahooRateLimiter = &RateLimiter{
-	minInterval: 500 * time.Millisecond, // Minimum 500ms between requests
+	minInterval: 1200 * time.Millisecond, // Minimum min interval rate limit between requests
 }
 
 // GetYahooRateLimiter returns the global Yahoo Finance rate limiter
@@ -97,4 +97,21 @@ func WriteJSONError(w http.ResponseWriter, message string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(ErrorResponse{Message: message})
+}
+
+func DoWithRetry(client *http.Client, req *http.Request, maxRetries int, backoff time.Duration, ensureHttpStatusOK bool) (*http.Response, error) {
+	var resp *http.Response
+	var err error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		resp, err = client.Do(req)
+		if err == nil {
+			if ensureHttpStatusOK && resp.StatusCode != http.StatusOK {
+				return resp, fmt.Errorf("returned http status code: %d, url: %s", resp.StatusCode, req.URL.String())
+			}
+			return resp, nil
+		}
+		time.Sleep(backoff * time.Duration(attempt+1))
+	}
+
+	return nil, err
 }

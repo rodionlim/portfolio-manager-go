@@ -82,3 +82,12 @@ func (m *MockMarketDataManager) SetDividendMetadata(ticker string, data []types.
 func (m *MockMarketDataManager) SetAssetPrice(ticker string, data *types.AssetData) {
 	m.AssetPriceData[ticker] = data
 }
+
+// FetchBenchmarkInterestRates returns mock interest rates
+func (m *MockMarketDataManager) FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error) {
+	// Return mock data for testing
+	return []types.InterestRates{
+		{Date: "2025-07-18", Rate: 2.5, Tenor: "O/N", Country: country, RateType: "SORA"},
+		{Date: "2025-07-17", Rate: 2.4, Tenor: "O/N", Country: country, RateType: "SORA"},
+	}, nil
+}

@@ -367,6 +367,19 @@ definitions:
         description: in decimal, not percentage
         type: number
     type: object
+  types.InterestRates:
+    properties:
+      country:
+        type: string
+      date:
+        type: string
+      rate:
+        type: number
+      rate_type:
+        type: string
+      tenor:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -1252,6 +1265,41 @@ paths:
           schema:
             type: string
       summary: Import dividend data from CSV stream
+      tags:
+      - market-data
+  /api/v1/mdata/interest-rates/{country}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves benchmark interest rates for a specified country
+      parameters:
+      - description: Country code (e.g., SG for Singapore)
+        in: path
+        name: country
+        required: true
+        type: string
+      - description: 'Number of recent records to return (default: 250)'
+        in: query
+        name: points
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Benchmark interest rates for the country
+          schema:
+            items:
+              $ref: '#/definitions/types.InterestRates'
+            type: array
+        "400":
+          description: Bad request - Invalid parameters
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get benchmark interest rates for a country
       tags:
       - market-data
   /api/v1/mdata/price/{ticker}:

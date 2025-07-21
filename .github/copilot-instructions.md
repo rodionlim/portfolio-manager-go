@@ -7,6 +7,7 @@
 - Whenever you amend config.yaml or add new configuration to config.go, always update the Configurations section in README.md to reflect the latest config options and defaults.
 - When implementing getter methods that return collections (arrays/slices), always initialize with an empty collection (`[]Type{}`) rather than a nil slice to ensure JSON serialization produces an empty array (`[]`) instead of `null`. This maintains consistency with REST API best practices.
 - Whenever making calls to backend server from the front end, wrap the calls with getUrl function in web/ui/src/utils/url.ts
+- Whenever testing and starting the server, don't check ./portfolio.log file for logs, instead check the output from the terminal where you started the server. The logs are printed to stdout/stderr, not to the log file.
 
 ## Mocking Strategy
 
@@ -69,7 +70,7 @@ This project includes a Model Context Protocol (MCP) server that allows LLMs to 
 - Runs on a separate port from the main HTTP server (default: 8081, configurable via `mcp.port`)
 - Provides tools for querying blotter trades and portfolio positions
 - Uses the `github.com/mark3labs/mcp-go` library for MCP protocol implementation
-- Tool handlers follow the pattern from `cmd/mcp/main.go` using `request.RequireString()` for parameter extraction
+- Tool handlers follow the pattern from `cmd/mcp/main.go` using `request.RequireString()`, `request.RequireNumber()` for parameter extraction
 
 ### Available MCP Tools:
 

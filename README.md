@@ -202,6 +202,13 @@ Retrieve current portfolio positions with market values and P&L:
 
 - **book**: Filter by specific book/account (optional, returns all books if not specified)
 
+#### 3. Fetch Benchmark Interest Rates (`fetch_benchmark_interest_rates`)
+
+Fetch benchmark interest rates for a specific country:
+
+- **country**: Country code (e.g., 'SG' for Singapore) **[Required]**
+- **points**: Number of data points to fetch (default: 100)
+
 ### Usage Examples
 
 Once configured and running, you can interact with your portfolio data through any MCP-compatible LLM interface. Example queries:
@@ -210,6 +217,7 @@ Once configured and running, you can interact with your portfolio data through a
 - "What are my current positions in the tech book?"
 - "List all sell trades for the past quarter"
 - "Show me my portfolio positions with current market values"
+- "Fetch the latest benchmark interest rates for Singapore"
 
 ### Potential Use Cases
 
@@ -373,6 +381,12 @@ User can edit application wide settings, such as auto closing expired positions 
 
 All API calls are documented (OAS) under `http://localhost:8080/swagger/index.html`
 
+### Get Blotter Trades
+
+```sh
+curl http://localhost:8080/api/v1/blotter/trades
+```
+
 ### Add Asset to Blotter
 
 ```sh
@@ -447,6 +461,12 @@ Export trades with FX rates automatically inferred for trades where FX rate is m
 
 ```sh
 curl -X GET http://localhost:8080/api/v1/blotter/export-with-fx
+```
+
+### Get Portfolio Positions
+
+```sh
+curl http://localhost:8080/api/v1/portfolio/positions
 ```
 
 ### Get Current FX Rates for relevant currencies in our blotter
@@ -561,6 +581,20 @@ All Tickers
 
 ```sh
 curl -X GET http://localhost:8080/api/v1/dividends
+```
+
+### Fetch Benchmark Interest Rates
+
+Get default number of Singapore interest rates (250 records)
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/mdata/interest-rates/SG"
+```
+
+Get specific number of records
+
+```sh
+curl -X GET "http://localhost:8080/api/v1/mdata/interest-rates/SG?points=5"
 ```
 
 ### Fetch Reference Data
@@ -905,43 +939,10 @@ curl -X GET http://localhost:8080/api/v1/analytics/sector_funds_flow
 curl -X GET "http://localhost:8080/api/v1/analytics/sector_funds_flow?n=3"
 ```
 
-### Sample API Calls
-
-Here are some example `curl` commands to interact with the application:
-
-#### Health Check
+### Health Check
 
 ```sh
 curl http://localhost:8080/healthz
-```
-
-#### Get Portfolio Positions
-
-```sh
-curl http://localhost:8080/api/v1/portfolio/positions
-```
-
-#### Get Blotter Trades
-
-```sh
-curl http://localhost:8080/api/v1/blotter/trades
-```
-
-#### Add a Trade
-
-```sh
-curl -X POST http://localhost:8080/api/v1/blotter/trades \
-  -H "Content-Type: application/json" \
-  -d '{
-    "TradeDate": "2024-01-15",
-    "Ticker": "AAPL",
-    "Side": "BUY",
-    "Quantity": 100,
-    "Price": 150.00,
-    "Book": "portfolio1",
-    "Broker": "broker1",
-    "Account": "account1"
-  }'
 ```
 
 ## Configurations

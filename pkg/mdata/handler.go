@@ -250,6 +250,54 @@ func HandleHistoricalDataGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	}
 }
 
+// @Summary Get benchmark interest rates for a country
+// @Description Retrieves benchmark interest rates for a specified country
+// @Tags market-data
+// @Accept json
+// @Produce json
+// @Param country path string true "Country code (e.g., SG for Singapore)"
+// @Param points query int false "Number of recent records to return (default: 250)"
+// @Success 200 {array} types.InterestRates "Benchmark interest rates for the country"
+// @Failure 400 {string} string "Bad request - Invalid parameters"
+// @Failure 500 {string} string "Internal server error"
+// @Router /api/v1/mdata/interest-rates/{country} [get]
+func HandleInterestRatesGet(mdataSvc MarketDataManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Extract country from URL path
+		country := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/interest-rates/")
+		if country == "" {
+			common.WriteJSONError(w, "Country is required", http.StatusBadRequest)
+			return
+		}
+
+		// Get points from query params (optional, defaults to 250)
+		points := 250
+		pointsStr := r.URL.Query().Get("points")
+		if pointsStr != "" {
+			var err error
+			points, err = strconv.Atoi(pointsStr)
+			if err != nil {
+				common.WriteJSONError(w, "Invalid points parameter, must be an integer", http.StatusBadRequest)
+				return
+			}
+			if points <= 0 {
+				common.WriteJSONError(w, "Points must be greater than 0", http.StatusBadRequest)
+				return
+			}
+		}
+
+		data, err := mdataSvc.FetchBenchmarkInterestRates(country, points)
+		if err != nil {
+			logging.GetLogger().Error("Failed to get benchmark interest rates", err)
+			common.WriteJSONError(w, "Failed to get benchmark interest rates: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(data)
+	}
+}
+
 // RegisterHandlers registers the handlers for the market data service
 func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 	mux.HandleFunc("/api/v1/mdata/price/", func(w http.ResponseWriter, r *http.Request) {
@@ -295,6 +343,15 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 		switch r.Method {
 		case http.MethodGet:
 			HandleHistoricalDataGet(mdataSvc).ServeHTTP(w, r)
+		default:
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/api/v1/mdata/interest-rates/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			HandleInterestRatesGet(mdataSvc).ServeHTTP(w, r)
 		default:
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

@@ -60,3 +60,12 @@ func (m *MockMarketDataManager) GetDividendsMetadataFromTickerRef(tickerRef rdat
 	}
 	return args.Get(0).([]types.DividendsMetadata), args.Error(1)
 }
+
+// FetchBenchmarkInterestRates mocks the FetchBenchmarkInterestRates method
+func (m *MockMarketDataManager) FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error) {
+	args := m.Called(country, points)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]types.InterestRates), args.Error(1)
+}

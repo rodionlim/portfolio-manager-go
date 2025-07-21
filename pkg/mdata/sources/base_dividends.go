@@ -71,3 +71,8 @@ func (base *BaseDividendSource) mergeAndSortDividendsMetadata(dividendsLeft []ty
 	})
 	return merged
 }
+
+// FetchBenchmarkInterestRates provides a default implementation for data sources that don't support interest rates
+func (base *BaseDividendSource) FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error) {
+	return nil, fmt.Errorf("benchmark interest rates not supported for this data source")
+}

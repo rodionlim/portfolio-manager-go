@@ -202,6 +202,13 @@ Retrieve current portfolio positions with market values and P&L:
 
 - **book**: Filter by specific book/account (optional, returns all books if not specified)
 
+#### 3. Fetch Benchmark Interest Rates (`fetch_benchmark_interest_rates`)
+
+Fetch benchmark interest rates for a specific country:
+
+- **country**: Country code (e.g., 'SG' for Singapore) **[Required]**
+- **points**: Number of data points to fetch (default: 100)
+
 ### Usage Examples
 
 Once configured and running, you can interact with your portfolio data through any MCP-compatible LLM interface. Example queries:
@@ -210,6 +217,7 @@ Once configured and running, you can interact with your portfolio data through a
 - "What are my current positions in the tech book?"
 - "List all sell trades for the past quarter"
 - "Show me my portfolio positions with current market values"
+- "Fetch the latest benchmark interest rates for Singapore"
 
 ### Potential Use Cases
 

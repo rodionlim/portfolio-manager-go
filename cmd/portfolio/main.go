@@ -178,7 +178,7 @@ func main() {
 	var mcpServer *server.MCPServer
 	mcpAddr := fmt.Sprintf("%s:%s", config.MCP.Host, config.MCP.Port)
 	if config.MCP.Enabled {
-		mcpServer = server.NewMCPServer(mcpAddr, blotterSvc, portfolioSvc)
+		mcpServer = server.NewMCPServer(mcpAddr, blotterSvc, portfolioSvc, mdata)
 		logger.Infof("MCP server enabled and will start on %s", mcpAddr)
 	} else {
 		logger.Info("MCP server disabled")

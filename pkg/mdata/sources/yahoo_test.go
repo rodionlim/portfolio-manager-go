@@ -12,7 +12,7 @@ import (
 )
 
 func TestYahooFinance_GetQuoteNasdaq_Integration(t *testing.T) {
-	yf := sources.NewYahooFinance()
+	yf := sources.NewYahooFinance(nil)
 
 	quote, err := yf.GetAssetPrice("AAPL")
 	assert.NoError(t, err)
@@ -21,7 +21,7 @@ func TestYahooFinance_GetQuoteNasdaq_Integration(t *testing.T) {
 }
 
 func TestYahooFinance_GetQuoteSGX_Integration(t *testing.T) {
-	yf := sources.NewYahooFinance()
+	yf := sources.NewYahooFinance(nil)
 
 	quote, err := yf.GetAssetPrice("ES3.SI")
 	assert.NoError(t, err)
@@ -30,7 +30,7 @@ func TestYahooFinance_GetQuoteSGX_Integration(t *testing.T) {
 }
 
 func TestYahooFinance_GetHistoricalData_Integration(t *testing.T) {
-	yf := sources.NewYahooFinance()
+	yf := sources.NewYahooFinance(nil)
 
 	endTime := time.Now()
 	startTime := endTime.AddDate(0, -1, 0) // Get 1 month of data

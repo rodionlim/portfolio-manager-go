@@ -13,7 +13,8 @@ const (
 	ReferenceDataKeyPrefix     dbKey = "REFDATA"
 	DividendsKeyPrefix         dbKey = "DIVIDENDS"
 	DividendsCustomKeyPrefix   dbKey = "DIVIDENDS_CUSTOM"
-	HistoricalMetricsKeyPrefix dbKey = "METRICS" // Key prefix for historical metrics
+	InterestRatesKeyPrefix     dbKey = "INTEREST_RATES" // Key prefix for interest rates data
+	HistoricalMetricsKeyPrefix dbKey = "METRICS"        // Key prefix for historical metrics
 	AnalyticsSummaryKeyPrefix  dbKey = "ANALYTICS_SUMMARY"
 	MigrationKeyPrefix         dbKey = "MIGRATION" // Key prefix for migration tracking
 

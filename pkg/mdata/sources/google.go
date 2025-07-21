@@ -35,6 +35,10 @@ func (src *googleFinance) StoreDividendsMetadata(ticker string, dividends []type
 	panic("unimplemented")
 }
 
+func (src *googleFinance) FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error) {
+	return nil, fmt.Errorf("benchmark interest rates not supported for Google Finance data source")
+}
+
 func (src *googleFinance) GetAssetPrice(ticker string) (*types.AssetData, error) {
 	// Google Finance URL (note: this might need adjustments as Google doesn't provide an official API)
 	url := fmt.Sprintf("https://www.google.com/finance/quote/%s", ticker)

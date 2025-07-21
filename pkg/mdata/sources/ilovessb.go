@@ -201,3 +201,7 @@ func (src *ILoveSsb) GetDividendsMetadata(ticker string, withholdingTax float64)
 func (src *ILoveSsb) StoreDividendsMetadata(ticker string, dividends []types.DividendsMetadata, isCustom bool) ([]types.DividendsMetadata, error) {
 	panic("unimplemented")
 }
+
+func (src *ILoveSsb) FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error) {
+	return nil, fmt.Errorf("benchmark interest rates not supported for ILoveSsb data source")
+}

@@ -24,6 +24,7 @@ type MarketDataManager interface {
 	GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error)
 	ImportCustomDividendsFromCSVReader(*csv.Reader) (int, error)
 	StoreCustomDividendsMetadata(ticker string, dividends []types.DividendsMetadata) error
+	FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error)
 }
 
 // Manager handles multiple data sources with fallback capability
@@ -386,4 +387,18 @@ func (m *Manager) MapDomicileToWitholdingTax(domicile string) float64 {
 	default:
 		return 0.0
 	}
+}
+
+// FetchBenchmarkInterestRates fetches benchmark interest rates from available sources
+func (m *Manager) FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error) {
+	logging.GetLogger().Infof("Fetching benchmark interest rates for country %s with %d points", country, points)
+
+	// For now, default to MAS data source for Singapore
+	if country == "SG" {
+		if mas, ok := m.sources[sources.MAS]; ok {
+			return mas.FetchBenchmarkInterestRates(country, points)
+		}
+	}
+
+	return nil, fmt.Errorf("unsupported country: %s", country)
 }

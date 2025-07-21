@@ -1324,6 +1324,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/mdata/interest-rates/{country}": {
+            "get": {
+                "description": "Retrieves benchmark interest rates for a specified country",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "market-data"
+                ],
+                "summary": "Get benchmark interest rates for a country",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Country code (e.g., SG for Singapore)",
+                        "name": "country",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of recent records to return (default: 250)",
+                        "name": "points",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Benchmark interest rates for the country",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.InterestRates"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - Invalid parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mdata/price/historical/{ticker}": {
             "get": {
                 "description": "Retrieves historical price data for a specified ticker between start and end dates",
@@ -2352,6 +2405,26 @@ const docTemplate = `{
                 "withholdingTax": {
                     "description": "in decimal, not percentage",
                     "type": "number"
+                }
+            }
+        },
+        "types.InterestRates": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "rate_type": {
+                    "type": "string"
+                },
+                "tenor": {
+                    "type": "string"
                 }
             }
         }

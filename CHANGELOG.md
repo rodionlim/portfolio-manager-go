@@ -1,3 +1,11 @@
+## [1.15.0] - 2025-07-21
+
+### 🚀 Features
+
+- *(mdata)* Allow fetching of benchmark interest rates
+- *(mcp)* Add querying of benchmark rates into mcp server and modularize mcp inmplementation
+- *(ui)* Add dashboard page to analytics for macro trends #92
+
 ## [1.14.0] - 2025-07-16
 
 ### 🚀 Features

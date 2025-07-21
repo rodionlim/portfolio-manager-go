@@ -37,6 +37,7 @@ const items = [
     icon: IconChartLine,
     initiallyOpened: false,
     links: [
+      { label: "Dashboard", link: "/analytics/dashboard" },
       { label: "Metrics", link: "/analytics/metrics" },
       { label: "Reports", link: "/analytics/reports" },
     ],

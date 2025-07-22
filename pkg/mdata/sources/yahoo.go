@@ -93,12 +93,12 @@ func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax floa
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	var dividends []types.DividendsMetadata
+	dividends := []types.DividendsMetadata{}
 	doc.Find("table tbody tr").Each(func(i int, s *goquery.Selection) {
 		date := s.Find("td").Eq(0).Text()
 		dividend := s.Find("td").Eq(1).Text()
 		if dividend != "" && strings.Contains(dividend, "Dividend") {
-			amount, err := strconv.ParseFloat(strings.TrimSpace(strings.Replace(dividend, "Dividend", "", -1)), 64)
+			amount, err := strconv.ParseFloat(strings.TrimSpace(strings.ReplaceAll(dividend, "Dividend", "")), 64)
 			if err != nil {
 				src.logger.Errorf("failed to parse dividend amount: %v", err)
 				return

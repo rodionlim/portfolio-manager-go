@@ -96,7 +96,7 @@ func HandleDividendsGet(mdataSvc MarketDataManager) http.HandlerFunc {
 		data, err := mdataSvc.GetDividendsMetadata(ticker)
 		if err != nil {
 			logging.GetLogger().Error("Failed to get dividends metadata", err)
-			common.WriteJSONError(w, "Failed to get dividends metadata", http.StatusInternalServerError)
+			common.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 

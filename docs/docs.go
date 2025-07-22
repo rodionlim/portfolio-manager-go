@@ -1143,6 +1143,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/historical/metrics/jobs/all": {
+            "get": {
+                "description": "List all custom metrics jobs and include a dummy portfolio job for UI purposes",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "List all metrics jobs including portfolio job",
+                "responses": {
+                    "200": {
+                        "description": "List of all metrics jobs including portfolio",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/historical.MetricsJob"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to list metrics jobs",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/historical/metrics/jobs/{bookFilter}": {
             "delete": {
                 "description": "Delete a custom metrics job by book filter",
@@ -1177,6 +1206,53 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to delete metrics job",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/metrics/trigger": {
+            "post": {
+                "description": "Manually trigger metrics collection for a specific book or entire portfolio",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Manually trigger metrics collection",
+                "parameters": [
+                    {
+                        "description": "Trigger metrics collection request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/historical.TriggerMetricsCollectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Metrics collection triggered successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to trigger metrics collection",
                         "schema": {
                             "$ref": "#/definitions/common.ErrorResponse"
                         }
@@ -2224,6 +2300,15 @@ const docTemplate = `{
                 },
                 "timestamp": {
                     "description": "Only the date portion of this field will be used",
+                    "type": "string"
+                }
+            }
+        },
+        "historical.TriggerMetricsCollectionRequest": {
+            "type": "object",
+            "properties": {
+                "bookFilter": {
+                    "description": "Optional, empty for entire portfolio",
                     "type": "string"
                 }
             }

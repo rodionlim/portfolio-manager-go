@@ -1,6 +1,7 @@
 package historical
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -65,5 +66,40 @@ func TestHandleGetMetrics_EmptyResult(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	// Check that the response is an empty array `[]`, not `null`
 	assert.Equal(t, "[]\n", rr.Body.String())
+	mockSvc.AssertExpectations(t)
+}
+
+// Test for the new trigger metrics endpoint
+func TestHandleTriggerMetricsCollection_Success(t *testing.T) {
+	mockSvc := new(mockHistoricalMetricsSetter)
+	mockSvc.On("StoreCurrentMetrics", "tactical").Return(nil)
+
+	reqBody := `{"bookFilter": "tactical"}`
+	req := httptest.NewRequest("POST", "/api/v1/historical/metrics/trigger", bytes.NewBuffer([]byte(reqBody)))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	handler := HandleTriggerMetricsCollection(mockSvc)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Metrics collection triggered successfully")
+	mockSvc.AssertExpectations(t)
+}
+
+func TestHandleTriggerMetricsCollection_EntirePortfolio(t *testing.T) {
+	mockSvc := new(mockHistoricalMetricsSetter)
+	mockSvc.On("StoreCurrentMetrics", "").Return(nil)
+
+	reqBody := `{"bookFilter": ""}`
+	req := httptest.NewRequest("POST", "/api/v1/historical/metrics/trigger", bytes.NewBuffer([]byte(reqBody)))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	handler := HandleTriggerMetricsCollection(mockSvc)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Metrics collection triggered successfully")
 	mockSvc.AssertExpectations(t)
 }

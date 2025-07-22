@@ -37,6 +37,7 @@ type HistoricalMetricsScheduler interface {
 	CreateMetricsJob(cronExpr string, book_filter string) (*MetricsJob, error)
 	DeleteMetricsJob(book_filter string) error
 	ListMetricsJobs() ([]MetricsJob, error)
+	ListAllMetricsJobsIncludingPortfolio() ([]MetricsJob, error)
 	StartMetricsCollection(cronExpr string, book_filter string) func()
 	StopMetricsCollection()
 }

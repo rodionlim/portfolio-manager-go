@@ -175,7 +175,7 @@ func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata
 	// All other tickers go through normalization via reference data
 	tickerRef, err := m.getReferenceData(ticker)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get reference data for ticker %s, %v", ticker, err)
 	}
 
 	return m.GetDividendsMetadataFromTickerRef(tickerRef)

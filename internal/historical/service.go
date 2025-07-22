@@ -506,3 +506,25 @@ func (s *Service) ListMetricsJobs() ([]MetricsJob, error) {
 
 	return jobs, nil
 }
+
+// ListAllMetricsJobsIncludingPortfolio lists all custom metrics jobs and includes a dummy portfolio job
+func (s *Service) ListAllMetricsJobsIncludingPortfolio() ([]MetricsJob, error) {
+	// Get all custom jobs first
+	customJobs, err := s.ListMetricsJobs()
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize with the portfolio job at the top
+	jobs := []MetricsJob{
+		{
+			BookFilter: "",
+			CronExpr:   config.DefaultMetricsSchedule,
+			TaskId:     "", // Empty since this is a dummy job for UI purposes
+		},
+	}
+
+	// Append custom jobs
+	jobs = append(jobs, customJobs...)
+	return jobs, nil
+}

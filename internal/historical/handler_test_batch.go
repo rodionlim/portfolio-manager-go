@@ -61,6 +61,11 @@ func (m *mockHistoricalMetricsScheduler) ListMetricsJobs() ([]MetricsJob, error)
 	return args.Get(0).([]MetricsJob), args.Error(1)
 }
 
+func (m *mockHistoricalMetricsScheduler) ListAllMetricsJobsIncludingPortfolio() ([]MetricsJob, error) {
+	args := m.Called()
+	return args.Get(0).([]MetricsJob), args.Error(1)
+}
+
 func (m *mockHistoricalMetricsScheduler) StartMetricsCollection(cronExpr string, bookFilter string) func() {
 	args := m.Called(cronExpr, bookFilter)
 	return args.Get(0).(func())

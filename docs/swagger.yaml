@@ -245,6 +245,12 @@ definitions:
         description: Only the date portion of this field will be used
         type: string
     type: object
+  historical.TriggerMetricsCollectionRequest:
+    properties:
+      bookFilter:
+        description: Optional, empty for entire portfolio
+        type: string
+    type: object
   metrics.MetricsResult:
     properties:
       irr:
@@ -1170,6 +1176,58 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: Delete a custom metrics job
+      tags:
+      - historical
+  /api/v1/historical/metrics/jobs/all:
+    get:
+      description: List all custom metrics jobs and include a dummy portfolio job
+        for UI purposes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of all metrics jobs including portfolio
+          schema:
+            items:
+              $ref: '#/definitions/historical.MetricsJob'
+            type: array
+        "500":
+          description: Failed to list metrics jobs
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: List all metrics jobs including portfolio job
+      tags:
+      - historical
+  /api/v1/historical/metrics/trigger:
+    post:
+      consumes:
+      - application/json
+      description: Manually trigger metrics collection for a specific book or entire
+        portfolio
+      parameters:
+      - description: Trigger metrics collection request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/historical.TriggerMetricsCollectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Metrics collection triggered successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to trigger metrics collection
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Manually trigger metrics collection
       tags:
       - historical
   /api/v1/mdata/dividends/{ticker}:

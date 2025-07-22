@@ -386,6 +386,24 @@ definitions:
       tenor:
         type: string
     type: object
+  user.Profile:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      username:
+        type: string
+    type: object
+  user.UpdateProfileRequest:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      username:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -1678,6 +1696,52 @@ paths:
       summary: Import reference data
       tags:
       - Reference
+  /api/v1/user/profile:
+    get:
+      description: Retrieves the current user profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.Profile'
+        "500":
+          description: Failed to get user profile
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get user profile
+      tags:
+      - user
+    put:
+      consumes:
+      - application/json
+      description: Updates the user profile information
+      parameters:
+      - description: User profile data
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/user.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.Profile'
+        "400":
+          description: Invalid request body or validation error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to update user profile
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Update user profile
+      tags:
+      - user
   /healthz:
     get:
       description: Returns a simple message to indicate that the server is up and

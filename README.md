@@ -1018,6 +1018,24 @@ curl -X GET http://localhost:8080/api/v1/analytics/sector_funds_flow
 curl -X GET "http://localhost:8080/api/v1/analytics/sector_funds_flow?n=3"
 ```
 
+### Get User Profile
+
+```sh
+curl http://localhost:8080/api/v1/user/profile
+```
+
+### Update User Profile
+
+```sh
+curl -X PUT http://localhost:8080/api/v1/user/profile \
+    -H "Content-Type: application/json" \
+    -d '{
+        "username": "John Doe",
+        "email": "john@example.com",
+        "avatar": "https://example.com/avatar.png"
+    }'
+```
+
 ### Health Check
 
 ```sh

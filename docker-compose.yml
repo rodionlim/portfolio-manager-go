@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   portfolio-manager:
     image: portfolio-manager:latest  # Use the locally built image
@@ -14,9 +12,9 @@ services:
       - portfolio-data:/app/data
       # Mount logs directory
       - portfolio-logs:/app/logs
-    environment:
+    # environment:
       # Set environment variables here if needed
-      # GEMINI_API_KEY: your_api_key_here
+      # GEMINI_API_KEY: "your_api_key_here"
       # ANALYTICS_SCHEDULE: "0 17 * * 1"
     restart: unless-stopped
 

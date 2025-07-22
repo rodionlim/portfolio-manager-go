@@ -1,0 +1,60 @@
+# Git files
+.git
+.gitignore
+
+# Documentation
+README.md
+docs/
+CHANGELOG.md
+CONTRIBUTING.md
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+portfolio-manager
+portfolio-manager_*
+*.exe
+*.log
+*.db
+
+# Node.js
+web/ui/node_modules/
+
+# Go build cache
+vendor/
+
+# Test files
+coverage.out
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Development files
+.env
+.env.local
+
+# LXC specific files
+lxc/
+
+# Temporary files
+tmp/
+*.tmp
+
+# Data directories that shouldn't be in image
+data/
+logs/
+
+# Docker files (avoid recursion)
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Generated UI files (will be rebuilt in container)
+web/ui/dist/
+web/ui/static/
+web/ui/embed.go

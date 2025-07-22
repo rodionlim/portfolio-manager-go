@@ -64,6 +64,74 @@ sudo systemctl daemon-reload
 sudo systemctl restart PortfolioManager
 ```
 
+### Docker
+
+For the easiest installation experience, use Docker to run the portfolio manager:
+
+#### Quick Start with Docker
+
+1. **Using Docker Compose (Recommended)**:
+
+```sh
+# Clone the repository
+git clone https://github.com/rodionlim/portfolio-manager-go.git
+cd portfolio-manager-go
+
+# Copy and customize the configuration
+cp config.yaml my-config.yaml
+# Edit my-config.yaml with your preferences
+
+# Start with Docker Compose
+docker-compose up -d
+```
+
+2. **Using Docker directly**:
+
+```sh
+# Pull the image (when available on Docker Hub)
+docker pull rodionlim/portfolio-manager-go:latest
+
+# Run with custom config
+docker run -d \
+  --name portfolio-manager \
+  -p 8080:8080 \
+  -p 8081:8081 \
+  -v $(pwd)/config.yaml:/app/config/config.yaml:ro \
+  -v portfolio-data:/app/data \
+  -v portfolio-logs:/app/logs \
+  rodionlim/portfolio-manager-go:latest
+```
+
+3. **Build locally**:
+
+```sh
+# Clone and build
+git clone https://github.com/rodionlim/portfolio-manager-go.git
+cd portfolio-manager-go
+
+# Build the Docker image
+docker build -t portfolio-manager .
+
+# Run the container
+docker run -d \
+  --name portfolio-manager \
+  -p 8080:8080 \
+  -p 8081:8081 \
+  -v $(pwd)/config.yaml:/app/config/config.yaml:ro \
+  -v portfolio-data:/app/data \
+  portfolio-manager
+```
+
+#### Docker Configuration
+
+- **Ports**: The container exposes port 8080 for the HTTP API and port 8081 for the MCP server
+- **Config**: Mount your custom `config.yaml` to `/app/config/config.yaml`
+- **Data Persistence**: Mount a volume to `/app/data` to persist LevelDB data
+- **Logs**: Optionally mount a volume to `/app/logs` for log persistence
+- **Environment Variables**: Set `GEMINI_API_KEY` and `ANALYTICS_SCHEDULE` as needed
+
+Access the application at `http://localhost:8080` and the Swagger API documentation at `http://localhost:8080/swagger/index.html`.
+
 ## Quickstart
 
 Start the application

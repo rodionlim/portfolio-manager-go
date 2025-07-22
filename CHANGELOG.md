@@ -1,3 +1,14 @@
+## [1.16.0] - 2025-07-22
+
+### 🚀 Features
+
+- *(rdata)* Add seatrium to seed data
+- *(hist,ui)* Add new handler to manually compute metrics and allow users to trigger in ui #95
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Return empty list instead of null for yahoo dividends metadata #96
+
 ## [1.15.0] - 2025-07-21
 
 ### 🚀 Features

@@ -19,7 +19,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
-import { IconPlus, IconX } from "@tabler/icons-react";
+import { IconPlus, IconX, IconPlayerPlay } from "@tabler/icons-react";
 
 interface MetricsJob {
   BookFilter: string;
@@ -43,11 +43,14 @@ const CustomJobsTable: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState<MetricsJob | null>(null);
   const [newJobBookFilter, setNewJobBookFilter] = useState("");
   const [newJobCronExpr, setNewJobCronExpr] = useState("");
+  const [triggeringBookFilter, setTriggeringBookFilter] = useState<
+    string | null
+  >(null);
 
-  // Fetch custom metrics jobs
+  // Fetch custom metrics jobs (including portfolio job)
   const fetchCustomJobs = async (): Promise<MetricsJob[]> => {
     try {
-      const resp = await fetch(getUrl("/api/v1/historical/metrics/jobs"));
+      const resp = await fetch(getUrl("/api/v1/historical/metrics/jobs/all"));
       if (!resp.ok) {
         throw new Error(`Failed to fetch jobs: ${resp.status}`);
       }
@@ -180,6 +183,50 @@ const CustomJobsTable: React.FC = () => {
     }
   };
 
+  // Trigger metrics collection
+  const triggerMetricsCollection = async (bookFilter: string) => {
+    setTriggeringBookFilter(bookFilter);
+    try {
+      const response = await fetch(
+        getUrl("/api/v1/historical/metrics/trigger"),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ bookFilter }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to trigger metrics collection: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      const displayName = bookFilter || "entire portfolio";
+
+      notifications.show({
+        title: "Success",
+        message: `Metrics collection triggered successfully for ${displayName}`,
+        color: "green",
+      });
+
+      console.log("Metrics collection result:", result);
+    } catch (error: any) {
+      console.error("Error triggering metrics collection:", error);
+      notifications.show({
+        color: "red",
+        title: "Trigger Failed",
+        message: error.message,
+      });
+    } finally {
+      setTriggeringBookFilter(null);
+    }
+  };
+
   const handleCreateJob = () => {
     if (!newJobBookFilter) {
       notifications.show({
@@ -210,6 +257,15 @@ const CustomJobsTable: React.FC = () => {
   };
 
   const openDeleteModal = (job: MetricsJob) => {
+    // Prevent deletion of the portfolio job
+    if (!job.BookFilter) {
+      notifications.show({
+        color: "red",
+        title: "Cannot Delete",
+        message: "The portfolio job cannot be deleted.",
+      });
+      return;
+    }
     setSelectedJob(job);
     setDeleteModalOpen(true);
   };
@@ -220,7 +276,11 @@ const CustomJobsTable: React.FC = () => {
       {
         accessorKey: "BookFilter",
         header: "Book Filter",
-        Cell: ({ cell }) => <Text fw={500}>{cell.getValue<string>()}</Text>,
+        Cell: ({ cell }) => {
+          const bookFilter = cell.getValue<string>();
+          const displayValue = bookFilter || "Entire Portfolio";
+          return <Text fw={500}>{displayValue}</Text>;
+        },
       },
       {
         accessorKey: "CronExpr",
@@ -232,20 +292,48 @@ const CustomJobsTable: React.FC = () => {
         ),
       },
       {
+        id: "trigger",
+        header: "Manual Trigger",
+        Cell: ({ row }) => {
+          const bookFilter = row.original.BookFilter;
+          const isTriggering = triggeringBookFilter === bookFilter;
+
+          return (
+            <ActionIcon
+              color="blue"
+              variant="subtle"
+              onClick={() => triggerMetricsCollection(bookFilter)}
+              title="Manually trigger metrics collection"
+              disabled={isTriggering}
+              loading={isTriggering}
+            >
+              {!isTriggering && <IconPlayerPlay size={16} />}
+            </ActionIcon>
+          );
+        },
+      },
+      {
         id: "actions",
         header: "Actions",
-        Cell: ({ row }) => (
-          <ActionIcon
-            color="red"
-            variant="subtle"
-            onClick={() => openDeleteModal(row.original)}
-          >
-            <IconX size={16} />
-          </ActionIcon>
-        ),
+        Cell: ({ row }) => {
+          const bookFilter = row.original.BookFilter;
+          // Don't show delete button for the portfolio job (empty book filter)
+          if (!bookFilter) {
+            return null;
+          }
+          return (
+            <ActionIcon
+              color="red"
+              variant="subtle"
+              onClick={() => openDeleteModal(row.original)}
+            >
+              <IconX size={16} />
+            </ActionIcon>
+          );
+        },
       },
     ],
-    []
+    [triggerMetricsCollection, triggeringBookFilter]
   );
 
   const table = useMantineReactTable({
@@ -356,7 +444,8 @@ const CustomJobsTable: React.FC = () => {
         <Stack gap="md">
           <Text>
             Are you sure you want to delete the custom metrics job for book "
-            {selectedJob?.BookFilter}"? This action cannot be undone.
+            {selectedJob?.BookFilter || "Entire Portfolio"}"? This action cannot
+            be undone.
           </Text>
 
           <Group justify="flex-end">

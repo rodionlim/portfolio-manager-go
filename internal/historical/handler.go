@@ -250,6 +250,66 @@ func HandleListMetricsJobs(service HistoricalMetricsScheduler) http.HandlerFunc 
 	}
 }
 
+// HandleListAllMetricsJobs handles the GET /api/v1/historical/metrics/jobs/all endpoint
+// @Summary List all metrics jobs including portfolio job
+// @Description List all custom metrics jobs and include a dummy portfolio job for UI purposes
+// @Tags historical
+// @Produce json
+// @Success 200 {array} MetricsJob "List of all metrics jobs including portfolio"
+// @Failure 500 {object} common.ErrorResponse "Failed to list metrics jobs"
+// @Router /api/v1/historical/metrics/jobs/all [get]
+func HandleListAllMetricsJobs(service HistoricalMetricsScheduler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		jobs, err := service.ListAllMetricsJobsIncludingPortfolio()
+		if err != nil {
+			common.WriteJSONError(w, "Failed to list metrics jobs: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(jobs)
+	}
+}
+
+// TriggerMetricsCollectionRequest represents the request to manually trigger metrics collection
+type TriggerMetricsCollectionRequest struct {
+	BookFilter string `json:"bookFilter"` // Optional, empty for entire portfolio
+}
+
+// HandleTriggerMetricsCollection handles the POST /api/v1/historical/metrics/trigger endpoint
+// @Summary Manually trigger metrics collection
+// @Description Manually trigger metrics collection for a specific book or entire portfolio
+// @Tags historical
+// @Accept json
+// @Produce json
+// @Param request body TriggerMetricsCollectionRequest true "Trigger metrics collection request"
+// @Success 200 {object} map[string]interface{} "Metrics collection triggered successfully"
+// @Failure 400 {object} common.ErrorResponse "Invalid request payload"
+// @Failure 500 {object} common.ErrorResponse "Failed to trigger metrics collection"
+// @Router /api/v1/historical/metrics/trigger [post]
+func HandleTriggerMetricsCollection(service HistoricalMetricsSetter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req TriggerMetricsCollectionRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			common.WriteJSONError(w, "Invalid request payload: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Trigger metrics collection
+		err := service.StoreCurrentMetrics(req.BookFilter)
+		if err != nil {
+			common.WriteJSONError(w, "Failed to trigger metrics collection: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"message":    "Metrics collection triggered successfully",
+			"bookFilter": req.BookFilter,
+		})
+	}
+}
+
 // RegisterHandlers registers the historical metrics handlers
 func RegisterHandlers(mux *http.ServeMux, service *Service) {
 	mux.HandleFunc("/api/v1/historical/metrics", func(w http.ResponseWriter, r *http.Request) {
@@ -297,11 +357,29 @@ func RegisterHandlers(mux *http.ServeMux, service *Service) {
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
+
+	mux.HandleFunc("/api/v1/historical/metrics/jobs/all", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleListAllMetricsJobs(service).ServeHTTP(w, r)
+	})
+
 	mux.HandleFunc("/api/v1/historical/metrics/jobs/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {
 			HandleDeleteMetricsJob(service).ServeHTTP(w, r)
 		} else {
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
+	})
+
+	// Register manual trigger endpoint
+	mux.HandleFunc("/api/v1/historical/metrics/trigger", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleTriggerMetricsCollection(service).ServeHTTP(w, r)
 	})
 }

@@ -714,10 +714,36 @@ List all custom metrics jobs:
 curl -X GET http://localhost:8080/api/v1/historical/metrics/jobs
 ```
 
+List all metrics jobs (including portfolio job for UI):
+
+```sh
+curl -X GET http://localhost:8080/api/v1/historical/metrics/jobs/all
+```
+
 Delete a custom metrics job:
 
 ```sh
 curl -X DELETE http://localhost:8080/api/v1/historical/metrics/jobs/tactical
+```
+
+Manually trigger metrics collection for entire portfolio:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics/trigger \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bookFilter": ""
+  }'
+```
+
+Manually trigger metrics collection for a specific book:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/metrics/trigger \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bookFilter": "tactical"
+  }'
 ```
 
 ### Add Reference Data

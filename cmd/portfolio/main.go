@@ -18,6 +18,7 @@ import (
 	"portfolio-manager/internal/migrations"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/internal/server"
+	"portfolio-manager/internal/user"
 
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
@@ -144,6 +145,9 @@ func main() {
 		logger.Info("Gemini API key not configured, analytics service disabled")
 	}
 
+	// Create a new user service
+	userSvc := user.NewService(db)
+
 	// Create a new historical metrics service
 	historicalSvc := historical.NewService(metricsSvc, analyticsSvc, db, sched)
 
@@ -186,7 +190,7 @@ func main() {
 
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc, analyticsSvc, mcpServer)
+	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc, analyticsSvc, userSvc, mcpServer)
 
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)

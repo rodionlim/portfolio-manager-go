@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   IconAlertCircle,
   IconUser,
@@ -24,13 +24,45 @@ import {
   Alert,
   LoadingOverlay,
 } from "@mantine/core";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../../store";
+import {
+  fetchUserProfile,
+  updateUserProfile,
+  clearError,
+} from "../../slices/userSlice";
 import { getUrl } from "../../utils/url";
 
 const Settings = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    profile,
+    loading: userLoading,
+    error: userError,
+  } = useSelector((state: RootState) => state.user);
+
   const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState("User");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [avatar, setAvatar] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [fxInferLoading, setFxInferLoading] = useState(false);
+
+  // Load user profile data into form fields when component mounts or profile changes
+  useEffect(() => {
+    dispatch(fetchUserProfile());
+  }, [dispatch]);
+
+  useEffect(() => {
+    setUsername(profile.username);
+    setEmail(profile.email);
+    setAvatar(profile.avatar);
+  }, [profile]);
+
+  // Clear error when component mounts
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
 
   const handleDeleteAllData = async () => {
     if (
@@ -138,16 +170,46 @@ const Settings = () => {
     }
   };
 
-  const handleSaveProfile = () => {
-    notifications.show({
-      title: "Profile Updated",
-      message: "Your profile has been successfully updated",
-      color: "blue",
-    });
+  const handleSaveProfile = async () => {
+    if (!username.trim() || !email.trim()) {
+      notifications.show({
+        title: "Validation Error",
+        message: "Username and email are required",
+        color: "red",
+      });
+      return;
+    }
+
+    try {
+      await dispatch(
+        updateUserProfile({
+          username: username.trim(),
+          email: email.trim(),
+          avatar: avatar.trim(),
+        })
+      ).unwrap();
+
+      notifications.show({
+        title: "Profile Updated",
+        message: "Your profile has been successfully updated",
+        color: "green",
+      });
+    } catch (error) {
+      notifications.show({
+        title: "Error",
+        message: `Failed to update profile: ${error}`,
+        color: "red",
+      });
+    }
   };
 
   const handleUploadProfilePicture = () => {
     console.log("Upload profile picture functionality to be implemented");
+    notifications.show({
+      title: "Feature Not Implemented",
+      message: "Profile picture upload functionality is not yet implemented",
+      color: "yellow",
+    });
   };
 
   return (
@@ -178,25 +240,28 @@ const Settings = () => {
         <Tabs.Panel value="profile">
           <Card shadow="sm" padding="lg" radius="md" withBorder>
             <Box pos="relative">
-              <LoadingOverlay visible={loading} overlayProps={{ blur: 2 }} />
+              <LoadingOverlay
+                visible={userLoading || loading}
+                overlayProps={{ blur: 2 }}
+              />
               <Stack>
                 <Title order={4}>Profile Information</Title>
                 <Divider />
 
-                <Alert
-                  icon={<IconAlertCircle size={16} />}
-                  title="Feature in Development"
-                  color="yellow"
-                  mb="md"
-                >
-                  Profile picture upload and username changes are not currently
-                  functional. These features will be implemented in a future
-                  update.
-                </Alert>
+                {userError && (
+                  <Alert
+                    icon={<IconAlertCircle size={16} />}
+                    title="Error"
+                    color="red"
+                    mb="md"
+                  >
+                    {userError}
+                  </Alert>
+                )}
 
                 <Group align="flex-start">
-                  <Avatar size="xl" radius="xl" color="blue">
-                    {username.charAt(0).toUpperCase()}
+                  <Avatar size="xl" radius="xl" src={avatar || undefined}>
+                    {!avatar && username.charAt(0).toUpperCase()}
                   </Avatar>
                   <Button
                     variant="outline"
@@ -207,12 +272,30 @@ const Settings = () => {
                 </Group>
 
                 <TextInput
-                  label="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  label="Avatar URL"
+                  placeholder="https://example.com/avatar.png"
+                  value={avatar}
+                  onChange={(e) => setAvatar(e.target.value)}
                 />
 
-                <Button mt="md" onClick={handleSaveProfile}>
+                <TextInput
+                  label="Username"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+
+                <TextInput
+                  label="Email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  type="email"
+                />
+
+                <Button mt="md" onClick={handleSaveProfile} loading={loading}>
                   Save Profile
                 </Button>
               </Stack>

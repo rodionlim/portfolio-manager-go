@@ -16,11 +16,10 @@ COPY web/ui/ ./
 RUN npm run build
 
 # Build stage for backend
-FROM golang:1.24.3-alpine AS backend-builder
+FROM golang:1.21-alpine AS backend-builder
 
 # Install build dependencies
-RUN apk add --no-cache --repository https://dl-cdn.alpinelinux.org/alpine/v3.22/main git make bash gzip || \
-    apk add --no-cache --allow-untrusted git make bash gzip
+RUN apk add --no-cache git make bash gzip
 
 WORKDIR /app
 
@@ -46,11 +45,10 @@ RUN swag init --quiet -g cmd/portfolio/main.go
 RUN make assets-compress build BUILTIN_ASSETS=1
 
 # Runtime stage
-FROM alpine:3.22
+FROM alpine:latest
 
 # Install ca-certificates for HTTPS requests and wget for health check
-RUN apk add --no-cache --repository https://dl-cdn.alpinelinux.org/alpine/v3.22/main ca-certificates tzdata wget || \
-    apk add --no-cache --allow-untrusted ca-certificates tzdata wget
+RUN apk update && apk add --no-cache ca-certificates tzdata wget
 
 WORKDIR /app
 

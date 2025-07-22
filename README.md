@@ -109,8 +109,8 @@ docker run -d \
 git clone https://github.com/rodionlim/portfolio-manager-go.git
 cd portfolio-manager-go
 
-# Build the Docker image
-docker build -t portfolio-manager .
+# Build the Docker image using the local build script
+./build-docker.sh
 
 # Run the container
 docker run -d \
@@ -121,6 +121,8 @@ docker run -d \
   -v portfolio-data:/app/data \
   portfolio-manager
 ```
+
+**Note**: If you encounter SSL certificate issues during Docker build in CI environments, use the provided `build-docker.sh` script which builds the application locally first and then creates a minimal Docker image with the pre-built binary.
 
 #### Docker Configuration
 

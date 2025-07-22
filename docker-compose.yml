@@ -2,7 +2,8 @@ version: '3.8'
 
 services:
   portfolio-manager:
-    build: .
+    image: portfolio-manager:latest  # Use the locally built image
+    build: .  # Or build from Dockerfile if SSL issues are resolved
     ports:
       - "8080:8080"  # HTTP API
       - "8081:8081"  # MCP server
@@ -18,12 +19,6 @@ services:
       # GEMINI_API_KEY: your_api_key_here
       # ANALYTICS_SCHEDULE: "0 17 * * 1"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
 volumes:
   portfolio-data:

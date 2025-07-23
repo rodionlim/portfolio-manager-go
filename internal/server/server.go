@@ -12,6 +12,7 @@ import (
 	"portfolio-manager/internal/historical"
 	"portfolio-manager/internal/metrics"
 	"portfolio-manager/internal/portfolio"
+	"portfolio-manager/internal/user"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
@@ -33,11 +34,12 @@ type Server struct {
 	metrics    *metrics.MetricsService
 	historical *historical.Service
 	analytics  analytics.Service
+	user       *user.Service
 	mcpServer  *MCPServer
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service, analyticsSvc analytics.Service, mcpSvc *MCPServer) *Server {
+func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service, analyticsSvc analytics.Service, userSvc *user.Service, mcpSvc *MCPServer) *Server {
 	return &Server{
 		Addr:       addr,
 		mux:        http.NewServeMux(),
@@ -47,6 +49,7 @@ func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *port
 		metrics:    metricsSvc,
 		historical: historicalSvc,
 		analytics:  analyticsSvc,
+		user:       userSvc,
 		mcpServer:  mcpSvc,
 	}
 }
@@ -89,6 +92,9 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 	if s.analytics != nil {
 		analytics.RegisterHandlers(s.mux, s.analytics)
+	}
+	if s.user != nil {
+		user.RegisterHandlers(s.mux, s.user)
 	}
 
 	// Swagger registration

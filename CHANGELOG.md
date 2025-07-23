@@ -1,3 +1,13 @@
+## [1.17.0] - 2025-07-23
+
+### 🚀 Features
+
+- *(user)* Implement user profile management feature
+
+### 🐛 Bug Fixes
+
+- Improve theme toggle button visibility in dark mode
+
 ## [1.16.0] - 2025-07-22
 
 ### 🚀 Features

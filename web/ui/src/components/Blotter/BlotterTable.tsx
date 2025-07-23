@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Box, Button, FileInput } from "@mantine/core";
 import { IconUpload } from "@tabler/icons-react";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   MantineReactTable,
   MRT_ColumnDef,
@@ -8,10 +9,12 @@ import {
   useMantineReactTable,
 } from "mantine-react-table";
 import { useQuery } from "@tanstack/react-query";
+import { useSelector } from "react-redux";
 import { notifications } from "@mantine/notifications";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getUrl } from "../../utils/url";
 import { Trade } from "../../types/blotter";
+import { RootState } from "../../store";
 import BlotterBulkUpdateModal from "./BlotterBulkUpdateModal";
 
 const fetchTrades = async (): Promise<Trade[]> => {
@@ -78,6 +81,8 @@ const BlotterTable: React.FC = () => {
   const location = useLocation();
   const [bulkUpdateModalOpened, setBulkUpdateModalOpened] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState<Trade[]>([]);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const refData = useSelector((state: RootState) => state.referenceData.data);
 
   // Extract ticker filter from location state or search params
   const searchParams = new URLSearchParams(location.search);
@@ -93,9 +98,18 @@ const BlotterTable: React.FC = () => {
 
   const columns = useMemo<MRT_ColumnDef<Trade>[]>(
     () => [
-      { accessorKey: "TradeID", header: "Trade ID" },
+      // Conditionally include TradeID column only on non-mobile devices
+      ...(isMobile ? [] : [{ accessorKey: "TradeID" as keyof Trade, header: "Trade ID" }]),
       { accessorKey: "TradeDate", header: "Date" },
       { accessorKey: "Ticker", header: "Ticker" },
+      {
+        id: "tickerName", // Use a unique id instead of accessorKey
+        header: "Name",
+        Cell: ({ row }) => {
+          const ticker = row.original.Ticker;
+          return refData?.[ticker]?.name || "";
+        },
+      },
       { accessorKey: "Side", header: "Side" },
       { accessorKey: "Book", header: "Book" },
       // { accessorKey: "Broker", header: "Broker" },
@@ -110,7 +124,7 @@ const BlotterTable: React.FC = () => {
       // { accessorKey: "TradeType", header: "Trade Type" },
       // { accessorKey: "SeqNum", header: "Seq Num" },
     ],
-    []
+    [isMobile, refData]
   );
 
   const table = useMantineReactTable({

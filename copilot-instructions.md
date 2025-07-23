@@ -1,5 +1,9 @@
 # Copilot Agent Instructions for Portfolio Manager
 
+## PR and Branch Policy
+
+**Default Target Branch: When creating pull requests, always target the `develop` branch by default.** We follow the git flow pattern where features are merged to `develop` first, and then `develop` is merged to `main` for releases.
+
 ## Commit Message Policy
 
 When making commits in agent mode, **we require all commit messages to follow the [Conventional Commits](https://www.conventionalcommits.org/) specification**. This helps automate changelogs, versioning, and makes it easier to understand the history of the project.

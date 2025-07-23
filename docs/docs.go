@@ -1925,6 +1925,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/user/profile": {
+            "get": {
+                "description": "Retrieves the current user profile information",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get user profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.Profile"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get user profile",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates the user profile information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Update user profile",
+                "parameters": [
+                    {
+                        "description": "User profile data",
+                        "name": "profile",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.UpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.Profile"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update user profile",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/healthz": {
             "get": {
                 "description": "Returns a simple message to indicate that the server is up and running",
@@ -2509,6 +2579,34 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tenor": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.Profile": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.UpdateProfileRequest": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }

@@ -1,0 +1,79 @@
+# Build stage for frontend
+FROM node:18-alpine AS frontend-builder
+
+WORKDIR /app/web/ui
+
+# Copy package files and install dependencies
+COPY web/ui/package*.json ./
+RUN npm ci
+
+# Copy frontend source and build
+COPY web/ui/ ./
+RUN npm run build
+
+# Build stage for backend using Ubuntu instead of Alpine to avoid SSL issues
+FROM golang:1.24.3-bookworm AS backend-builder
+
+WORKDIR /app
+
+# Copy go mod files and download dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Install swag for API documentation generation
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
+# Copy source code
+COPY . .
+
+# Copy built frontend assets from the frontend builder
+COPY --from=frontend-builder /app/web/ui/dist ./web/ui/dist
+
+# Generate swagger documentation
+RUN swag init --quiet -g cmd/portfolio/main.go
+
+# Compress assets and build the application (static binary)
+RUN cd web/ui && \
+    cp embed.go.tmpl embed.go && \
+    mkdir -p static && \
+    find static -type f -name '*.gz' -delete && \
+    find dist -type f ! -name '*.gz' -exec bash -c 'for file; do dest="${file#dist}"; mkdir -p "static/$(dirname "$dest")"; gzip -fk "$file" -c > "static/${dest}.gz"; done' bash {} + && \
+    find static -type f -name '*.gz' -print0 | sort -z | xargs -0 echo //go:embed >> embed.go && \
+    echo var EmbedFS embed.FS >> embed.go && \
+    cd ../.. && \
+    CGO_ENABLED=0 GOOS=linux go build -tags builtinassets -a -installsuffix cgo -o portfolio-manager ./cmd/portfolio
+
+# Runtime stage using Ubuntu to avoid certificate issues
+FROM ubuntu:22.04
+
+# Install ca-certificates and wget for health check
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Create non-root user
+RUN groupadd -g 1001 portfolio && \
+    useradd -u 1001 -g portfolio -s /bin/sh portfolio
+
+# Copy binary from builder stage
+COPY --from=backend-builder /app/portfolio-manager .
+
+# Copy default config for reference
+COPY --from=backend-builder /app/config.yaml ./config.yaml.example
+
+# Create directories for data and logs
+RUN mkdir -p /app/data /app/logs && \
+    chown -R portfolio:portfolio /app
+
+# Switch to non-root user
+USER portfolio
+
+# Expose ports
+EXPOSE 8080 8081
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/healthz || exit 1
+
+# Run the application
+CMD ["./portfolio-manager", "-config", "/app/config/config.yaml"]

@@ -70,28 +70,10 @@ For the easiest installation experience, use Docker to run the portfolio manager
 
 #### Quick Start with Docker
 
-1. **Using Docker Compose (Recommended)**:
+1. **Using Docker Hub image**:
 
 ```sh
-# Clone the repository
-git clone https://github.com/rodionlim/portfolio-manager-go.git
-cd portfolio-manager-go
-
-# Copy and customize the configuration
-cp config.yaml my-config.yaml
-# Edit my-config.yaml with your preferences
-
-# Start with Docker Compose
-docker-compose up -d
-```
-
-2. **Using Docker directly**:
-
-```sh
-# Pull the image (when available on Docker Hub)
-docker pull rodionlim/portfolio-manager-go:latest
-
-# Run with custom config
+# Pull and run the image
 docker run -d \
   --name portfolio-manager \
   -p 8080:8080 \
@@ -102,7 +84,7 @@ docker run -d \
   rodionlim/portfolio-manager-go:latest
 ```
 
-3. **Build locally**:
+2. **Build locally**:
 
 ```sh
 # Clone and build
@@ -119,6 +101,7 @@ docker run -d \
   -p 8081:8081 \
   -v $(pwd)/config.yaml:/app/config/config.yaml:ro \
   -v portfolio-data:/app/data \
+  -v portfolio-logs:/app/logs \
   portfolio-manager
 ```
 

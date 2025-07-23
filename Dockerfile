@@ -29,8 +29,8 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Install swag for API documentation generation
-RUN go install github.com/swaggo/swag/cmd/swag@latest
+# Install swag for API documentation generation - use the same version as in CI
+RUN go install github.com/swaggo/swag/cmd/swag@v1.16.4
 
 # Copy source code
 COPY . .

@@ -191,15 +191,12 @@ definitions:
   dividends.Dividends:
     properties:
       amount:
-        format: float64
         type: number
       amountPerShare:
-        format: float64
         type: number
       exDate:
         type: string
       qty:
-        format: float64
         type: number
     type: object
   historical.CreateMetricsJobRequest:
@@ -275,34 +272,26 @@ definitions:
       assetSubClass:
         type: string
       avgPx:
-        format: float64
         type: number
       book:
         type: string
       ccy:
         type: string
       dividends:
-        format: float64
         type: number
       fxRate:
-        format: float64
         type: number
       mv:
-        format: float64
         type: number
       pnL:
-        format: float64
         type: number
       px:
-        format: float64
         type: number
       qty:
-        format: float64
         type: number
       ticker:
         type: string
       totalPaid:
-        format: float64
         type: number
     type: object
   rdata.SuccessResponse:
@@ -360,34 +349,28 @@ definitions:
       currency:
         type: string
       price:
-        format: float64
         type: number
       ticker:
         type: string
       timestamp:
-        format: int64
         type: integer
     type: object
   types.DividendsMetadata:
     properties:
       amount:
-        format: float64
         type: number
       avgInterest:
         description: SSB, TBills and Bonds only, in percentage
-        format: float64
         type: number
       exDate:
         type: string
       interest:
         description: SSB, TBills and Bonds only, in percentage
-        format: float64
         type: number
       ticker:
         type: string
       withholdingTax:
         description: in decimal, not percentage
-        format: float64
         type: number
     type: object
   types.InterestRates:
@@ -699,7 +682,6 @@ paths:
           description: Map of currencies to their current FX rates
           schema:
             additionalProperties:
-              format: float64
               type: number
             type: object
         "500":

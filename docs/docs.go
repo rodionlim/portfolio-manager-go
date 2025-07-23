@@ -441,7 +441,8 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "type": "number"
+                                "type": "number",
+                                "format": "float64"
                             }
                         }
                     },
@@ -2292,16 +2293,19 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "amountPerShare": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "exDate": {
                     "type": "string"
                 },
                 "qty": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 }
             }
         },
@@ -2413,7 +2417,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "avgPx": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "book": {
                     "type": "string"
@@ -2422,28 +2427,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "dividends": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "fxRate": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "mv": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "pnL": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "px": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "qty": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "ticker": {
                     "type": "string"
                 },
                 "totalPaid": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 }
             }
         },
@@ -2527,13 +2539,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "price": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "ticker": {
                     "type": "string"
                 },
                 "timestamp": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int64"
                 }
             }
         },
@@ -2541,25 +2555,29 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "avgInterest": {
                     "description": "SSB, TBills and Bonds only, in percentage",
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "exDate": {
                     "type": "string"
                 },
                 "interest": {
                     "description": "SSB, TBills and Bonds only, in percentage",
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "ticker": {
                     "type": "string"
                 },
                 "withholdingTax": {
                     "description": "in decimal, not percentage",
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 }
             }
         },

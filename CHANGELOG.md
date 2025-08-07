@@ -1,3 +1,9 @@
+## [1.18.0] - 2025-08-07
+
+### 🚀 Features
+
+- *(ui)* Fix a memory leak with all dividends page
+
 ## [1.17.0] - 2025-07-23
 
 ### 🚀 Features

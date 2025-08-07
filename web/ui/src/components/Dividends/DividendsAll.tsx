@@ -99,7 +99,16 @@ const DividendsAll: React.FC = () => {
         accessorKey: "ExDate",
         header: "Ex-Date",
         Cell: ({ cell }) => formatDate(cell.getValue<string>()),
-        sortingFn: "datetime",
+        sortingFn: (rowA, rowB, columnId) => {
+          const dateA = new Date(rowA.getValue(columnId));
+          const dateB = new Date(rowB.getValue(columnId));
+
+          // Handle invalid dates by putting them at the end
+          const timeA = isNaN(dateA.getTime()) ? 0 : dateA.getTime();
+          const timeB = isNaN(dateB.getTime()) ? 0 : dateB.getTime();
+
+          return timeA - timeB;
+        },
       },
       {
         accessorKey: "Ticker",
@@ -141,7 +150,6 @@ const DividendsAll: React.FC = () => {
       density: "xs",
       isLoading: isLoading,
       showLoadingOverlay: isLoading,
-      sorting: [{ id: "ExDate", desc: true }], // Default sort by ExDate descending
     },
     enablePagination: true,
     enableColumnFilters: true,
@@ -150,7 +158,7 @@ const DividendsAll: React.FC = () => {
     enableSorting: true,
     initialState: {
       pagination: {
-        pageSize: 25,
+        pageSize: 20,
         pageIndex: 0,
       },
     },

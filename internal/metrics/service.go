@@ -17,7 +17,7 @@ import (
 // MetricsService provides portfolio metrics calculations such as IRR
 type MetricsService struct {
 	blotterSvc       blotter.TradeGetter
-	portfolioSvc     portfolio.PortfolioGetter
+	portfolioSvc     portfolio.PortfolioReader
 	dividendsManager dividends.Manager
 	mdataSvc         mdata.MarketDataManager
 	rdataSvc         rdata.ReferenceManager
@@ -26,7 +26,7 @@ type MetricsService struct {
 // NewMetricsService creates a new MetricsService
 func NewMetricsService(
 	blotterSvc blotter.TradeGetter,
-	portfolioSvc portfolio.PortfolioGetter,
+	portfolioSvc portfolio.PortfolioReader,
 	dividendsManager dividends.Manager,
 	mdataSvc mdata.MarketDataManager,
 	rdataSvc rdata.ReferenceManager,

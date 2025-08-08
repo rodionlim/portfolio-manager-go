@@ -6,13 +6,13 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockPortfolioGetter is a mock implementation of the portfolio.PortfolioGetter interface
-type MockPortfolioGetter struct {
+// MockPortfolioReader is a mock implementation of the portfolio.PortfolioReader interface
+type MockPortfolioReader struct {
 	mock.Mock
 }
 
 // GetAllPositions mocks the GetAllPositions method
-func (m *MockPortfolioGetter) GetAllPositions() ([]*portfolio.Position, error) {
+func (m *MockPortfolioReader) GetAllPositions() ([]*portfolio.Position, error) {
 	args := m.Called()
 	result := args.Get(0)
 	if result == nil {

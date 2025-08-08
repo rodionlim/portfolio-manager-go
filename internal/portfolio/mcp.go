@@ -10,7 +10,7 @@ import (
 )
 
 // RegisterMCPTools registers all portfolio related MCP tools
-func RegisterMCPTools(mcpServer *server.MCPServer, portfolio PortfolioGetter) {
+func RegisterMCPTools(mcpServer *server.MCPServer, portfolio PortfolioReaderWriter) {
 	// Get portfolio positions tool
 	portfolioTool := mcp.NewTool("get_portfolio_positions",
 		mcp.WithDescription("Get current portfolio positions with market values and P&L, if user does not specify book or asks for all books, pass in empty string as the book parameter"),
@@ -33,7 +33,7 @@ func RegisterMCPTools(mcpServer *server.MCPServer, portfolio PortfolioGetter) {
 }
 
 // createHandleGetPortfolioPositions creates a handler for getting portfolio positions
-func createHandleGetPortfolioPositions(portfolio PortfolioGetter) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func createHandleGetPortfolioPositions(portfolio PortfolioReader) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		book, _ := request.RequireString("book")
 
@@ -62,7 +62,7 @@ func createHandleGetPortfolioPositions(portfolio PortfolioGetter) func(context.C
 }
 
 // createHandleDeletePortfolioPosition creates a handler for deleting a portfolio position with confirmation
-func createHandleDeletePortfolioPosition(portfolio PortfolioGetter) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func createHandleDeletePortfolioPosition(portfolio PortfolioWriter) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		book, err := request.RequireString("book")
 		if err != nil || book == "" {

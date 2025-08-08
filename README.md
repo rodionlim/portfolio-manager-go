@@ -99,6 +99,115 @@ make test # unit tests
 make test-integration # integration tests
 ```
 
+## CLI Commands
+
+The portfolio-manager binary includes CLI commands for database backup and restore operations:
+
+### Database Backup
+
+Create a backup of the database:
+
+```sh
+./portfolio-manager backup --source [local|gdrive|nextcloud] --uri [path|url] --user [username] --password [password]
+```
+
+**Parameters:**
+- `--source`: Backup destination (local, gdrive, nextcloud)
+- `--uri`: File location or URL (required for local and nextcloud)
+- `--user`: Username for remote sources (gdrive, nextcloud)
+- `--password`: Password for remote sources (nextcloud)
+
+**Examples:**
+
+```sh
+# Local backup to ./backups directory
+./portfolio-manager backup --source local --uri ./backups
+
+# Local backup to specific directory
+./portfolio-manager backup --source local --uri /path/to/backup/location
+
+# Google Drive backup (not yet implemented)
+./portfolio-manager backup --source gdrive --user your-email@gmail.com
+
+# Nextcloud backup (not yet implemented)
+./portfolio-manager backup --source nextcloud --uri https://your-nextcloud.com --user username --password password
+```
+
+### Database Restore
+
+Restore database from a backup:
+
+```sh
+./portfolio-manager restore-from-backup --source [local|gdrive|nextcloud] --uri [path|url] --user [username] --password [password]
+```
+
+**Important:** The application must be stopped before restoring from backup. The restore operation will completely replace the existing database.
+
+**Examples:**
+
+```sh
+# Restore from local backup file
+./portfolio-manager restore-from-backup --source local --uri ./backups/portfolio-manager-backup-20240101-120000.tar.gz
+
+# Restore from Google Drive (not yet implemented)
+./portfolio-manager restore-from-backup --source gdrive --user your-email@gmail.com
+
+# Restore from Nextcloud (not yet implemented)
+./portfolio-manager restore-from-backup --source nextcloud --uri https://your-nextcloud.com --user username --password password
+```
+
+### Version Information
+
+Display version information:
+
+```sh
+./portfolio-manager -v
+# or
+./portfolio-manager --version
+```
+
+### Backup and Restore in Proxmox Environment
+
+For users running portfolio-manager in a Proxmox LXC container:
+
+**Creating a Backup:**
+
+1. Stop the portfolio-manager service:
+   ```sh
+   sudo systemctl stop PortfolioManager
+   ```
+
+2. Create the backup:
+   ```sh
+   cd /opt/PortfolioManager
+   ./portfolio-manager backup --source local --uri /backup/portfolio-manager
+   ```
+
+3. Restart the service:
+   ```sh
+   sudo systemctl start PortfolioManager
+   ```
+
+**Restoring from a Backup:**
+
+1. Stop the portfolio-manager service:
+   ```sh
+   sudo systemctl stop PortfolioManager
+   ```
+
+2. Restore the database:
+   ```sh
+   cd /opt/PortfolioManager
+   ./portfolio-manager restore-from-backup --source local --uri /backup/portfolio-manager/portfolio-manager-backup-YYYYMMDD-HHMMSS.tar.gz
+   ```
+
+3. Restart the service:
+   ```sh
+   sudo systemctl start PortfolioManager
+   ```
+
+**Note:** Always ensure you have recent backups before performing restore operations. Backups from different versions may not be compatible.
+
 ## Project Structure
 
 ```

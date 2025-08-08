@@ -1,3 +1,13 @@
+## [1.19.0] - 2025-08-08
+
+### 🚀 Features
+
+- *(portfolio)* Add a delete position endpoint and expose cli and mcp tools #107
+
+### 🐛 Bug Fixes
+
+- *(portfolio)* Separate out interfaces into portfolio reader and writer instead of getter
+
 ## [1.18.0] - 2025-08-07
 
 ### 🚀 Features

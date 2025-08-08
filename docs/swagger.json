@@ -1654,6 +1654,60 @@
                 }
             }
         },
+        "/api/v1/portfolio/position": {
+            "delete": {
+                "description": "Deletes a single position by book and ticker",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolio"
+                ],
+                "summary": "Delete a single portfolio position",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book name",
+                        "name": "book",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Ticker symbol",
+                        "name": "ticker",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Position deleted successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Missing required parameters",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Position not found",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete position",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/portfolio/positions": {
             "get": {
                 "description": "Retrieves all positions currently in the portfolio",

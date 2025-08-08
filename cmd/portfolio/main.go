@@ -9,6 +9,7 @@ import (
 
 	"portfolio-manager/internal/analytics"
 	"portfolio-manager/internal/blotter"
+	"portfolio-manager/internal/cli"
 	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/dividends"
@@ -38,10 +39,29 @@ import (
 func main() {
 	// Define a command-line flag for the configuration file path
 	configFilePath := flag.String("config", "./config.yaml", "Path to the configuration file")
+	urlFlag := flag.String("url", "http://localhost:8080", "Base URL for CLI commands")
 	flag.Parse()
 
+	// Check if this is a CLI command
+	args := flag.Args()
+	if len(args) > 0 {
+		// This is a CLI command, handle it
+		if err := cli.RunCLI(args, *urlFlag); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			cli.PrintUsage()
+			os.Exit(1)
+		}
+		return
+	}
+
+	// Continue with normal server startup if no CLI command provided
+	startServer(*configFilePath)
+}
+
+func startServer(configFilePath string) {
+
 	// Load configuration
-	config, err := config.GetOrCreateConfig(*configFilePath)
+	config, err := config.GetOrCreateConfig(configFilePath)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %s", err)
 	}
@@ -57,7 +77,7 @@ func main() {
 	ctx := context.WithValue(context.Background(), types.LoggerKey, logger)
 
 	// Log out configurations
-	logger.Info("Starting application with configuration:", *configFilePath, config)
+	logger.Info("Starting application with configuration:", configFilePath, config)
 
 	// Initialize the database
 	var db dal.Database

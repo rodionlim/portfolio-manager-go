@@ -20,4 +20,6 @@ type Position struct {
 type PortfolioGetter interface {
 	// GetAllPositions returns all positions in the portfolio
 	GetAllPositions() ([]*Position, error)
+	// DeletePosition deletes a specific position by book and ticker
+	DeletePosition(book, ticker string) error
 }

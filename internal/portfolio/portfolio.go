@@ -362,6 +362,31 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 	return nil
 }
 
+func (p *Portfolio) DeletePosition(book string, ticker string) error {
+	// Delete a position by book and ticker, use with care
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if _, ok := p.positions[book]; !ok {
+		return fmt.Errorf("book %s not found", book)
+	}
+
+	if _, ok := p.positions[book][ticker]; !ok {
+		return fmt.Errorf("ticker %s not found in book %s", ticker, book)
+	}
+
+	delete(p.positions[book], ticker)
+
+	// Remove the position from the database
+	positionKey := generatePositionKey(&blotter.Trade{Book: book, Ticker: ticker})
+	err := p.db.Delete(positionKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *Portfolio) GetPosition(book, ticker string) (*Position, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -381,8 +406,8 @@ func (p *Portfolio) GetPositions(book string) ([]*Position, error) {
 
 	var positions []*Position
 	if book == "" {
-		for _, tickers := range p.positions {
-			for _, position := range tickers {
+		for _, book := range p.positions {
+			for _, position := range book {
 				positions = append(positions, position)
 			}
 		}

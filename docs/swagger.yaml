@@ -1518,6 +1518,42 @@ paths:
       summary: Close positions that have expired
       tags:
       - portfolio
+  /api/v1/portfolio/position:
+    delete:
+      description: Deletes a single position by book and ticker
+      parameters:
+      - description: Book name
+        in: query
+        name: book
+        required: true
+        type: string
+      - description: Ticker symbol
+        in: query
+        name: ticker
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Position deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Missing required parameters
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "404":
+          description: Position not found
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to delete position
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Delete a single portfolio position
+      tags:
+      - portfolio
   /api/v1/portfolio/positions:
     delete:
       description: Deletes all positions currently in the portfolio

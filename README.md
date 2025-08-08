@@ -152,6 +152,44 @@ make test # unit tests
 make test-integration # integration tests
 ```
 
+## CLI Usage
+
+The portfolio manager binary can also be used as a CLI tool to interact with a running server [local/remote] instance.
+
+### CLI Commands
+
+#### List all positions
+
+```sh
+./portfolio-manager position-list
+```
+
+#### Delete a specific position
+
+```sh
+./portfolio-manager position-delete <book> <ticker>
+```
+
+#### Specify custom server URL
+
+```sh
+./portfolio-manager --url=http://localhost:8080 position-list
+./portfolio-manager --url=http://localhost:8080 position-delete "Rodion" "AAPL"
+```
+
+### CLI Examples
+
+```sh
+# List all positions using default server (localhost:8080)
+./portfolio-manager position-list
+
+# Delete a position from the "main" book
+./portfolio-manager position-delete "main" "AAPL"
+
+# Delete a position on a remote server
+./portfolio-manager --url=http://production-server:8080 position-delete "Tactical" "TSLA"
+```
+
 ## Project Structure
 
 ```
@@ -255,7 +293,24 @@ Retrieve current portfolio positions with market values and P&L:
 
 - **book**: Filter by specific book/account (optional, returns all books if not specified)
 
-#### 3. Fetch Benchmark Interest Rates (`fetch_benchmark_interest_rates`)
+#### 3. Delete Portfolio Position (`delete_portfolio_position`)
+
+Destructive operation. The agent MUST obtain explicit user confirmation before calling with `confirm="yes"`.
+
+Example tool call payload (conceptual):
+
+```jsonc
+{
+  "name": "delete_portfolio_position",
+  "arguments": {
+    "book": "main",
+    "ticker": "AAPL",
+    "confirm": "yes" // only after user confirms
+  }
+}
+```
+
+#### 4. Fetch Benchmark Interest Rates (`fetch_benchmark_interest_rates`)
 
 Fetch benchmark interest rates for a specific country:
 
@@ -271,6 +326,7 @@ Once configured and running, you can interact with your portfolio data through a
 - "List all sell trades for the past quarter"
 - "Show me my portfolio positions with current market values"
 - "Fetch the latest benchmark interest rates for Singapore"
+- "Delete portfolio position for main book and ticker SBAUG24
 
 ### Potential Use Cases
 
@@ -520,6 +576,14 @@ curl -X GET http://localhost:8080/api/v1/blotter/export-with-fx
 
 ```sh
 curl http://localhost:8080/api/v1/portfolio/positions
+```
+
+### Delete Single Position
+
+Delete a specific position by book and ticker:
+
+```sh
+curl -X DELETE "http://localhost:8080/api/v1/portfolio/position?book=Rodion&ticker=SBAUG24"
 ```
 
 ### Get Current FX Rates for relevant currencies in our blotter

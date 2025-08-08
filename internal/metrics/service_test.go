@@ -18,7 +18,7 @@ import (
 func TestCalculateIRR(t *testing.T) {
 	// Setup mocks
 	mockBlotter := new(testify.MockBlotterTradeGetter)
-	mockPortfolio := new(testify.MockPortfolioGetter)
+	mockPortfolio := new(testify.MockPortfolioReader)
 	mockDividends := new(testify.MockDividendsManager)
 	mockMdataSvc := new(testify.MockMarketDataManager)
 	mockRdataSvc := new(testify.MockReferenceManager)
@@ -130,7 +130,7 @@ func TestCalculateIRR(t *testing.T) {
 func TestCalculateIRR_Error(t *testing.T) {
 	// Setup mocks
 	mockBlotter := new(testify.MockBlotterTradeGetter)
-	mockPortfolio := new(testify.MockPortfolioGetter)
+	mockPortfolio := new(testify.MockPortfolioReader)
 	mockDividends := new(testify.MockDividendsManager)
 	mockMdataSvc := new(testify.MockMarketDataManager)
 	mockRdataSvc := new(testify.MockReferenceManager)
@@ -160,7 +160,7 @@ func TestCalculateIRR_Error(t *testing.T) {
 
 func TestCalculateIRR_SimpleProfitWithDividend(t *testing.T) {
 	mockBlotter := new(testify.MockBlotterTradeGetter)
-	mockPortfolio := new(testify.MockPortfolioGetter)
+	mockPortfolio := new(testify.MockPortfolioReader)
 	mockDividends := new(testify.MockDividendsManager)
 	mockMdataSvc := new(testify.MockMarketDataManager)
 	mockRdataSvc := new(testify.MockReferenceManager)

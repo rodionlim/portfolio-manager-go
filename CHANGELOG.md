@@ -1,3 +1,10 @@
+## [1.20.0] - 2025-08-18
+
+### 🚀 Features
+
+- *(blotter)* Add responsive view and ticker name display
+- *(sgx)* Add top 10 fund flow and deprecate top 100
+
 ## [1.19.0] - 2025-08-08
 
 ### 🚀 Features

@@ -99,7 +99,9 @@ const BlotterTable: React.FC = () => {
   const columns = useMemo<MRT_ColumnDef<Trade>[]>(
     () => [
       // Conditionally include TradeID column only on non-mobile devices
-      ...(isMobile ? [] : [{ accessorKey: "TradeID" as keyof Trade, header: "Trade ID" }]),
+      ...(isMobile
+        ? []
+        : [{ accessorKey: "TradeID" as keyof Trade, header: "Trade ID" }]),
       { accessorKey: "TradeDate", header: "Date" },
       { accessorKey: "Ticker", header: "Ticker" },
       {
@@ -116,6 +118,15 @@ const BlotterTable: React.FC = () => {
       { accessorKey: "Account", header: "Account" },
       { accessorKey: "Quantity", header: "Quantity" },
       { accessorKey: "Price", header: "Price" },
+      {
+        accessorKey: "Value",
+        header: "Value",
+        Cell: ({ row }) => {
+          const price = Number(row.getValue("Price"));
+          const qty = Number(row.getValue("Quantity"));
+          return (price * qty).toFixed(2);
+        },
+      },
       {
         accessorKey: "Fx",
         header: "Fx",

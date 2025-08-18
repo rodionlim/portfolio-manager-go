@@ -373,6 +373,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/analytics/top10_stocks": {
+            "get": {
+                "description": "Filters for SGX Fund Flow Weekly Tracker reports and extracts the \"Weekly Top 10\" worksheet data showing institutional and retail top 10 net buy/sell stocks",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Extract Weekly Top 10 stocks data from SGX Fund Flow reports",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit results to latest n reports (0 or not provided means no limit)",
+                        "name": "n",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of Weekly Top 10 stocks reports",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/analytics.Top10WeeklyReport"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/blotter/export": {
             "get": {
                 "description": "Export all trades to a CSV file",
@@ -2200,6 +2246,66 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/analytics.SectorFlow"
+                    }
+                },
+                "weekEndingDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "analytics.Top10Stock": {
+            "type": "object",
+            "properties": {
+                "investorType": {
+                    "description": "\"institutional\" or \"retail\"",
+                    "type": "string"
+                },
+                "isNetBuy": {
+                    "description": "true for net buy, false for net sell",
+                    "type": "boolean"
+                },
+                "netBuySellSGDM": {
+                    "type": "number"
+                },
+                "stockCode": {
+                    "type": "string"
+                },
+                "stockName": {
+                    "type": "string"
+                }
+            }
+        },
+        "analytics.Top10WeeklyReport": {
+            "type": "object",
+            "properties": {
+                "extractedAt": {
+                    "type": "integer"
+                },
+                "filePath": {
+                    "type": "string"
+                },
+                "institutionalNetSellPreviousSGDM": {
+                    "type": "number"
+                },
+                "institutionalNetSellTotalSGDM": {
+                    "type": "number"
+                },
+                "reportDate": {
+                    "type": "string"
+                },
+                "reportTitle": {
+                    "type": "string"
+                },
+                "retailNetBuyPreviousSGDM": {
+                    "type": "number"
+                },
+                "retailNetBuyTotalSGDM": {
+                    "type": "number"
+                },
+                "top10Stocks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/analytics.Top10Stock"
                     }
                 },
                 "weekEndingDate": {

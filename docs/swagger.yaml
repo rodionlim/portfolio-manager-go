@@ -89,6 +89,46 @@ definitions:
       weekEndingDate:
         type: string
     type: object
+  analytics.Top10Stock:
+    properties:
+      investorType:
+        description: '"institutional" or "retail"'
+        type: string
+      isNetBuy:
+        description: true for net buy, false for net sell
+        type: boolean
+      netBuySellSGDM:
+        type: number
+      stockCode:
+        type: string
+      stockName:
+        type: string
+    type: object
+  analytics.Top10WeeklyReport:
+    properties:
+      extractedAt:
+        type: integer
+      filePath:
+        type: string
+      institutionalNetSellPreviousSGDM:
+        type: number
+      institutionalNetSellTotalSGDM:
+        type: number
+      reportDate:
+        type: string
+      reportTitle:
+        type: string
+      retailNetBuyPreviousSGDM:
+        type: number
+      retailNetBuyTotalSGDM:
+        type: number
+      top10Stocks:
+        items:
+          $ref: '#/definitions/analytics.Top10Stock'
+        type: array
+      weekEndingDate:
+        type: string
+    type: object
   blotter.Trade:
     properties:
       Account:
@@ -654,6 +694,39 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: Extract Institutional sector funds flow data from SGX Fund Flow reports
+      tags:
+      - analytics
+  /api/v1/analytics/top10_stocks:
+    get:
+      consumes:
+      - application/json
+      description: Filters for SGX Fund Flow Weekly Tracker reports and extracts the
+        "Weekly Top 10" worksheet data showing institutional and retail top 10 net
+        buy/sell stocks
+      parameters:
+      - description: Limit results to latest n reports (0 or not provided means no
+          limit)
+        in: query
+        name: "n"
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of Weekly Top 10 stocks reports
+          schema:
+            items:
+              $ref: '#/definitions/analytics.Top10WeeklyReport'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Extract Weekly Top 10 stocks data from SGX Fund Flow reports
       tags:
       - analytics
   /api/v1/blotter/export:

@@ -104,6 +104,29 @@ type SectorFlow struct {
 	NetBuySellSGDM float64 `json:"netBuySellSGDM"`
 }
 
+// Top10Stock represents a single stock entry in the Weekly Top 10 data
+type Top10Stock struct {
+	StockName      string  `json:"stockName"`
+	StockCode      string  `json:"stockCode"`
+	NetBuySellSGDM float64 `json:"netBuySellSGDM"`
+	IsNetBuy       bool    `json:"isNetBuy"`     // true for net buy, false for net sell
+	InvestorType   string  `json:"investorType"` // "institutional" or "retail"
+}
+
+// Top10WeeklyReport represents the complete Weekly Top 10 data from a report
+type Top10WeeklyReport struct {
+	ReportDate                       string       `json:"reportDate"`
+	ReportTitle                      string       `json:"reportTitle"`
+	FilePath                         string       `json:"filePath"`
+	WeekEndingDate                   string       `json:"weekEndingDate"`
+	InstitutionalNetSellTotalSGDM    float64      `json:"institutionalNetSellTotalSGDM"`
+	InstitutionalNetSellPreviousSGDM float64      `json:"institutionalNetSellPreviousSGDM"`
+	RetailNetBuyTotalSGDM            float64      `json:"retailNetBuyTotalSGDM"`
+	RetailNetBuyPreviousSGDM         float64      `json:"retailNetBuyPreviousSGDM"`
+	Top10Stocks                      []Top10Stock `json:"top10Stocks"`
+	ExtractedAt                      int64        `json:"extractedAt"`
+}
+
 // SGXClient interface for fetching SGX reports
 type SGXClient interface {
 	// FetchReports fetches the latest SGX reports
@@ -155,4 +178,8 @@ type Service interface {
 	// ListAndExtractSectorFundsFlow filters for SGX Fund Flow reports and extracts the "Institutional" worksheet
 	// n - limit results to the latest n reports (0 means no limit)
 	ListAndExtractSectorFundsFlow(n int) ([]*SectorFundsFlowReport, error)
+
+	// ListAndExtractTop10Stocks filters for SGX Fund Flow reports and extracts the "Weekly Top 10" worksheet
+	// n - limit results to the latest n reports (0 means no limit)
+	ListAndExtractTop10Stocks(n int) ([]*Top10WeeklyReport, error)
 }

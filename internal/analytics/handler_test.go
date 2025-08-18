@@ -45,6 +45,14 @@ func (m *MockService) ListAndExtractMostTradedStocks(n int) ([]*MostTradedStocks
 	return args.Get(0).([]*MostTradedStocksReport), args.Error(1)
 }
 
+func (m *MockService) ListAndExtractTop10Stocks(n int) ([]*Top10WeeklyReport, error) {
+	args := m.Called(n)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*Top10WeeklyReport), args.Error(1)
+}
+
 func (m *MockService) ListAndExtractSectorFundsFlow(n int) ([]*SectorFundsFlowReport, error) {
 	args := m.Called(n)
 	if args.Get(0) == nil {

@@ -3,6 +3,7 @@ import { Container, Title, Text, Stack, Tabs } from "@mantine/core";
 import { useLocation } from "react-router-dom";
 import ReportsTable from "./ReportsTable";
 import SGXMostTradedStocksView from "./SGXMostTradedStocksView";
+import SGXTop10StocksView from "./SGXTop10StocksView";
 import SGXSectorView from "./SGXSectorView";
 
 const ReportsView: React.FC = () => {
@@ -34,6 +35,7 @@ const ReportsView: React.FC = () => {
             <Tabs.Tab value="visualization">
               Most Traded Stocks (Weekly)
             </Tabs.Tab>
+            <Tabs.Tab value="top10">Top 10 Stocks (Weekly)</Tabs.Tab>
             <Tabs.Tab value="sectors">Sector Funds Flow (Weekly)</Tabs.Tab>
           </Tabs.List>
 
@@ -43,6 +45,10 @@ const ReportsView: React.FC = () => {
 
           <Tabs.Panel value="visualization" pt="md">
             {activeTab === "visualization" && <SGXMostTradedStocksView />}
+          </Tabs.Panel>
+
+          <Tabs.Panel value="top10" pt="md">
+            {activeTab === "top10" && <SGXTop10StocksView />}
           </Tabs.Panel>
 
           <Tabs.Panel value="sectors" pt="md">

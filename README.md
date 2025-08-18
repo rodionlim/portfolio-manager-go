@@ -390,7 +390,8 @@ Users can visualize portfolio performance over time with both market value and I
 
 Users can visualize the most commonly traded stocks using a heat map showing institutional net buy/sell values with customizable sorting methods and stock selection.
 
-![Heatmap](docs/Heatmap.png)
+![Heatmap](docs/Heatmap.png) (DEPRECATED)
+![Top10SGX](docs/Top10SGX.png)
 
 #### Sorting Methods
 
@@ -1013,10 +1014,12 @@ Extract 100 Most Traded Stocks data from latest SGX Fund Flow Weekly Tracker rep
 
 ```sh
 # Get all available reports
-curl -X GET http://localhost:8080/api/v1/analytics/most_traded_stocks
+curl -X GET http://localhost:8080/api/v1/analytics/most_traded_stocks # DEPRECATED
+curl -X GET http://localhost:8080/api/v1/analytics/top10_stocks
 
 # Get only the latest 2 reports
 curl -X GET "http://localhost:8080/api/v1/analytics/most_traded_stocks?n=2"
+curl -X GET http://localhost:8080/api/v1/analytics/top10_stocks?n=2
 ```
 
 Extract Institutional sector funds flow data from latest SGX Fund Flow Weekly Tracker reports:

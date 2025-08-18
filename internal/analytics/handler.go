@@ -247,7 +247,7 @@ func HandleAnalyzeLatestNReports(service Service) http.HandlerFunc {
 	}
 }
 
-// HandleListAndExtractMostTradedStocks handles extracting the "100 Most Traded Stocks" data from SGX Fund Flow reports
+// HandleListAndExtractMostTradedStocks (DEPRECATED) handles extracting the "100 Most Traded Stocks" data from SGX Fund Flow reports
 // @Summary Extract 100 Most Traded Stocks data from SGX Fund Flow reports
 // @Description Filters for SGX Fund Flow Weekly Tracker reports and extracts the "100 Most Traded Stocks" worksheet data
 // @Tags analytics
@@ -327,6 +327,46 @@ func HandleListAndExtractSectorFundsFlow(service Service) http.HandlerFunc {
 	}
 }
 
+// HandleListAndExtractTop10Stocks handles extracting the "Weekly Top 10" data from SGX Fund Flow reports
+// @Summary Extract Weekly Top 10 stocks data from SGX Fund Flow reports
+// @Description Filters for SGX Fund Flow Weekly Tracker reports and extracts the "Weekly Top 10" worksheet data showing institutional and retail top 10 net buy/sell stocks
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Param n query int false "Limit results to latest n reports (0 or not provided means no limit)"
+// @Success 200 {array} Top10WeeklyReport "List of Weekly Top 10 stocks reports"
+// @Failure 400 {object} common.ErrorResponse
+// @Failure 500 {object} common.ErrorResponse
+// @Router /api/v1/analytics/top10_stocks [get]
+func HandleListAndExtractTop10Stocks(service Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Parse the optional 'n' query parameter
+		n := 0
+		if nParam := r.URL.Query().Get("n"); nParam != "" {
+			var err error
+			n, err = strconv.Atoi(nParam)
+			if err != nil || n < 0 {
+				logging.GetLogger().Error("Invalid 'n' parameter:", err)
+				common.WriteJSONError(w, "Invalid 'n' parameter: must be a non-negative integer", http.StatusBadRequest)
+				return
+			}
+		}
+
+		reports, err := service.ListAndExtractTop10Stocks(n)
+		if err != nil {
+			logging.GetLogger().Error("Failed to extract top 10 stocks:", err)
+			common.WriteJSONError(w, "Failed to extract top 10 stocks: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(reports); err != nil {
+			logging.GetLogger().Error("Failed to write top 10 stocks response as JSON:", err)
+			common.WriteJSONError(w, "Failed to write response", http.StatusInternalServerError)
+		}
+	}
+}
+
 // RegisterHandlers registers the analytics handlers
 func RegisterHandlers(mux *http.ServeMux, service Service) {
 	mux.HandleFunc("/api/v1/analytics/latest", func(w http.ResponseWriter, r *http.Request) {
@@ -399,5 +439,13 @@ func RegisterHandlers(mux *http.ServeMux, service Service) {
 			return
 		}
 		HandleListAndExtractSectorFundsFlow(service).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/analytics/top10_stocks", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleListAndExtractTop10Stocks(service).ServeHTTP(w, r)
 	})
 }

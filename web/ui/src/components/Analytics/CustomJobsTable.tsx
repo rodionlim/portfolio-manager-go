@@ -10,6 +10,7 @@ import {
   Stack,
   ActionIcon,
   Loader,
+  useMantineColorScheme,
 } from "@mantine/core";
 import {
   MantineReactTable,
@@ -38,6 +39,7 @@ interface CreateJobRequest {
 }
 
 const CustomJobsTable: React.FC = () => {
+  const { colorScheme } = useMantineColorScheme();
   const [addJobModalOpen, setAddJobModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<MetricsJob | null>(null);
@@ -346,7 +348,9 @@ const CustomJobsTable: React.FC = () => {
     enableSorting: false,
     mantineTableHeadCellProps: {
       style: {
-        backgroundColor: "#f8f9fa",
+        backgroundColor: colorScheme === "dark" ? "#343a40" : "#f8f9fa",
+        color: colorScheme === "dark" ? "#ffffff" : "#495057",
+        fontWeight: 600,
       },
     },
   });

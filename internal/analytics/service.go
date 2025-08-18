@@ -7,6 +7,7 @@ import (
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -726,4 +727,231 @@ func (s *ServiceImpl) extractSectorFundsFlowFromFile(filePath string) (*SectorFu
 	}
 
 	return report, nil
+}
+
+// ListAndExtractTop10Stocks filters for SGX Fund Flow reports and extracts the "Weekly Top 10" worksheet
+// n - limit results to the latest n reports (0 means no limit)
+func (s *ServiceImpl) ListAndExtractTop10Stocks(n int) ([]*Top10WeeklyReport, error) {
+	// Get all files in data directory
+	files, err := s.ListReportsInDataDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list reports: %w", err)
+	}
+
+	var results []*Top10WeeklyReport
+
+	// Filter for SGX Fund Flow Weekly Tracker files
+	for _, filePath := range files {
+		fileName := filepath.Base(filePath)
+		if strings.Contains(fileName, "SGX_Fund_Flow_Weekly_Tracker") {
+			report, err := s.extractTop10FromFile(filePath)
+			if err != nil {
+				// Log error but continue processing other files
+				continue
+			}
+			if report != nil {
+				results = append(results, report)
+			}
+		}
+	}
+
+	// Sort reports by report date (descending)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].ReportDate > results[j].ReportDate
+	})
+
+	// Limit results to latest n reports if n > 0
+	if n > 0 && len(results) > n {
+		results = results[:n]
+	}
+
+	return results, nil
+}
+
+// extractTop10FromFile extracts the "Weekly Top 10" data from a single XLSX file
+func (s *ServiceImpl) extractTop10FromFile(filePath string) (*Top10WeeklyReport, error) {
+	// Open the Excel file
+	f, err := excelize.OpenFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open Excel file: %w", err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			// Log the error but don't fail the function
+		}
+	}()
+
+	// Find the worksheet containing "Weekly Top 10"
+	sheetNames := f.GetSheetList()
+	var targetSheet string
+	for _, sheetName := range sheetNames {
+		if strings.Contains(strings.ToLower(sheetName), "weekly top 10") {
+			targetSheet = sheetName
+			break
+		}
+	}
+
+	if targetSheet == "" {
+		return nil, fmt.Errorf("worksheet 'Weekly Top 10' not found in file %s", filePath)
+	}
+
+	// Get all rows from the target sheet
+	rows, err := f.GetRows(targetSheet)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read rows from sheet %s: %w", targetSheet, err)
+	}
+
+	if len(rows) < 5 {
+		return nil, fmt.Errorf("insufficient data in sheet %s", targetSheet)
+	}
+
+	// Extract report date and title from filename
+	fileName := filepath.Base(filePath)
+	reportDate := extractDateFromSGXFilename(fileName)
+	reportTitle := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+
+	report := &Top10WeeklyReport{
+		ReportDate:  reportDate,
+		ReportTitle: reportTitle,
+		FilePath:    filePath,
+		Top10Stocks: []Top10Stock{},
+		ExtractedAt: time.Now().Unix(),
+	}
+
+	// Parse the header section to extract overall institutional and retail flows
+	for i := 0; i < len(rows) && i < 10; i++ {
+		row := rows[i]
+		if len(row) > 0 {
+			rowText := strings.Join(row, " ")
+
+			// Extract institutional flow data
+			if strings.Contains(strings.ToLower(rowText), "institutional investors net sell") {
+				// Parse format: "Institutional investors net sell (-S$385.5m) vs. (-S$256.8m) a week ago"
+				if matches := extractNumbersFromText(rowText); len(matches) >= 2 {
+					report.InstitutionalNetSellTotalSGDM = matches[0]
+					report.InstitutionalNetSellPreviousSGDM = matches[1]
+				}
+			}
+
+			// Extract retail flow data
+			if strings.Contains(strings.ToLower(rowText), "retail investors net buy") {
+				// Parse format: "Retail investors net buy (+S$329.4m) vs. (+S$144.3m) a week ago"
+				if matches := extractNumbersFromText(rowText); len(matches) >= 2 {
+					report.RetailNetBuyTotalSGDM = matches[0]
+					report.RetailNetBuyPreviousSGDM = matches[1]
+				}
+			}
+		}
+	}
+
+	// Find the data tables
+	var institutionalBuySellStartRow int
+	var retailBuySellStartRow int
+
+	for i, row := range rows {
+		if len(row) > 0 {
+			rowText := strings.Join(row, " ")
+
+			if strings.Contains(strings.ToLower(rowText), "top 10 institution net") {
+				institutionalBuySellStartRow = i + 1 // Next row contains data
+			} else if strings.Contains(strings.ToLower(rowText), "top 10 retail net") {
+				retailBuySellStartRow = i + 1
+			}
+		}
+	}
+
+	// Extract institutional net buy/sell stocks
+	if institutionalBuySellStartRow > 0 {
+		report.Top10Stocks = append(report.Top10Stocks, s.extractTop10StocksFromTable(rows, institutionalBuySellStartRow, "institutional")...)
+	}
+
+	// Extract retail net buy/sell stocks
+	if retailBuySellStartRow > 0 {
+		report.Top10Stocks = append(report.Top10Stocks, s.extractTop10StocksFromTable(rows, retailBuySellStartRow, "retail")...)
+	}
+
+	return report, nil
+}
+
+// extractTop10StocksFromTable extracts stock data from a table starting at the given row
+func (s *ServiceImpl) extractTop10StocksFromTable(rows [][]string, startRow int, investorType string) []Top10Stock {
+	var stocks []Top10Stock
+
+	// Extract up to 10 stocks from the table
+	for i := 0; i < 10 && startRow+i < len(rows); i++ {
+		row := rows[startRow+i]
+
+		// Skip empty rows or rows with insufficient data
+		if len(row) < 3 || strings.TrimSpace(row[0]) == "" {
+			continue
+		}
+
+		// Stop if we hit a blank row or source/definition row
+		if strings.Contains(strings.ToLower(strings.Join(row, " ")), "source") ||
+			strings.Contains(strings.ToLower(strings.Join(row, " ")), "definition") ||
+			strings.Contains(strings.ToLower(strings.Join(row, " ")), "top 10") {
+			break
+		}
+
+		stockNetBuy := Top10Stock{
+			StockName:    strings.TrimSpace(row[0]),
+			InvestorType: investorType,
+			IsNetBuy:     true,
+		}
+
+		// Parse stock code (column 1) net buy amount (column 2)
+		if len(row) > 2 {
+			stockNetBuy.StockCode = strings.TrimSpace(row[1])
+			if val, err := parseFloat(row[2]); err == nil {
+				stockNetBuy.NetBuySellSGDM = val
+			}
+
+			// Only add stocks with valid data
+			if stockNetBuy.StockCode != "" && stockNetBuy.StockName != "" {
+				stocks = append(stocks, stockNetBuy)
+			}
+		}
+
+		stockNetSell := Top10Stock{
+			StockName:    strings.TrimSpace(row[3]),
+			InvestorType: investorType,
+			IsNetBuy:     false,
+		}
+
+		if len(row) > 5 {
+			stockNetSell.StockCode = strings.TrimSpace(row[4])
+			if val, err := parseFloat(row[5]); err == nil {
+				stockNetSell.NetBuySellSGDM = val
+			}
+
+			// Only add stocks with valid data
+			if stockNetSell.StockCode != "" && stockNetSell.StockName != "" {
+				stocks = append(stocks, stockNetSell)
+			}
+		}
+	}
+
+	return stocks
+}
+
+// extractNumbersFromText extracts monetary amounts from text (e.g., "(-S$385.5m)" -> 385.5)
+func extractNumbersFromText(text string) []float64 {
+	var numbers []float64
+
+	// Use regex to find monetary amounts
+	// Pattern matches: (-S$385.5m), (+S$329.4m), (S$123.4m), etc.
+	re := regexp.MustCompile(`\(?([-+]?)S?\$?([0-9]+\.?[0-9]*)[mM]?\)?`)
+	matches := re.FindAllStringSubmatch(text, -1)
+
+	for _, match := range matches {
+		if len(match) >= 3 {
+			numStr := match[2] // The numeric part
+
+			if val, err := strconv.ParseFloat(numStr, 64); err == nil && val > 0 {
+				numbers = append(numbers, val)
+			}
+		}
+	}
+
+	return numbers
 }

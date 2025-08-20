@@ -11,6 +11,7 @@ import {
   Badge,
   Box,
   HoverCard,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 import { getUrl } from "../../utils/url";
@@ -32,6 +33,7 @@ interface SectorFundsFlowReport {
 }
 
 const SGXSectorView: React.FC = () => {
+  const { colorScheme } = useMantineColorScheme();
   const navigate = useNavigate();
   const [topCount, setTopCount] = useState<string>("12");
   const [sortMode, setSortMode] = useState<string>("absolute");
@@ -419,7 +421,9 @@ const SGXSectorView: React.FC = () => {
                     minWidth: 120,
                     position: "sticky",
                     left: 0,
-                    backgroundColor: "white",
+                    backgroundColor:
+                      colorScheme === "dark" ? "#1a1b1e" : "white",
+                    color: colorScheme === "dark" ? "#f8f9fa" : "#000000",
                     zIndex: 1,
                   }}
                 >
@@ -447,10 +451,16 @@ const SGXSectorView: React.FC = () => {
                           }}
                           onClick={() => handleSectorClick(sector.sectorName)}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#f8f9fa";
+                            if (colorScheme === "light") {
+                              e.currentTarget.style.backgroundColor = "#f8f9fa";
+                            } else {
+                              e.currentTarget.style.backgroundColor = "#1a1b1e";
+                            }
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "white";
+                            if (colorScheme === "light") {
+                              e.currentTarget.style.backgroundColor = "white";
+                            }
                           }}
                         >
                           <div style={{ transform: "rotate(180deg)" }}>
@@ -511,9 +521,11 @@ const SGXSectorView: React.FC = () => {
                     style={{
                       position: "sticky",
                       left: 0,
-                      backgroundColor: "white",
                       zIndex: 1,
                       fontWeight: 500,
+                      backgroundColor:
+                        colorScheme === "dark" ? "#1a1b1e" : "white",
+                      color: colorScheme === "dark" ? "#f8f9fa" : "#000000",
                     }}
                   >
                     <div>

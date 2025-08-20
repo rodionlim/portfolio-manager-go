@@ -1,3 +1,9 @@
+## [1.20.1] - 2025-08-20
+
+### 🐛 Bug Fixes
+
+- *(ui)* Top 10 stocks were not reflecting most sold stocks
+
 ## [1.20.0] - 2025-08-18
 
 ### 🚀 Features

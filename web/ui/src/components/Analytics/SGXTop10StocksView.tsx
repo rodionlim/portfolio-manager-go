@@ -11,6 +11,7 @@ import {
   Badge,
   Box,
   HoverCard,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 import { getUrl } from "../../utils/url";
@@ -37,6 +38,7 @@ interface Top10WeeklyReport {
 }
 
 const SGXTop10StocksView: React.FC = () => {
+  const { colorScheme } = useMantineColorScheme();
   const [investorType, setInvestorType] = useState<string>("institutional");
   const [sortMethod, setSortMethod] = useState<string>("balanced");
   const [topCount, setTopCount] = useState<string>("10");
@@ -91,13 +93,19 @@ const SGXTop10StocksView: React.FC = () => {
 
   // Get text color for readability
   const getTextColor = (value: number): string => {
-    if (value === 0) return "#374151"; // gray-700
+    if (value === 0) return colorScheme === "dark" ? "#d1d5db" : "#374151"; // gray-300 for dark, gray-700 for light
 
     const maxValue = 150;
     const normalizedValue = Math.min(Math.abs(value) / maxValue, 1);
 
-    // Use white text for darker backgrounds
-    return normalizedValue > 0.6 ? "#ffffff" : "#374151";
+    // Use appropriate text colors based on theme and background intensity
+    if (normalizedValue > 0.6) {
+      // For darker backgrounds, use white text
+      return "#ffffff";
+    } else {
+      // For lighter backgrounds, use theme-appropriate text
+      return colorScheme === "dark" ? "#f3f4f6" : "#374151"; // gray-100 for dark theme, gray-700 for light
+    }
   };
 
   // Get stocks for the selected investor type and calculate cumulative values
@@ -161,7 +169,7 @@ const SGXTop10StocksView: React.FC = () => {
         const negativeStocks = allStocks.filter(
           (stock) => stock.cumulativeValue < 0
         );
-        return negativeStocks.slice(0, count);
+        return negativeStocks.slice(0, count).reverse();
 
       case "balanced":
       default:
@@ -175,7 +183,7 @@ const SGXTop10StocksView: React.FC = () => {
         );
 
         const topPositives = positives.slice(0, halfCount);
-        const topNegatives = negatives.slice(0, halfCount);
+        const topNegatives = negatives.reverse().slice(0, halfCount);
 
         return [...topPositives, ...topNegatives];
     }
@@ -306,7 +314,9 @@ const SGXTop10StocksView: React.FC = () => {
                     minWidth: 120,
                     position: "sticky",
                     left: 0,
-                    backgroundColor: "white",
+                    backgroundColor:
+                      colorScheme === "dark" ? "#1a1b1e" : "white",
+                    color: colorScheme === "dark" ? "#f8f9fa" : "#000000",
                     zIndex: 1,
                   }}
                 >
@@ -388,13 +398,19 @@ const SGXTop10StocksView: React.FC = () => {
                     style={{
                       position: "sticky",
                       left: 0,
-                      backgroundColor: "white",
+                      backgroundColor:
+                        colorScheme === "dark" ? "#1a1b1e" : "white",
+                      color: colorScheme === "dark" ? "#f8f9fa" : "#000000",
                       zIndex: 1,
                       fontWeight: 500,
                     }}
                   >
                     <div>
-                      <Text size="xs" fw={600} c="dimmed">
+                      <Text
+                        size="xs"
+                        fw={600}
+                        c={colorScheme === "dark" ? "gray.4" : "dimmed"}
+                      >
                         {new Date(period.date).toLocaleDateString()}
                       </Text>
                     </div>

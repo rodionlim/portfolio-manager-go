@@ -64,6 +64,59 @@ sudo systemctl daemon-reload
 sudo systemctl restart PortfolioManager
 ```
 
+### Docker
+
+For the easiest installation experience, use Docker to run the portfolio manager:
+
+#### Quick Start with Docker
+
+1. **Using Docker Hub image**:
+
+```sh
+# Pull and run the image
+docker run -d \
+  --name portfolio-manager \
+  -p 8080:8080 \
+  -p 8081:8081 \
+  -v $(pwd)/config.yaml:/app/config/config.yaml:ro \
+  -v portfolio-data:/app/data \
+  -v portfolio-logs:/app/logs \
+  rodionlim/portfolio-manager-go:latest
+```
+
+2. **Build locally**:
+
+```sh
+# Clone and build
+git clone https://github.com/rodionlim/portfolio-manager-go.git
+cd portfolio-manager-go
+
+# Build the Docker image using the local build script
+./build-docker.sh
+
+# Run the container
+docker run -d \
+  --name portfolio-manager \
+  -p 8080:8080 \
+  -p 8081:8081 \
+  -v $(pwd)/config.yaml:/app/config/config.yaml:ro \
+  -v portfolio-data:/app/data \
+  -v portfolio-logs:/app/logs \
+  portfolio-manager
+```
+
+**Note**: If you encounter SSL certificate issues during Docker build in CI environments, use the provided `build-docker.sh` script which builds the application locally first and then creates a minimal Docker image with the pre-built binary.
+
+#### Docker Configuration
+
+- **Ports**: The container exposes port 8080 for the HTTP API and port 8081 for the MCP server
+- **Config**: Mount your custom `config.yaml` to `/app/config/config.yaml`
+- **Data Persistence**: Mount a volume to `/app/data` to persist LevelDB data
+- **Logs**: Optionally mount a volume to `/app/logs` for log persistence
+- **Environment Variables**: Set `GEMINI_API_KEY` and `ANALYTICS_SCHEDULE` as needed
+
+Access the application at `http://localhost:8080` and the Swagger API documentation at `http://localhost:8080/swagger/index.html`.
+
 ## Quickstart
 
 Start the application

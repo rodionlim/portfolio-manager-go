@@ -1,3 +1,13 @@
+## [1.21.0] - 2025-08-29
+
+### 🚀 Features
+
+- *(seed)* Add suntec reit and venture corp
+
+### 🐛 Bug Fixes
+
+- *(ui)* Blotter view should allow filtering on ticker name #113
+
 ## [1.20.1] - 2025-08-20
 
 ### 🐛 Bug Fixes

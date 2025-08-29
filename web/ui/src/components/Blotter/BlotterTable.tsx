@@ -107,6 +107,7 @@ const BlotterTable: React.FC = () => {
       {
         id: "tickerName", // Use a unique id instead of accessorKey
         header: "Name",
+        accessorFn: (row) => refData?.[row.Ticker]?.name || "", // This enables filtering
         Cell: ({ row }) => {
           const ticker = row.original.Ticker;
           return refData?.[ticker]?.name || "";

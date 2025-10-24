@@ -7,7 +7,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
-import { Button, Text, Tooltip } from "@mantine/core";
+import { Button, Text, Tooltip, SegmentedControl, Box } from "@mantine/core";
 import { getUrl } from "../../utils/url";
 import { useNavigate } from "react-router-dom";
 import { IconHistory, IconCoins } from "@tabler/icons-react";
@@ -356,11 +356,20 @@ const PositionTable: React.FC = () => {
 
   // Update filtered positions when table filters change
   useEffect(() => {
-    const filtered = table
-      .getFilteredRowModel()
-      .rows.map((row) => row.original);
-    setFilteredPositions(filtered);
-  }, [table.getFilteredRowModel().rows]);
+    if (table) {
+      const filtered = table
+        .getFilteredRowModel()
+        .rows.map((row) => row.original);
+      setFilteredPositions(filtered);
+    }
+  }, [table, aggregatedPositions]);
+
+  // Initialize filtered positions on mount
+  useEffect(() => {
+    if (aggregatedPositions.length > 0 && filteredPositions.length === 0) {
+      setFilteredPositions(aggregatedPositions);
+    }
+  }, [aggregatedPositions]);
 
   // Remove the separate loading check since the table handles it now
   if (error) return <div>Error loading positions</div>;
@@ -368,6 +377,41 @@ const PositionTable: React.FC = () => {
   return (
     <div>
       <MantineReactTable table={table} />
+      <Box
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "12px 0",
+        }}
+      >
+        <SegmentedControl
+          value={
+            (table.getState().columnFilters.find((f) => f.id === "Ccy")
+              ?.value as string) || "all"
+          }
+          onChange={(value) => {
+            if (value === "all") {
+              table.setColumnFilters(
+                table.getState().columnFilters.filter((f) => f.id !== "Ccy")
+              );
+            } else {
+              const otherFilters = table
+                .getState()
+                .columnFilters.filter((f) => f.id !== "Ccy");
+              table.setColumnFilters([
+                ...otherFilters,
+                { id: "Ccy", value: value },
+              ]);
+            }
+          }}
+          data={[
+            { label: "All", value: "all" },
+            { label: "SGD", value: "SGD" },
+            { label: "USD", value: "USD" },
+          ]}
+          size="xs"
+        />
+      </Box>
     </div>
   );
 };

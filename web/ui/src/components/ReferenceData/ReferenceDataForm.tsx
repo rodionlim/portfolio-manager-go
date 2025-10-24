@@ -65,6 +65,7 @@ export default function ReferenceDataForm() {
       yahoo_ticker: location.state?.yahoo_ticker || "",
       google_ticker: location.state?.google_ticker || "",
       dividends_sg_ticker: location.state?.dividends_sg_ticker || "",
+      nasdaq_ticker: location.state?.nasdaq_ticker || "",
       asset_class: location.state?.asset_class || "",
       asset_sub_class: location.state?.asset_sub_class || "",
       category: location.state?.category || "",
@@ -188,6 +189,12 @@ export default function ReferenceDataForm() {
             placeholder="Dividends SG Ticker"
             key={form.key("dividends_sg_ticker")}
             {...form.getInputProps("dividends_sg_ticker")}
+          />
+          <TextInput
+            label="Nasdaq Ticker"
+            placeholder="Nasdaq Ticker"
+            key={form.key("nasdaq_ticker")}
+            {...form.getInputProps("nasdaq_ticker")}
           />
           <Autocomplete
             withAsterisk

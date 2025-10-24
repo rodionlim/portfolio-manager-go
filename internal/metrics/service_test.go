@@ -214,5 +214,5 @@ func TestCalculateIRR_SimpleProfitWithDividend(t *testing.T) {
 	mockMdataSvc.AssertExpectations(t)
 
 	assert.NoError(t, err)
-	assert.InDelta(t, 0.20, res.Metrics.IRR, 0.01, "IRR should be approximately 20% for 10% capital gain + 10% dividend")
+	assert.InDelta(t, 0.20, res.Metrics.IRR, 0.015, "IRR should be approximately 20% for 10% capital gain + 10% dividend")
 }

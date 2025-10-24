@@ -22,6 +22,7 @@ type TickerReference struct {
 	YahooTicker       string  `json:"yahoo_ticker" yaml:"yahoo_ticker" validate:"uppercase"`
 	GoogleTicker      string  `json:"google_ticker" yaml:"google_ticker" validate:"uppercase"`
 	DividendsSgTicker string  `json:"dividends_sg_ticker" yaml:"dividends_sg_ticker" validate:"uppercase"`
+	NasdaqTicker      string  `json:"nasdaq_ticker" yaml:"nasdaq_ticker" validate:"uppercase"`
 	AssetClass        string  `json:"asset_class" yaml:"asset_class" validate:"required,asset_class"`
 	AssetSubClass     string  `json:"asset_sub_class" yaml:"asset_sub_class" validate:"asset_sub_class"`
 	Category          string  `json:"category" yaml:"category" validate:"category"`

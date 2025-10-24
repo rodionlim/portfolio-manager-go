@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -16,6 +17,30 @@ type ErrorResponse struct {
 // SuccessResponse represents the success response payload.
 type SuccessResponse struct {
 	Message string `json:"message"`
+}
+
+// userAgents contains a list of different browser user agents to rotate through
+var userAgents = []string{
+	// Chrome
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+
+	// Firefox
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0",
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 14.7; rv:135.0) Gecko/20100101 Firefox/135.0",
+	"Mozilla/5.0 (X11; Linux i686; rv:135.0) Gecko/20100101 Firefox/135.0",
+
+	// Safari
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15",
+
+	// Edge
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/131.0.2903.86",
+}
+
+// getRandomUserAgent returns a random user agent from the list
+func getRandomUserAgent() string {
+	return userAgents[rand.Intn(len(userAgents))]
 }
 
 // RateLimiter implements a simple rate limiter for HTTP requests
@@ -59,7 +84,7 @@ func NewHttpRequestWithUserAgent(method, url string) (*http.Request, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", getRandomUserAgent())
 	return req, nil
 }
 
@@ -70,8 +95,8 @@ func NewBrowserLikeRequest(method, url string) (*http.Request, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set comprehensive browser-like headers
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+	// Set comprehensive browser-like headers with randomized user agent
+	req.Header.Set("User-Agent", getRandomUserAgent())
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("Accept-Encoding", "gzip, deflate, br")

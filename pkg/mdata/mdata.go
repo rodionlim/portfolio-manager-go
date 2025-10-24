@@ -61,14 +61,19 @@ func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error)
 	if err != nil {
 		return nil, err
 	}
+	nasdaq, err := NewDataSource(sources.Nasdaq, db)
+	if err != nil {
+		return nil, err
+	}
 
 	m.sources[sources.GoogleFinance] = google
 	m.sources[sources.YahooFinance] = yahoo
 	m.sources[sources.DividendsSingapore] = dividendsSg
 	m.sources[sources.SSB] = iLoveSsb
 	m.sources[sources.MAS] = mas
+	m.sources[sources.Nasdaq] = nasdaq
 
-	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance, Dividends.sg, ILoveSsb and MAS data sources")
+	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance, Dividends.sg, ILoveSsb, MAS and Nasdaq data sources")
 
 	return m, nil
 }
@@ -208,7 +213,18 @@ func (m *Manager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerRefere
 		}
 	}
 
-	// Fallback to Yahoo Finance
+	// Try Nasdaq next
+	if tickerRef.NasdaqTicker != "" {
+		if nasdaq, ok := m.sources[sources.Nasdaq]; ok {
+			if data, err := nasdaq.GetDividendsMetadata(tickerRef.NasdaqTicker, witholdingTax); err == nil {
+				return data, nil
+			} else {
+				logging.GetLogger().Errorf("Failed to fetch dividends metadata from Nasdaq for %s: %v", tickerRef.NasdaqTicker, err)
+			}
+		}
+	}
+
+	// Fallback to Yahoo Finance as last resort
 	if tickerRef.YahooTicker != "" {
 		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
 			if data, err := yahoo.GetDividendsMetadata(tickerRef.YahooTicker, witholdingTax); err == nil {
@@ -355,6 +371,8 @@ func NewDataSource(sourceType string, db dal.Database) (types.DataSource, error)
 		return sources.NewILoveSsb(db), nil
 	case sources.MAS:
 		return sources.NewMas(db), nil
+	case sources.Nasdaq:
+		return sources.NewNasdaq(db), nil
 	default:
 		return nil, errors.New("unsupported data source")
 	}

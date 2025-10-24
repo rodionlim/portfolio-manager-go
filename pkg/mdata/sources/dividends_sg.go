@@ -184,7 +184,7 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 			if !strings.HasPrefix(amountStr, "Rate:") {
 				return
 			}
-			amountStr = strings.Replace(strings.TrimSpace(strings.TrimPrefix(amountStr, "Rate: ")), "%", "", -1)
+			amountStr = strings.ReplaceAll(strings.TrimSpace(strings.TrimPrefix(amountStr, "Rate: ")), "%", "")
 			amount, err = strconv.ParseFloat(amountStr, 64)
 			if err != nil {
 				return
@@ -193,7 +193,8 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 			// TODO: this might not be true and needs a rework, thankfully, semiannual bonds are the most common
 			amount = amount / 100 / 2
 		} else {
-			amountStr = strings.TrimSpace(strings.TrimPrefix(amountStr, "SGD"))
+			// handle USD denominated singapore stocks
+			amountStr = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(amountStr, "SGD"), "USD"))
 			amount, err = strconv.ParseFloat(amountStr, 64)
 			if err != nil {
 				return

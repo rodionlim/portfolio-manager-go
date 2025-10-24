@@ -2666,6 +2666,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "nasdaq_ticker": {
+                    "type": "string"
+                },
                 "strike_price": {
                     "type": "number"
                 },

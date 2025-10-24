@@ -19,6 +19,7 @@ interface RefData {
   yahoo_ticker: string;
   google_ticker: string;
   dividends_sg_ticker: string;
+  nasdaq_ticker: string;
   asset_class: string;
   asset_sub_class: string;
   category: string;
@@ -109,6 +110,7 @@ const ReferenceDataTable: React.FC = () => {
       { accessorKey: "yahoo_ticker", header: "Yahoo Ticker" },
       { accessorKey: "google_ticker", header: "Google Ticker" },
       { accessorKey: "dividends_sg_ticker", header: "Dividends SG Ticker" },
+      { accessorKey: "nasdaq_ticker", header: "Nasdaq Ticker" },
       { accessorKey: "asset_class", header: "Asset Class" },
       { accessorKey: "asset_sub_class", header: "Asset Subclass" },
       { accessorKey: "category", header: "Category" },
@@ -237,6 +239,7 @@ const ReferenceDataTable: React.FC = () => {
           yahoo_ticker: selection.yahoo_ticker,
           google_ticker: selection.google_ticker,
           dividends_sg_ticker: selection.dividends_sg_ticker,
+          nasdaq_ticker: selection.nasdaq_ticker,
           asset_class: selection.asset_class,
           asset_sub_class: selection.asset_sub_class,
           category: selection.category,

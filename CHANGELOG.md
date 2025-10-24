@@ -1,3 +1,9 @@
+## [1.22.0] - 2025-10-24
+
+### 🚀 Features
+
+- *(ui)* Add ccy filters toggle group to positions page #115
+
 ## [1.21.0] - 2025-08-29
 
 ### 🚀 Features

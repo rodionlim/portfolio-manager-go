@@ -362,14 +362,12 @@ const PositionTable: React.FC = () => {
         .rows.map((row) => row.original);
       setFilteredPositions(filtered);
     }
-  }, [table, aggregatedPositions]);
-
-  // Initialize filtered positions on mount
-  useEffect(() => {
-    if (aggregatedPositions.length > 0 && filteredPositions.length === 0) {
-      setFilteredPositions(aggregatedPositions);
-    }
-  }, [aggregatedPositions]);
+  }, [
+    table,
+    aggregatedPositions,
+    table?.getState().columnFilters,
+    table?.getState().globalFilter,
+  ]);
 
   // Remove the separate loading check since the table handles it now
   if (error) return <div>Error loading positions</div>;

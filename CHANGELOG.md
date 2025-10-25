@@ -1,3 +1,9 @@
+## [1.23.0] - 2025-10-25
+
+### 🚀 Features
+
+- *(dividends)* Add nasdaq to list of market data providers #118
+
 ## [1.22.1] - 2025-10-24
 
 ### 🐛 Bug Fixes

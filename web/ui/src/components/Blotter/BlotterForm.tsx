@@ -94,6 +94,7 @@ export default function BlotterForm() {
     const tradeTypeAction = !values.tradeId ? "add" : "update";
     const tradeTypeActionPastTense = !values.tradeId ? "added" : "updated";
     const baseCcy = "SGD"; // TODO: make this dynamic based on user settings or location
+    let usedCurrentRate = false;
 
     if (values.fx === 0) {
       // Check if it is SG Govies, if so, set FX to 1
@@ -106,29 +107,40 @@ export default function BlotterForm() {
         } else {
           const dt = values.date.replaceAll("-", "").slice(0, 8); // YYYYMMDD
           // fetch price as of historical date
-          const url = getUrl(
+          const historicalUrl = getUrl(
             `api/v1/mdata/price/historical/${quoteCcy}-SGD?start=${dt}&end=${dt}`
           );
-          const resp = await fetch(url);
-          if (!resp.ok) {
-            notifications.show({
-              color: "red",
-              title: "Error",
-              message: `Unable to fetch FX rate for ${values.ticker}`,
-            });
-            throw new Error("Unable to fetch FX rate");
+
+          try {
+            const resp = await fetch(historicalUrl);
+            if (!resp.ok) {
+              throw new Error("Unable to fetch historical FX rate");
+            }
+            const vals = await resp.json();
+            if (Array.isArray(vals) && vals.length === 0) {
+              throw new Error("No historical FX rate found");
+            }
+            const price = vals[0]["Price"];
+            values.fx = price;
+          } catch (error) {
+            // Fallback to current FX rate
+            console.warn(
+              `Historical FX rate not available, using current rate: ${error}`
+            );
+            const currentUrl = getUrl(`api/v1/mdata/price/${quoteCcy}-SGD`);
+            const currentResp = await fetch(currentUrl);
+            if (!currentResp.ok) {
+              notifications.show({
+                color: "red",
+                title: "Error",
+                message: `Unable to fetch FX rate for ${values.ticker}`,
+              });
+              throw new Error("Unable to fetch FX rate");
+            }
+            const currentData = await currentResp.json();
+            values.fx = currentData.Price;
+            usedCurrentRate = true;
           }
-          const vals = await resp.json();
-          if (Array.isArray(vals) && vals.length === 0) {
-            notifications.show({
-              color: "red",
-              title: "Error",
-              message: `No FX rate found for ${values.ticker} on ${dt}`,
-            });
-            throw new Error("No FX rate found");
-          }
-          const price = vals[0]["Price"];
-          values.fx = price;
         }
       } else {
         notifications.show({
@@ -174,7 +186,9 @@ export default function BlotterForm() {
 
       notifications.show({
         title: "Trade successfully added",
-        message: `Trade [${data.TradeID}] was successfully ${tradeTypeActionPastTense} in the blotter`,
+        message: usedCurrentRate
+          ? `Trade [${data.TradeID}] was successfully ${tradeTypeActionPastTense} in the blotter using current FX rate (historical rate unavailable)`
+          : `Trade [${data.TradeID}] was successfully ${tradeTypeActionPastTense} in the blotter`,
         autoClose: 6000,
       });
 

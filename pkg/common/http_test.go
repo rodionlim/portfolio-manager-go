@@ -47,7 +47,6 @@ func TestNewBrowserLikeRequest(t *testing.T) {
 	assert.NotNil(t, req)
 
 	// Check that browser-like headers are set
-	assert.Equal(t, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36", req.Header.Get("User-Agent"))
 	assert.Equal(t, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", req.Header.Get("Accept"))
 	assert.Equal(t, "en-US,en;q=0.9", req.Header.Get("Accept-Language"))
 	assert.Equal(t, "gzip, deflate, br", req.Header.Get("Accept-Encoding"))

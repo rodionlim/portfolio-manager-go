@@ -1,3 +1,9 @@
+## [1.24.0] - 2025-11-01
+
+### 🚀 Features
+
+- *(blotter)* Add fallback for fx rates when inferring for non sgd trades #120
+
 ## [1.23.0] - 2025-10-25
 
 ### 🚀 Features

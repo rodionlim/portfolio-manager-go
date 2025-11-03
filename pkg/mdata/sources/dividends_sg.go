@@ -84,6 +84,35 @@ func (src *DividendsSg) GetAssetPrice(ticker string) (*types.AssetData, error) {
 				priceFound = true
 			}
 		})
+
+		// Fallback: If span.badge not found, check if currency code exists in the h4 text
+		if !priceFound {
+			h4Text := s.Text()
+			currencies := []string{"SGD", "USD", "HKD", "EUR", "GBP", "JPY", "MYR", "AUD", "CAD"}
+
+			for _, currency := range currencies {
+				if strings.Contains(h4Text, currency) {
+					// Extract price after currency code
+					// Example: "TEMASEK S$500M 1.8% B 261124\t(TEMB)\tSGD 1.013\t\n\t\u00a0\n\t +0.79% +0.01"
+					parts := strings.Split(h4Text, currency)
+					if len(parts) > 1 {
+						// Get the part after currency code
+						afterCurrency := strings.TrimSpace(parts[1])
+						// Split by whitespace and get first token
+						tokens := strings.Fields(afterCurrency)
+						if len(tokens) > 0 {
+							// Try to parse the first token as price
+							p, err := strconv.ParseFloat(tokens[0], 64)
+							if err == nil {
+								price = p
+								priceFound = true
+								break
+							}
+						}
+					}
+				}
+			}
+		}
 	})
 
 	if !priceFound {

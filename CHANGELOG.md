@@ -1,3 +1,9 @@
+## [1.24.1] - 2025-11-03
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Make dividends sg robust against malformed html #122
+
 ## [1.24.0] - 2025-11-01
 
 ### 🚀 Features

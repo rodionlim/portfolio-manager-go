@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Tabs } from "@mantine/core";
 import MetricsTable from "./MetricsTable";
 import MetricsChart from "./MetricsChart";
+import MetricsCashFlow from "./MetricsCashFlow";
 import CustomJobsTable from "./CustomJobsTable";
 
 const MetricsView: React.FC = () => {
@@ -12,6 +13,7 @@ const MetricsView: React.FC = () => {
       <Tabs.List>
         <Tabs.Tab value="table">Historical Metrics Table</Tabs.Tab>
         <Tabs.Tab value="chart">Metrics Chart</Tabs.Tab>
+        <Tabs.Tab value="cashflow">Current Metrics & Cash Flows</Tabs.Tab>
         <Tabs.Tab value="jobs">Custom Jobs</Tabs.Tab>
       </Tabs.List>
 
@@ -21,6 +23,10 @@ const MetricsView: React.FC = () => {
 
       <Tabs.Panel value="chart" pt="md">
         {activeTab === "chart" && <MetricsChart />}
+      </Tabs.Panel>
+
+      <Tabs.Panel value="cashflow" pt="md">
+        {activeTab === "cashflow" && <MetricsCashFlow />}
       </Tabs.Panel>
 
       <Tabs.Panel value="jobs" pt="md">

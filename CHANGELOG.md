@@ -1,3 +1,13 @@
+## [1.25.0] - 2025-11-07
+
+### 🚀 Features
+
+- *(metrics)* Add new metrics cash flow view #124
+
+### 🐛 Bug Fixes
+
+- *(metrics)* Resolve memory leak when switching back from aggregated to granular metrics view
+
 ## [1.24.1] - 2025-11-03
 
 ### 🐛 Bug Fixes

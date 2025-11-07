@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   MantineReactTable,
   MRT_ColumnDef,
@@ -367,7 +367,15 @@ const MetricsCashFlow: React.FC = () => {
     enableRowSelection: false,
     enableColumnFilters: true,
     enableGlobalFilter: true,
+    autoResetAll: false, // Prevent auto-reset
   });
+
+  // Reset table state when switching between views
+  useEffect(() => {
+    table.resetColumnFilters();
+    table.resetGlobalFilter();
+    table.resetSorting();
+  }, [groupByTicker, table]);
 
   if (error) {
     return (

@@ -91,8 +91,8 @@ func HandleGetCurrentFXRates(service *Service) http.HandlerFunc {
 				continue
 			}
 
-			// Store the inverted rate (in terms of base currency)
-			fxRates[currency] = 1 / assetData.Price
+			// Store the rate (in terms of base currency)
+			fxRates[currency] = assetData.Price
 		}
 
 		// Return the FX rates as JSON

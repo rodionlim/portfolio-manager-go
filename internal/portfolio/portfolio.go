@@ -99,7 +99,7 @@ func (p *Portfolio) getFXRate(ccy string) (float64, error) {
 	}
 
 	// Store in cache.
-	rate := 1 / asset.Price
+	rate := asset.Price
 	p.fxCache.Set(pair, rate, p.fxCacheDuration)
 	return rate, nil
 }

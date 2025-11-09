@@ -130,7 +130,7 @@ func (s *Service) ExportTradesWithInferredFX() ([]byte, error) {
 
 		for _, data := range fxData {
 			// Always map in terms of units of base currency to 1 dollar worth of foreign currency, e.g. 1.3 SGD/USD
-			fxRatesByDate[data.Timestamp] = 1 / data.Price
+			fxRatesByDate[data.Timestamp] = data.Price
 		}
 
 		// Update FX rates for trades in this currency group
@@ -252,8 +252,7 @@ func (s *Service) GetCurrentFXRates() (map[string]float64, error) {
 			continue
 		}
 
-		// Calculate rate as 1/price (if price is in terms of base currency)
-		result[ccy] = 1.0 / assetData.Price
+		result[ccy] = assetData.Price
 	}
 
 	return result, nil

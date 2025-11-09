@@ -7,7 +7,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 ## Features
 
 - Value assets of different currencies based on current market prices
-- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas), current and historical
+- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas, nasdaq), current and historical
 - Import / Export portfolio blotter data using CSV file for easy migration to other portfolio systems
 - Allow users to supply their own custom dividends metadata
 - Export ticker reference data in yaml format
@@ -499,7 +499,7 @@ curl -X DELETE http://localhost:8080/api/v1/portfolio/positions
 
 ### Import Trades from CSV (for migrating into portfolio-manager)
 
-Note that FX rate here is always with respect to portfolio revaluation currency per foreign ccy, e.g. SGD/USD if SGD is portfolio revaluation currency
+Note that FX rate here is always with respect to portfolio revaluation currency per foreign ccy, e.g. USD/SGD if SGD is portfolio revaluation currency
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/blotter/import \

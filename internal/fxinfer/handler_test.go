@@ -108,7 +108,7 @@ func TestHandleGetCurrentFXRates(t *testing.T) {
 
 	// Assert the expected rates
 	assert.Equal(t, float64(1.0), fxRates["SGD"], "Base currency SGD should have rate 1.0")
-	assert.InDelta(t, 1.0/1.33, fxRates["USD"], 0.0001, "USD rate should be approximately 0.7519 (1/1.33)")
+	assert.InDelta(t, 1.33, fxRates["USD"], 0.0001, "USD rate should be approximately 1.33")
 
 	// Verify that all expected methods were called
 	mockBlotterSvc.AssertExpectations(t)

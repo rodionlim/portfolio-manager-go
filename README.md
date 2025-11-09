@@ -499,7 +499,7 @@ curl -X DELETE http://localhost:8080/api/v1/portfolio/positions
 
 ### Import Trades from CSV (for migrating into portfolio-manager)
 
-Note that FX rate here is always with respect to portfolio revaluation currency per foreign ccy, e.g. SGD/USD if SGD is portfolio revaluation currency
+Note that FX rate here is always with respect to portfolio revaluation currency per foreign ccy, e.g. USD/SGD if SGD is portfolio revaluation currency
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/blotter/import \

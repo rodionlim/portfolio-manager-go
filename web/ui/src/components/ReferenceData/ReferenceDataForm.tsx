@@ -93,7 +93,7 @@ export default function ReferenceDataForm() {
     const actionPastTense = !values.id ? "added" : "updated";
     const body = {
       ...values,
-      ID: values.underlying_ticker,
+      ID: values.id || values.underlying_ticker,
       maturity_date: values.maturity_date
         ? values.maturity_date.toISOString().split(".")[0] + "Z"
         : null,
@@ -117,7 +117,9 @@ export default function ReferenceDataForm() {
       .then((_) => {
         notifications.show({
           title: "Reference Data successfully added",
-          message: `Reference Data [${values.underlying_ticker}] was successfully ${actionPastTense}`,
+          message: `Reference Data [${
+            values.id || values.underlying_ticker
+          }] was successfully ${actionPastTense}`,
           autoClose: 6000,
         });
         dispatch(fetchReferenceData());

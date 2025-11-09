@@ -1,3 +1,17 @@
+## [1.26.0] - 2025-11-09
+
+### 🚀 Features
+
+- *(ui)* Adding trade should display fx rate used
+
+### 🐛 Bug Fixes
+
+- *(fx)* Always publish rates with respect to base currency
+
+### 📚 Documentation
+
+- Update README for nasdaq data source
+
 ## [1.25.0] - 2025-11-07
 
 ### 🚀 Features

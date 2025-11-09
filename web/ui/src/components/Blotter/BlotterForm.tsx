@@ -183,12 +183,13 @@ export default function BlotterForm() {
       }
 
       const data = await resp.json();
+      const fxParsed = parseFloat(values.fx.toFixed(4));
 
       notifications.show({
         title: "Trade successfully added",
         message: usedCurrentRate
-          ? `Trade [${data.TradeID}] was successfully ${tradeTypeActionPastTense} in the blotter using current FX rate (historical rate unavailable)`
-          : `Trade [${data.TradeID}] was successfully ${tradeTypeActionPastTense} in the blotter`,
+          ? `Trade [${data.TradeID}] was successfully ${tradeTypeActionPastTense} in the blotter using current FX rate [${fxParsed}] (historical rate unavailable)`
+          : `Trade [${data.TradeID}] was successfully ${tradeTypeActionPastTense} in the blotter using FX rate [${fxParsed}]`,
         autoClose: 6000,
       });
 

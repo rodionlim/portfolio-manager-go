@@ -1,3 +1,9 @@
+## [1.27.0] - 2025-11-18
+
+### 🚀 Features
+
+- *(ui)* Add custom right axis and filterable timeline #127
+
 ## [1.26.0] - 2025-11-09
 
 ### 🚀 Features

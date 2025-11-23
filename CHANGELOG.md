@@ -1,3 +1,13 @@
+## [1.27.1] - 2025-11-23
+
+### 🐛 Bug Fixes
+
+- *(dividends)* Ensure custom dividends are merged properly with official #129
+
+### ⚙️ Miscellaneous Tasks
+
+- Update lightweight charts to latest
+
 ## [1.27.0] - 2025-11-18
 
 ### 🚀 Features

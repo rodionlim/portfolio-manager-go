@@ -668,6 +668,8 @@ curl -X GET http://localhost:8080/api/v1/mdata/dividends/bs24124z
 
 ### Store Custom Dividends
 
+Note that customa dividends are concatenated against official dividends. Custom dividends always take precedence over official dividends, in case official figures are wrong. If official date is wrong, we can always input a dividend with value of 0.
+
 ```sh
 curl -X POST http://localhost:8080/api/v1/mdata/dividends/AAPL \
   -H "Content-Type: application/json" \

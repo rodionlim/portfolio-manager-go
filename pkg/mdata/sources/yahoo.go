@@ -119,11 +119,12 @@ func (src *yahooFinance) GetDividendsMetadata(ticker string, withholdingTax floa
 
 	// Store in database if we have new data
 	if src.db != nil {
-		existingDividends, _ := src.getSingleDividendsMetadata(ticker, false)
+		existingDividends, _ := src.GetSingleDividendsMetadataWithType(ticker, false)
 		if len(dividends) > len(existingDividends) {
 			src.logger.Infof("New dividends for ticker %s, storing into database", ticker)
-			dividends, err = src.StoreDividendsMetadata(ticker, dividends, false)
+			src.StoreDividendsMetadata(ticker, dividends, false)
 		}
+		return src.GetSingleDividendsMetadata(ticker)
 	}
 
 	return dividends, err

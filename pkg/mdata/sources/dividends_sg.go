@@ -134,6 +134,7 @@ func (src *DividendsSg) GetAssetPrice(ticker string) (*types.AssetData, error) {
 }
 
 func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float64) ([]types.DividendsMetadata, error) {
+	// Fetch new dividends from dividends.sg, then merge it with custom dividends if any
 	logger := logging.GetLogger()
 
 	// Check cache first
@@ -142,12 +143,12 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 		return cachedData.([]types.DividendsMetadata), nil
 	}
 
-	officialDividendsMetadata, _ := src.getSingleDividendsMetadata(ticker, false)
+	officialDividendsMetadata, _ := src.GetSingleDividendsMetadataWithType(ticker, false)
 
-	// Escape hatch for custom dividends with in valid dividend history on dividends.sg
+	// Escape hatch for custom dividends with invalid dividend history on dividends.sg
 	specialTickers := []string{"FCOT.SI"}
 	if slices.Contains(specialTickers, ticker) {
-		return src.getSingleDividendsMetadata(ticker, true)
+		return src.GetSingleDividendsMetadataWithType(ticker, true)
 	}
 
 	url := fmt.Sprintf("https://www.dividends.sg/view/%s", ticker)
@@ -260,9 +261,9 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 		// Store in database if we have new data
 		if len(dividends) > len(officialDividendsMetadata) {
 			logger.Infof("New dividends for ticker %s, storing into database", ticker)
-			dividends, err = src.StoreDividendsMetadata(ticker, dividends, false)
+			src.StoreDividendsMetadata(ticker, dividends, false)
 		}
 	}
 
-	return dividends, err
+	return src.GetSingleDividendsMetadata(ticker)
 }

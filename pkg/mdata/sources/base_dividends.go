@@ -16,8 +16,8 @@ type BaseDividendSource struct {
 	cache *cache.Cache
 }
 
-// GetDividendsMetadata retrieves either custom or official dividends metadata for a given ticker
-func (base *BaseDividendSource) getSingleDividendsMetadata(ticker string, isCustom bool) ([]types.DividendsMetadata, error) {
+// GetSingleDividendsMetadataWithType retrieves either custom or official dividends metadata for a given ticker
+func (base *BaseDividendSource) GetSingleDividendsMetadataWithType(ticker string, isCustom bool) ([]types.DividendsMetadata, error) {
 	var err error
 	if base.db != nil {
 		var dividends []types.DividendsMetadata
@@ -35,6 +35,14 @@ func (base *BaseDividendSource) getSingleDividendsMetadata(ticker string, isCust
 	return []types.DividendsMetadata{}, err
 }
 
+// GetSingleDividendsMetadata retrieves merged dividends metadata (official + custom) for a given ticker
+func (base *BaseDividendSource) GetSingleDividendsMetadata(ticker string) ([]types.DividendsMetadata, error) {
+	officialDividends, _ := base.GetSingleDividendsMetadataWithType(ticker, false)
+	customDividends, _ := base.GetSingleDividendsMetadataWithType(ticker, true)
+
+	return base.mergeAndSortDividendsMetadata(officialDividends, customDividends), nil
+}
+
 // StoreDividends stores either custom or official dividends metadata for a given ticker
 func (base *BaseDividendSource) StoreDividendsMetadata(ticker string, dividends []types.DividendsMetadata, isCustom bool) ([]types.DividendsMetadata, error) {
 	logger := logging.GetLogger()
@@ -49,11 +57,11 @@ func (base *BaseDividendSource) StoreDividendsMetadata(ticker string, dividends 
 	// Upstream should not call this method if data has not been changed
 	if !isCustom {
 		err = base.db.Put(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends)
-		customDividendsMetadata, _ := base.getSingleDividendsMetadata(ticker, true)
+		customDividendsMetadata, _ := base.GetSingleDividendsMetadataWithType(ticker, true)
 		dividends = base.mergeAndSortDividendsMetadata(dividends, customDividendsMetadata)
 	} else {
 		err = base.db.Put(fmt.Sprintf("%s:%s", types.DividendsCustomKeyPrefix, ticker), dividends)
-		officialdDividendsMetadata, _ := base.getSingleDividendsMetadata(ticker, false)
+		officialdDividendsMetadata, _ := base.GetSingleDividendsMetadataWithType(ticker, false)
 		dividends = base.mergeAndSortDividendsMetadata(officialdDividendsMetadata, dividends)
 	}
 
@@ -63,8 +71,26 @@ func (base *BaseDividendSource) StoreDividendsMetadata(ticker string, dividends 
 }
 
 // mergeAndSortDividends concatenates two slices of DividendsMetadata and sorts them by ExDate.
-func (base *BaseDividendSource) mergeAndSortDividendsMetadata(dividendsLeft []types.DividendsMetadata, dividendsRight []types.DividendsMetadata) []types.DividendsMetadata {
-	merged := append(dividendsLeft, dividendsRight...)
+// If there is an overlap in ExDate, the dividend from the right slice (custom) takes precedence.
+func (base *BaseDividendSource) mergeAndSortDividendsMetadata(officialDividends []types.DividendsMetadata, customDividends []types.DividendsMetadata) []types.DividendsMetadata {
+	// Create a map for custom dividends for easy lookup
+	customMap := make(map[string]bool)
+	for _, d := range customDividends {
+		customMap[d.ExDate] = true
+	}
+
+	var merged []types.DividendsMetadata
+
+	// Add official dividends if they don't overlap with custom ones
+	for _, d := range officialDividends {
+		if !customMap[d.ExDate] {
+			merged = append(merged, d)
+		}
+	}
+
+	// Add all custom dividends
+	merged = append(merged, customDividends...)
+
 	sort.Slice(merged, func(i, j int) bool {
 		// ExDate is in "yyyy-mm-dd" format, so lexicographical comparison works correctly.
 		return merged[i].ExDate < merged[j].ExDate

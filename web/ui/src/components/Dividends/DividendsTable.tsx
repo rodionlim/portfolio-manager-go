@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Box, FileInput, Select, Text } from "@mantine/core";
+import { Box, FileInput, Select, Text, Tooltip } from "@mantine/core";
 import {
   MantineReactTable,
   MRT_ColumnDef,
   useMantineReactTable,
 } from "mantine-react-table";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
 import { IconUpload } from "@tabler/icons-react";
@@ -28,6 +28,7 @@ interface DividendsTableProps {
 const DividendsTable: React.FC<DividendsTableProps> = ({
   initialTicker = null,
 }) => {
+  const queryClient = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(
     initialTicker
   );
@@ -108,6 +109,7 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
           message: `${resp.message}`,
           autoClose: 10000,
         });
+        queryClient.invalidateQueries({ queryKey: ["dividends"] });
       },
       (error) => {
         notifications.show({
@@ -224,14 +226,34 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
             Total Dividends: ${totalAmount.toFixed(2)}
           </Text>
         )}
-        <FileInput
-          placeholder="Upload CSV"
-          accept=".csv"
-          onChange={handleFileUpload}
-          leftSection={<IconUpload size={16} />}
-          style={{ width: "200px" }}
-          clearable
-        />
+        <Tooltip
+          multiline
+          w={300}
+          label={
+            <Box>
+              <Text size="xs" fw={700}>
+                Required fields:
+              </Text>
+              <Text size="xs" mb="xs">
+                Ticker, ExDate, Amount, Interest, AvgInterest, WithholdingTax
+              </Text>
+              <Text size="xs" c="yellow.2">
+                Note: Uploading will replace existing custom dividends for
+                tickers in the file. Always upload all custom dividends
+                together.
+              </Text>
+            </Box>
+          }
+        >
+          <FileInput
+            placeholder="Upload CSV"
+            accept=".csv"
+            onChange={handleFileUpload}
+            leftSection={<IconUpload size={16} />}
+            style={{ width: "200px" }}
+            clearable
+          />
+        </Tooltip>
       </Box>
     ),
   });

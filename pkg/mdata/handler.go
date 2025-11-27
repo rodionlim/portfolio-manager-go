@@ -298,6 +298,53 @@ func HandleInterestRatesGet(mdataSvc MarketDataManager) http.HandlerFunc {
 	}
 }
 
+// @Summary Delete dividend metadata for a ticker
+// @Description Deletes dividend history data for a specified stock ticker
+// @Tags market-data
+// @Accept json
+// @Produce json
+// @Param ticker path string true "Asset ticker symbol"
+// @Param type query string true "Dividend type (Custom or Official)"
+// @Success 200 {object} common.SuccessResponse "Dividends metadata deleted successfully"
+// @Failure 400 {string} string "Bad request - Ticker is required or invalid type"
+// @Failure 500 {string} string "Internal server error"
+// @Router /api/v1/mdata/dividends/{ticker} [delete]
+func HandleDividendsDelete(mdataSvc MarketDataManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ticker := strings.TrimPrefix(r.URL.Path, "/api/v1/mdata/dividends/")
+		if ticker == "" {
+			common.WriteJSONError(w, "Ticker is required", http.StatusBadRequest)
+			return
+		}
+
+		dividendType := r.URL.Query().Get("type")
+		if dividendType == "" {
+			common.WriteJSONError(w, "Dividend type is required (Custom or Official)", http.StatusBadRequest)
+			return
+		}
+
+		var isCustom bool
+		if strings.EqualFold(dividendType, "Custom") {
+			isCustom = true
+		} else if strings.EqualFold(dividendType, "Official") {
+			isCustom = false
+		} else {
+			common.WriteJSONError(w, "Invalid dividend type. Must be 'Custom' or 'Official'", http.StatusBadRequest)
+			return
+		}
+
+		err := mdataSvc.DeleteDividendsMetadata(ticker, isCustom)
+		if err != nil {
+			logging.GetLogger().Error("Failed to delete dividends metadata", err)
+			common.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(common.SuccessResponse{Message: "Dividends metadata deleted successfully"})
+	}
+}
+
 // RegisterHandlers registers the handlers for the market data service
 func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 	mux.HandleFunc("/api/v1/mdata/price/", func(w http.ResponseWriter, r *http.Request) {
@@ -324,6 +371,8 @@ func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 			HandleDividendsGet(mdataSvc).ServeHTTP(w, r)
 		case http.MethodPost:
 			HandleDividendsStore(mdataSvc).ServeHTTP(w, r)
+		case http.MethodDelete:
+			HandleDividendsDelete(mdataSvc).ServeHTTP(w, r)
 		default:
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

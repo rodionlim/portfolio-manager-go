@@ -24,6 +24,7 @@ type MarketDataManager interface {
 	GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error)
 	ImportCustomDividendsFromCSVReader(*csv.Reader) (int, error)
 	StoreCustomDividendsMetadata(ticker string, dividends []types.DividendsMetadata) error
+	DeleteDividendsMetadata(ticker string, isCustom bool) error
 	FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error)
 }
 
@@ -356,6 +357,31 @@ func (m *Manager) StoreCustomDividendsMetadata(ticker string, dividends []types.
 	}
 
 	return errors.New("unable to store custom dividends metadata for this data source")
+}
+
+// DeleteDividendsMetadata deletes custom or official dividends metadata for a single ticker
+func (m *Manager) DeleteDividendsMetadata(ticker string, isCustom bool) error {
+	ticker = strings.ToUpper(ticker)
+
+	// All other tickers go through normalization via reference data
+	tickerRef, err := m.getReferenceData(ticker)
+	if err != nil {
+		return err
+	}
+
+	if tickerRef.DividendsSgTicker != "" {
+		if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
+			return dividendsSg.DeleteDividendsMetadata(tickerRef.DividendsSgTicker, isCustom)
+		}
+	}
+
+	if tickerRef.YahooTicker != "" {
+		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
+			return yahoo.DeleteDividendsMetadata(tickerRef.YahooTicker, isCustom)
+		}
+	}
+
+	return errors.New("unable to delete dividends metadata for this data source")
 }
 
 // NewDataSource creates a new data source engine based on the source type

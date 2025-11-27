@@ -157,6 +157,11 @@ func (src *Mas) StoreDividendsMetadata(ticker string, dividends []types.Dividend
 	panic("unimplemented")
 }
 
+// DeleteDividendsMetadata deletes either custom or official dividends metadata for a given ticker
+func (src *Mas) DeleteDividendsMetadata(ticker string, isCustom bool) error {
+	return fmt.Errorf("delete dividends metadata not supported for Mas data source")
+}
+
 // FetchBenchmarkInterestRates fetches benchmark interest rates from MAS for Singapore
 // It scrapes the SORA (Singapore Overnight Rate Average) rates from the MAS website
 // using ASP.NET form submission with viewstate management.
@@ -189,7 +194,7 @@ func (src *Mas) FetchBenchmarkInterestRates(country string, points int) ([]types
 			// Check if cached data is recent enough (contains data from current month/year)
 			isRecentEnough := false
 			currentMonthYear := time.Now().Format("Jan 2006")
-			
+
 			for _, rate := range cachedRates {
 				// Parse the date to check if it's from the current month and year
 				if rateTime, err := time.Parse("02 Jan 2006", rate.Date); err == nil {
@@ -199,7 +204,7 @@ func (src *Mas) FetchBenchmarkInterestRates(country string, points int) ([]types
 					}
 				}
 			}
-			
+
 			// Only use cached data if it's recent enough and has sufficient records
 			if isRecentEnough {
 				filteredRates := filterRecentRates(cachedRates, points)
@@ -291,7 +296,7 @@ func (src *Mas) FetchBenchmarkInterestRates(country string, points int) ([]types
 	}
 
 	// Log the date range for debugging
-	src.logger.Infof("Fetching MAS data from %d-%02d to %d-%02d (estimated months: %d)", 
+	src.logger.Infof("Fetching MAS data from %d-%02d to %d-%02d (estimated months: %d)",
 		startYear, startMonth, endYear, endMonth, estimatedMonths)
 
 	formData := url.Values{}
@@ -385,7 +390,7 @@ func (src *Mas) FetchBenchmarkInterestRates(country string, points int) ([]types
 
 	// Log the date range of fetched data for debugging
 	if len(interestRates) > 0 {
-		src.logger.Infof("Fetched data from %s to %s (%d records)", 
+		src.logger.Infof("Fetched data from %s to %s (%d records)",
 			interestRates[len(interestRates)-1].Date, interestRates[0].Date, len(interestRates))
 	}
 

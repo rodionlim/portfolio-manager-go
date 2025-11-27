@@ -1,3 +1,10 @@
+## [1.28.0] - 2025-11-27
+
+### 🚀 Features
+
+- *(seed)* Add sgx to seed data
+- *(dividends)* Add a delete method for dividends
+
 ## [1.27.1] - 2025-11-23
 
 ### 🐛 Bug Fixes

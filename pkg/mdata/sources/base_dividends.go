@@ -70,6 +70,31 @@ func (base *BaseDividendSource) StoreDividendsMetadata(ticker string, dividends 
 	return dividends, err
 }
 
+// DeleteDividendsMetadata deletes either custom or official dividends metadata for a given ticker
+func (base *BaseDividendSource) DeleteDividendsMetadata(ticker string, isCustom bool) error {
+	logger := logging.GetLogger()
+	var err error
+
+	if base.db == nil {
+		logger.Warn("database is not initialized, skipping deleting dividends")
+		return fmt.Errorf("database is not initialized")
+	}
+
+	if !isCustom {
+		err = base.db.Delete(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker))
+	} else {
+		err = base.db.Delete(fmt.Sprintf("%s:%s", types.DividendsCustomKeyPrefix, ticker))
+	}
+
+	if err != nil {
+		return err
+	}
+
+	base.cache.Delete(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker))
+
+	return nil
+}
+
 // mergeAndSortDividends concatenates two slices of DividendsMetadata and sorts them by ExDate.
 // If there is an overlap in ExDate, the dividend from the right slice (custom) takes precedence.
 func (base *BaseDividendSource) mergeAndSortDividendsMetadata(officialDividends []types.DividendsMetadata, customDividends []types.DividendsMetadata) []types.DividendsMetadata {

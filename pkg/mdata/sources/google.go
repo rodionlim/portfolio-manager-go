@@ -35,6 +35,10 @@ func (src *googleFinance) StoreDividendsMetadata(ticker string, dividends []type
 	panic("unimplemented")
 }
 
+func (src *googleFinance) DeleteDividendsMetadata(ticker string, isCustom bool) error {
+	return fmt.Errorf("delete dividends metadata not supported for Google Finance data source")
+}
+
 func (src *googleFinance) FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error) {
 	return nil, fmt.Errorf("benchmark interest rates not supported for Google Finance data source")
 }

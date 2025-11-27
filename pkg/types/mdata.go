@@ -29,6 +29,7 @@ type DataSource interface {
 	GetAssetPrice(ticker string) (*AssetData, error)
 	GetDividendsMetadata(ticker string, witholdingTax float64) ([]DividendsMetadata, error)
 	StoreDividendsMetadata(ticker string, dividends []DividendsMetadata, isCustom bool) ([]DividendsMetadata, error)
+	DeleteDividendsMetadata(ticker string, isCustom bool) error
 	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*AssetData, error)
 	FetchBenchmarkInterestRates(country string, points int) ([]InterestRates, error)
 }

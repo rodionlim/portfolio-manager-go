@@ -69,3 +69,9 @@ func (m *MockMarketDataManager) FetchBenchmarkInterestRates(country string, poin
 	}
 	return args.Get(0).([]types.InterestRates), args.Error(1)
 }
+
+// DeleteDividendsMetadata mocks the DeleteDividendsMetadata method
+func (m *MockMarketDataManager) DeleteDividendsMetadata(ticker string, isCustom bool) error {
+	args := m.Called(ticker, isCustom)
+	return args.Error(0)
+}

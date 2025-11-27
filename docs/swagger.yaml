@@ -1324,6 +1324,39 @@ paths:
       tags:
       - historical
   /api/v1/mdata/dividends/{ticker}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes dividend history data for a specified stock ticker
+      parameters:
+      - description: Asset ticker symbol
+        in: path
+        name: ticker
+        required: true
+        type: string
+      - description: Dividend type (Custom or Official)
+        in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Dividends metadata deleted successfully
+          schema:
+            $ref: '#/definitions/common.SuccessResponse'
+        "400":
+          description: Bad request - Ticker is required or invalid type
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Delete dividend metadata for a ticker
+      tags:
+      - market-data
     get:
       consumes:
       - application/json

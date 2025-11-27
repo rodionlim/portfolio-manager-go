@@ -91,3 +91,12 @@ func (m *MockMarketDataManager) FetchBenchmarkInterestRates(country string, poin
 		{Date: "2025-07-17", Rate: 2.4, Tenor: "O/N", Country: country, RateType: "SORA"},
 	}, nil
 }
+
+// DeleteDividendsMetadata deletes mock dividends metadata
+func (m *MockMarketDataManager) DeleteDividendsMetadata(ticker string, isCustom bool) error {
+	if _, ok := m.DividendsMetadata[ticker]; ok {
+		delete(m.DividendsMetadata, ticker)
+		return nil
+	}
+	return nil
+}

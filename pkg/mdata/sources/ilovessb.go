@@ -202,6 +202,10 @@ func (src *ILoveSsb) StoreDividendsMetadata(ticker string, dividends []types.Div
 	panic("unimplemented")
 }
 
+func (src *ILoveSsb) DeleteDividendsMetadata(ticker string, isCustom bool) error {
+	return fmt.Errorf("delete dividends metadata not supported for ILoveSsb data source")
+}
+
 func (src *ILoveSsb) FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error) {
 	return nil, fmt.Errorf("benchmark interest rates not supported for ILoveSsb data source")
 }

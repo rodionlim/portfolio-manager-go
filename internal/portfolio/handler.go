@@ -32,6 +32,21 @@ func HandlePositionsGet(portfolio *Portfolio) http.HandlerFunc {
 	}
 }
 
+// HandlePositionsGetLite handles retrieving all positions without enrichment (no FX, dividends, market values).
+// @Summary Get all portfolio positions without enrichment
+// @Description Retrieves all positions without costly enrichment operations (FX rates, dividends, market values). Useful for UI components that only need ticker information.
+// @Tags portfolio
+// @Produce json
+// @Success 200 {array} Position
+// @Router /api/v1/portfolio/positions/lite [get]
+func HandlePositionsGetLite(portfolio *Portfolio) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		positions := portfolio.GetAllPositionsWithoutEnrichment()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(positions)
+	}
+}
+
 // HandlePositionsDelete handles deleting all positions from the portfolio service.
 // @Summary Delete all portfolio positions
 // @Description Deletes all positions currently in the portfolio
@@ -119,6 +134,14 @@ func RegisterHandlers(mux *http.ServeMux, portfolio *Portfolio) {
 		default:
 			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
+	})
+
+	mux.HandleFunc("/api/v1/portfolio/positions/lite", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandlePositionsGetLite(portfolio).ServeHTTP(w, r)
 	})
 
 	mux.HandleFunc("/api/v1/portfolio/position", func(w http.ResponseWriter, r *http.Request) {

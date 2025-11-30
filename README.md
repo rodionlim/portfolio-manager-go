@@ -526,6 +526,14 @@ curl -X GET http://localhost:8080/api/v1/blotter/export-with-fx
 curl http://localhost:8080/api/v1/portfolio/positions
 ```
 
+### Get Portfolio Positions (Lite)
+
+Get positions without enrichment (no FX rates, dividends, or market values). Useful for UI components that only need ticker information and want faster response times.
+
+```sh
+curl http://localhost:8080/api/v1/portfolio/positions/lite
+```
+
 ### Delete Single Position
 
 Delete a specific position by book and ticker:

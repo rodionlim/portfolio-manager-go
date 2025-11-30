@@ -42,11 +42,11 @@ const SGXSectorView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleSectorClick = (sectorName: string) => {
-    // Navigate to stocks view with sector filter
+    // Navigate to Top 10 stocks view with sector filter
     navigate("/analytics/reports", {
       state: {
         selectedSector: sectorName,
-        activeTab: "visualization", // Switch to Most Traded Stocks tab
+        activeTab: "top10", // Switch to Top 10 Stocks tab
       },
     });
   };

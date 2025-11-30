@@ -1862,6 +1862,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/portfolio/positions/lite": {
+            "get": {
+                "description": "Retrieves all positions without costly enrichment operations (FX rates, dividends, market values). Useful for UI components that only need ticker information.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolio"
+                ],
+                "summary": "Get all portfolio positions without enrichment",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/portfolio.Position"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/refdata": {
             "get": {
                 "description": "Retrieves all reference data",

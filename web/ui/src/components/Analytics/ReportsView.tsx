@@ -33,7 +33,7 @@ const ReportsView: React.FC = () => {
           <Tabs.List>
             <Tabs.Tab value="reports">Download Reports</Tabs.Tab>
             <Tabs.Tab value="visualization">
-              Most Traded Stocks (Weekly)
+              Most Traded Stocks (Deprecated)
             </Tabs.Tab>
             <Tabs.Tab value="top10">Top 10 Stocks (Weekly)</Tabs.Tab>
             <Tabs.Tab value="sectors">Sector Funds Flow (Weekly)</Tabs.Tab>

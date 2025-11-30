@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Stack,
   Select,
@@ -12,9 +12,24 @@ import {
   Box,
   HoverCard,
   useMantineColorScheme,
+  Button,
+  MultiSelect,
 } from "@mantine/core";
-import { IconInfoCircle } from "@tabler/icons-react";
+import { IconInfoCircle, IconBriefcase } from "@tabler/icons-react";
 import { getUrl } from "../../utils/url";
+import { useLocation } from "react-router-dom";
+
+interface Position {
+  Ticker: string;
+  Name: string;
+  AssetClass: string;
+}
+
+interface ReferenceData {
+  id: string;
+  underlying_ticker: string;
+  category: string;
+}
 
 interface Top10Stock {
   stockName: string;
@@ -39,16 +54,113 @@ interface Top10WeeklyReport {
 
 const SGXTop10StocksView: React.FC = () => {
   const { colorScheme } = useMantineColorScheme();
+  const location = useLocation();
   const [investorType, setInvestorType] = useState<string>("institutional");
   const [sortMethod, setSortMethod] = useState<string>("balanced");
   const [topCount, setTopCount] = useState<string>("10");
   const [reports, setReports] = useState<Top10WeeklyReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
+  const [portfolioTickers, setPortfolioTickers] = useState<string[]>([]);
+  const [showPortfolioOnly, setShowPortfolioOnly] = useState(false);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+  const [stockSectorMap, setStockSectorMap] = useState<Map<string, string>>(
+    new Map()
+  );
+  const [availableSectors, setAvailableSectors] = useState<string[]>([]);
+  const [sectorLoading, setSectorLoading] = useState(true);
+
+  // Track if navigation state was already applied to prevent re-applying on tab switches
+  const navigationAppliedRef = useRef(false);
+
+  // Get navigation state (sector filter from SGXSectorView)
+  const navigationState = location.state as { selectedSector?: string } | null;
+
+  useEffect(() => {
+    // Only set initial sector filter once when first coming from navigation
+    if (navigationState?.selectedSector && !navigationAppliedRef.current) {
+      setSelectedSectors([navigationState.selectedSector]);
+      navigationAppliedRef.current = true;
+    }
+  }, [navigationState]);
 
   useEffect(() => {
     fetchTop10Stocks();
+    fetchPortfolioPositions();
+    fetchSectorData();
   }, []);
+
+  // Fetch portfolio positions to get tickers for filtering (using lite endpoint for performance)
+  const fetchPortfolioPositions = async () => {
+    setPortfolioLoading(true);
+    try {
+      const resp = await fetch(getUrl("/api/v1/portfolio/positions/lite"));
+      if (!resp.ok) {
+        console.error("Error fetching positions");
+        return;
+      }
+      const positions: Position[] = await resp.json();
+      // Filter out bonds (SSB, TBill) and extract unique SGX tickers
+      const sgxTickers = positions
+        .filter((p) => {
+          // Exclude Singapore Savings Bonds (SSB) and T-Bills
+          const ticker = p.Ticker;
+          const isSsb = ticker.startsWith("SB") && ticker.length === 7;
+          const isTbill =
+            ticker.length === 8 &&
+            /^[A-Za-z]{2}/.test(ticker) &&
+            /[A-Za-z]$/.test(ticker);
+          return !isSsb && !isTbill && p.AssetClass !== "Bond";
+        })
+        .map((p) => p.Ticker);
+      setPortfolioTickers([...new Set(sgxTickers)]);
+    } catch (err) {
+      console.error("Failed to fetch portfolio positions:", err);
+    } finally {
+      setPortfolioLoading(false);
+    }
+  };
+
+  // Fetch sector data from reference data API to map stock codes to sectors/categories
+  const fetchSectorData = async () => {
+    setSectorLoading(true);
+    try {
+      const response = await fetch(getUrl(`/api/v1/refdata`));
+      if (!response.ok) {
+        console.error("Failed to fetch reference data");
+        return;
+      }
+      // API returns an object/map format: { "ticker": {...}, "ticker2": {...} }
+      const data: Record<string, ReferenceData> = await response.json();
+      if (data && Object.keys(data).length > 0) {
+        const sectorMap = new Map<string, string>();
+        const sectors = new Set<string>();
+        Object.values(data).forEach((ref: ReferenceData) => {
+          if (ref.category && ref.category.trim()) {
+            // Map both the id and underlying_ticker to the category
+            const category = ref.category.trim();
+            sectorMap.set(ref.id, category);
+            sectorMap.set(ref.underlying_ticker, category);
+            // Also map without .SI suffix for matching
+            if (ref.id.endsWith(".SI")) {
+              sectorMap.set(ref.id.replace(".SI", ""), category);
+            }
+            if (ref.underlying_ticker.endsWith(".SI")) {
+              sectorMap.set(ref.underlying_ticker.replace(".SI", ""), category);
+            }
+            sectors.add(category);
+          }
+        });
+        setStockSectorMap(sectorMap);
+        setAvailableSectors(Array.from(sectors).sort());
+      }
+    } catch (err) {
+      console.error("Failed to fetch sector data:", err);
+    } finally {
+      setSectorLoading(false);
+    }
+  };
 
   const fetchTop10Stocks = async () => {
     try {
@@ -108,6 +220,16 @@ const SGXTop10StocksView: React.FC = () => {
     }
   };
 
+  // Get unique sectors - uses category data from reference data API
+  const getUniqueSectors = (): string[] => {
+    return availableSectors;
+  };
+
+  // Get sector for a stock code using the sector map
+  const getStockSector = (stockCode: string): string | undefined => {
+    return stockSectorMap.get(stockCode);
+  };
+
   // Get stocks for the selected investor type and calculate cumulative values
   const getProcessedStocks = () => {
     if (reports.length === 0) return [];
@@ -120,6 +242,7 @@ const SGXTop10StocksView: React.FC = () => {
         stockCode: string;
         cumulativeValue: number;
         weeklyValues: Map<string, number>;
+        sector?: string;
       }
     >();
 
@@ -139,6 +262,7 @@ const SGXTop10StocksView: React.FC = () => {
             stockCode: stock.stockCode,
             cumulativeValue: 0,
             weeklyValues: new Map(),
+            sector: (stock as any).sector,
           });
         }
 
@@ -149,9 +273,29 @@ const SGXTop10StocksView: React.FC = () => {
     });
 
     // Convert to array and sort by cumulative value (descending)
-    const allStocks = Array.from(stockMap.values()).sort(
+    let allStocks = Array.from(stockMap.values()).sort(
       (a, b) => b.cumulativeValue - a.cumulativeValue
     );
+
+    // Apply sector filtering using the sector map from most traded stocks
+    if (selectedSectors.length > 0) {
+      allStocks = allStocks.filter((stock) => {
+        const sector = getStockSector(stock.stockCode);
+        return sector && selectedSectors.includes(sector);
+      });
+    }
+
+    // Apply portfolio filtering
+    if (showPortfolioOnly && portfolioTickers.length > 0) {
+      allStocks = allStocks.filter((stock) =>
+        portfolioTickers.some(
+          (ticker) =>
+            ticker === stock.stockCode ||
+            ticker.replace(".SI", "") === stock.stockCode ||
+            stock.stockCode.replace(".SI", "") === ticker.replace(".SI", "")
+        )
+      );
+    }
 
     const count = parseInt(topCount);
 
@@ -257,10 +401,43 @@ const SGXTop10StocksView: React.FC = () => {
           <Text size="sm" c="dimmed">
             {investorType === "institutional" ? "Institutional" : "Retail"} Net
             Buy/Sell (SGD Million) - Latest {reports.length} reports
+            {selectedSectors.length > 0 && (
+              <Text component="span" c="blue">
+                {" "}
+                • Filtered by {selectedSectors.length} sector
+                {selectedSectors.length !== 1 ? "s" : ""}
+              </Text>
+            )}
+            {showPortfolioOnly && (
+              <Text component="span" c="teal">
+                {" "}
+                • Portfolio stocks only
+              </Text>
+            )}
           </Text>
         </div>
 
         <Group gap="md" align="flex-end">
+          <Button
+            variant={showPortfolioOnly ? "filled" : "light"}
+            color="teal"
+            leftSection={<IconBriefcase size={16} />}
+            onClick={() => setShowPortfolioOnly(!showPortfolioOnly)}
+            disabled={portfolioLoading || portfolioTickers.length === 0}
+            loading={portfolioLoading}
+            title={
+              portfolioLoading
+                ? "Loading portfolio positions..."
+                : portfolioTickers.length === 0
+                ? "No portfolio positions found"
+                : showPortfolioOnly
+                ? "Click to show all stocks"
+                : "Click to show only portfolio stocks"
+            }
+          >
+            {showPortfolioOnly ? "Show All" : "My Portfolio"}
+          </Button>
+
           <Select
             label="Investor Type"
             value={investorType}
@@ -295,8 +472,45 @@ const SGXTop10StocksView: React.FC = () => {
             ]}
             w={140}
           />
+
+          {/* Show category filter on same row when nothing selected */}
+          {selectedSectors.length === 0 && (
+            <MultiSelect
+              label="Filter by Category"
+              placeholder="All categories"
+              value={selectedSectors}
+              onChange={setSelectedSectors}
+              data={getUniqueSectors()}
+              clearable
+              w={200}
+              disabled={sectorLoading}
+            />
+          )}
         </Group>
       </Group>
+
+      {/* Sector filter on separate row only when sectors are selected */}
+      {selectedSectors.length > 0 && (
+        <Group gap="md" align="flex-end">
+          <MultiSelect
+            label="Filter by Category"
+            placeholder={`${selectedSectors.length} selected`}
+            value={selectedSectors}
+            onChange={setSelectedSectors}
+            data={getUniqueSectors()}
+            clearable
+            w={300}
+          />
+          <Button
+            variant="light"
+            color="blue"
+            size="sm"
+            onClick={() => setSelectedSectors([])}
+          >
+            Clear Filter
+          </Button>
+        </Group>
+      )}
 
       <ScrollArea>
         <Box style={{ minWidth: Math.max(800, processedStocks.length * 120) }}>

@@ -493,24 +493,55 @@ func (s *ServiceImpl) extractMostTradedStocksFromFile(filePath string) (*MostTra
 
 // extractDateFromSGXFilename extracts date from SGX filename format
 // Example: "SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025.xlsx" -> "26 May 2025"
+// Handles double underscores like "Week_of__6_October_2025" -> "6 Oct 2025"
 func extractDateFromSGXFilename(filename string) string {
 	// Remove extension
 	base := strings.TrimSuffix(filename, filepath.Ext(filename))
 
-	// Split by underscore and find the date part
-	parts := strings.Split(base, "_")
+	// Split by underscore and filter out empty parts (handles double underscores)
+	allParts := strings.Split(base, "_")
+	parts := make([]string, 0, len(allParts))
+	for _, part := range allParts {
+		if part != "" {
+			parts = append(parts, part)
+		}
+	}
 
 	// Look for the pattern "Week_of_DD_MMM_YYYY"
 	for i := 0; i < len(parts)-3; i++ {
 		if parts[i] == "Week" && i+1 < len(parts) && parts[i+1] == "of" {
 			if i+4 < len(parts) {
+				// Normalize full month names to abbreviated format
+				month := normalizeMonthName(parts[i+3])
 				// Return "DD MMM YYYY" format
-				return fmt.Sprintf("%s %s %s", parts[i+2], parts[i+3], parts[i+4])
+				return fmt.Sprintf("%s %s %s", parts[i+2], month, parts[i+4])
 			}
 		}
 	}
 
 	return ""
+}
+
+// normalizeMonthName converts full month names to 3-letter abbreviations
+func normalizeMonthName(month string) string {
+	monthMap := map[string]string{
+		"January":   "Jan",
+		"February":  "Feb",
+		"March":     "Mar",
+		"April":     "Apr",
+		"May":       "May",
+		"June":      "Jun",
+		"July":      "Jul",
+		"August":    "Aug",
+		"September": "Sep",
+		"October":   "Oct",
+		"November":  "Nov",
+		"December":  "Dec",
+	}
+	if abbr, ok := monthMap[month]; ok {
+		return abbr
+	}
+	return month // Return as-is if already abbreviated or unknown
 }
 
 // parseFloat parses a string to float64, handling common formatting issues

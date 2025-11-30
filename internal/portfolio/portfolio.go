@@ -437,6 +437,21 @@ func (p *Portfolio) GetAllPositions() ([]*Position, error) {
 	return positions, err
 }
 
+// GetAllPositionsWithoutEnrichment returns all positions without enrichment (no FX rates, dividends, or market values).
+// This is a lightweight version for UI components that only need to know which tickers have positions.
+func (p *Portfolio) GetAllPositionsWithoutEnrichment() []*Position {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	positions := make([]*Position, 0)
+	for _, books := range p.positions {
+		for _, position := range books {
+			positions = append(positions, position)
+		}
+	}
+	return positions
+}
+
 func (p *Portfolio) enrichPositions(positions []*Position) error {
 	if len(positions) == 0 {
 		return nil
@@ -452,7 +467,7 @@ func (p *Portfolio) enrichPositions(positions []*Position) error {
 	var wg sync.WaitGroup
 
 	// Launch workers (only 3 to prevent overloading external services)
-	for i := 0; i < maxWorkers; i++ {
+	for range maxWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

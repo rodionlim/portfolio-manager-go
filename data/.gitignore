@@ -1,8 +1,9 @@
 # Ignore all files in this directory
 *
 
-# Except for the specific SGX report file we want to keep
+# Except for the specific SGX report files we want to keep for tests
 !SGX_Fund_Flow_Weekly_Tracker_Week_of_26_May_2025.xlsx
+!SGX_Fund_Flow_Weekly_Tracker_Week_of__6_October_2025.xlsx
 
 # Don't ignore this .gitignore file itself
 !.gitignore

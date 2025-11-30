@@ -1697,6 +1697,23 @@ paths:
       summary: Get all portfolio positions
       tags:
       - portfolio
+  /api/v1/portfolio/positions/lite:
+    get:
+      description: Retrieves all positions without costly enrichment operations (FX
+        rates, dividends, market values). Useful for UI components that only need
+        ticker information.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/portfolio.Position'
+            type: array
+      summary: Get all portfolio positions without enrichment
+      tags:
+      - portfolio
   /api/v1/refdata:
     delete:
       consumes:

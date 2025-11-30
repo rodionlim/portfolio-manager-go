@@ -1,3 +1,9 @@
+## [1.29.0] - 2025-11-30
+
+### 🚀 Features
+
+- *(analytics)* Add portfolio filter, sector navigation, and lightweight positions endpoint
+
 ## [1.28.0] - 2025-11-27
 
 ### 🚀 Features

@@ -410,7 +410,7 @@ func (m *Manager) getReferenceData(ticker string) (rdata.TickerReference, error)
 		return rdata.TickerReference{}, err
 	}
 
-	return refData, nil
+	return refData.TickerReference, nil
 }
 
 func (m *Manager) MapDomicileToWitholdingTax(domicile string) float64 {

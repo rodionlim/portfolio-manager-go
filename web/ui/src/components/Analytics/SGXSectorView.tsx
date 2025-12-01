@@ -43,9 +43,15 @@ const SGXSectorView: React.FC = () => {
 
   const handleSectorClick = (sectorName: string) => {
     // Navigate to Top 10 stocks view with sector filter
+    console.log(
+      sectorName.replaceAll("(Hardware/\nSoftware)", "(Hardware/Software)")
+    );
     navigate("/analytics/reports", {
       state: {
-        selectedSector: sectorName,
+        selectedSector: sectorName.replaceAll(
+          "(Hardware/\nSoftware)",
+          "(Hardware/Software)"
+        ),
         activeTab: "top10", // Switch to Top 10 Stocks tab
       },
     });

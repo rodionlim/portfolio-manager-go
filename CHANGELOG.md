@@ -1,3 +1,9 @@
+## [1.29.1] - 2025-12-01
+
+### 🐛 Bug Fixes
+
+- *(ui)* Handle sector navigation to top 10 stocks view additional mapping #134
+
 ## [1.29.0] - 2025-11-30
 
 ### 🚀 Features

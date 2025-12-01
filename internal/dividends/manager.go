@@ -99,7 +99,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 	}
 
 	// Fetch dividends data from mdata service
-	dividends, err := dm.mdata.GetDividendsMetadataFromTickerRef(tickerRef)
+	dividends, err := dm.mdata.GetDividendsMetadataFromTickerRef(tickerRef.TickerReference)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleBook(book string) (map[st
 		}
 
 		// Fetch dividends data from mdata service
-		dividends, err := dm.mdata.GetDividendsMetadataFromTickerRef(tickerRef)
+		dividends, err := dm.mdata.GetDividendsMetadataFromTickerRef(tickerRef.TickerReference)
 		if err != nil {
 			continue // Skip if can't get dividends data
 		}

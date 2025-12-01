@@ -30,18 +30,18 @@ func (m *MockReferenceManager) DeleteTicker(id string) error {
 }
 
 // GetTicker mocks the GetTicker method
-func (m *MockReferenceManager) GetTicker(id string) (rdata.TickerReference, error) {
+func (m *MockReferenceManager) GetTicker(id string) (rdata.TickerReferenceWithSGXMapped, error) {
 	args := m.Called(id)
-	return args.Get(0).(rdata.TickerReference), args.Error(1)
+	return args.Get(0).(rdata.TickerReferenceWithSGXMapped), args.Error(1)
 }
 
 // GetAllTickers mocks the GetAllTickers method
-func (m *MockReferenceManager) GetAllTickers() (map[string]rdata.TickerReference, error) {
+func (m *MockReferenceManager) GetAllTickers() (map[string]rdata.TickerReferenceWithSGXMapped, error) {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(map[string]rdata.TickerReference), args.Error(1)
+	return args.Get(0).(map[string]rdata.TickerReferenceWithSGXMapped), args.Error(1)
 }
 
 // ExportToYamlBytes mocks the ExportToYamlBytes method

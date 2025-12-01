@@ -76,9 +76,11 @@ func TestCalculateIRR(t *testing.T) {
 	}
 
 	// Setup ticker reference and FX rate data
-	aaplRef := rdata.TickerReference{
-		ID:  "AAPL",
-		Ccy: "USD", // Non-SGD currency to test FX conversion
+	aaplRef := rdata.TickerReferenceWithSGXMapped{
+		TickerReference: rdata.TickerReference{
+			ID:  "AAPL",
+			Ccy: "USD", // Non-SGD currency to test FX conversion
+		},
 	}
 
 	usdSgdRate := &types.AssetData{
@@ -195,7 +197,9 @@ func TestCalculateIRR_SimpleProfitWithDividend(t *testing.T) {
 			},
 		},
 	}
-	aaplRef := rdata.TickerReference{ID: "AAPL", Ccy: "USD"}
+	aaplRef := rdata.TickerReferenceWithSGXMapped{
+		TickerReference: rdata.TickerReference{ID: "AAPL", Ccy: "USD"},
+	}
 	usdSgdRate := &types.AssetData{Ticker: "USD-SGD", Price: 1.0}
 
 	mockBlotter.On("GetTrades").Return(trades)

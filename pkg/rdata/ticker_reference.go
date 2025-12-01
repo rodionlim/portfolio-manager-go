@@ -35,6 +35,45 @@ type TickerReference struct {
 	CallPut           string  `json:"call_put" yaml:"call_put" validate:"oneof=call put"`
 }
 
+// TickerReferenceWithSGXMapped extends TickerReference with SGX-compatible category mapping
+type TickerReferenceWithSGXMapped struct {
+	TickerReference
+	CategorySGX string `json:"category_sgx" yaml:"category_sgx"`
+}
+
+// categoryToSGXMap maps internal category names to SGX sector names
+var categoryToSGXMap = map[string]string{
+	CategoryConsumerCyclicals:    "Consumer Cyclicals",
+	CategoryConsumerNonCyclicals: "Consumer Non-Cyclicals",
+	CategoryEnergy:               "Energy/Oil & Gas",
+	CategoryFinance:              "Financial Services",
+	CategoryHealthcare:           "Healthcare",
+	CategoryIndustrials:          "Industrials",
+	CategoryMaterials:            "Materials & Resources",
+	CategoryRealEstate:           "Real Estate (excl. REITs)",
+	CategoryREITs:                "REITs",
+	CategoryTechnology:           "Technology (Hardware/Software)",
+	CategoryTelecommunications:   "Telcos",
+	CategoryUtilities:            "Utilities",
+}
+
+// MapCategoryToSGX converts an internal category to SGX sector name
+// Returns the original category if no mapping exists
+func MapCategoryToSGX(category string) string {
+	if sgxCategory, ok := categoryToSGXMap[category]; ok {
+		return sgxCategory
+	}
+	return category // Return original if no mapping found
+}
+
+// ToSGXMapped converts a TickerReference to TickerReferenceWithSGXMapped
+func (t TickerReference) ToSGXMapped() TickerReferenceWithSGXMapped {
+	return TickerReferenceWithSGXMapped{
+		TickerReference: t,
+		CategorySGX:     MapCategoryToSGX(t.Category),
+	}
+}
+
 // Supported asset classes
 const (
 	AssetClassBonds       = "bond"

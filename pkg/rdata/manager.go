@@ -17,8 +17,8 @@ type ReferenceManager interface {
 	AddTicker(ticker TickerReference) (string, error)
 	UpdateTicker(ticker *TickerReference) error
 	DeleteTicker(id string) error
-	GetTicker(id string) (TickerReference, error)
-	GetAllTickers() (map[string]TickerReference, error)
+	GetTicker(id string) (TickerReferenceWithSGXMapped, error)
+	GetAllTickers() (map[string]TickerReferenceWithSGXMapped, error)
 	ExportToYamlBytes() ([]byte, error)
 }
 
@@ -108,7 +108,7 @@ func (rm *Manager) DeleteTicker(id string) error {
 	return rm.db.Delete(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, id))
 }
 
-func (rm *Manager) GetTicker(id string) (TickerReference, error) {
+func (rm *Manager) GetTicker(id string) (TickerReferenceWithSGXMapped, error) {
 	var ticker TickerReference
 	err := rm.db.Get(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, id), &ticker)
 	if err != nil {
@@ -125,29 +125,29 @@ func (rm *Manager) GetTicker(id string) (TickerReference, error) {
 			}
 			_, err := rm.AddTicker(ticker)
 			if err != nil {
-				return TickerReference{}, err
+				return TickerReferenceWithSGXMapped{}, err
 			}
-			return ticker, nil
+			return ticker.ToSGXMapped(), nil
 		}
-		return TickerReference{}, err
+		return TickerReferenceWithSGXMapped{}, err
 	}
-	return ticker, nil
+	return ticker.ToSGXMapped(), nil
 }
 
-func (rm *Manager) GetAllTickers() (map[string]TickerReference, error) {
+func (rm *Manager) GetAllTickers() (map[string]TickerReferenceWithSGXMapped, error) {
 	refKeys, err := rm.db.GetAllKeysWithPrefix(string(types.ReferenceDataKeyPrefix))
 	if err != nil {
 		return nil, err
 	}
 
-	refs := make(map[string]TickerReference)
+	refs := make(map[string]TickerReferenceWithSGXMapped)
 	for _, key := range refKeys {
 		var ref TickerReference
 		err := rm.db.Get(key, &ref)
 		if err != nil {
 			return nil, err
 		}
-		refs[ref.ID] = ref
+		refs[ref.ID] = ref.ToSGXMapped()
 	}
 
 	logging.GetLogger().Info("Loaded ticker references from database")

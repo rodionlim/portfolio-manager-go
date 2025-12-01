@@ -43,16 +43,20 @@ func (m *MockReferenceManager) DeleteTicker(id string) error {
 	return nil
 }
 
-func (m *MockReferenceManager) GetTicker(id string) (rdata.TickerReference, error) {
+func (m *MockReferenceManager) GetTicker(id string) (rdata.TickerReferenceWithSGXMapped, error) {
 	ticker, exists := m.Tickers[id]
 	if !exists {
-		return rdata.TickerReference{}, errors.New("ticker not found")
+		return rdata.TickerReferenceWithSGXMapped{}, errors.New("ticker not found")
 	}
-	return ticker, nil
+	return ticker.ToSGXMapped(), nil
 }
 
-func (m *MockReferenceManager) GetAllTickers() (map[string]rdata.TickerReference, error) {
-	return m.Tickers, nil
+func (m *MockReferenceManager) GetAllTickers() (map[string]rdata.TickerReferenceWithSGXMapped, error) {
+	result := make(map[string]rdata.TickerReferenceWithSGXMapped)
+	for k, v := range m.Tickers {
+		result[k] = v.ToSGXMapped()
+	}
+	return result, nil
 }
 
 func (m *MockReferenceManager) ExportToYamlBytes() ([]byte, error) {

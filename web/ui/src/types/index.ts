@@ -8,6 +8,7 @@ export interface ReferenceDataItem {
   asset_class: string;
   asset_sub_class: string;
   category: string;
+  category_sgx: string;
   sub_category: string;
   ccy: string;
   domicile: string;

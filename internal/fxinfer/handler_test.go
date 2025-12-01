@@ -61,15 +61,19 @@ func TestHandleGetCurrentFXRates(t *testing.T) {
 	mockBlotterSvc.On("GetTrades").Return(trades)
 
 	// Setup reference data for tickers
-	tickerReferenceAAPL := rdata.TickerReference{
-		ID:  "AAPL",
-		Ccy: "USD",
+	tickerReferenceAAPL := rdata.TickerReferenceWithSGXMapped{
+		TickerReference: rdata.TickerReference{
+			ID:  "AAPL",
+			Ccy: "USD",
+		},
 	}
 	mockRdataSvc.On("GetTicker", "AAPL").Return(tickerReferenceAAPL, nil)
 
-	tickerReferenceMSFT := rdata.TickerReference{
-		ID:  "MSFT",
-		Ccy: "USD",
+	tickerReferenceMSFT := rdata.TickerReferenceWithSGXMapped{
+		TickerReference: rdata.TickerReference{
+			ID:  "MSFT",
+			Ccy: "USD",
+		},
 	}
 	mockRdataSvc.On("GetTicker", "MSFT").Return(tickerReferenceMSFT, nil)
 

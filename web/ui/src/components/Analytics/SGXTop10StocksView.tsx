@@ -29,6 +29,7 @@ interface ReferenceData {
   id: string;
   underlying_ticker: string;
   category: string;
+  category_sgx: string;
 }
 
 interface Top10Stock {
@@ -137,19 +138,16 @@ const SGXTop10StocksView: React.FC = () => {
         const sectorMap = new Map<string, string>();
         const sectors = new Set<string>();
         Object.values(data).forEach((ref: ReferenceData) => {
-          if (ref.category && ref.category.trim()) {
-            // Map both the id and underlying_ticker to the category
-            const category = ref.category.trim();
-            sectorMap.set(ref.id, category);
-            sectorMap.set(ref.underlying_ticker, category);
+          // Use category_sgx for SGX sector mapping, with fallback to category
+          const sectorName =
+            (ref.category_sgx && ref.category_sgx.trim()) ||
+            (ref.category && ref.category.trim());
+          if (sectorName) {
             // Also map without .SI suffix for matching
             if (ref.id.endsWith(".SI")) {
-              sectorMap.set(ref.id.replace(".SI", ""), category);
+              sectorMap.set(ref.id.replace(".SI", ""), sectorName);
             }
-            if (ref.underlying_ticker.endsWith(".SI")) {
-              sectorMap.set(ref.underlying_ticker.replace(".SI", ""), category);
-            }
-            sectors.add(category);
+            sectors.add(sectorName);
           }
         });
         setStockSectorMap(sectorMap);
@@ -262,7 +260,7 @@ const SGXTop10StocksView: React.FC = () => {
             stockCode: stock.stockCode,
             cumulativeValue: 0,
             weeklyValues: new Map(),
-            sector: (stock as any).sector,
+            sector: stockSectorMap.get(stock.stockCode),
           });
         }
 
@@ -499,7 +497,7 @@ const SGXTop10StocksView: React.FC = () => {
             onChange={setSelectedSectors}
             data={getUniqueSectors()}
             clearable
-            w={300}
+            w={500}
           />
           <Button
             variant="light"
@@ -596,6 +594,14 @@ const SGXTop10StocksView: React.FC = () => {
                             </Text>
                             <Text size="xs" fw={500}>
                               {stock.weeklyValues.size} / {reports.length}
+                            </Text>
+                          </Group>
+                          <Group justify="space-between">
+                            <Text size="xs" c="dimmed">
+                              Sector:
+                            </Text>
+                            <Text size="xs" fw={500}>
+                              {stock.sector}
                             </Text>
                           </Group>
                         </Stack>

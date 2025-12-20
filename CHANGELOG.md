@@ -1,3 +1,10 @@
+## [1.30.0] - 2025-12-20
+
+### 🚀 Features
+
+- *(seed)* Add jardine matheson to seed
+- *(llm)* Update default model to gemini 3 flash
+
 ## [1.29.1] - 2025-12-01
 
 ### 🐛 Bug Fixes

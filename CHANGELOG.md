@@ -1,3 +1,10 @@
+## [1.30.1] - 2025-12-20
+
+### 🐛 Bug Fixes
+
+- *(llm)* Force analysis did not work
+- Import cycle in tests
+
 ## [1.30.0] - 2025-12-20
 
 ### 🚀 Features

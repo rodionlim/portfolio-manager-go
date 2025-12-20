@@ -1,10 +1,11 @@
-package analytics
+package analytics_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"portfolio-manager/internal/analytics"
 	"portfolio-manager/internal/mocks/testify"
 
 	"github.com/stretchr/testify/assert"
@@ -20,27 +21,14 @@ func TestAnalyzeLatestNReports_ForceReanalysisBypassesCachedAnalysis(t *testing.
 	// NewService always sets db on analyzer; we don't need a real db in this test.
 	mockAI.On("SetDatabase", mock.Anything).Return()
 
-	report := SGXReport{}
+	report := analytics.SGXReport{}
 	report.Data.Title = "SGX_Fund_Flow_Weekly_Tracker_Week_of_6_October_2025"
 	report.Data.ReportDate = 1
 	report.Data.Report.Data.File.Data.URL = "https://example.com/report.xlsx"
 	report.Data.Report.Data.File.Data.FileMime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-	report.Data.FundsFlowType = []struct {
-		Data struct {
-			Data struct {
-				ID           string  `json:"id"`
-				Name         string  `json:"name"`
-				Order        string  `json:"order"`
-				ParentCode   *string `json:"parentCode"`
-				EntityBundle string  `json:"entityBundle"`
-			} `json:"data"`
-		} `json:"data"`
-	}{
-		{},
-	}
 
-	resp := &SGXReportsResponse{}
-	resp.Data.List.Results = []SGXReport{report}
+	resp := &analytics.SGXReportsResponse{}
+	resp.Data.List.Results = []analytics.SGXReport{report}
 
 	mockSGX.On("FetchReports").Return(resp, nil)
 
@@ -51,12 +39,12 @@ func TestAnalyzeLatestNReports_ForceReanalysisBypassesCachedAnalysis(t *testing.
 		_ = os.WriteFile(filePath, []byte("dummy"), 0o644)
 	})
 
-	cached := &ReportAnalysis{Summary: "cached"}
+	cached := &analytics.ReportAnalysis{Summary: "cached"}
 
 	// Without forcing, the service should return cached analysis and NOT call AnalyzeDocument.
 	mockAI.On("FetchAnalysisByFileName", mock.Anything).Return(cached, nil).Once()
 
-	svc := NewService(mockSGX, mockAI, dataDir, nil)
+	svc := analytics.NewService(mockSGX, mockAI, dataDir, nil)
 	analyses, err := svc.AnalyzeLatestNReports(1, "", false)
 	assert.NoError(t, err)
 	if assert.Len(t, analyses, 1) {
@@ -66,7 +54,7 @@ func TestAnalyzeLatestNReports_ForceReanalysisBypassesCachedAnalysis(t *testing.
 	mockAI.AssertNotCalled(t, "AnalyzeDocument", mock.Anything, mock.Anything)
 
 	// With forcing, the service should bypass cache and call AnalyzeDocument.
-	fresh := &ReportAnalysis{Summary: "fresh"}
+	fresh := &analytics.ReportAnalysis{Summary: "fresh"}
 	mockAI.On("AnalyzeDocument", mock.Anything, mock.Anything).Return(fresh, nil).Once()
 
 	analyses, err = svc.AnalyzeLatestNReports(1, "", true)

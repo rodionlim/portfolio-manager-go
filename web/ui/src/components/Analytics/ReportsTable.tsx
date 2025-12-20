@@ -97,7 +97,7 @@ const ReportsTable: React.FC = () => {
   const [reports, setReports] = useState<ReportFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
-  const [downloadCount, setDownloadCount] = useState(5);
+  const [downloadCount, setDownloadCount] = useState(1);
   const [reportType, setReportType] = useState<string>("fund flow");
   const [analyzeReports, setAnalyzeReports] = useState(false);
   const [forceReanalysis, setForceReanalysis] = useState(false);

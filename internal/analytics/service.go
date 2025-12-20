@@ -162,7 +162,7 @@ func (s *ServiceImpl) AnalyzeLatestNReports(n int, reportType string, forceReana
 
 		// If no existing analysis or force reanalysis is requested, perform new analysis
 		if analysis == nil {
-			newAnalysis, err := s.analyzeReport(report, filePath, safeFileName, fileExt)
+			newAnalysis, err := s.analyzeReport(report, filePath, safeFileName, fileExt, forceReanalysis)
 			if err != nil {
 				return nil, fmt.Errorf("failed to analyze report %d: %w", i+1, err)
 			}
@@ -208,7 +208,7 @@ func (s *ServiceImpl) FetchAndAnalyzeLatestReportByType(reportType string) (*Rep
 		return nil, fmt.Errorf("failed to download report: %w", err)
 	}
 
-	return s.analyzeReport(filteredReports[0], filePath, safeFileName, fileExt)
+	return s.analyzeReport(filteredReports[0], filePath, safeFileName, fileExt, false)
 }
 
 // downloadReport downloads a report and returns its file path, name and extension
@@ -248,17 +248,19 @@ func (s *ServiceImpl) downloadReport(report SGXReport) (string, string, string, 
 }
 
 // analyzeReport analyzes a single on disk report
-func (s *ServiceImpl) analyzeReport(report SGXReport, filePath, safeFileName, fileExt string) (*ReportAnalysis, error) {
+func (s *ServiceImpl) analyzeReport(report SGXReport, filePath, safeFileName, fileExt string, forceReanalysis bool) (*ReportAnalysis, error) {
 
-	// Check if analysis has already been done
-	analysis, err := s.aiAnalyzer.FetchAnalysisByFileName(safeFileName)
-	if err == nil && analysis != nil {
-		return analysis, nil // Return existing analysis if available
+	// Check if analysis has already been done (unless force reanalysis is requested)
+	if !forceReanalysis {
+		analysis, err := s.aiAnalyzer.FetchAnalysisByFileName(safeFileName)
+		if err == nil && analysis != nil {
+			return analysis, nil // Return existing analysis if available
+		}
 	}
 
 	// Analyze the file
 	fileType := strings.TrimPrefix(fileExt, ".")
-	analysis, err = s.aiAnalyzer.AnalyzeDocument(filePath, fileType)
+	analysis, err := s.aiAnalyzer.AnalyzeDocument(filePath, fileType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to analyze document: %w", err)
 	}

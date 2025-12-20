@@ -16,7 +16,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/xuri/excelize/v2 v2.9.1
 	golang.org/x/net v0.42.0
-	google.golang.org/genai v1.16.0
+	google.golang.org/genai v1.40.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 

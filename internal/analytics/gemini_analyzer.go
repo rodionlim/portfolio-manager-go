@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
 	"regexp"
 	"strings"
@@ -16,6 +18,11 @@ import (
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/genai"
 )
+
+type geminiStructuredResponse struct {
+	Summary     string   `json:"summary"`
+	KeyInsights []string `json:"keyInsights"`
+}
 
 // GeminiAnalyzer implements the AIAnalyzer interface using Google's Gemini API
 type GeminiAnalyzer struct {
@@ -65,24 +72,22 @@ func (g *GeminiAnalyzer) AnalyzeDocument(filePath string, fileType string) (*Rep
 	}
 
 	// Create the prompt for analysis
-	prompt := `Analyze this SGX fund flow report with HOLISTIC PERSPECTIVE focusing on institutional flows as smart money. Provide:
+	prompt := `You are a trading analyst. Read the attached “SGX Fund Flow Weekly Tracker” report and extract ONLY the most trade-relevant, easy-to-miss signals.
 
-1. CONCISE SUMMARY (1 paragraph max):
-   - Overall institutional vs retail flow dynamics (weekly + YTD trends)
-   - Notable divergences between weekly and YTD patterns
-   - 2 SPECIFIC BUY RECOMMENDATIONS based on: consistent institutional accumulation, favorable YTD trends, retail sentiment divergence, and average daily flow patterns
+Return STRICT JSON ONLY (no markdown, no backticks, no extra text).
 
-2. KEY INSIGHTS (max 4 bullet points):
-   - Institutional flow consistency patterns (weekly vs YTD alignment)
-   - Significant retail vs institutional divergences (contrarian opportunities)  
-   - Average daily flow anomalies vs current week performance
-   - Momentum shifts in institutional positioning
-   - Sector-specific insights based on flow patterns
-   - Risk signals from unusual flow patterns
+Schema:
+{
+	"summary": "string",
+	"keyInsights": ["string", "string", ...]
+}
 
-Consider ALL data: weekly flows, YTD flows, retail behavior, average daily volumes, and flow consistency.
-Treat institutional flows as smart money but analyze PERSISTENCE and CONSISTENCY, not just magnitude.
-Be concise and actionable with specific stock codes.`
+Requirements:
+- summary MUST be a TL;DR (max 5 lines). Each line should start with a short label, e.g. "Tone:", "Top sector:", "Top ticker:", "Divergence:", "Action:".
+- keyInsights MUST be 3–6 short bullets (strings) with the most actionable points.
+- Prefer institutional flows over retail flows; call out retail/institutional divergences.
+- Use numbers and stock codes when available; if something is not present in the report, write "n/a" (do not guess).
+- Do not restate tables.`
 
 	// Create content parts for the request
 	contents := []*genai.Content{
@@ -98,7 +103,7 @@ Be concise and actionable with specific stock codes.`
 	// Create generation config
 	config := &genai.GenerateContentConfig{
 		Temperature:     genai.Ptr(float32(0.1)), // Lower temperature for more consistent analysis
-		MaxOutputTokens: 1024,                    // Reduced for more concise responses
+		MaxOutputTokens: 5000,                    // Keep output tight (TL;DR + bullets)
 	}
 
 	// Generate content
@@ -119,8 +124,24 @@ Be concise and actionable with specific stock codes.`
 		}
 	}
 
-	// Parse the analysis (this is a simplified parsing - in production you might want more sophisticated parsing)
-	summary, keyInsights := parseAnalysisText(analysisText)
+	// Parse the analysis. Prefer structured JSON output, with a fallback to heuristic parsing.
+	logging.GetLogger().Info("AI Analysis Text: \n" + analysisText)
+
+	var parsed geminiStructuredResponse
+	summary := ""
+	keyInsights := []string{}
+	if err := json.Unmarshal([]byte(analysisText), &parsed); err == nil {
+		summary = strings.TrimSpace(parsed.Summary)
+		if parsed.KeyInsights != nil {
+			keyInsights = parsed.KeyInsights
+		}
+	} else {
+		logging.GetLogger().Warnf("AI response was not valid JSON; falling back to heuristic parsing: %v", err)
+		summary, keyInsights = parseAnalysisText(analysisText)
+		if keyInsights == nil {
+			keyInsights = []string{}
+		}
+	}
 
 	// Extract filename for report title
 	fileName := filepath.Base(filePath)

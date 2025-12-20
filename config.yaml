@@ -21,6 +21,6 @@ marketData:
   rateLimitMs: 750 # Minimum milliseconds between Yahoo Finance requests (increased from default 500ms to avoid rate limiting)
 analytics:
   geminiApiKey: "" # Set your Gemini API key here or via environment variable GEMINI_API_KEY
-  geminiModel: "gemini-2.0-flash-lite" # Gemini model to use (docs: https://ai.google.dev/gemini-api/docs/models)
+  geminiModel: "gemini-3-flash-preview" # Gemini model to use (docs: https://ai.google.dev/gemini-api/docs/models)
   dataDir: "./data" # Directory to store downloaded reports
   schedule: "0 17 * * 1" # Weekly on Mondays at 5:00 PM

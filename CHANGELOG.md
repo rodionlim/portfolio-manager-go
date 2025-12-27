@@ -1,3 +1,9 @@
+## [1.31.0] - 2025-12-27
+
+### 🚀 Features
+
+- *(ui)* Add volatility metrics
+
 ## [1.30.1] - 2025-12-20
 
 ### 🐛 Bug Fixes

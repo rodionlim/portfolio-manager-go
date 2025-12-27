@@ -29,10 +29,12 @@ function sampleStdDev(values: number[]): number | undefined {
 }
 
 /**
- * Computes rolling annualized volatility (standard deviation) from MV-based daily returns.
+ * Computes rolling annualized volatility (standard deviation) from cash-flow-adjusted daily returns.
  *
  * Notes:
- * - Uses simple returns: r_t = (MV_t - MV_{t-1}) / MV_{t-1}
+ * - Uses simple returns adjusted for net cash flow (excluding dividends):
+ *   r_t = (MV_t - MV_{t-1} + CF_t) / (MV_{t-1} + CF_t)
+ *   where CF_t is the net cash flow for the period (in our app: Δ(pricePaid) between the two days).
  * - Skips returns when the gap between timestamps is > maxGapDays (prevents year-apart jumps)
  * - Resets the rolling window after a gap
  * - Returns volatility as a decimal (e.g. 0.12 = 12% annualized)
@@ -80,12 +82,24 @@ export function withRollingVolatility(
 
     const prevMV = prev.metrics.mv;
     const curMV = cur.metrics.mv;
+    const prevPricePaid = prev.metrics.pricePaid;
+    const curPricePaid = cur.metrics.pricePaid;
 
-    if (!Number.isFinite(prevMV) || prevMV === 0 || !Number.isFinite(curMV)) {
+    if (
+      !Number.isFinite(prevMV) ||
+      !Number.isFinite(curMV) ||
+      !Number.isFinite(prevPricePaid) ||
+      !Number.isFinite(curPricePaid)
+    ) {
       continue;
     }
 
-    const r = (curMV - prevMV) / prevMV;
+    // Net cash flow for the period (excluding dividends), inferred from change in cumulative price paid.
+    const netCashFlow = curPricePaid - prevPricePaid;
+    const denom = prevMV + netCashFlow;
+    if (!Number.isFinite(denom) || denom === 0) continue;
+
+    const r = (curMV - prevMV + netCashFlow) / denom;
     if (!Number.isFinite(r)) continue;
 
     if (options.method === "sma") {

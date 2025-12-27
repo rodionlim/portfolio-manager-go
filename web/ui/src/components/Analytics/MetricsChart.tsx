@@ -17,10 +17,12 @@ import {
   Stack,
   Group,
   Button,
+  NumberInput,
 } from "@mantine/core";
 import { getUrl } from "../../utils/url";
 import { notifications } from "@mantine/notifications";
 import { TimestampedMetrics, MetricsJob } from "./types";
+import { withRollingVolatility, VolatilityMethod } from "./volatility";
 
 interface ValueData {
   time: UTCTimestamp;
@@ -32,7 +34,19 @@ interface IRRData {
   value: number;
 }
 
-const MetricsChart: React.FC = () => {
+type MetricsChartProps = {
+  volatilityMethod: VolatilityMethod;
+  setVolatilityMethod: (method: VolatilityMethod) => void;
+  volatilityWindow: number;
+  setVolatilityWindow: (window: number) => void;
+};
+
+const MetricsChart: React.FC<MetricsChartProps> = ({
+  volatilityMethod,
+  setVolatilityMethod,
+  volatilityWindow,
+  setVolatilityWindow,
+}) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null); // To keep chart instance for resizing
   const [leftAxisSelection, setLeftAxisSelection] = useState<string>("PnL");
@@ -119,10 +133,17 @@ const MetricsChart: React.FC = () => {
     queryFn: fetchHistoricalMetrics,
   });
 
-  const filteredMetrics = useMemo(() => {
-    if (!historicalMetrics || historicalMetrics.length === 0) return [];
+  const metricsWithVolatility = useMemo(() => {
+    return withRollingVolatility(historicalMetrics, {
+      method: volatilityMethod,
+      window: volatilityWindow,
+    });
+  }, [historicalMetrics, volatilityMethod, volatilityWindow]);
 
-    const sorted = [...historicalMetrics].sort(
+  const filteredMetrics = useMemo(() => {
+    if (!metricsWithVolatility || metricsWithVolatility.length === 0) return [];
+
+    const sorted = [...metricsWithVolatility].sort(
       (a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
@@ -146,7 +167,7 @@ const MetricsChart: React.FC = () => {
     return sorted.filter(
       (item) => new Date(item.timestamp).getTime() >= startDate.getTime()
     );
-  }, [historicalMetrics, timelineFilter]);
+  }, [metricsWithVolatility, timelineFilter]);
 
   useEffect(() => {
     if (!chartContainerRef.current || filteredMetrics.length === 0) return;
@@ -155,6 +176,7 @@ const MetricsChart: React.FC = () => {
     const marketValueData: ValueData[] = [];
     const pnlData: ValueData[] = [];
     const irrData: IRRData[] = [];
+    const volData: ValueData[] = [];
 
     // Process data by timestamp
     filteredMetrics.forEach((item) => {
@@ -176,6 +198,13 @@ const MetricsChart: React.FC = () => {
         time: timestamp,
         value: item.metrics.irr * 100, // Convert IRR to percentage for better visualization
       });
+
+      if (item.metrics.standardDeviation !== undefined) {
+        volData.push({
+          time: timestamp,
+          value: item.metrics.standardDeviation * 100, // annualized volatility in %
+        });
+      }
     });
 
     // Create chart
@@ -240,6 +269,15 @@ const MetricsChart: React.FC = () => {
         },
         data: irrData,
       },
+      Vol: {
+        color: "#FF6B6B",
+        title: "Volatility (%)",
+        priceFormat: {
+          type: "custom" as const,
+          formatter: (p: number) => `${p.toFixed(2)}%`,
+        },
+        data: volData,
+      },
       MV: {
         color: "#FF9800",
         title: "Market Value (Right)",
@@ -290,7 +328,7 @@ const MetricsChart: React.FC = () => {
       },
       borderVisible: true,
       borderColor:
-        rightAxisSelection === "IRR"
+        rightAxisSelection === "IRR" || rightAxisSelection === "Vol"
           ? "#FF6B6B"
           : rightAxisSelection === "MV"
           ? "#FF9800"
@@ -367,10 +405,31 @@ const MetricsChart: React.FC = () => {
               onChange={(value) => setRightAxisSelection(value || "IRR")}
               data={[
                 { value: "IRR", label: "IRR" },
+                { value: "Vol", label: "Volatility" },
                 { value: "MV", label: "Market Value" },
                 { value: "PnL", label: "P&L" },
               ]}
               w={200}
+            />
+            <Select
+              label="Volatility Method"
+              value={volatilityMethod}
+              onChange={(value) =>
+                setVolatilityMethod((value as VolatilityMethod) || "sma")
+              }
+              data={[
+                { value: "sma", label: "SMA" },
+                { value: "ewma", label: "EWMA" },
+              ]}
+              w={160}
+            />
+            <NumberInput
+              label="Volatility Window"
+              value={volatilityWindow}
+              onChange={(value) => setVolatilityWindow(Number(value) || 2)}
+              min={2}
+              step={1}
+              w={160}
             />
             <Select
               label="Book Filter"
@@ -409,6 +468,8 @@ const MetricsChart: React.FC = () => {
           {leftAxisSelection === "MV" ? "blue" : "green"} area (left scale).{" "}
           {rightAxisSelection === "IRR"
             ? "IRR shown as red line"
+            : rightAxisSelection === "Vol"
+            ? "Volatility shown as red line"
             : rightAxisSelection === "MV"
             ? "Market Value shown as orange line"
             : "P&L shown as purple line"}{" "}

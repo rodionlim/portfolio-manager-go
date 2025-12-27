@@ -1,15 +1,33 @@
 import React, { useMemo, useState } from "react";
-import { Text, Box, Button, Group, Modal, Select, Stack } from "@mantine/core";
+import {
+  Text,
+  Box,
+  Button,
+  Group,
+  Modal,
+  Select,
+  Stack,
+  useMantineTheme,
+} from "@mantine/core";
 import {
   MantineReactTable,
   MRT_ColumnDef,
   useMantineReactTable,
 } from "mantine-react-table";
+import { NumberInput } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
 import { IconDownload, IconUpload, IconTrash } from "@tabler/icons-react";
 import { TimestampedMetrics, MetricsJob } from "./types";
+import { withRollingVolatility, VolatilityMethod } from "./volatility";
+
+type MetricsTableProps = {
+  volatilityMethod: VolatilityMethod;
+  setVolatilityMethod: (method: VolatilityMethod) => void;
+  volatilityWindow: number;
+  setVolatilityWindow: (window: number) => void;
+};
 
 interface DeleteMetricsResponse {
   deleted: number;
@@ -17,7 +35,14 @@ interface DeleteMetricsResponse {
   failures: string[];
 }
 
-const MetricsTable: React.FC = () => {
+const MetricsTable: React.FC<MetricsTableProps> = ({
+  volatilityMethod,
+  setVolatilityMethod,
+  volatilityWindow,
+  setVolatilityWindow,
+}) => {
+  const theme = useMantineTheme();
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] =
     useState<TimestampedMetrics | null>(null);
@@ -252,6 +277,39 @@ const MetricsTable: React.FC = () => {
     queryFn: fetchHistoricalMetrics,
   });
 
+  const metricsWithVolatility = useMemo(() => {
+    return withRollingVolatility(historicalMetrics, {
+      method: volatilityMethod,
+      window: volatilityWindow,
+    });
+  }, [historicalMetrics, volatilityMethod, volatilityWindow]);
+
+  const getVolatilityHeatStyles = (volatilityAnnDecimal: number) => {
+    const volPct = volatilityAnnDecimal * 100;
+    const normalized = Math.max(0, Math.min(1, volPct / 60));
+    const bucket = Math.min(
+      6,
+      Math.max(0, Math.floor(normalized * theme.colors.red.length))
+    );
+
+    const shade =
+      theme.colors.red[Math.min(bucket + 2, theme.colors.red.length - 1)];
+    const alpha = 0.05 + normalized * 0.25;
+
+    return {
+      backgroundColor: `color-mix(in srgb, ${shade} ${Math.round(
+        alpha * 100
+      )}%, transparent)`,
+      borderRadius: theme.radius.sm,
+      paddingInline: theme.spacing.xs,
+      paddingBlock: 2,
+      display: "inline-block",
+      minWidth: 72,
+      textAlign: "right" as const,
+      fontVariantNumeric: "tabular-nums" as const,
+    };
+  };
+
   // Define table columns
   const columns = useMemo<MRT_ColumnDef<TimestampedMetrics>[]>(
     () => [
@@ -326,6 +384,30 @@ const MetricsTable: React.FC = () => {
           return <span style={{ color }}>{(irr * 100).toFixed(2)}%</span>;
         },
       },
+      {
+        id: "standardDeviation",
+        header: "Volatility (Ann.)",
+        accessorFn: (row) => row.metrics.standardDeviation,
+        Cell: ({ cell }) => {
+          const v = cell.getValue<number | undefined>();
+          if (v === undefined || !Number.isFinite(v)) {
+            return (
+              <Text size="xs" c="dimmed">
+                -
+              </Text>
+            );
+          }
+
+          return (
+            <span style={getVolatilityHeatStyles(v)}>
+              <Text size="xs" component="span">
+                {(v * 100).toFixed(2)}%
+              </Text>
+            </span>
+          );
+        },
+        size: 140,
+      },
     ],
     []
   );
@@ -333,12 +415,24 @@ const MetricsTable: React.FC = () => {
   // Configure the table
   const table = useMantineReactTable({
     columns,
-    data: historicalMetrics,
+    data: metricsWithVolatility,
     initialState: {
       sorting: [{ id: "timestamp", desc: true }], // Sort by date descending
     },
     state: {
       density: "xs",
+    },
+    mantineTableHeadCellProps: {
+      style: {
+        fontSize: "var(--mantine-font-size-xs)",
+      },
+    },
+    mantineTableBodyCellProps: {
+      style: {
+        fontSize: "var(--mantine-font-size-xs)",
+        paddingTop: 6,
+        paddingBottom: 6,
+      },
     },
     enablePagination: true,
     manualPagination: false,
@@ -354,15 +448,40 @@ const MetricsTable: React.FC = () => {
         }}
       >
         <Stack>
-          <Select
-            description="Book Filter"
-            placeholder="Select book filter"
-            data={bookFilterOptions}
-            value={selectedBookFilter}
-            onChange={setSelectedBookFilter}
-            clearable={false}
-            size="xs"
-          />
+          <Group align="flex-end">
+            <Select
+              description="Book Filter"
+              placeholder="Select book filter"
+              data={bookFilterOptions}
+              value={selectedBookFilter}
+              onChange={setSelectedBookFilter}
+              clearable={false}
+              size="xs"
+            />
+            <Select
+              description="Volatility Method"
+              data={[
+                { value: "sma", label: "SMA" },
+                { value: "ewma", label: "EWMA" },
+              ]}
+              value={volatilityMethod}
+              onChange={(v) =>
+                setVolatilityMethod((v as VolatilityMethod) || "sma")
+              }
+              size="xs"
+              w={160}
+              clearable={false}
+            />
+            <NumberInput
+              description="Window (days)"
+              value={volatilityWindow}
+              onChange={(v) => setVolatilityWindow(Number(v) || 1)}
+              min={2}
+              step={1}
+              size="xs"
+              w={140}
+            />
+          </Group>
           <Group>
             <Button
               onClick={exportMetricsCSV}
@@ -461,6 +580,22 @@ const MetricsTable: React.FC = () => {
           </Button>
         </Group>
       </Modal>
+
+      <Box mt="xs">
+        <Text size="xs" c="dimmed">
+          Volatility (Ann.) is the rolling standard deviation of daily portfolio
+          returns, annualized by multiplying by √252. Daily return is computed
+          from market value as (MVₜ − MVₜ₋₁) / MVₜ₋₁ and resets across large
+          date gaps.
+        </Text>
+        <Text size="xs" c="dimmed" mt={4}>
+          Why this matters: one of the simplest ways to estimate future
+          volatility is to use a measure of recent standard deviation. This
+          often works because volatility tends to persist—if the market has been
+          crazy over the last few weeks, it will probably continue to be crazy
+          for a few more weeks.
+        </Text>
+      </Box>
     </div>
   );
 };

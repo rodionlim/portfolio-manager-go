@@ -1,3 +1,9 @@
+## [1.31.1] - 2025-12-27
+
+### 🐛 Bug Fixes
+
+- *(ui)* Change volatility calculation #140
+
 ## [1.31.0] - 2025-12-27
 
 ### 🚀 Features

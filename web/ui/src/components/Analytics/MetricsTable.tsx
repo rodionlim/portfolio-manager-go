@@ -1,24 +1,24 @@
 import React, { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Text,
   Box,
   Button,
   Group,
   Modal,
+  NumberInput,
   Select,
   Stack,
   useMantineTheme,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import {
   MantineReactTable,
-  MRT_ColumnDef,
+  type MRT_ColumnDef,
   useMantineReactTable,
 } from "mantine-react-table";
-import { NumberInput } from "@mantine/core";
-import { useQuery } from "@tanstack/react-query";
-import { notifications } from "@mantine/notifications";
+import { IconDownload, IconTrash, IconUpload } from "@tabler/icons-react";
 import { getUrl } from "../../utils/url";
-import { IconDownload, IconUpload, IconTrash } from "@tabler/icons-react";
 import { TimestampedMetrics, MetricsJob } from "./types";
 import { withRollingVolatility, VolatilityMethod } from "./volatility";
 
@@ -408,6 +408,48 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
         },
         size: 140,
       },
+      {
+        id: "dailyPnl",
+        header: "Daily P&L",
+        accessorFn: (row) => row.metrics.dailyPnl,
+        Cell: ({ cell }) => {
+          const pnl = cell.getValue<number | undefined>();
+          if (pnl === undefined || !Number.isFinite(pnl)) {
+            return (
+              <Text size="xs" c="dimmed">
+                -
+              </Text>
+            );
+          }
+          const color = pnl >= 0 ? "green" : "red";
+          return (
+            <span style={{ color }}>
+              $
+              {pnl.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          );
+        },
+      },
+      {
+        id: "adjustedReturn",
+        header: "Adj. Return",
+        accessorFn: (row) => row.metrics.adjustedReturn,
+        Cell: ({ cell }) => {
+          const r = cell.getValue<number | undefined>();
+          if (r === undefined || !Number.isFinite(r)) {
+            return (
+              <Text size="xs" c="dimmed">
+                -
+              </Text>
+            );
+          }
+          const color = r >= 0 ? "green" : "red";
+          return <span style={{ color }}>{(r * 100).toFixed(3)}%</span>;
+        },
+      },
     ],
     []
   );
@@ -585,8 +627,9 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
         <Text size="xs" c="dimmed">
           Volatility (Ann.) is the rolling standard deviation of daily portfolio
           returns, annualized by multiplying by √252. Daily return is computed
-          from market value as (MVₜ − MVₜ₋₁) / MVₜ₋₁ and resets across large
-          date gaps.
+          from adjusted value AV = MV + cumulative dividends, cash-flow-adjusted
+          using CF = Δ(pricePaid): (AVₜ − AVₜ₋₁ − CFₜ) / (AVₜ₋₁ + CFₜ), and
+          resets across large date gaps.
         </Text>
         <Text size="xs" c="dimmed" mt={4}>
           Why this matters: one of the simplest ways to estimate future

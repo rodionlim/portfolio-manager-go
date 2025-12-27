@@ -4,9 +4,14 @@ import MetricsTable from "./MetricsTable";
 import MetricsChart from "./MetricsChart";
 import MetricsCashFlow from "./MetricsCashFlow";
 import CustomJobsTable from "./CustomJobsTable";
+import type { VolatilityMethod } from "./volatility";
 
 const MetricsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>("table");
+
+  const [volatilityMethod, setVolatilityMethod] =
+    useState<VolatilityMethod>("sma");
+  const [volatilityWindow, setVolatilityWindow] = useState<number>(25);
 
   return (
     <Tabs defaultValue="table" onChange={setActiveTab}>
@@ -18,11 +23,31 @@ const MetricsView: React.FC = () => {
       </Tabs.List>
 
       <Tabs.Panel value="table" pt="md">
-        {activeTab === "table" && <MetricsTable />}
+        {activeTab === "table" && (
+          <MetricsTable
+            volatilityMethod={volatilityMethod}
+            setVolatilityMethod={(method) => {
+              setVolatilityMethod(method);
+              setVolatilityWindow(method === "ewma" ? 36 : 25);
+            }}
+            volatilityWindow={volatilityWindow}
+            setVolatilityWindow={setVolatilityWindow}
+          />
+        )}
       </Tabs.Panel>
 
       <Tabs.Panel value="chart" pt="md">
-        {activeTab === "chart" && <MetricsChart />}
+        {activeTab === "chart" && (
+          <MetricsChart
+            volatilityMethod={volatilityMethod}
+            setVolatilityMethod={(method) => {
+              setVolatilityMethod(method);
+              setVolatilityWindow(method === "ewma" ? 36 : 25);
+            }}
+            volatilityWindow={volatilityWindow}
+            setVolatilityWindow={setVolatilityWindow}
+          />
+        )}
       </Tabs.Panel>
 
       <Tabs.Panel value="cashflow" pt="md">

@@ -32,9 +32,11 @@ function sampleStdDev(values: number[]): number | undefined {
  * Computes rolling annualized volatility (standard deviation) from cash-flow-adjusted daily returns.
  *
  * Notes:
- * - Uses simple returns adjusted for net cash flow (excluding dividends):
- *   r_t = (MV_t - MV_{t-1} + CF_t) / (MV_{t-1} + CF_t)
- *   where CF_t is the net cash flow for the period (in our app: Δ(pricePaid) between the two days).
+ * - Uses simple returns based on adjusted portfolio value (includes cumulative dividends) and net cash flow:
+ *   Let AV_t = MV_t + CumDiv_t
+ *   r_t = (AV_t - AV_{t-1} - CF_t) / (AV_{t-1} + CF_t)
+ *   where CF_t is the net cash flow for the period (in our app: Δ(pricePaid) between the two days),
+ *   with the convention that buys increase pricePaid (CF_t > 0) and sells decrease it (CF_t < 0).
  * - Skips returns when the gap between timestamps is > maxGapDays (prevents year-apart jumps)
  * - Resets the rolling window after a gap
  * - Returns volatility as a decimal (e.g. 0.12 = 12% annualized)
@@ -62,7 +64,17 @@ export function withRollingVolatility(
 
   const out: TimestampedMetrics[] = sorted.map((m) => ({
     ...m,
-    metrics: { ...m.metrics, standardDeviation: undefined },
+    metrics: {
+      ...m.metrics,
+      standardDeviation: undefined,
+      adjustedReturn: undefined,
+      dailyPnl: undefined,
+      adjustedValue:
+        Number.isFinite(m.metrics.mv) &&
+        Number.isFinite(m.metrics.totalDividends)
+          ? m.metrics.mv + m.metrics.totalDividends
+          : undefined,
+    },
   }));
 
   for (let i = 1; i < out.length; i++) {
@@ -84,23 +96,37 @@ export function withRollingVolatility(
     const curMV = cur.metrics.mv;
     const prevPricePaid = prev.metrics.pricePaid;
     const curPricePaid = cur.metrics.pricePaid;
+    const prevTotalDividends = prev.metrics.totalDividends;
+    const curTotalDividends = cur.metrics.totalDividends;
 
     if (
       !Number.isFinite(prevMV) ||
       !Number.isFinite(curMV) ||
       !Number.isFinite(prevPricePaid) ||
-      !Number.isFinite(curPricePaid)
+      !Number.isFinite(curPricePaid) ||
+      !Number.isFinite(prevTotalDividends) ||
+      !Number.isFinite(curTotalDividends)
     ) {
       continue;
     }
 
     // Net cash flow for the period (excluding dividends), inferred from change in cumulative price paid.
     const netCashFlow = curPricePaid - prevPricePaid;
-    const denom = prevMV + netCashFlow;
+
+    const prevAdjustedValue = prevMV + prevTotalDividends;
+    const curAdjustedValue = curMV + curTotalDividends;
+    cur.metrics.adjustedValue = curAdjustedValue;
+
+    // Daily P&L (cash-flow-adjusted, dividend-inclusive) in currency.
+    cur.metrics.dailyPnl = curAdjustedValue - prevAdjustedValue - netCashFlow;
+
+    const denom = prevAdjustedValue + netCashFlow;
     if (!Number.isFinite(denom) || denom === 0) continue;
 
-    const r = (curMV - prevMV + netCashFlow) / denom;
+    const r = (curAdjustedValue - prevAdjustedValue - netCashFlow) / denom;
     if (!Number.isFinite(r)) continue;
+
+    cur.metrics.adjustedReturn = r;
 
     if (options.method === "sma") {
       rollingReturns.push(r);

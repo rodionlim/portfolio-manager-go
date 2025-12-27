@@ -6,6 +6,12 @@ export interface Metrics {
   totalDividends: number;
   /** Annualized rolling volatility as decimal (e.g. 0.12 = 12%). Computed client-side. */
   standardDeviation?: number;
+  /** Debug: adjusted portfolio value = mv + totalDividends. Computed client-side. */
+  adjustedValue?: number;
+  /** Debug: daily P&L in currency, cash-flow-adjusted and dividend-inclusive. Computed client-side. */
+  dailyPnl?: number;
+  /** Debug: per-period adjusted return used for volatility. Computed client-side. */
+  adjustedReturn?: number;
 }
 
 export interface TimestampedMetrics {

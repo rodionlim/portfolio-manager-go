@@ -20,11 +20,11 @@ describe("withRollingVolatility (cash-flow-adjusted)", () => {
       },
       {
         timestamp: "2025-01-02",
-        metrics: { irr: 0, mv: 102, pricePaid: 101, totalDividends: 0 },
+        metrics: { irr: 0, mv: 102, pricePaid: 101, totalDividends: 1 },
       },
       {
         timestamp: "2025-01-03",
-        metrics: { irr: 0, mv: 101, pricePaid: 101, totalDividends: 0 },
+        metrics: { irr: 0, mv: 101, pricePaid: 101, totalDividends: 1 },
       },
     ];
 
@@ -38,8 +38,14 @@ describe("withRollingVolatility (cash-flow-adjusted)", () => {
     // Day 2 has only one return in the window => SD undefined
     expect(out[1].metrics.standardDeviation).toBeUndefined();
 
-    const r1 = (102 - 100 + (101 - 100)) / (100 + (101 - 100)); // 3/101
-    const r2 = (101 - 102 + (101 - 101)) / (102 + (101 - 101)); // -1/102
+    const av1 = 100 + 0;
+    const av2 = 102 + 1;
+    const av3 = 101 + 1;
+    const cf1 = 101 - 100;
+    const cf2 = 101 - 101;
+
+    const r1 = (av2 - av1 - cf1) / (av1 + cf1); // 2/101
+    const r2 = (av3 - av2 + cf2) / (av2 + cf2); // -1/103
 
     const sdDaily = sampleStdDev([r1, r2]);
     expect(sdDaily).toBeDefined();
@@ -60,11 +66,11 @@ describe("withRollingVolatility (cash-flow-adjusted)", () => {
       },
       {
         timestamp: "2025-01-02",
-        metrics: { irr: 0, mv: 102, pricePaid: 101, totalDividends: 0 },
+        metrics: { irr: 0, mv: 102, pricePaid: 101, totalDividends: 1 },
       },
       {
         timestamp: "2025-01-03",
-        metrics: { irr: 0, mv: 101, pricePaid: 101, totalDividends: 0 },
+        metrics: { irr: 0, mv: 101, pricePaid: 101, totalDividends: 1 },
       },
     ];
 
@@ -79,8 +85,14 @@ describe("withRollingVolatility (cash-flow-adjusted)", () => {
       maxGapDays: 5,
     });
 
-    const r1 = (102 - 100 + (101 - 100)) / (100 + (101 - 100)); // 3/101
-    const r2 = (101 - 102 + (101 - 101)) / (102 + (101 - 101)); // -1/102
+    const av1 = 100 + 0;
+    const av2 = 102 + 1;
+    const av3 = 101 + 1;
+    const cf1 = 101 - 100;
+    const cf2 = 101 - 101;
+
+    const r1 = (av2 - av1 - cf1) / (av1 + cf1); // 2/101
+    const r2 = (av3 - av2 + cf2) / (av2 + cf2); // -1/103
 
     // Implementation initializes ewmaVar from first observation as r1^2 (since window has <2 samples).
     const expectedDay2 = Math.abs(r1) * Math.sqrt(tradingDaysPerYear);

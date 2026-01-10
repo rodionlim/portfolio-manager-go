@@ -1,3 +1,9 @@
+## [1.33.0] - 2026-01-10
+
+### 🚀 Features
+
+- Implement CLI backup and restore functionality with version command
+
 ## [1.32.0] - 2026-01-10
 
 ### 🚀 Features

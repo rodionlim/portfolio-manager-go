@@ -207,6 +207,12 @@ const BlotterTable: React.FC = () => {
     enableColumnFilterModes: true,
     enableDensityToggle: false,
     enableRowSelection: true,
+    mantineTopToolbarProps: {
+      style: {
+        overflowX: "auto",
+        paddingBottom: "4px",
+      },
+    },
     positionToolbarAlertBanner: "bottom",
     renderTopToolbarCustomActions: ({ table }) => (
       <Box
@@ -215,6 +221,7 @@ const BlotterTable: React.FC = () => {
           gap: "16px",
           padding: "4px",
           alignItems: "center",
+          flexWrap: "nowrap",
         }}
       >
         <Button color="teal" onClick={handleAddTrade(table)} variant="filled">

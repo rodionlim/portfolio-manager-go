@@ -37,6 +37,23 @@ import (
 // @BasePath /
 
 func main() {
+	// Check if this is a CLI command
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "backup", "restore-from-backup", "-v", "--version":
+			cliHandler := cli.NewCLI()
+			if err := cliHandler.ParseAndExecute(os.Args); err != nil {
+				log.Fatalf("CLI command failed: %s", err)
+			}
+			return
+		case "-h", "--help", "help":
+			cliHandler := cli.NewCLI()
+			cliHandler.ShowHelp()
+			return
+		}
+	}
+
+	// Continue with normal server startup
 	// Define a command-line flag for the configuration file path
 	configFilePath := flag.String("config", "./config.yaml", "Path to the configuration file")
 	urlFlag := flag.String("url", "http://localhost:8080", "Base URL for CLI commands")

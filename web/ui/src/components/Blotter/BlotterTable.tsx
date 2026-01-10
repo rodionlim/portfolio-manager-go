@@ -102,7 +102,26 @@ const BlotterTable: React.FC = () => {
       ...(isMobile
         ? []
         : [{ accessorKey: "TradeID" as keyof Trade, header: "Trade ID" }]),
-      { accessorKey: "TradeDate", header: "Date" },
+      {
+        accessorKey: "TradeDate",
+        header: "Date",
+        filterVariant: "date",
+        sortingFn: "datetime",
+        accessorFn: (row) => new Date(row.TradeDate),
+        Cell: ({ cell }) => {
+          const date = cell.getValue<Date>();
+          return date instanceof Date && !isNaN(date.getTime())
+            ? date.toLocaleDateString()
+            : "";
+        },
+        columnFilterModeOptions: [
+          "equals",
+          "greaterThan",
+          "greaterThanOrEqualTo",
+          "lessThan",
+          "lessThanOrEqualTo",
+        ],
+      },
       { accessorKey: "Ticker", header: "Ticker" },
       {
         id: "tickerName", // Use a unique id instead of accessorKey
@@ -185,6 +204,7 @@ const BlotterTable: React.FC = () => {
       },
     },
     state: { density: "xs" },
+    enableColumnFilterModes: true,
     enableDensityToggle: false,
     enableRowSelection: true,
     positionToolbarAlertBanner: "bottom",
@@ -364,9 +384,19 @@ const BlotterTable: React.FC = () => {
       .map((row) => {
         return columnsToExport
           .map((col) => {
+            let stringValue = "";
             const value = row.getValue(col.id);
-            const stringValue =
-              value !== null && value !== undefined ? String(value) : "";
+
+            if (col.id === "TradeDate") {
+              // Preserve original ISO format for TradeDate
+              stringValue = row.original.TradeDate;
+            } else if (value instanceof Date) {
+              stringValue = value.toISOString();
+            } else {
+              stringValue =
+                value !== null && value !== undefined ? String(value) : "";
+            }
+
             // Escape quotes and wrap in quotes if contains comma or newline
             if (
               stringValue.includes(",") ||

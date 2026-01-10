@@ -1,3 +1,9 @@
+## [1.33.1] - 2026-01-10
+
+### 🐛 Bug Fixes
+
+- *(ui,blotter)* Ensure that mobile view buttons are in right positions
+
 ## [1.33.0] - 2026-01-10
 
 ### 🚀 Features

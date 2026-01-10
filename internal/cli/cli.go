@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -63,7 +62,7 @@ func (c *CLI) registerCommands() {
 	// Local commands
 	c.commands["backup"] = &Command{
 		Name:        "backup",
-		Description: "Create a backup of the database",
+		Description: "Create a backup of the database (and optionally the data folder)",
 		Handler:     c.handleBackup,
 	}
 
@@ -144,12 +143,14 @@ func RunCLI(args []string, baseURL string) error {
 
 func (c *CLI) handleBackup(args []string) error {
 	var source, uri, user, password string
+	var includeData bool
 
 	fs := flag.NewFlagSet("backup", flag.ContinueOnError)
 	fs.StringVar(&source, "source", "local", "Backup source (local, gdrive, nextcloud)")
 	fs.StringVar(&uri, "uri", "", "File location or URL")
 	fs.StringVar(&user, "user", "", "Username for remote sources")
 	fs.StringVar(&password, "password", "", "Password for remote sources")
+	fs.BoolVar(&includeData, "include-data", true, "Include the data folder (funds flow, reports etc.) in the backup")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -158,7 +159,7 @@ func (c *CLI) handleBackup(args []string) error {
 		return fmt.Errorf("database not found at %s. Make sure the application has been run at least once", c.defaultDBPath)
 	}
 
-	size, err := c.backupSvc.GetBackupSize(c.defaultDBPath)
+	size, err := c.backupSvc.GetBackupSize(c.defaultDBPath, includeData)
 	if err != nil {
 		return fmt.Errorf("failed to calculate backup size: %w", err)
 	}
@@ -173,10 +174,11 @@ func (c *CLI) handleBackup(args []string) error {
 	}
 
 	config := backup.BackupConfig{
-		Source:   source,
-		URI:      uri,
-		User:     user,
-		Password: password,
+		Source:      source,
+		URI:         uri,
+		User:        user,
+		Password:    password,
+		IncludeData: includeData,
 	}
 
 	return c.backupSvc.Backup(context.Background(), c.defaultDBPath, config)
@@ -342,7 +344,7 @@ func formatFileSize(bytes int64) string {
 func getVersion() (string, error) {
 	versionPaths := []string{"VERSION", "../../VERSION", "../../../VERSION"}
 	for _, path := range versionPaths {
-		if content, err := ioutil.ReadFile(path); err == nil {
+		if content, err := os.ReadFile(path); err == nil {
 			return string(content), nil
 		}
 	}
@@ -366,7 +368,7 @@ Usage:
   %[1]s [global options] <command> [flags]
 
 Local Commands:
-  backup                  Create a backup of the database
+  backup                  Create a backup of the database and data folder
   restore-from-backup     Restore database from a backup
   version                 Show version information
 

@@ -127,7 +127,7 @@ The portfolio-manager binary includes CLI commands for interacting with a local/
 Create a backup of the database:
 
 ```sh
-./portfolio-manager backup --source [local|gdrive|nextcloud] --uri [path|url] --user [username] --password [password]
+./portfolio-manager backup --source [local|gdrive|nextcloud] --uri [path|url] --user [username] --password [password] --include-data [true|false]
 ```
 
 **Parameters:**
@@ -136,6 +136,7 @@ Create a backup of the database:
 - `--uri`: File location or URL (required for local and nextcloud)
 - `--user`: Username for remote sources (gdrive, nextcloud)
 - `--password`: Password for remote sources (nextcloud)
+- `--include-data`: Include the data folder (funds flow, reports etc.) in the backup (default: true)
 
 **Examples:**
 

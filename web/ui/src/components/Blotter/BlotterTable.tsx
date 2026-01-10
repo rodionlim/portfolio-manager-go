@@ -102,7 +102,26 @@ const BlotterTable: React.FC = () => {
       ...(isMobile
         ? []
         : [{ accessorKey: "TradeID" as keyof Trade, header: "Trade ID" }]),
-      { accessorKey: "TradeDate", header: "Date" },
+      {
+        accessorKey: "TradeDate",
+        header: "Date",
+        filterVariant: "date",
+        sortingFn: "datetime",
+        accessorFn: (row) => new Date(row.TradeDate),
+        Cell: ({ cell }) => {
+          const date = cell.getValue<Date>();
+          return date instanceof Date && !isNaN(date.getTime())
+            ? date.toLocaleDateString()
+            : "";
+        },
+        columnFilterModeOptions: [
+          "equals",
+          "greaterThan",
+          "greaterThanOrEqualTo",
+          "lessThan",
+          "lessThanOrEqualTo",
+        ],
+      },
       { accessorKey: "Ticker", header: "Ticker" },
       {
         id: "tickerName", // Use a unique id instead of accessorKey
@@ -113,6 +132,36 @@ const BlotterTable: React.FC = () => {
           return refData?.[ticker]?.name || "";
         },
       },
+      {
+        id: "asset_class",
+        header: "Asset Class",
+        accessorFn: (row) => refData?.[row.Ticker]?.asset_class || "",
+      },
+      {
+        id: "asset_sub_class",
+        header: "Asset Sub Class",
+        accessorFn: (row) => refData?.[row.Ticker]?.asset_sub_class || "",
+      },
+      {
+        id: "ccy",
+        header: "CCY",
+        accessorFn: (row) => refData?.[row.Ticker]?.ccy || "",
+      },
+      {
+        id: "category",
+        header: "Category",
+        accessorFn: (row) => refData?.[row.Ticker]?.category || "",
+      },
+      {
+        id: "sub_category",
+        header: "Sub Category",
+        accessorFn: (row) => refData?.[row.Ticker]?.sub_category || "",
+      },
+      {
+        id: "domicile",
+        header: "Domicile",
+        accessorFn: (row) => refData?.[row.Ticker]?.domicile || "",
+      },
       { accessorKey: "Side", header: "Side" },
       { accessorKey: "Book", header: "Book" },
       // { accessorKey: "Broker", header: "Broker" },
@@ -120,13 +169,10 @@ const BlotterTable: React.FC = () => {
       { accessorKey: "Quantity", header: "Quantity" },
       { accessorKey: "Price", header: "Price" },
       {
-        accessorKey: "Value",
+        id: "Value",
         header: "Value",
-        Cell: ({ row }) => {
-          const price = Number(row.getValue("Price"));
-          const qty = Number(row.getValue("Quantity"));
-          return (price * qty).toFixed(2);
-        },
+        accessorFn: (row) => (row.Price * row.Quantity).toFixed(2),
+        Cell: ({ cell }) => cell.getValue<string>(),
       },
       {
         accessorKey: "Fx",
@@ -148,8 +194,18 @@ const BlotterTable: React.FC = () => {
       columnFilters: filterTicker
         ? [{ id: "Ticker", value: filterTicker }]
         : [],
+      columnVisibility: {
+        asset_class: false,
+        asset_sub_class: false,
+        ccy: false,
+        category: false,
+        sub_category: false,
+        domicile: false,
+      },
     },
     state: { density: "xs" },
+    enableColumnFilterModes: true,
+    enableDensityToggle: false,
     enableRowSelection: true,
     positionToolbarAlertBanner: "bottom",
     renderTopToolbarCustomActions: ({ table }) => (
@@ -182,7 +238,11 @@ const BlotterTable: React.FC = () => {
             ? "Update Trade"
             : "Bulk Update"}
         </Button>
-        <Button color="gray" variant="outline" onClick={handleExportCSV}>
+        <Button
+          color="gray"
+          variant="outline"
+          onClick={() => handleExportCSV(table)}
+        >
           Export CSV
         </Button>
         <FileInput
@@ -308,16 +368,60 @@ const BlotterTable: React.FC = () => {
   };
 
   // Add the export handler function
-  const handleExportCSV = () => {
-    const url = getUrl("/api/v1/blotter/export");
+  const handleExportCSV = (table: MRT_TableInstance<Trade>) => {
+    const visibleColumns = table.getVisibleLeafColumns();
+    // Exclude the selection column and any internal MRT columns if they exist
+    const columnsToExport = visibleColumns.filter(
+      (col) => col.id !== "mrt-row-select" && col.id !== "mrt-row-actions"
+    );
 
-    // Create a hidden link and click it to trigger download
+    const headers = columnsToExport
+      .map((col) => col.columnDef.header)
+      .join(",");
+
+    const rows = table.getFilteredRowModel().rows;
+    const csvData = rows
+      .map((row) => {
+        return columnsToExport
+          .map((col) => {
+            let stringValue = "";
+            const value = row.getValue(col.id);
+
+            if (col.id === "TradeDate") {
+              // Preserve original ISO format for TradeDate
+              stringValue = row.original.TradeDate;
+            } else if (value instanceof Date) {
+              stringValue = value.toISOString();
+            } else {
+              stringValue =
+                value !== null && value !== undefined ? String(value) : "";
+            }
+
+            // Escape quotes and wrap in quotes if contains comma or newline
+            if (
+              stringValue.includes(",") ||
+              stringValue.includes('"') ||
+              stringValue.includes("\n")
+            ) {
+              return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+          })
+          .join(",");
+      })
+      .join("\n");
+
+    const blob = new Blob([headers + "\n" + csvData], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "trades.csv"); // filename is determined by api server
+    link.setAttribute("download", "trades_blotter.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   if (isLoading) return <div>Loading...</div>;

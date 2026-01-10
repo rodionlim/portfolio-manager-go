@@ -1,3 +1,10 @@
+## [1.32.0] - 2026-01-10
+
+### 🚀 Features
+
+- *(ui,blotter)* Allow for new columns on ref data
+- Allow proper filters for trade date
+
 ## [1.31.2] - 2025-12-27
 
 ### 🐛 Bug Fixes

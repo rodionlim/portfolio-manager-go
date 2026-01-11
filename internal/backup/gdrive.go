@@ -2,34 +2,344 @@ package backup
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"os"
+	"strings"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
 // GDriveBackupSource implements BackupSource for Google Drive
-// TODO: Implement Google Drive API integration
 type GDriveBackupSource struct {
-	credentials string
+	credentialsFile string
+	targetPath      string
 }
 
 // NewGDriveBackupSource creates a new Google Drive backup source
-func NewGDriveBackupSource(credentials string) *GDriveBackupSource {
-	return &GDriveBackupSource{
-		credentials: credentials,
+func NewGDriveBackupSource(credentialsFile string, targetPath string) *GDriveBackupSource {
+	if targetPath == "" {
+		targetPath = "portfolio-manager-go/backups"
 	}
-}
-
-// Upload uploads data to Google Drive
-func (g *GDriveBackupSource) Upload(ctx context.Context, reader io.Reader, filename string) error {
-	return fmt.Errorf("Google Drive backup not yet implemented")
-}
-
-// Download downloads data from Google Drive
-func (g *GDriveBackupSource) Download(ctx context.Context, filename string) (io.Reader, error) {
-	return nil, fmt.Errorf("Google Drive backup not yet implemented")
+	return &GDriveBackupSource{
+		credentialsFile: credentialsFile,
+		targetPath:      targetPath,
+	}
 }
 
 // GetName returns the name of the backup source
 func (g *GDriveBackupSource) GetName() string {
 	return "gdrive"
+}
+
+// SetTargetPath updates the target folder path on Google Drive
+func (g *GDriveBackupSource) SetTargetPath(path string) {
+	if path == "." || path == "" {
+		g.targetPath = "root"
+	} else {
+		g.targetPath = path
+	}
+}
+
+// Upload uploads data to Google Drive
+func (g *GDriveBackupSource) Upload(ctx context.Context, reader io.Reader, filename string) error {
+	srv, err := g.getService(ctx)
+	if err != nil {
+		return err
+	}
+
+	folderID, err := g.getOrCreatePath(ctx, srv, g.targetPath)
+	if err != nil {
+		return fmt.Errorf("failed to get/create target path: %w", err)
+	}
+
+	fmt.Printf("GDrive: Uploading '%s' to folder ID: %s\n", filename, folderID)
+
+	// Check if file already exists in that folder to update it or create new
+	existingFile, err := g.findFile(ctx, srv, folderID, filename)
+	if err != nil {
+		return err
+	}
+
+	f := &drive.File{
+		Name:    filename,
+		Parents: []string{folderID},
+	}
+
+	if existingFile != "" {
+		fmt.Printf("GDrive: Updating existing file with ID: %s\n", existingFile)
+		_, err = srv.Files.Update(existingFile, f).
+			Context(ctx).
+			SupportsAllDrives(true). // Use SupportsAllDrives for Shared Drive compatibility
+			Media(reader).Do()
+		if err != nil {
+			return fmt.Errorf("failed to update file on GDrive: %w", err)
+		}
+	} else {
+		fmt.Printf("GDrive: Creating new file '%s'\n", filename)
+		_, err = srv.Files.Create(f).
+			Context(ctx).
+			SupportsAllDrives(true). // Use SupportsAllDrives for Shared Drive compatibility
+			Media(reader).Do()
+		if err != nil {
+			return fmt.Errorf("failed to create file on GDrive: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// Download downloads data from Google Drive
+func (g *GDriveBackupSource) Download(ctx context.Context, filename string) (io.Reader, error) {
+	srv, err := g.getService(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	folderID, err := g.getOrCreatePath(ctx, srv, g.targetPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get target path: %w", err)
+	}
+
+	fileID, err := g.findFile(ctx, srv, folderID, filename)
+	if err != nil {
+		return nil, err
+	}
+	if fileID == "" {
+		// If the specific file is not found, try to find the latest file in the folder
+		fmt.Printf("GDrive: File '%s' not found, searching for the latest backup in '%s'...\n", filename, g.targetPath)
+		latestID, latestName, err := g.findLatestFile(ctx, srv, folderID)
+		if err != nil {
+			return nil, fmt.Errorf("file not found and failed to find latest: %w", err)
+		}
+		if latestID == "" {
+			return nil, fmt.Errorf("file not found and no other backups found in: %s", g.targetPath)
+		}
+		fmt.Printf("GDrive: Found latest backup: %s (ID: %s)\n", latestName, latestID)
+		fileID = latestID
+	}
+
+	resp, err := srv.Files.Get(fileID).
+		Context(ctx).
+		SupportsAllDrives(true). // Support finding files in Shared Drives
+		Download()
+	if err != nil {
+		return nil, fmt.Errorf("failed to download file: %w", err)
+	}
+
+	return resp.Body, nil
+}
+
+func (g *GDriveBackupSource) getService(ctx context.Context) (*drive.Service, error) {
+	if g.credentialsFile == "" {
+		return nil, fmt.Errorf("GDrive credentials file path is required")
+	}
+
+	credentials, err := os.ReadFile(g.credentialsFile)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read credentials file: %w", err)
+	}
+
+	// Detect credential type manually
+	var creds struct {
+		Type string `json:"type"`
+	}
+	json.Unmarshal(credentials, &creds)
+
+	if creds.Type == "service_account" {
+		config, err := google.JWTConfigFromJSON(credentials, drive.DriveScope)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse service account credentials: %w", err)
+		}
+		client := config.Client(ctx)
+		srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+		if err != nil {
+			return nil, fmt.Errorf("unable to retrieve Drive client: %w", err)
+		}
+		fmt.Printf("GDrive: Authenticated as service account: %s\n", config.Email)
+		return srv, nil
+	}
+
+	// Handle as OAuth2 User credentials
+	config, err := google.ConfigFromJSON(credentials, drive.DriveScope)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse credentials file as OAuth2: %w", err)
+	}
+
+	client := g.getOAuthClient(ctx, config)
+	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve Drive client: %w", err)
+	}
+
+	fmt.Println("GDrive: Authenticated as user via OAuth2")
+
+	return srv, nil
+}
+
+// getOAuthClient retrieves a token, saves the token, then returns the generated client.
+func (g *GDriveBackupSource) getOAuthClient(ctx context.Context, config *oauth2.Config) *http.Client {
+	// The file token.json stores the user's access and refresh tokens, and is
+	// created automatically when the authorization flow completes for the first
+	// time.
+	tokFile := "token.json"
+	tok, err := g.tokenFromFile(tokFile)
+	if err != nil {
+		tok = g.getTokenFromWeb(ctx, config)
+		g.saveToken(tokFile, tok)
+	} else {
+		// If token is expired or invalid, refresh it now while we have the chance to save it
+		if !tok.Valid() {
+			ts := config.TokenSource(ctx, tok)
+			newTok, err := ts.Token()
+			if err == nil && newTok.AccessToken != tok.AccessToken {
+				fmt.Println("GDrive: Token refreshed, updating token.json")
+				g.saveToken(tokFile, newTok)
+				tok = newTok
+			}
+		}
+	}
+	return config.Client(ctx, tok)
+}
+
+// getTokenFromWeb requests a token from the web, then returns the retrieved token.
+func (g *GDriveBackupSource) getTokenFromWeb(ctx context.Context, config *oauth2.Config) *oauth2.Token {
+	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+	fmt.Printf("Go to the following link in your browser then type the "+
+		"authorization code: \n%v\n", authURL)
+
+	var authCode string
+	fmt.Print("Enter authorization code: ")
+	if _, err := fmt.Scan(&authCode); err != nil {
+		fmt.Printf("Unable to read authorization code: %v", err)
+		os.Exit(1)
+	}
+
+	tok, err := config.Exchange(ctx, authCode)
+	if err != nil {
+		fmt.Printf("Unable to retrieve token from web: %v", err)
+		os.Exit(1)
+	}
+	return tok
+}
+
+// tokenFromFile retrieves a token from a local file.
+func (g *GDriveBackupSource) tokenFromFile(file string) (*oauth2.Token, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	tok := &oauth2.Token{}
+	err = json.NewDecoder(f).Decode(tok)
+	return tok, err
+}
+
+// saveToken saves a token to a file path.
+func (g *GDriveBackupSource) saveToken(path string, token *oauth2.Token) {
+	fmt.Printf("Saving credential file to: %s\n", path)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		fmt.Printf("Unable to cache oauth token: %v", err)
+		return
+	}
+	defer f.Close()
+	json.NewEncoder(f).Encode(token)
+}
+
+func (g *GDriveBackupSource) getOrCreatePath(ctx context.Context, srv *drive.Service, path string) (string, error) {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	parentID := "root"
+
+	fmt.Printf("GDrive: Resolving path: %s\n", path)
+
+	for _, name := range parts {
+		if name == "" {
+			continue
+		}
+
+		// Search for folders including those in Shared Drives
+		query := fmt.Sprintf("name = '%s' and mimeType = 'application/vnd.google-apps.folder' and trashed = false", name)
+		if parentID != "root" {
+			query = fmt.Sprintf("%s and '%s' in parents", query, parentID)
+		}
+
+		res, err := srv.Files.List().
+			Context(ctx).
+			Q(query).
+			SupportsAllDrives(true).         // Required for Shared Drives
+			IncludeItemsFromAllDrives(true). // Find folders shared with service account
+			Fields("files(id, name)").Do()
+		if err != nil {
+			return "", fmt.Errorf("failed to list folders: %w", err)
+		}
+		var id string
+		if len(res.Files) > 0 {
+			id = res.Files[0].Id
+			fmt.Printf("GDrive: Found folder '%s' with ID: %s (Parent: %s)\n", name, id, parentID)
+		} else {
+			// Create folder
+			f := &drive.File{
+				Name:     name,
+				MimeType: "application/vnd.google-apps.folder",
+				Parents:  []string{parentID},
+			}
+			newRes, err := srv.Files.Create(f).
+				Context(ctx).
+				SupportsAllDrives(true). // Create inside Shared Drive if parent is there
+				Do()
+			if err != nil {
+				return "", fmt.Errorf("failed to create folder %s: %w", name, err)
+			}
+			id = newRes.Id
+			fmt.Printf("GDrive: Created folder '%s' with ID: %s (Parent: %s)\n", name, id, parentID)
+		}
+		parentID = id
+	}
+
+	return parentID, nil
+}
+
+func (g *GDriveBackupSource) findFile(ctx context.Context, srv *drive.Service, parentID, name string) (string, error) {
+	query := fmt.Sprintf("name = '%s' and '%s' in parents and trashed = false", name, parentID)
+	res, err := srv.Files.List().
+		Context(ctx).
+		Q(query).
+		SupportsAllDrives(true).         // Search inside Shared Drives
+		IncludeItemsFromAllDrives(true). // Include items from Shared Drives
+		Fields("files(id, name)").Do()
+	if err != nil {
+		return "", fmt.Errorf("failed to list files: %w", err)
+	}
+	if len(res.Files) > 0 {
+		return res.Files[0].Id, nil
+	}
+	return "", nil
+}
+
+func (g *GDriveBackupSource) findLatestFile(ctx context.Context, srv *drive.Service, parentID string) (string, string, error) {
+	// Query for files in the parent folder, sorted by name descending
+	// Assuming backups have timestamped names like portfolio-manager-backup-YYYYMMDD-HHMMSS.tar.gz
+	query := fmt.Sprintf("'%s' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false", parentID)
+	res, err := srv.Files.List().
+		Context(ctx).
+		Q(query).
+		OrderBy("name desc").
+		PageSize(1).
+		SupportsAllDrives(true).         // Search inside Shared Drives
+		IncludeItemsFromAllDrives(true). // Include items from Shared Drives
+		Fields("files(id, name)").Do()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to list files for latest search: %w", err)
+	}
+
+	if len(res.Files) > 0 {
+		return res.Files[0].Id, res.Files[0].Name, nil
+	}
+	return "", "", nil
 }

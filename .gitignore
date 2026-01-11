@@ -16,3 +16,7 @@ npm_licenses.tar.bz2
 .tarballs/*
 
 .DS_Store
+
+# gdrive authentication
+credentials.json
+token.json

@@ -6,8 +6,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"portfolio-manager/pkg/logging"
@@ -84,15 +87,22 @@ func (s *Service) Restore(ctx context.Context, dbPath string, config BackupConfi
 
 	// Determine backup filename based on source and URI
 	var backupFilename string
-	if config.Source == "local" && config.URI != "" {
-		// For local source, URI contains the full path to the backup file
+	if config.URI != "" && (strings.HasSuffix(config.URI, ".tar.gz") || strings.HasSuffix(config.URI, ".tgz")) {
+		// If URI points to a file, extract filename and folder/base path
 		backupFilename = filepath.Base(config.URI)
-		// Update the local source to use the directory containing the backup
-		if localSource, ok := source.(*LocalBackupSource); ok {
-			localSource.SetBasePath(filepath.Dir(config.URI))
+		dirPath := filepath.Dir(config.URI)
+
+		if config.Source == "local" {
+			if localSource, ok := source.(*LocalBackupSource); ok {
+				localSource.SetBasePath(dirPath)
+			}
+		} else if config.Source == "gdrive" {
+			if gdriveSource, ok := source.(*GDriveBackupSource); ok {
+				gdriveSource.SetTargetPath(dirPath)
+			}
 		}
 	} else {
-		// For other sources, use a default filename
+		// Use a default filename if only a directory or no URI is provided
 		backupFilename = "portfolio-manager-backup.tar.gz"
 	}
 
@@ -162,10 +172,25 @@ func (s *Service) GetBackupSize(dbPath string, includeData bool) (int64, error) 
 }
 
 // IsApplicationRunning checks if the portfolio manager is currently running
-func (s *Service) IsApplicationRunning() (bool, error) {
-	// Simple check: try to connect to the default port
-	// In a real implementation, you might want to check for a PID file or use a more robust method
-	return false, nil // For now, assume it's not running
+func (s *Service) IsApplicationRunning(baseURL string) (bool, error) {
+	// Simple check: try to connect to the port from baseURL
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return false, fmt.Errorf("invalid base URL: %w", err)
+	}
+
+	host := u.Host
+	if host == "" {
+		host = "localhost:8080"
+	}
+
+	timeout := 1 * time.Second
+	conn, err := net.DialTimeout("tcp", host, timeout)
+	if err != nil {
+		return false, nil
+	}
+	conn.Close()
+	return true, nil
 }
 
 // compressPaths compresses multiple directories into a tar.gz stream
@@ -286,7 +311,7 @@ func (s *Service) createBackupSource(config BackupConfig) (BackupSource, error) 
 		}
 		return NewLocalBackupSource(basePath), nil
 	case "gdrive":
-		return NewGDriveBackupSource(config.User), nil
+		return NewGDriveBackupSource(config.User, config.URI), nil
 	case "nextcloud":
 		return NewNextcloudBackupSource(config.URI, config.User, config.Password), nil
 	default:

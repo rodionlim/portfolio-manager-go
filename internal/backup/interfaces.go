@@ -38,5 +38,5 @@ type BackupService interface {
 	GetBackupSize(dbPath string, includeData bool) (int64, error)
 
 	// IsApplicationRunning checks if the portfolio manager is currently running
-	IsApplicationRunning() (bool, error)
+	IsApplicationRunning(baseURL string) (bool, error)
 }

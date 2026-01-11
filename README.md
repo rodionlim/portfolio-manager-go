@@ -172,9 +172,11 @@ If you are using a personal Google account, use OAuth2 Desktop credentials inste
 4. Ensure your **OAuth Client ID** in Google Console allows `http://localhost:8888` as a redirect URI (though for Desktop App types, localhost is usually allowed by default).
 5. On first run, follow the link in your terminal. After authorization, you will be redirected to the URI specified in your `credentials.json` (e.g., `http://localhost:8888` or your Tailscale domain) and the application will capture the code automatically.
 6. A `token.json` will be saved locally for future automatic backups.
-7. **Remote Servers (Proxmox/LXC)**: If you are running the app on a remote server, you have two options:
-   - **Option A (Custom Domain)**: Use a reachable domain in your `redirect_uris` (like a Tailscale `.ts.net` address). Ensure port **8888** (or the port in your URI) is open in your server firewall.
-   - **Option B (SSH Tunnel)**: Use `localhost:8888` in your credentials and use SSH port forwarding (`ssh -L 8888:localhost:8888 your-server`) on your local machine during the one-time authentication step.
+7. **Remote Servers (Proxmox/LXC)**: If you are running the app on a remote server, you have two options for the one-time authentication step:
+   - **Option A (Custom Domain)**: Use a reachable domain in your `redirect_uris` (like a Tailscale `.ts.net` address). Ensure port **8888** (or the port in your URI) is open in your server firewall. (*Note: Only works for "Web Application" client types, not "Desktop App"*).
+   - **Option B (Port Forwarding)**: Keep `localhost:8888` in your credentials and "beam" the traffic from your local laptop to the server using one of these commands on your **local machine**:
+     - **SSH Tunnel**: `ssh -L 8888:localhost:8888 your-server`
+     - **Socat**: `socat TCP4-LISTEN:8888,fork TCP4:your-server:8888`
 
 # Nextcloud backup (not yet implemented)
 ./portfolio-manager backup --source nextcloud --uri https://your-nextcloud.com --user username --password password

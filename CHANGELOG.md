@@ -1,3 +1,9 @@
+## [1.34.1] - 2026-01-11
+
+### 🐛 Bug Fixes
+
+- *(backup)* Handle error with oob flow
+
 ## [1.34.0] - 2026-01-11
 
 ### 🚀 Features

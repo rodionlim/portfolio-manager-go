@@ -246,7 +246,7 @@ func (g *GDriveBackupSource) getTokenFromWeb(ctx context.Context, config *oauth2
 	})
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
+		Addr:    fmt.Sprintf("0.0.0.0:%d", port),
 		Handler: mux,
 	}
 
@@ -256,17 +256,19 @@ func (g *GDriveBackupSource) getTokenFromWeb(ctx context.Context, config *oauth2
 		}
 	}()
 
-	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	fmt.Printf("\nGDrive: Google has blocked the out-of-band (OOB) flow for desktop apps.\n")
 	fmt.Printf("Please follow these steps to authenticate:\n\n")
 
 	fmt.Printf("1. Ensure the redirect URL is reachable: %s\n", config.RedirectURL)
 	if strings.Contains(config.RedirectURL, "localhost") {
-		fmt.Println("   Note: Since this is 'localhost', if you are on a remote server, you may need SSH port forwarding.")
+		fmt.Println("   Note: If you are on a REMOTE server, you must tunnel traffic from your local machine:")
+		fmt.Printf("   A) Using SSH:   ssh -L %d:localhost:%d [user]@[remote-host]\n", port, port)
+		fmt.Printf("   B) Using socat: socat TCP4-LISTEN:%d,fork TCP4:[remote-host]:%d\n", port, port)
 	} else {
 		fmt.Println("   Note: You are using a custom redirect domain. Ensure your firewall allows incoming traffic on the specified port.")
 	}
 
+	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	fmt.Println("\n2. Open the following link in your browser:")
 	fmt.Printf("%v\n\n", authURL)
 

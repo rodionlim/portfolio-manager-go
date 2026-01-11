@@ -150,18 +150,7 @@ Create a backup of the database:
 # Local backup to specific directory
 ./portfolio-manager backup --source local --uri /path/to/backup/location
 
-# Google Drive backup (service account)
-./portfolio-manager backup --source gdrive --user ./credentials.json
-
-**Note on Google Drive Service Accounts:**
-Service accounts do not have their own storage quota. To use GDrive backup:
-1. Create a folder in your personal Google Drive (e.g., `portfolio-backups`).
-2. Share that folder with the `client_email` found in your `credentials.json` file.
-3. Grant the email **Editor** permissions.
-4. Pass the folder name via `--uri`:
-   `./portfolio-manager backup --source gdrive --user ./credentials.json --uri portfolio-backups`
-
-# Google Drive backup (personal account with OAuth2)
+# Google Drive backup (personal account with OAuth2), if not uri specified, defaults to portfolio-manager-go/backups folder
 ./portfolio-manager backup --source gdrive --user ./credentials.json
 
 **Note on Google Drive OAuth2:**
@@ -199,6 +188,9 @@ Restore database from a backup:
 ./portfolio-manager restore-from-backup --source local --uri ./backups/portfolio-manager-backup-20240101-120000.tar.gz
 
 # Restore from Google Drive
+# 1. Default: If no filename or folder is specified, default to portfolio-manager-go/backups
+./portfolio-manager restore-from-backup --source gdrive --user ./credentials.json
+
 # 1. Automatic: If no filename is specified (just the folder), the latest backup is selected
 ./portfolio-manager restore-from-backup --source gdrive --user ./credentials.json --uri portfolio-backups
 

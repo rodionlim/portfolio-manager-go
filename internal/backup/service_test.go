@@ -76,21 +76,58 @@ func TestBackupService(t *testing.T) {
 		// Create test files
 		testFile1 := filepath.Join(dbPath, "file1.log")
 		testFile2 := filepath.Join(dbPath, "file2.dat")
-		
+
 		err = os.WriteFile(testFile1, []byte("test data 1"), 0644)
 		require.NoError(t, err)
-		
+
 		err = os.WriteFile(testFile2, []byte("test data 2 longer"), 0644)
 		require.NoError(t, err)
 
 		// Test size calculation
-		size, err := service.GetBackupSize(dbPath)
+		size, err := service.GetBackupSize(dbPath, false)
 		assert.NoError(t, err)
 		assert.Greater(t, size, int64(0))
-		
+
 		// Size should be the sum of both files
 		expectedSize := int64(len("test data 1") + len("test data 2 longer"))
 		assert.Equal(t, expectedSize, size)
+	})
+
+	t.Run("GetBackupSize with optional data", func(t *testing.T) {
+		dbPath := filepath.Join(tempDir, "test_optional.db")
+		err := os.MkdirAll(dbPath, 0755)
+		require.NoError(t, err)
+
+		// Create a fake ./data folder in the current directory for the duration of the test
+		// Note: This relies on the test being run with the project root or test dir as CWD
+		// Usually tests should use a mockable path, but we'll follow previous pattern here
+		dataDir := "./data"
+		dataDirExists := false
+		if _, err := os.Stat(dataDir); err == nil {
+			dataDirExists = true
+		}
+
+		if !dataDirExists {
+			err = os.MkdirAll(dataDir, 0755)
+			require.NoError(t, err)
+			defer os.RemoveAll(dataDir)
+
+			testFileData := "some data file"
+			err = os.WriteFile(filepath.Join(dataDir, "test.xlsx"), []byte(testFileData), 0644)
+			require.NoError(t, err)
+
+			// Test with includeData=true
+			sizeWithData, err := service.GetBackupSize(dbPath, true)
+			assert.NoError(t, err)
+
+			// Test with includeData=false
+			sizeWithoutData, err := service.GetBackupSize(dbPath, false)
+			assert.NoError(t, err)
+
+			assert.Greater(t, sizeWithData, sizeWithoutData)
+		} else {
+			t.Log("Skipping optional data test because ./data already exists")
+		}
 	})
 
 	t.Run("Backup and Restore", func(t *testing.T) {
@@ -143,7 +180,7 @@ func TestBackupService(t *testing.T) {
 		// Verify restored data
 		restoredFile := filepath.Join(dbPath, "test.log")
 		assert.FileExists(t, restoredFile)
-		
+
 		restoredData, err := os.ReadFile(restoredFile)
 		assert.NoError(t, err)
 		assert.Equal(t, testData, string(restoredData))

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"portfolio-manager/pkg/logging"
 )
 
 // LocalBackupSource implements BackupSource for local file system
@@ -31,34 +32,35 @@ func (l *LocalBackupSource) Upload(ctx context.Context, reader io.Reader, filena
 	if err := os.MkdirAll(l.basePath, 0755); err != nil {
 		return fmt.Errorf("failed to create backup directory: %w", err)
 	}
-	
+
 	filePath := filepath.Join(l.basePath, filename)
-	
+	logging.GetLogger().Infof("Saving backup to local file: %s", filePath)
+
 	// Create the backup file
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create backup file: %w", err)
 	}
 	defer file.Close()
-	
+
 	// Copy data from reader to file
 	_, err = io.Copy(file, reader)
 	if err != nil {
 		return fmt.Errorf("failed to write backup data: %w", err)
 	}
-	
+
 	return nil
 }
 
 // Download reads data from a local file
 func (l *LocalBackupSource) Download(ctx context.Context, filename string) (io.Reader, error) {
 	filePath := filepath.Join(l.basePath, filename)
-	
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open backup file: %w", err)
 	}
-	
+
 	return file, nil
 }
 

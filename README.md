@@ -19,6 +19,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Integration with Gemini to derive trading insights via Analytics module
 - OpenAPI compliant for easy integration with other systems
 - UI for end users
+- Cloud and Local backup and restore (Google Drive)
 - MCP (Model Context Protocol) server for LLM integration
 
 ## Installation
@@ -124,18 +125,21 @@ The portfolio-manager binary includes CLI commands for interacting with a local/
 
 ### Database Backup
 
+**Note:** Backup and Restore commands only work for a **local** portfolio-manager server because they require direct access to the database files on disk. To backup a remote server, run these commands locally on that server (e.g., via SSH).
+
 Create a backup of the database:
 
 ```sh
-./portfolio-manager backup --source [local|gdrive|nextcloud] --uri [path|url] --user [username] --password [password]
+./portfolio-manager backup --source [local|gdrive|nextcloud] --uri [path|url] --user [username] --password [password] --include-data [true|false]
 ```
 
 **Parameters:**
 
 - `--source`: Backup destination (local, gdrive, nextcloud)
 - `--uri`: File location or URL (required for local and nextcloud)
-- `--user`: Username for remote sources (gdrive, nextcloud)
+- `--user`: Credentials filepath for remote sources (gdrive, nextcloud)
 - `--password`: Password for remote sources (nextcloud)
+- `--include-data`: Include the data folder (funds flow, reports etc.) in the backup (default: true)
 
 **Examples:**
 
@@ -146,8 +150,34 @@ Create a backup of the database:
 # Local backup to specific directory
 ./portfolio-manager backup --source local --uri /path/to/backup/location
 
-# Google Drive backup (not yet implemented)
-./portfolio-manager backup --source gdrive --user your-email@gmail.com
+# Google Drive backup (service account)
+./portfolio-manager backup --source gdrive --user ./credentials.json
+
+**Note on Google Drive Service Accounts:**
+Service accounts do not have their own storage quota. To use GDrive backup:
+1. Create a folder in your personal Google Drive (e.g., `portfolio-backups`).
+2. Share that folder with the `client_email` found in your `credentials.json` file.
+3. Grant the email **Editor** permissions.
+4. Pass the folder name via `--uri`:
+   `./portfolio-manager backup --source gdrive --user ./credentials.json --uri portfolio-backups`
+
+# Google Drive backup (personal account with OAuth2)
+./portfolio-manager backup --source gdrive --user ./credentials.json
+
+**Note on Google Drive OAuth2:**
+If you are using a personal Google account, use OAuth2 Desktop credentials instead of a Service Account to avoid storage quota issues.
+1. Create an **OAuth 2.0 Client ID** of type **Desktop App** in Google Cloud Console.
+2. Download the JSON file and use it with the `--user` flag.
+3. **Important**: If the `redirect_uris` in your JSON file is pointing to `localhost`, manually change it to `"urn:ietf:wg:oauth:2.0:oob"` to enable the manual copy-paste authorization flow in the terminal.
+4. On first run, follow the link in your terminal, authorize the app, and paste the code back.
+5. A `token.json` will be saved locally for future automatic backups.
+
+**Token Expiry & Longevity:**
+By default, if your Google Cloud project is in **"Testing"** mode, the refresh token will expire after **7 days**.
+To make the token last for **6 months** or longer (indefinitely until revoked or inactive for 6 months):
+1. Go to **APIs & Services > OAuth consent screen** in the Google Cloud Console.
+2. Under **Publishing status**, click **"Publish App"**.
+3. You don't need to complete the verification process for personal use; just moving it to "Production" status will remove the 7-day expiry limit.
 
 # Nextcloud backup (not yet implemented)
 ./portfolio-manager backup --source nextcloud --uri https://your-nextcloud.com --user username --password password
@@ -169,8 +199,12 @@ Restore database from a backup:
 # Restore from local backup file
 ./portfolio-manager restore-from-backup --source local --uri ./backups/portfolio-manager-backup-20240101-120000.tar.gz
 
-# Restore from Google Drive (not yet implemented)
-./portfolio-manager restore-from-backup --source gdrive --user your-email@gmail.com
+# Restore from Google Drive
+# 1. Automatic: If no filename is specified (just the folder), the latest backup is selected
+./portfolio-manager restore-from-backup --source gdrive --user ./credentials.json --uri portfolio-backups
+
+# 2. Manual: Specify a specific backup file in the folder
+./portfolio-manager restore-from-backup --source gdrive --user ./credentials.json --uri portfolio-backups/portfolio-manager-backup-20240101-120000.tar.gz
 
 # Restore from Nextcloud (not yet implemented)
 ./portfolio-manager restore-from-backup --source nextcloud --uri https://your-nextcloud.com --user username --password password

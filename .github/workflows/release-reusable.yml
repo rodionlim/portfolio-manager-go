@@ -7,8 +7,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      SWAG_VERSION: v1.16.4
-      GO_VERSION: 1.24.3
+      SWAG_VERSION: v1.16.6
+      GO_VERSION: 1.25.5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

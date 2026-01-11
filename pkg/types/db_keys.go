@@ -20,4 +20,7 @@ const (
 
 	ScheduledJobKeyPrefix     dbKey = "SCHEDULED_JOB"   // Key prefix for registered scheduled jobs
 	CustomMetricsJobKeyPrefix dbKey = "METRICS_BY_BOOK" // Key prefix for custom metrics jobs
+
+	HistoricalAssetConfigKey     dbKey = "HISTORICAL_ASSET_CONFIG" // Key for historical asset configuration
+	HistoricalAssetDataKeyPrefix dbKey = "HISTORICAL_ASSET_DATA"   // Key prefix for historical asset data
 )

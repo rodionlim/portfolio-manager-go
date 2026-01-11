@@ -1,10 +1,11 @@
 package types
 
 type AssetData struct {
-	Ticker    string
-	Price     float64
-	Currency  string
-	Timestamp int64
+	Ticker    string  `json:"ticker"`
+	Price     float64 `json:"price"`
+	AdjClose  float64 `json:"adj_close"`
+	Currency  string  `json:"currency"`
+	Timestamp int64   `json:"timestamp"`
 }
 
 type DividendsMetadata struct {

@@ -239,6 +239,21 @@ definitions:
       qty:
         type: number
     type: object
+  historical.AssetConfig:
+    properties:
+      enabled:
+        type: boolean
+      last_sync:
+        description: Unix timestamp
+        type: integer
+      lookback_years:
+        description: Number of years to backfill
+        type: integer
+      source:
+        type: string
+      ticker:
+        type: string
+    type: object
   historical.CreateMetricsJobRequest:
     properties:
       bookFilter:
@@ -388,6 +403,8 @@ definitions:
     type: object
   types.AssetData:
     properties:
+      adj_close:
+        type: number
       currency:
         type: string
       price:
@@ -1013,6 +1030,117 @@ paths:
       summary: Get dividends for a single ticker
       tags:
       - dividends
+  /api/v1/historical/config:
+    get:
+      description: Get configurations for historical data collection
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/historical.AssetConfig'
+            type: array
+        "500":
+          description: Failed to get asset configs
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get historical asset configurations
+      tags:
+      - historical
+    post:
+      consumes:
+      - application/json
+      description: Update or add configuration for historical data collection
+      parameters:
+      - description: Asset Configuration
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/historical.AssetConfig'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/historical.AssetConfig'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to update asset config
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Update or add historical asset configuration
+      tags:
+      - historical
+  /api/v1/historical/config/{ticker}:
+    delete:
+      description: Remove configuration for historical data collection
+      parameters:
+      - description: Asset Ticker
+        in: path
+        name: ticker
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to remove asset config
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Remove historical asset configuration
+      tags:
+      - historical
+  /api/v1/historical/data/{ticker}:
+    get:
+      description: Get paginated historical data for a specific asset
+      parameters:
+      - description: Asset Ticker
+        in: path
+        name: ticker
+        required: true
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page limit (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: From timestamp (unix)
+        in: query
+        name: from
+        type: integer
+      - description: To timestamp (unix)
+        in: query
+        name: to
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to get historical data
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get historical data for an asset
+      tags:
+      - historical
   /api/v1/historical/metrics:
     get:
       description: Get all historical portfolio metrics (date-stamped portfolio metrics),
@@ -1321,6 +1449,40 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: Manually trigger metrics collection
+      tags:
+      - historical
+  /api/v1/historical/sync:
+    post:
+      consumes:
+      - application/json
+      description: Trigger immediate historical data sync for a specific asset
+      parameters:
+      - description: Request with ticker
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to sync data
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Trigger on-demand sync for an asset
       tags:
       - historical
   /api/v1/mdata/dividends/{ticker}:

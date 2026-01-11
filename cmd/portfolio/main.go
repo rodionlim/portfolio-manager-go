@@ -186,7 +186,7 @@ func startServer(configFilePath string) {
 	userSvc := user.NewService(db)
 
 	// Create a new historical metrics service
-	historicalSvc := historical.NewService(metricsSvc, analyticsSvc, db, sched)
+	historicalSvc := historical.NewService(metricsSvc, analyticsSvc, db, sched, mdata)
 
 	// Start metrics collection schedule if configured
 	if config.Metrics.Schedule != "" {

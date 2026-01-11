@@ -286,15 +286,37 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 	}
 
 	result := response.Chart.Result[0]
-	data := make([]*types.AssetData, len(result.Timestamp))
+	data := make([]*types.AssetData, 0, len(result.Timestamp))
 
 	for i := range result.Timestamp {
-		data[i] = &types.AssetData{
+		price := 0.0
+		if len(result.Indicators.Quote) > 0 && i < len(result.Indicators.Quote[0].Close) {
+			price = result.Indicators.Quote[0].Close[i]
+		}
+
+		// Exclude data points with 0 price (missing data or holidays)
+		if price == 0 {
+			continue
+		}
+
+		var adjClose float64
+		// Safely get adjusted close if available
+		if len(result.Indicators.Adjclose) > 0 && i < len(result.Indicators.Adjclose[0].Adjclose) {
+			adjClose = result.Indicators.Adjclose[0].Adjclose[i]
+		}
+
+		// Fallback to regular close if adjusted close is missing or zero
+		if adjClose == 0 {
+			adjClose = price
+		}
+
+		data = append(data, &types.AssetData{
 			Ticker:    result.Meta.Symbol,
-			Price:     result.Indicators.Quote[0].Close[i],
+			Price:     price,
+			AdjClose:  adjClose,
 			Currency:  result.Meta.Currency,
 			Timestamp: result.Timestamp[i],
-		}
+		})
 	}
 
 	return data, nil

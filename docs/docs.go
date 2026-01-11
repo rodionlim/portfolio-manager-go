@@ -848,6 +848,174 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/historical/config": {
+            "get": {
+                "description": "Get configurations for historical data collection",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Get historical asset configurations",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/historical.AssetConfig"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get asset configs",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Update or add configuration for historical data collection",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Update or add historical asset configuration",
+                "parameters": [
+                    {
+                        "description": "Asset Configuration",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/historical.AssetConfig"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/historical.AssetConfig"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update asset config",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/config/{ticker}": {
+            "delete": {
+                "description": "Remove configuration for historical data collection",
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Remove historical asset configuration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset Ticker",
+                        "name": "ticker",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to remove asset config",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/data/{ticker}": {
+            "get": {
+                "description": "Get paginated historical data for a specific asset",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Get historical data for an asset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset Ticker",
+                        "name": "ticker",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page limit (default 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "From timestamp (unix)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "To timestamp (unix)",
+                        "name": "to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get historical data",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/historical/metrics": {
             "get": {
                 "description": "Get all historical portfolio metrics (date-stamped portfolio metrics), optionally filtered by book",
@@ -1299,6 +1467,58 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to trigger metrics collection",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/historical/sync": {
+            "post": {
+                "description": "Trigger immediate historical data sync for a specific asset",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Trigger on-demand sync for an asset",
+                "parameters": [
+                    {
+                        "description": "Request with ticker",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to sync data",
                         "schema": {
                             "$ref": "#/definitions/common.ErrorResponse"
                         }
@@ -2537,6 +2757,28 @@ const docTemplate = `{
                 }
             }
         },
+        "historical.AssetConfig": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "last_sync": {
+                    "description": "Unix timestamp",
+                    "type": "integer"
+                },
+                "lookback_years": {
+                    "description": "Number of years to backfill",
+                    "type": "integer"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "ticker": {
+                    "type": "string"
+                }
+            }
+        },
         "historical.CreateMetricsJobRequest": {
             "type": "object",
             "properties": {
@@ -2758,6 +3000,9 @@ const docTemplate = `{
         "types.AssetData": {
             "type": "object",
             "properties": {
+                "adj_close": {
+                    "type": "number"
+                },
                 "currency": {
                     "type": "string"
                 },

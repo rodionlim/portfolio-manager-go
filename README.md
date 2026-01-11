@@ -1196,6 +1196,33 @@ curl -X PUT http://localhost:8080/api/v1/user/profile \
 curl http://localhost:8080/healthz
 ```
 
+## Historical Market Data
+
+The application now supports persisting historical market data to reduce reliance on external APIs and improve performance.
+
+### Features
+
+- **Data Persistence**: Configure tickers to sync and store data locally.
+- **Backfilling**: Automatically fetching up to 30 years of historical data.
+- **Visualization**: View historical price trends with paginated tables and date filtering.
+
+### How Backfilling Works
+
+The application uses an efficient incremental sync strategy to maintain the historical database:
+
+1.  **Initial Sync**: When a ticker is first added, the system uses the configured `lookback_years` (defaulting to 5 years) to calculate the starting point and retrieves the full history up to the current date.
+2.  **Incremental Updates**: For subsequent syncs, the system retrieves only the "delta"—the data between the `last_sync` timestamp and the current time. This minimizes API requests and processing load.
+3.  **Data Filtering**: During ingestion, records with missing or zero prices are automatically excluded to ensure high data quality.
+4.  **Full Cleanup**: Deleting a configuration removes both the metadata and all associated historical price records from the LevelDB persistence.
+
+### API Endpoints
+
+- `GET /api/v1/historical/config`: List all configured assets.
+- `POST /api/v1/historical/config`: Add or update an asset configuration.
+- `DELETE /api/v1/historical/config/{ticker}`: Remove an asset configuration.
+- `POST /api/v1/historical/sync`: Trigger an immediate sync for a ticker.
+- `GET /api/v1/historical/data/{ticker}`: Retrieve historical data with pagination and date filtering using `from` and `to` query parameters (Unix timestamp).
+
 ## Configurations
 
 Sample configurations

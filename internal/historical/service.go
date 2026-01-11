@@ -13,6 +13,7 @@ import (
 	"portfolio-manager/internal/metrics"
 	"portfolio-manager/pkg/csvutil"
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/scheduler"
 	"portfolio-manager/pkg/types"
 	"strconv"
@@ -26,6 +27,7 @@ type Service struct {
 	analyticsService analytics.Service
 	db               dal.Database
 	scheduler        scheduler.Scheduler
+	mdataManager     mdata.MarketDataManager
 	logger           *logging.Logger
 	collectionTasks  []scheduler.TaskID
 }
@@ -36,12 +38,14 @@ func NewService(
 	analyticsService analytics.Service,
 	db dal.Database,
 	scheduler scheduler.Scheduler,
+	mdataManager mdata.MarketDataManager,
 ) *Service {
 	return &Service{
 		metricsService:   metricsService,
 		analyticsService: analyticsService,
 		db:               db,
 		scheduler:        scheduler,
+		mdataManager:     mdataManager,
 		logger:           logging.GetLogger(),
 	}
 }

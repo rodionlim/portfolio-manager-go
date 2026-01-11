@@ -11,6 +11,7 @@ import Dashboard from "../Analytics/Dashboard";
 import MetricsView from "../Analytics/MetricsView";
 import ReportsView from "../Analytics/ReportsView";
 import Settings from "../Settings/Settings";
+import HistoricalData from "../Historical/HistoricalData";
 
 const Controller: React.FC = () => {
   return (
@@ -26,6 +27,7 @@ const Controller: React.FC = () => {
       <Route path="/analytics/dashboard" element={<Dashboard />} />
       <Route path="/analytics/metrics" element={<MetricsView />} />
       <Route path="/analytics/reports" element={<ReportsView />} />
+      <Route path="/historical" element={<HistoricalData />} />
       <Route path="/settings" element={<Settings />} />
       <Route
         path="/*"

@@ -1,0 +1,534 @@
+import React, { useEffect, useState } from "react";
+import {
+  Title,
+  Card,
+  Table,
+  Button,
+  Group,
+  TextInput,
+  Select,
+  Switch,
+  ActionIcon,
+  Tooltip,
+  Modal,
+  Pagination,
+  LoadingOverlay,
+  NumberInput,
+} from "@mantine/core";
+import {
+  IconTrash,
+  IconRefresh,
+  IconPlus,
+  IconEdit,
+} from "@tabler/icons-react";
+import { showNotification } from "@mantine/notifications";
+import { getUrl } from "../../utils/url";
+import { DateInput } from "@mantine/dates";
+
+interface AssetConfig {
+  ticker: string;
+  source: string;
+  enabled: boolean;
+  last_sync?: number;
+  lookback_years?: number;
+}
+
+interface HistoricalRecord {
+  ticker: string;
+  price: number;
+  adj_close: number;
+  currency: string;
+  timestamp: number;
+}
+
+const HistoricalData: React.FC = () => {
+  const [configs, setConfigs] = useState<AssetConfig[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Add new config state
+  const [newTicker, setNewTicker] = useState("");
+  const [newSource, setNewSource] = useState("yahoo");
+  const [newLookback, setNewLookback] = useState(5);
+
+  // Modal State
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+
+  // Edit Modal State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editConfig, setEditConfig] = useState<AssetConfig | null>(null);
+
+  const [historyData, setHistoryData] = useState<HistoricalRecord[]>([]);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
+
+  useEffect(() => {
+    fetchConfigs();
+  }, []);
+
+  const fetchConfigs = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(getUrl("/api/v1/historical/config"));
+      if (!response.ok) throw new Error("Failed to fetch configs");
+      const data = await response.json();
+      setConfigs(data || []);
+    } catch (error: any) {
+      showNotification({
+        title: "Error",
+        message: error.message,
+        color: "red",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRowClick = (ticker: string) => {
+    setSelectedTicker(ticker);
+    setHistoryPage(1);
+    setModalOpen(true);
+    setFromDate(null);
+    setToDate(null);
+    fetchHistoryWrapper(ticker, 1, null, null);
+  };
+
+  const fetchHistoryWrapper = (
+    ticker: string,
+    page: number,
+    from: Date | null,
+    to: Date | null
+  ) => {
+    setHistoryLoading(true);
+    const p = new URLSearchParams();
+    p.append("page", page.toString());
+    p.append("limit", "100");
+    if (from) p.append("from", (from.getTime() / 1000).toString());
+    if (to) p.append("to", (to.getTime() / 1000).toString());
+
+    fetch(getUrl(`/api/v1/historical/data/${ticker}?${p.toString()}`))
+      .then((res) => res.json())
+      .then((data) => {
+        setHistoryData(data.data || []);
+        setHistoryTotal(data.total || 0);
+      })
+      .catch((err) =>
+        showNotification({ title: "Error", message: err.message, color: "red" })
+      )
+      .finally(() => setHistoryLoading(false));
+  };
+
+  const handlePageChange = (p: number) => {
+    setHistoryPage(p);
+    if (selectedTicker) {
+      fetchHistoryWrapper(selectedTicker, p, fromDate, toDate);
+    }
+  };
+
+  const handleDateSearch = () => {
+    if (selectedTicker) {
+      setHistoryPage(1);
+      fetchHistoryWrapper(selectedTicker, 1, fromDate, toDate);
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!newTicker) return;
+    try {
+      const config: AssetConfig = {
+        ticker: newTicker,
+        source: newSource,
+        enabled: true,
+        lookback_years: newLookback,
+      };
+
+      const response = await fetch(getUrl("/api/v1/historical/config"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
+      });
+
+      if (!response.ok) throw new Error("Failed to add config");
+
+      showNotification({ message: "Added " + newTicker, color: "green" });
+      setNewTicker("");
+      fetchConfigs();
+    } catch (error: any) {
+      showNotification({
+        title: "Error",
+        message: error.message,
+        color: "red",
+      });
+    }
+  };
+
+  const handleDelete = async (ticker: string) => {
+    try {
+      const response = await fetch(
+        getUrl(`/api/v1/historical/config/${ticker}`),
+        {
+          method: "DELETE",
+        }
+      );
+      if (!response.ok) throw new Error("Failed to delete config");
+
+      showNotification({ message: "Deleted " + ticker, color: "green" });
+      fetchConfigs();
+    } catch (error: any) {
+      showNotification({
+        title: "Error",
+        message: error.message,
+        color: "red",
+      });
+    }
+  };
+
+  const handleToggle = async (config: AssetConfig) => {
+    try {
+      const newConfig = { ...config, enabled: !config.enabled };
+      const response = await fetch(getUrl("/api/v1/historical/config"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newConfig),
+      });
+      if (!response.ok) throw new Error("Failed to update config");
+      fetchConfigs();
+    } catch (error: any) {
+      showNotification({
+        title: "Error",
+        message: error.message,
+        color: "red",
+      });
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent, config: AssetConfig) => {
+    e.stopPropagation();
+    setEditConfig({ ...config });
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editConfig) return;
+    try {
+      const response = await fetch(getUrl("/api/v1/historical/config"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editConfig),
+      });
+
+      if (!response.ok) throw new Error("Failed to update config");
+
+      showNotification({
+        message: "Updated " + editConfig.ticker,
+        color: "green",
+      });
+      setEditModalOpen(false);
+      setEditConfig(null);
+      fetchConfigs();
+    } catch (error: any) {
+      showNotification({
+        title: "Error",
+        message: error.message,
+        color: "red",
+      });
+    }
+  };
+
+  const handleSync = async (e: React.MouseEvent, ticker: string) => {
+    e.stopPropagation(); // Prevent row click
+    try {
+      showNotification({
+        message: `Syncing ${ticker}...`,
+        loading: true,
+        id: `sync-${ticker}`,
+      });
+      const response = await fetch(getUrl("/api/v1/historical/sync"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticker }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to sync");
+
+      showNotification({
+        id: `sync-${ticker}`,
+        message: data.message || `Synced ${ticker}`,
+        color: "green",
+        autoClose: 5000,
+      });
+      fetchConfigs();
+    } catch (error: any) {
+      showNotification({
+        id: `sync-${ticker}`,
+        title: "Error",
+        message: error.message,
+        color: "red",
+      });
+    }
+  };
+
+  const getSyncTooltip = (config: AssetConfig) => {
+    const lastSync = config.last_sync
+      ? new Date(config.last_sync * 1000)
+      : null;
+    const today = new Date();
+
+    if (!lastSync) {
+      return `Sync / Backfill data (Last ${config.lookback_years || 5} Years)`;
+    }
+
+    // Calculate next sync range
+    return `Sync data from ${lastSync.toLocaleDateString()} to ${today.toLocaleDateString()}`;
+  };
+
+  return (
+    <div style={{ padding: "20px" }}>
+      <Title order={2} mb="lg">
+        Historical Market Data
+      </Title>
+
+      <Card withBorder shadow="sm" mb="lg">
+        <Group align="flex-end">
+          <TextInput
+            label="Ticker"
+            placeholder="e.g. AAPL"
+            value={newTicker}
+            onChange={(e) => setNewTicker(e.target.value.toUpperCase())}
+            style={{ flex: 1 }}
+          />
+          <Select
+            label="Source"
+            data={[
+              { value: "yahoo", label: "Yahoo Finance" },
+              { value: "google", label: "Google Finance" },
+            ]}
+            value={newSource}
+            onChange={(val) => setNewSource(val || "yahoo")}
+            style={{ width: 200 }}
+          />
+          <NumberInput
+            label="Years"
+            value={newLookback}
+            onChange={(val) => setNewLookback(Number(val) || 5)}
+            min={1}
+            max={30}
+            style={{ width: 100 }}
+          />
+          <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+            Add
+          </Button>
+        </Group>
+      </Card>
+
+      <Card withBorder shadow="sm">
+        <Table highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Ticker</Table.Th>
+              <Table.Th>Source</Table.Th>
+              <Table.Th>Lookback (Y)</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th>Last Sync</Table.Th>
+              <Table.Th>Actions</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {configs.map((c) => (
+              <Table.Tr
+                key={c.ticker}
+                onClick={() => handleRowClick(c.ticker)}
+                style={{ cursor: "pointer" }}
+              >
+                <Table.Td>{c.ticker}</Table.Td>
+                <Table.Td>{c.source}</Table.Td>
+                <Table.Td>{c.lookback_years || 5}</Table.Td>
+                <Table.Td>
+                  <Switch
+                    checked={c.enabled}
+                    onChange={() => handleToggle(c)}
+                    onClick={(e) => e.stopPropagation()}
+                    label={c.enabled ? "Active" : "Disabled"}
+                  />
+                </Table.Td>
+                <Table.Td>
+                  {c.last_sync
+                    ? new Date(c.last_sync * 1000).toLocaleString()
+                    : "Never"}
+                </Table.Td>
+                <Table.Td>
+                  <Group gap="xs">
+                    <Tooltip label={getSyncTooltip(c)} withArrow>
+                      <ActionIcon
+                        variant="light"
+                        color="blue"
+                        onClick={(e) => handleSync(e, c.ticker)}
+                        disabled={!c.enabled}
+                      >
+                        <IconRefresh size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+
+                    <Tooltip label="Edit configuration" withArrow>
+                      <ActionIcon
+                        variant="light"
+                        color="orange"
+                        onClick={(e) => handleEditClick(e, c)}
+                      >
+                        <IconEdit size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+
+                    <Tooltip
+                      label="Delete configuration and all historical data"
+                      withArrow
+                      color="red"
+                    >
+                      <ActionIcon
+                        variant="light"
+                        color="red"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(c.ticker);
+                        }}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Group>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+            {configs.length === 0 && !loading && (
+              <Table.Tr>
+                <Table.Td colSpan={6} style={{ textAlign: "center" }}>
+                  No historical data configurations found
+                </Table.Td>
+              </Table.Tr>
+            )}
+          </Table.Tbody>
+        </Table>
+      </Card>
+
+      <Modal
+        opened={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={<Title order={4}>Historical Data: {selectedTicker}</Title>}
+        size="lg"
+      >
+        <Group mb="md">
+          <DateInput
+            value={fromDate}
+            onChange={setFromDate}
+            label="From Date"
+            placeholder="Start Date"
+            clearable
+          />
+          <DateInput
+            value={toDate}
+            onChange={setToDate}
+            label="To Date"
+            placeholder="End Date"
+            clearable
+          />
+          <Button onClick={handleDateSearch} mt={24}>
+            Search
+          </Button>
+        </Group>
+
+        <div style={{ position: "relative", minHeight: 200 }}>
+          <LoadingOverlay visible={historyLoading} />
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Date</Table.Th>
+                <Table.Th>Close</Table.Th>
+                <Table.Th>Adj Close</Table.Th>
+                <Table.Th>Currency</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {historyData.map((d, i) => (
+                <Table.Tr key={i}>
+                  <Table.Td>
+                    {new Date(d.timestamp * 1000).toLocaleDateString()}
+                  </Table.Td>
+                  <Table.Td>{d.price.toFixed(4)}</Table.Td>
+                  <Table.Td>
+                    {d.adj_close ? d.adj_close.toFixed(4) : "-"}
+                  </Table.Td>
+                  <Table.Td>{d.currency}</Table.Td>
+                </Table.Tr>
+              ))}
+              {historyData.length === 0 && (
+                <Table.Tr>
+                  <Table.Td colSpan={4} align="center">
+                    No data found
+                  </Table.Td>
+                </Table.Tr>
+              )}
+            </Table.Tbody>
+          </Table>
+        </div>
+
+        <Group justify="center" mt="md">
+          <Pagination
+            total={Math.ceil(historyTotal / 100)}
+            value={historyPage}
+            onChange={handlePageChange}
+          />
+        </Group>
+      </Modal>
+
+      <Modal
+        opened={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title={
+          <Title order={4}>Edit Configuration: {editConfig?.ticker}</Title>
+        }
+      >
+        {editConfig && (
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+          >
+            <Select
+              label="Source"
+              data={[
+                { value: "yahoo", label: "Yahoo Finance" },
+                { value: "google", label: "Google Finance" },
+              ]}
+              value={editConfig.source}
+              onChange={(val) =>
+                setEditConfig({ ...editConfig, source: val || "yahoo" })
+              }
+            />
+            <NumberInput
+              label="Lookback Years"
+              value={editConfig.lookback_years || 5}
+              onChange={(val) =>
+                setEditConfig({
+                  ...editConfig,
+                  lookback_years: Number(val) || 5,
+                })
+              }
+              min={1}
+              max={30}
+            />
+            <Group justify="flex-end" mt="md">
+              <Button variant="default" onClick={() => setEditModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit}>Save</Button>
+            </Group>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
+export default HistoricalData;

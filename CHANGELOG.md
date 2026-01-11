@@ -1,3 +1,11 @@
+## [1.34.0] - 2026-01-11
+
+### 🚀 Features
+
+- *(cli)* Add data folder to backup
+- *(deps)* Update dependencies and golang to 1.25.5
+- *(backup)* Add gdrive backup functionality
+
 ## [1.33.1] - 2026-01-10
 
 ### 🐛 Bug Fixes

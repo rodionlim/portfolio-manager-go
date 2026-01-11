@@ -1,3 +1,9 @@
+## [1.34.2] - 2026-01-11
+
+### 🐛 Bug Fixes
+
+- *(backup)* Redirect not routing to credentials redict uri
+
 ## [1.34.1] - 2026-01-11
 
 ### 🐛 Bug Fixes

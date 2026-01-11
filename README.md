@@ -168,16 +168,11 @@ Service accounts do not have their own storage quota. To use GDrive backup:
 If you are using a personal Google account, use OAuth2 Desktop credentials instead of a Service Account to avoid storage quota issues.
 1. Create an **OAuth 2.0 Client ID** of type **Desktop App** in Google Cloud Console.
 2. Download the JSON file and use it with the `--user` flag.
-3. **Important**: If the `redirect_uris` in your JSON file is pointing to `localhost`, manually change it to `"urn:ietf:wg:oauth:2.0:oob"` to enable the manual copy-paste authorization flow in the terminal.
-4. On first run, follow the link in your terminal, authorize the app, and paste the code back.
-5. A `token.json` will be saved locally for future automatic backups.
-
-**Token Expiry & Longevity:**
-By default, if your Google Cloud project is in **"Testing"** mode, the refresh token will expire after **7 days**.
-To make the token last for **6 months** or longer (indefinitely until revoked or inactive for 6 months):
-1. Go to **APIs & Services > OAuth consent screen** in the Google Cloud Console.
-2. Under **Publishing status**, click **"Publish App"**.
-3. You don't need to complete the verification process for personal use; just moving it to "Production" status will remove the 7-day expiry limit.
+3. **Important**: Google has blocked the out-of-band (OOB) "copy-paste" flow. The application now uses a local loopback server on port **8888** for authentication.
+4. Ensure your **OAuth Client ID** in Google Console allows `http://localhost:8888` as a redirect URI (though for Desktop App types, localhost is usually allowed by default).
+5. On first run, follow the link in your terminal. After authorization, you will be redirected to `localhost:8888` and the application will capture the code automatically.
+6. A `token.json` will be saved locally for future automatic backups.
+7. **Remote Servers (Proxmox/LXC)**: If you are running the app on a remote server, you must either open port **8888** on the server or use SSH port forwarding (`ssh -L 8888:localhost:8888 your-server`) for the one-time authentication step.
 
 # Nextcloud backup (not yet implemented)
 ./portfolio-manager backup --source nextcloud --uri https://your-nextcloud.com --user username --password password

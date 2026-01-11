@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -197,10 +198,16 @@ func (g *GDriveBackupSource) getOAuthClient(ctx context.Context, config *oauth2.
 		if !tok.Valid() {
 			ts := config.TokenSource(ctx, tok)
 			newTok, err := ts.Token()
-			if err == nil && newTok.AccessToken != tok.AccessToken {
-				fmt.Println("GDrive: Token refreshed, updating token.json")
-				g.saveToken(tokFile, newTok)
-				tok = newTok
+			if err == nil {
+				if newTok.AccessToken != tok.AccessToken {
+					fmt.Println("GDrive: Token refreshed, updating token.json")
+					g.saveToken(tokFile, newTok)
+					tok = newTok
+				}
+			} else {
+				fmt.Printf("GDrive: Failed to refresh token: %v. Requesting new token...\n", err)
+				tok = g.getTokenFromWeb(ctx, config)
+				g.saveToken(tokFile, tok)
 			}
 		}
 	}
@@ -209,14 +216,59 @@ func (g *GDriveBackupSource) getOAuthClient(ctx context.Context, config *oauth2.
 
 // getTokenFromWeb requests a token from the web, then returns the retrieved token.
 func (g *GDriveBackupSource) getTokenFromWeb(ctx context.Context, config *oauth2.Config) *oauth2.Token {
+	// Start a local server to receive the authorization code.
+	// Google has deprecated the out-of-band (OOB) flow, so loopback is now required.
+	port := 8888
+	config.RedirectURL = fmt.Sprintf("http://localhost:%d", port)
+
+	// Create a channel to receive the code
+	codeCh := make(chan string)
+
+	// Use a custom ServeMux to avoid global state
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		code := r.URL.Query().Get("code")
+		if code != "" {
+			fmt.Fprintf(w, "Authorization successful! You can close this tab and return to the terminal.")
+			codeCh <- code
+		} else {
+			fmt.Fprintf(w, "Authorization failed! No code found in response.")
+		}
+	})
+
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: mux,
+	}
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Printf("GDrive: Warning - failed to start redirect server on port %d: %v\n", port, err)
+		}
+	}()
+
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-	fmt.Printf("Go to the following link in your browser then type the "+
-		"authorization code: \n%v\n", authURL)
+	fmt.Printf("\nGDrive: Google has blocked the out-of-band (OOB) flow for desktop apps.\n")
+	fmt.Printf("Please follow these steps to authenticate:\n\n")
+
+	fmt.Printf("1. Ensure port %d is open on this machine to receive the loopback redirect.\n", port)
+	fmt.Println("   Note: If you are running on a remote server, you may need to use SSH port forwarding or open the firewall.")
+
+	fmt.Println("\n2. Open the following link in your browser:")
+	fmt.Printf("%v\n\n", authURL)
+
+	fmt.Printf("3. After you authorize, Google will redirect to http://localhost:%d and this app will receive the code automatically.\n", port)
+	fmt.Println("   Waiting for authorization (timeout in 5 minutes)...")
 
 	var authCode string
-	fmt.Print("Enter authorization code: ")
-	if _, err := fmt.Scan(&authCode); err != nil {
-		fmt.Printf("Unable to read authorization code: %v", err)
+	select {
+	case authCode = <-codeCh:
+		// Shutdown the server
+		_ = server.Shutdown(ctx)
+		fmt.Println("GDrive: Authorization code received successfully.")
+	case <-time.After(5 * time.Minute):
+		fmt.Println("GDrive: Timed out waiting for authorization code.")
+		_ = server.Shutdown(ctx)
 		os.Exit(1)
 	}
 

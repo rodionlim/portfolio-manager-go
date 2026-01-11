@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -219,7 +220,15 @@ func (g *GDriveBackupSource) getTokenFromWeb(ctx context.Context, config *oauth2
 	// Start a local server to receive the authorization code.
 	// Google has deprecated the out-of-band (OOB) flow, so loopback is now required.
 	port := 8888
-	config.RedirectURL = fmt.Sprintf("http://localhost:%d", port)
+	if config.RedirectURL != "" {
+		// Use the redirect URL from credentials.json if available
+		u, err := url.Parse(config.RedirectURL)
+		if err == nil && u.Port() != "" {
+			fmt.Sscanf(u.Port(), "%d", &port)
+		}
+	} else {
+		config.RedirectURL = fmt.Sprintf("http://localhost:%d", port)
+	}
 
 	// Create a channel to receive the code
 	codeCh := make(chan string)
@@ -251,13 +260,17 @@ func (g *GDriveBackupSource) getTokenFromWeb(ctx context.Context, config *oauth2
 	fmt.Printf("\nGDrive: Google has blocked the out-of-band (OOB) flow for desktop apps.\n")
 	fmt.Printf("Please follow these steps to authenticate:\n\n")
 
-	fmt.Printf("1. Ensure port %d is open on this machine to receive the loopback redirect.\n", port)
-	fmt.Println("   Note: If you are running on a remote server, you may need to use SSH port forwarding or open the firewall.")
+	fmt.Printf("1. Ensure the redirect URL is reachable: %s\n", config.RedirectURL)
+	if strings.Contains(config.RedirectURL, "localhost") {
+		fmt.Println("   Note: Since this is 'localhost', if you are on a remote server, you may need SSH port forwarding.")
+	} else {
+		fmt.Println("   Note: You are using a custom redirect domain. Ensure your firewall allows incoming traffic on the specified port.")
+	}
 
 	fmt.Println("\n2. Open the following link in your browser:")
 	fmt.Printf("%v\n\n", authURL)
 
-	fmt.Printf("3. After you authorize, Google will redirect to http://localhost:%d and this app will receive the code automatically.\n", port)
+	fmt.Printf("3. After you authorize, Google will redirect to %s and this app will receive the code automatically.\n", config.RedirectURL)
 	fmt.Println("   Waiting for authorization (timeout in 5 minutes)...")
 
 	var authCode string

@@ -1,3 +1,9 @@
+## [1.34.3] - 2026-01-11
+
+### 🐛 Bug Fixes
+
+- *(backup)* Redirect should route to localhost:8888
+
 ## [1.34.2] - 2026-01-11
 
 ### 🐛 Bug Fixes

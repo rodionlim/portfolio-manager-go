@@ -1,3 +1,14 @@
+## [1.35.0] - 2026-01-12
+
+### 🚀 Features
+
+- *(historical)* Add new historical endpoint to fetch market data #150
+- *(historical)* Rework adjusted close to take into account backdated changes on incremental sync and add sync all button
+
+### ⚙️ Miscellaneous Tasks
+
+- *(backup)* Update docs on defaults for download and restore gdrive backup
+
 ## [1.34.3] - 2026-01-11
 
 ### 🐛 Bug Fixes

@@ -38,7 +38,7 @@ func TestYahooFinance_GetHistoricalData_Integration(t *testing.T) {
 	end := endTime.Unix()
 	start := startTime.Unix()
 
-	data, err := yf.GetHistoricalData("AAPL", start, end)
+	data, _, err := yf.GetHistoricalData("AAPL", start, end)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, data)
 

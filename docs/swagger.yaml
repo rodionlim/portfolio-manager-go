@@ -254,6 +254,48 @@ definitions:
       ticker:
         type: string
     type: object
+  historical.CorrelationOptions:
+    properties:
+      clip:
+        type: number
+      date_method:
+        type: string
+      ew_lookback:
+        type: integer
+      floor_at_zero:
+        type: boolean
+      forward_fill_price_index:
+        type: boolean
+      frequency:
+        type: string
+      index_col:
+        type: integer
+      interval_frequency:
+        type: string
+      min_periods:
+        type: integer
+      rollyears:
+        type: integer
+      shrinkage:
+        type: number
+      using_exponent:
+        type: boolean
+    type: object
+  historical.CorrelationRequest:
+    properties:
+      from:
+        description: YYYY-MM-DD
+        type: string
+      options:
+        $ref: '#/definitions/historical.CorrelationOptions'
+      tickers:
+        items:
+          type: string
+        type: array
+      to:
+        description: YYYY-MM-DD
+        type: string
+    type: object
   historical.CreateMetricsJobRequest:
     properties:
       bookFilter:
@@ -1099,6 +1141,37 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: Remove historical asset configuration
+      tags:
+      - historical
+  /api/v1/historical/correlation:
+    post:
+      consumes:
+      - application/json
+      description: Calculate correlation matrix using quantlib
+      parameters:
+      - description: Correlation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/historical.CorrelationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Calculate historical correlations
       tags:
       - historical
   /api/v1/historical/data/{ticker}:

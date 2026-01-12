@@ -956,6 +956,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/historical/correlation": {
+            "post": {
+                "description": "Calculate correlation matrix using quantlib",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Calculate historical correlations",
+                "parameters": [
+                    {
+                        "description": "Correlation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/historical.CorrelationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/historical/data/{ticker}": {
             "get": {
                 "description": "Get paginated historical data for a specific asset",
@@ -2775,6 +2822,69 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ticker": {
+                    "type": "string"
+                }
+            }
+        },
+        "historical.CorrelationOptions": {
+            "type": "object",
+            "properties": {
+                "clip": {
+                    "type": "number"
+                },
+                "date_method": {
+                    "type": "string"
+                },
+                "ew_lookback": {
+                    "type": "integer"
+                },
+                "floor_at_zero": {
+                    "type": "boolean"
+                },
+                "forward_fill_price_index": {
+                    "type": "boolean"
+                },
+                "frequency": {
+                    "type": "string"
+                },
+                "index_col": {
+                    "type": "integer"
+                },
+                "interval_frequency": {
+                    "type": "string"
+                },
+                "min_periods": {
+                    "type": "integer"
+                },
+                "rollyears": {
+                    "type": "integer"
+                },
+                "shrinkage": {
+                    "type": "number"
+                },
+                "using_exponent": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "historical.CorrelationRequest": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "description": "YYYY-MM-DD",
+                    "type": "string"
+                },
+                "options": {
+                    "$ref": "#/definitions/historical.CorrelationOptions"
+                },
+                "tickers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "to": {
+                    "description": "YYYY-MM-DD",
                     "type": "string"
                 }
             }

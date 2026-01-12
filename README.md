@@ -727,6 +727,30 @@ curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/USD-SGD?start=2
 curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/JPY-SGD?start=20240401&end=20240430"
 ```
 
+### Calculate Historical Correlations
+
+Calculate correlation matrix for a list of tickers over a specified date range.
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/correlation \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tickers": ["AAPL", "MSFT", "GOOG"],
+    "from": "2024-01-01",
+    "to": "2024-12-31",
+    "options": {
+      "frequency": "D",
+      "date_method": "in_sample",
+      "rollyears": 1,
+      "interval_frequency": "D",
+      "using_exponent": false,
+      "ew_lookback": 20,
+      "min_periods": 30,
+      "floor_at_zero": true
+    }
+  }'
+```
+
 ### Fetch Dividends
 
 ```sh

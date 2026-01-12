@@ -36,7 +36,7 @@ func NewMas(db dal.Database) *Mas {
 }
 
 // GetHistoricalData implements types.DataSource. MAS Bills are always traded at par value.
-func (src *Mas) GetHistoricalData(ticker string, fromDate int64, toDate int64) ([]*types.AssetData, error) {
+func (src *Mas) GetHistoricalData(ticker string, fromDate int64, toDate int64) ([]*types.AssetData, bool, error) {
 	// SSB is always traded at par value
 	var historicalData []*types.AssetData
 	startDate := time.Unix(fromDate, 0)
@@ -53,7 +53,7 @@ func (src *Mas) GetHistoricalData(ticker string, fromDate int64, toDate int64) (
 		}
 	}
 
-	return historicalData, nil
+	return historicalData, false, nil
 }
 
 // GetAssetPrice implements types.DataSource. MAS Bills are always traded at par value.

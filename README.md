@@ -150,18 +150,7 @@ Create a backup of the database:
 # Local backup to specific directory
 ./portfolio-manager backup --source local --uri /path/to/backup/location
 
-# Google Drive backup (service account)
-./portfolio-manager backup --source gdrive --user ./credentials.json
-
-**Note on Google Drive Service Accounts:**
-Service accounts do not have their own storage quota. To use GDrive backup:
-1. Create a folder in your personal Google Drive (e.g., `portfolio-backups`).
-2. Share that folder with the `client_email` found in your `credentials.json` file.
-3. Grant the email **Editor** permissions.
-4. Pass the folder name via `--uri`:
-   `./portfolio-manager backup --source gdrive --user ./credentials.json --uri portfolio-backups`
-
-# Google Drive backup (personal account with OAuth2)
+# Google Drive backup (personal account with OAuth2), if not uri specified, defaults to portfolio-manager-go/backups folder
 ./portfolio-manager backup --source gdrive --user ./credentials.json
 
 **Note on Google Drive OAuth2:**
@@ -199,6 +188,9 @@ Restore database from a backup:
 ./portfolio-manager restore-from-backup --source local --uri ./backups/portfolio-manager-backup-20240101-120000.tar.gz
 
 # Restore from Google Drive
+# 1. Default: If no filename or folder is specified, default to portfolio-manager-go/backups
+./portfolio-manager restore-from-backup --source gdrive --user ./credentials.json
+
 # 1. Automatic: If no filename is specified (just the folder), the latest backup is selected
 ./portfolio-manager restore-from-backup --source gdrive --user ./credentials.json --uri portfolio-backups
 
@@ -1203,6 +1195,33 @@ curl -X PUT http://localhost:8080/api/v1/user/profile \
 ```sh
 curl http://localhost:8080/healthz
 ```
+
+## Historical Market Data
+
+The application now supports persisting historical market data to reduce reliance on external APIs and improve performance.
+
+### Features
+
+- **Data Persistence**: Configure tickers to sync and store data locally.
+- **Backfilling**: Automatically fetching up to 30 years of historical data.
+- **Visualization**: View historical price trends with paginated tables and date filtering.
+
+### How Backfilling Works
+
+The application uses an efficient incremental sync strategy to maintain the historical database:
+
+1.  **Initial Sync**: When a ticker is first added, the system uses the configured `lookback_years` (defaulting to 5 years) to calculate the starting point and retrieves the full history up to the current date.
+2.  **Incremental Updates**: For subsequent syncs, the system retrieves only the "delta"—the data between the `last_sync` timestamp and the current time. This minimizes API requests and processing load.
+3.  **Data Filtering**: During ingestion, records with missing or zero prices are automatically excluded to ensure high data quality.
+4.  **Full Cleanup**: Deleting a configuration removes both the metadata and all associated historical price records from the LevelDB persistence.
+
+### API Endpoints
+
+- `GET /api/v1/historical/config`: List all configured assets.
+- `POST /api/v1/historical/config`: Add or update an asset configuration.
+- `DELETE /api/v1/historical/config/{ticker}`: Remove an asset configuration.
+- `POST /api/v1/historical/sync`: Trigger an immediate sync for a ticker.
+- `GET /api/v1/historical/data/{ticker}`: Retrieve historical data with pagination and date filtering using `from` and `to` query parameters (Unix timestamp).
 
 ## Configurations
 

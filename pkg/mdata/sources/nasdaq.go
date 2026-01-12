@@ -51,7 +51,7 @@ func (src *NasdaqSource) GetAssetPrice(ticker string) (*types.AssetData, error) 
 }
 
 // GetHistoricalData implements types.DataSource.
-func (src *NasdaqSource) GetHistoricalData(ticker string, fromDate int64, toDate int64) ([]*types.AssetData, error) {
+func (src *NasdaqSource) GetHistoricalData(ticker string, fromDate int64, toDate int64) ([]*types.AssetData, bool, error) {
 	panic("unimplemented")
 }
 

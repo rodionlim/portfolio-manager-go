@@ -75,8 +75,8 @@ func (src *googleFinance) GetAssetPrice(ticker string) (*types.AssetData, error)
 	}, nil
 }
 
-func (src *googleFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error) {
-	return nil, errors.New("historical data not yet implemented for google data source")
+func (src *googleFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, bool, error) {
+	return nil, false, errors.New("historical data not yet implemented for google data source")
 }
 
 // extractPrice helper function to extract price from HTML response

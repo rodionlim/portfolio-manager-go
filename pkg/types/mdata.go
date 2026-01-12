@@ -1,10 +1,11 @@
 package types
 
 type AssetData struct {
-	Ticker    string
-	Price     float64
-	Currency  string
-	Timestamp int64
+	Ticker    string  `json:"ticker"`
+	Price     float64 `json:"price"`
+	AdjClose  float64 `json:"adj_close"`
+	Currency  string  `json:"currency"`
+	Timestamp int64   `json:"timestamp"`
 }
 
 type DividendsMetadata struct {
@@ -30,6 +31,6 @@ type DataSource interface {
 	GetDividendsMetadata(ticker string, witholdingTax float64) ([]DividendsMetadata, error)
 	StoreDividendsMetadata(ticker string, dividends []DividendsMetadata, isCustom bool) ([]DividendsMetadata, error)
 	DeleteDividendsMetadata(ticker string, isCustom bool) error
-	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*AssetData, error)
+	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*AssetData, bool, error)
 	FetchBenchmarkInterestRates(country string, points int) ([]InterestRates, error)
 }

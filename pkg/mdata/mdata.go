@@ -19,7 +19,7 @@ import (
 // MarketDataManager defines the interface for market data management
 type MarketDataManager interface {
 	GetAssetPrice(ticker string) (*types.AssetData, error)
-	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error)
+	GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, bool, error) // bool indicates if resync is needed
 	GetDividendsMetadata(ticker string) ([]types.DividendsMetadata, error)
 	GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error)
 	ImportCustomDividendsFromCSVReader(*csv.Reader) (int, error)
@@ -135,27 +135,26 @@ func (m *Manager) GetAssetPrice(ticker string) (*types.AssetData, error) {
 }
 
 // GetHistoricalData attempts to fetch historical data from available sources
-func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error) {
+func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, bool, error) {
 	logging.GetLogger().Info("Fetching historical data for ticker", ticker)
 
 	// for SSB, tickers are standardized against the following convention, e.g. SBJAN25
 	if common.IsSSB(ticker) {
 		if iLoveSsb, ok := m.sources[sources.SSB]; ok {
-			data, err := iLoveSsb.GetHistoricalData(ticker, fromDate, toDate)
-			return data, err
+			return iLoveSsb.GetHistoricalData(ticker, fromDate, toDate)
 		}
 	}
 
 	tickerRef, err := m.getReferenceData(ticker)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// Try Yahoo Finance first if ticker is available in ref data
 	if tickerRef.YahooTicker != "" {
 		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
-			if data, err := yahoo.GetHistoricalData(tickerRef.YahooTicker, fromDate, toDate); err == nil {
-				return data, nil
+			if data, resync, err := yahoo.GetHistoricalData(tickerRef.YahooTicker, fromDate, toDate); err == nil {
+				return data, resync, nil
 			} else {
 				logging.GetLogger().Errorf("Failed to fetch historical data from Yahoo Finance for %s: %v", tickerRef.YahooTicker, err)
 			}
@@ -165,13 +164,13 @@ func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*t
 	// Fallback to Google Finance
 	if tickerRef.GoogleTicker != "" {
 		if google, ok := m.sources[sources.GoogleFinance]; ok {
-			if data, err := google.GetHistoricalData(tickerRef.GoogleTicker, fromDate, toDate); err == nil {
-				return data, nil
+			if data, resync, err := google.GetHistoricalData(tickerRef.GoogleTicker, fromDate, toDate); err == nil {
+				return data, resync, nil
 			}
 		}
 	}
 
-	return nil, errors.New("unable to fetch historical data from any market data sources")
+	return nil, false, errors.New("unable to fetch historical data from any market data sources")
 }
 
 // GetDividendsMetadata attempts to fetch dividends metadata from available sources

@@ -238,7 +238,7 @@ func HandleHistoricalDataGet(mdataSvc MarketDataManager) http.HandlerFunc {
 			}
 		}
 
-		data, err := mdataSvc.GetHistoricalData(ticker, startDate, endDate)
+		data, _, err := mdataSvc.GetHistoricalData(ticker, startDate, endDate)
 		if err != nil {
 			logging.GetLogger().Error("Failed to get historical data", err)
 			common.WriteJSONError(w, "Failed to get historical data: "+err.Error(), http.StatusInternalServerError)

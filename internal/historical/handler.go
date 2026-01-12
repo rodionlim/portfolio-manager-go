@@ -382,4 +382,11 @@ func RegisterHandlers(mux *http.ServeMux, service *Service) {
 		}
 		HandleTriggerMetricsCollection(service).ServeHTTP(w, r)
 	})
+
+	// Register historical market data endpoints
+	mux.HandleFunc("GET /api/v1/historical/config", HandleGetAssetConfigs(service))
+	mux.HandleFunc("POST /api/v1/historical/config", HandleUpdateAssetConfig(service))
+	mux.HandleFunc("DELETE /api/v1/historical/config/{ticker}", HandleRemoveAssetConfig(service))
+	mux.HandleFunc("POST /api/v1/historical/sync", HandleSyncAssetData(service))
+	mux.HandleFunc("GET /api/v1/historical/data/{ticker}", HandleGetHistoricalAssetData(service))
 }

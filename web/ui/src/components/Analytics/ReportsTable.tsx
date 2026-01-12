@@ -24,7 +24,7 @@ import {
   IconInfoCircle,
   IconFileText,
 } from "@tabler/icons-react";
-import { showNotification } from "@mantine/notifications";
+import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
 import { useMediaQuery } from "@mantine/hooks";
 
@@ -123,7 +123,7 @@ const ReportsTable: React.FC = () => {
       setReports(sortedReports);
     } catch (error) {
       console.error("Error fetching reports:", error);
-      showNotification({
+      notifications.show({
         title: "Error",
         message: "Failed to fetch reports",
         color: "red",
@@ -140,7 +140,7 @@ const ReportsTable: React.FC = () => {
       return analysisData;
     } catch (error) {
       console.error("Error fetching analyses:", error);
-      showNotification({
+      notifications.show({
         title: "Error",
         message: "Failed to fetch analyses",
         color: "red",
@@ -220,7 +220,7 @@ const ReportsTable: React.FC = () => {
 
       const downloadedFiles: string[] = await downloadResponse.json();
 
-      showNotification({
+      notifications.show({
         title: "Success",
         message: `Downloaded ${downloadedFiles.length} reports`,
         color: "green",
@@ -246,13 +246,13 @@ const ReportsTable: React.FC = () => {
 
         if (analyzeResponse.ok) {
           const analyses: ReportAnalysis[] = await analyzeResponse.json();
-          showNotification({
+          notifications.show({
             title: "Analysis Complete",
             message: `Analyzed ${analyses.length} reports`,
             color: "blue",
           });
         } else {
-          showNotification({
+          notifications.show({
             title: "Analysis Warning",
             message: "Reports downloaded but analysis failed",
             color: "yellow",
@@ -285,7 +285,7 @@ const ReportsTable: React.FC = () => {
       }
     } catch (error) {
       console.error("Error downloading reports:", error);
-      showNotification({
+      notifications.show({
         title: "Error",
         message: "Failed to download reports",
         color: "red",

@@ -119,7 +119,7 @@ func (s *Service) ExportTradesWithInferredFX() ([]byte, error) {
 		fxTicker := fmt.Sprintf("%s-%s", currency, s.baseCcy)
 
 		// Get historical FX data
-		fxData, err := s.mdataSvc.GetHistoricalData(fxTicker, dateRange.minDate, dateRange.maxDate)
+		fxData, _, err := s.mdataSvc.GetHistoricalData(fxTicker, dateRange.minDate, dateRange.maxDate)
 		if err != nil {
 			logging.GetLogger().Errorf("Failed to get historical data for %s: %v", fxTicker, err)
 			continue

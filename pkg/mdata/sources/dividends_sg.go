@@ -32,7 +32,7 @@ func NewDividendsSg(db dal.Database) *DividendsSg {
 }
 
 // GetHistoricalData implements types.DataSource.
-func (src *DividendsSg) GetHistoricalData(ticker string, fromDate int64, toDate int64) ([]*types.AssetData, error) {
+func (src *DividendsSg) GetHistoricalData(ticker string, fromDate int64, toDate int64) ([]*types.AssetData, bool, error) {
 	panic("unimplemented")
 }
 

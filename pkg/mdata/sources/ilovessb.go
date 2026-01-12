@@ -34,7 +34,7 @@ func NewILoveSsb(db dal.Database) *ILoveSsb {
 }
 
 // GetHistoricalData implements types.DataSource. SSB is always traded at par value.
-func (src *ILoveSsb) GetHistoricalData(ticker string, fromDate int64, toDate int64) ([]*types.AssetData, error) {
+func (src *ILoveSsb) GetHistoricalData(ticker string, fromDate int64, toDate int64) ([]*types.AssetData, bool, error) {
 	// SSB is always traded at par value
 	var historicalData []*types.AssetData
 	startDate := time.Unix(fromDate, 0)
@@ -51,7 +51,7 @@ func (src *ILoveSsb) GetHistoricalData(ticker string, fromDate int64, toDate int
 		}
 	}
 
-	return historicalData, nil
+	return historicalData, false, nil
 }
 
 // GetAssetPrice implements types.DataSource. SSB is always traded at par value.

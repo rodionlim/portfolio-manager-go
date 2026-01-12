@@ -171,9 +171,24 @@ func (s *Service) SyncAssetData(ticker string) (string, error) {
 	dateRangeMsg := fmt.Sprintf("Fetching from %s to %s", time.Unix(fromDate, 0).Format("2006-01-02"), time.Unix(now, 0).Format("2006-01-02"))
 	s.logger.Infof("Syncing historical data for %s: %s", ticker, dateRangeMsg)
 
-	data, err := s.mdataManager.GetHistoricalData(ticker, fromDate, now)
+	data, requiresResync, err := s.mdataManager.GetHistoricalData(ticker, fromDate, now)
 	if err != nil {
 		return "", err
+	}
+
+	// If events (splits/dividends) detected during a delta sync, trigger full resync
+	if requiresResync && config.LastSync > 0 {
+		s.logger.Warnf("Event detected for %s (split/dividend). Triggering full historical resync.", ticker)
+
+		// Reset fromDate to lookback years
+		fromDate = now - int64(lookbackYears*365*24*60*60)
+		dateRangeMsg = fmt.Sprintf("Full resync from %s to %s", time.Unix(fromDate, 0).Format("2006-01-02"), time.Unix(now, 0).Format("2006-01-02"))
+
+		// Re-fetch full history
+		data, _, err = s.mdataManager.GetHistoricalData(ticker, fromDate, now)
+		if err != nil {
+			return "", fmt.Errorf("failed during full resync: %w", err)
+		}
 	}
 
 	// Assuming db implementation supports batch or we just loop Put

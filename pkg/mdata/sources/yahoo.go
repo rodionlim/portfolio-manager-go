@@ -196,8 +196,8 @@ func (src *yahooFinance) GetAssetPrice(ticker string) (*types.AssetData, error) 
 	return stockData, nil
 }
 
-func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error) {
-	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=1d",
+func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, bool, error) {
+	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=1d&events=div,split",
 		ticker, fromDate, toDate)
 
 	src.logger.Debugf("Fetching historical data from: %s", url)
@@ -207,23 +207,23 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 
 	req, err := common.NewBrowserLikeRequest("GET", url)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	resp, err := src.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch historical data: %w", err)
+		return nil, false, fmt.Errorf("failed to fetch historical data: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("yahoo finance API returned status code: %d, url: %s", resp.StatusCode, url)
+		return nil, false, fmt.Errorf("yahoo finance API returned status code: %d, url: %s", resp.StatusCode, url)
 	}
 
 	// Read and potentially decompress the response body
 	bodyBytes, err := readResponseBody(resp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, false, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// Parse response and create StockData array (Commented out most fields for brevity)
@@ -256,7 +256,11 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 					// Range                string   `json:"range"`
 					// ValidRanges          []string `json:"validRanges"`
 				} `json:"meta"`
-				Timestamp  []int64 `json:"timestamp"`
+				Timestamp []int64 `json:"timestamp"`
+				Events    struct {
+					Dividends map[string]interface{} `json:"dividends"`
+					Splits    map[string]interface{} `json:"splits"`
+				} `json:"events"`
 				Indicators struct {
 					Quote []struct {
 						Open   []float64 `json:"open"`
@@ -278,15 +282,21 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 	if err := json.Unmarshal(bodyBytes, &response); err != nil {
 		src.logger.Errorf("Failed to decode JSON for %s. Error: %v", ticker, err)
 		src.logger.Errorf("Response body: %s", string(bodyBytes))
-		return []*types.AssetData{}, fmt.Errorf("failed to decode response: %w", err)
+		return []*types.AssetData{}, false, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	if len(response.Chart.Result) == 0 {
-		return nil, fmt.Errorf("no historical data found for ticker: %s", ticker)
+		return nil, false, fmt.Errorf("no historical data found for ticker: %s", ticker)
 	}
 
 	result := response.Chart.Result[0]
 	data := make([]*types.AssetData, 0, len(result.Timestamp))
+
+	// Check if we need to resync due to events (splits or dividends)
+	requiresResync := false
+	if len(result.Events.Splits) > 0 || len(result.Events.Dividends) > 0 {
+		requiresResync = true
+	}
 
 	for i := range result.Timestamp {
 		price := 0.0
@@ -319,5 +329,5 @@ func (src *yahooFinance) GetHistoricalData(ticker string, fromDate, toDate int64
 		})
 	}
 
-	return data, nil
+	return data, requiresResync, nil
 }

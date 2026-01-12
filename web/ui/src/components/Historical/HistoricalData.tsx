@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Title,
   Card,
   Table,
   Button,
   Group,
-  TextInput,
   Select,
   Switch,
   ActionIcon,
@@ -14,14 +13,19 @@ import {
   Pagination,
   LoadingOverlay,
   NumberInput,
+  Autocomplete,
+  Text,
+  Stack,
 } from "@mantine/core";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
 import {
   IconTrash,
   IconRefresh,
   IconPlus,
   IconEdit,
 } from "@tabler/icons-react";
-import { showNotification } from "@mantine/notifications";
+import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
 import { DateInput } from "@mantine/dates";
 
@@ -45,10 +49,29 @@ const HistoricalData: React.FC = () => {
   const [configs, setConfigs] = useState<AssetConfig[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const refData = useSelector((state: RootState) => state.referenceData.data);
+  const tickerOptions = useMemo(() => {
+    if (!refData) return [];
+    const tickers = Object.values(refData)
+      .map((item) => item.yahoo_ticker)
+      .filter((t) => t && t.trim() !== "");
+    // Unique and sorted
+    return Array.from(new Set(tickers)).sort();
+  }, [refData]);
+
   // Add new config state
   const [newTicker, setNewTicker] = useState("");
   const [newSource, setNewSource] = useState("yahoo");
   const [newLookback, setNewLookback] = useState(5);
+  const [resyncingAll, setResyncingAll] = useState(false);
+
+  const matchedName = useMemo(() => {
+    if (!refData || !newTicker) return null;
+    const match = Object.values(refData).find(
+      (item) => item.yahoo_ticker === newTicker || item.id === newTicker
+    );
+    return match ? match.name : null;
+  }, [refData, newTicker]);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -77,7 +100,7 @@ const HistoricalData: React.FC = () => {
       const data = await response.json();
       setConfigs(data || []);
     } catch (error: any) {
-      showNotification({
+      notifications.show({
         title: "Error",
         message: error.message,
         color: "red",
@@ -116,7 +139,11 @@ const HistoricalData: React.FC = () => {
         setHistoryTotal(data.total || 0);
       })
       .catch((err) =>
-        showNotification({ title: "Error", message: err.message, color: "red" })
+        notifications.show({
+          title: "Error",
+          message: err.message,
+          color: "red",
+        })
       )
       .finally(() => setHistoryLoading(false));
   };
@@ -153,11 +180,11 @@ const HistoricalData: React.FC = () => {
 
       if (!response.ok) throw new Error("Failed to add config");
 
-      showNotification({ message: "Added " + newTicker, color: "green" });
+      notifications.show({ message: "Added " + newTicker, color: "green" });
       setNewTicker("");
       fetchConfigs();
     } catch (error: any) {
-      showNotification({
+      notifications.show({
         title: "Error",
         message: error.message,
         color: "red",
@@ -175,10 +202,10 @@ const HistoricalData: React.FC = () => {
       );
       if (!response.ok) throw new Error("Failed to delete config");
 
-      showNotification({ message: "Deleted " + ticker, color: "green" });
+      notifications.show({ message: "Deleted " + ticker, color: "green" });
       fetchConfigs();
     } catch (error: any) {
-      showNotification({
+      notifications.show({
         title: "Error",
         message: error.message,
         color: "red",
@@ -197,7 +224,7 @@ const HistoricalData: React.FC = () => {
       if (!response.ok) throw new Error("Failed to update config");
       fetchConfigs();
     } catch (error: any) {
-      showNotification({
+      notifications.show({
         title: "Error",
         message: error.message,
         color: "red",
@@ -222,7 +249,7 @@ const HistoricalData: React.FC = () => {
 
       if (!response.ok) throw new Error("Failed to update config");
 
-      showNotification({
+      notifications.show({
         message: "Updated " + editConfig.ticker,
         color: "green",
       });
@@ -230,7 +257,7 @@ const HistoricalData: React.FC = () => {
       setEditConfig(null);
       fetchConfigs();
     } catch (error: any) {
-      showNotification({
+      notifications.show({
         title: "Error",
         message: error.message,
         color: "red",
@@ -238,10 +265,82 @@ const HistoricalData: React.FC = () => {
     }
   };
 
+  const handleSyncAll = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to resync ALL enabled assets? This may take time."
+      )
+    )
+      return;
+
+    setResyncingAll(true);
+    const enabledConfigs = configs.filter((c) => c.enabled);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const [index, config] of enabledConfigs.entries()) {
+      try {
+        const message = `Syncing ${config.ticker} (${index + 1}/${
+          enabledConfigs.length
+        })...`;
+
+        if (index === 0) {
+          notifications.show({
+            id: "sync-all-progress",
+            loading: true,
+            message,
+            autoClose: false,
+            withCloseButton: false,
+          });
+        } else {
+          notifications.update({
+            id: "sync-all-progress",
+            loading: true,
+            message,
+            autoClose: false,
+            withCloseButton: false,
+          });
+        }
+
+        // Call existing API
+        const response = await fetch(getUrl("/api/v1/historical/sync"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticker: config.ticker }),
+        });
+
+        // Always consume response body
+        await response.json();
+
+        if (!response.ok) throw new Error("Failed");
+        successCount++;
+      } catch (e) {
+        failCount++;
+        console.error(`Failed to sync ${config.ticker}`, e);
+      }
+
+      // Delay 3s if not last
+      if (index < enabledConfigs.length - 1) {
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+    }
+
+    setResyncingAll(false);
+    notifications.update({
+      id: "sync-all-progress",
+      message: `Completed! Success: ${successCount}, Failed: ${failCount}`,
+      color: "blue",
+      loading: false,
+      autoClose: 5000,
+      withCloseButton: true,
+    });
+    fetchConfigs();
+  };
+
   const handleSync = async (e: React.MouseEvent, ticker: string) => {
     e.stopPropagation(); // Prevent row click
     try {
-      showNotification({
+      notifications.show({
         message: `Syncing ${ticker}...`,
         loading: true,
         id: `sync-${ticker}`,
@@ -255,7 +354,7 @@ const HistoricalData: React.FC = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to sync");
 
-      showNotification({
+      notifications.show({
         id: `sync-${ticker}`,
         message: data.message || `Synced ${ticker}`,
         color: "green",
@@ -263,7 +362,7 @@ const HistoricalData: React.FC = () => {
       });
       fetchConfigs();
     } catch (error: any) {
-      showNotification({
+      notifications.show({
         id: `sync-${ticker}`,
         title: "Error",
         message: error.message,
@@ -293,14 +392,23 @@ const HistoricalData: React.FC = () => {
       </Title>
 
       <Card withBorder shadow="sm" mb="lg">
-        <Group align="flex-end">
-          <TextInput
-            label="Ticker"
-            placeholder="e.g. AAPL"
-            value={newTicker}
-            onChange={(e) => setNewTicker(e.target.value.toUpperCase())}
-            style={{ flex: 1 }}
-          />
+        <Group align="flex-start">
+          <div style={{ flex: 1 }}>
+            <Stack gap={4}>
+              <Autocomplete
+                label="Ticker"
+                placeholder="e.g. AAPL"
+                value={newTicker}
+                onChange={(val) => setNewTicker(val.toUpperCase())}
+                data={tickerOptions}
+              />
+              {matchedName && (
+                <Text c="dimmed" size="xs">
+                  {matchedName}
+                </Text>
+              )}
+            </Stack>
+          </div>
           <Select
             label="Source"
             data={[
@@ -319,8 +427,22 @@ const HistoricalData: React.FC = () => {
             max={30}
             style={{ width: 100 }}
           />
-          <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+          <Button
+            mt={24}
+            leftSection={<IconPlus size={16} />}
+            onClick={handleAdd}
+          >
             Add
+          </Button>
+          <Button
+            mt={24}
+            color="orange"
+            variant="light"
+            leftSection={<IconRefresh size={16} />}
+            onClick={handleSyncAll}
+            loading={resyncingAll}
+          >
+            Sync All
           </Button>
         </Group>
       </Card>

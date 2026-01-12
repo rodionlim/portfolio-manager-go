@@ -23,12 +23,20 @@ func (m *MockMarketDataManager) GetAssetPrice(ticker string) (*types.AssetData, 
 }
 
 // GetHistoricalData mocks the GetHistoricalData method
-func (m *MockMarketDataManager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, error) {
+func (m *MockMarketDataManager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*types.AssetData, bool, error) {
 	args := m.Called(ticker, fromDate, toDate)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+
+	var data []*types.AssetData
+	if args.Get(0) != nil {
+		data = args.Get(0).([]*types.AssetData)
 	}
-	return args.Get(0).([]*types.AssetData), args.Error(1)
+
+	// Handle existing tests that might only return (data, error)
+	if len(args) == 2 {
+		return data, false, args.Error(1)
+	}
+
+	return data, args.Bool(1), args.Error(2)
 }
 
 // StoreCustomDividendsMetadata mocks the StoreCustomDividendsMetadata method

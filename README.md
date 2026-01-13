@@ -740,6 +740,7 @@ curl -X POST http://localhost:8080/api/v1/historical/correlation \
     "to": "2024-12-31",
     "options": {
       "frequency": "D",
+      "is_price_series": true,
       "date_method": "in_sample",
       "rollyears": 1,
       "interval_frequency": "D",

@@ -2853,6 +2853,9 @@ const docTemplate = `{
                 "interval_frequency": {
                     "type": "string"
                 },
+                "is_price_series": {
+                    "type": "boolean"
+                },
                 "min_periods": {
                     "type": "integer"
                 },

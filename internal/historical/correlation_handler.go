@@ -10,6 +10,7 @@ import (
 
 type CorrelationOptions struct {
 	Frequency             *string  `json:"frequency"`
+	IsPriceSeries         *bool    `json:"is_price_series"`
 	DateMethod            *string  `json:"date_method"`
 	RollYears             *int     `json:"rollyears"`
 	IntervalFrequency     *string  `json:"interval_frequency"`
@@ -82,6 +83,13 @@ func buildFlags(opts CorrelationOptions) []string {
 	var flags []string
 	if opts.Frequency != nil {
 		flags = append(flags, "--frequency", *opts.Frequency)
+	}
+	if opts.IsPriceSeries != nil {
+		if *opts.IsPriceSeries {
+			flags = append(flags, "--is-price-series")
+		} else {
+			flags = append(flags, "--no-is-price-series")
+		}
 	}
 	if opts.DateMethod != nil {
 		flags = append(flags, "--date-method", *opts.DateMethod)

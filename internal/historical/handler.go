@@ -389,4 +389,5 @@ func RegisterHandlers(mux *http.ServeMux, service *Service) {
 	mux.HandleFunc("DELETE /api/v1/historical/config/{ticker}", HandleRemoveAssetConfig(service))
 	mux.HandleFunc("POST /api/v1/historical/sync", HandleSyncAssetData(service))
 	mux.HandleFunc("GET /api/v1/historical/data/{ticker}", HandleGetHistoricalAssetData(service))
+	mux.HandleFunc("POST /api/v1/historical/correlation", HandleCalculateCorrelations(service))
 }

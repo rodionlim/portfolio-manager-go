@@ -1,3 +1,14 @@
+## [1.36.0] - 2026-01-13
+
+### 🚀 Features
+
+- *(corr)* Add new correlation endpoints #152
+- *(corr)* Add is price series opt to corr calc
+
+### 🐛 Bug Fixes
+
+- *(blotter)* Update price field for fetching fx rate
+
 ## [1.35.0] - 2026-01-12
 
 ### 🚀 Features

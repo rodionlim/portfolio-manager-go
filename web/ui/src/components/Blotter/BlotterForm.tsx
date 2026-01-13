@@ -120,7 +120,7 @@ export default function BlotterForm() {
             if (Array.isArray(vals) && vals.length === 0) {
               throw new Error("No historical FX rate found");
             }
-            const price = vals[0]["Price"];
+            const price = vals[0]["Price"] || vals[0]["price"];
             values.fx = price;
           } catch (error) {
             // Fallback to current FX rate
@@ -151,6 +151,8 @@ export default function BlotterForm() {
         throw new Error("Unable to infer FX rate");
       }
     }
+
+    console.log(values.fx);
 
     const body = {
       id: values.tradeId,

@@ -731,23 +731,54 @@ curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/JPY-SGD?start=2
 
 Calculate correlation matrix for a list of tickers over a specified date range.
 
+date_method: "rolling", "expanding" or "in_sample"
+interval_frequency: Controls how often a new correlation matrix is emitted.
+
+Notes:
+
+- If `tickers` is omitted/empty, the server uses all **enabled** tickers from historical configs (`GET /api/v1/historical/config`).
+- If `to` is omitted, it defaults to today.
+- Set `resync: true` to sync stored historical data for the selected tickers before computing correlation.
+
 ```sh
 curl -X POST http://localhost:8080/api/v1/historical/correlation \
   -H "Content-Type: application/json" \
   -d '{
-    "tickers": ["AAPL", "MSFT", "GOOG"],
-    "from": "2024-01-01",
-    "to": "2024-12-31",
+    "tickers": ["D05.SI", "C09.SI"],
+    "from": "2022-01-01",
+    "to": "2026-01-01",
+    "resync": false,
     "options": {
       "frequency": "D",
       "is_price_series": true,
-      "date_method": "in_sample",
+      "date_method": "rolling",
       "rollyears": 1,
-      "interval_frequency": "D",
-      "using_exponent": false,
-      "ew_lookback": 20,
-      "min_periods": 30,
+      "interval_frequency": "12M",
+      "using_exponent": true,
+      "ew_lookback": 100,
+      "min_periods": 200,
       "floor_at_zero": true
+    }
+  }'
+```
+
+Compute correlation across all enabled historical configs (no explicit tickers; defaults `to` to today):
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/correlation \
+  -H "Content-Type: application/json" \
+  -d '{
+    "from": "2022-01-01",
+    "resync": false,
+    "options": {
+      "frequency": "D",
+      "is_price_series": true,
+      "date_method": "rolling",
+      "rollyears": 1,
+      "interval_frequency": "12M",
+      "using_exponent": true,
+      "ew_lookback": 100,
+      "min_periods": 200
     }
   }'
 ```

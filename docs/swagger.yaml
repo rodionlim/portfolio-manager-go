@@ -290,12 +290,16 @@ definitions:
         type: string
       options:
         $ref: '#/definitions/historical.CorrelationOptions'
+      resync:
+        type: boolean
       tickers:
+        description: Optional. If omitted or empty, server will use all enabled tickers
+          from historical config.
         items:
           type: string
         type: array
       to:
-        description: YYYY-MM-DD
+        description: YYYY-MM-DD (optional; defaults to today)
         type: string
     type: object
   historical.CreateMetricsJobRequest:
@@ -1149,7 +1153,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Calculate correlation matrix using quantlib
+      description: Calculate correlation matrix using quantlib. If tickers is omitted/empty,
+        uses all enabled tickers from historical config.
       parameters:
       - description: Correlation Request
         in: body

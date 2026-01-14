@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import {
   Title,
   Card,
+  Collapse,
   Table,
   Button,
   Group,
@@ -24,10 +25,14 @@ import {
   IconRefresh,
   IconPlus,
   IconEdit,
+  IconChevronDown,
+  IconChevronUp,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
 import { DateInput } from "@mantine/dates";
+
+import HistoricalCorrelation from "./HistoricalCorrelation";
 
 interface AssetConfig {
   ticker: string;
@@ -48,6 +53,7 @@ interface HistoricalRecord {
 const HistoricalData: React.FC = () => {
   const [configs, setConfigs] = useState<AssetConfig[]>([]);
   const [loading, setLoading] = useState(false);
+  const [configTableCollapsed, setConfigTableCollapsed] = useState(false);
 
   const refData = useSelector((state: RootState) => state.referenceData.data);
   const tickerOptions = useMemo(() => {
@@ -72,6 +78,27 @@ const HistoricalData: React.FC = () => {
     );
     return match ? match.name : null;
   }, [refData, newTicker]);
+
+  const tickerNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!refData) return map;
+    for (const item of Object.values(refData)) {
+      if (item?.yahoo_ticker && item?.name)
+        map.set(item.yahoo_ticker, item.name);
+      if (item?.id && item?.name) map.set(item.id, item.name);
+    }
+    return map;
+  }, [refData]);
+
+  const sortedConfigs = useMemo(() => {
+    return [...configs].sort((a, b) => a.ticker.localeCompare(b.ticker));
+  }, [configs]);
+
+  const truncate = (value: string, maxChars: number) => {
+    if (!value) return value;
+    if (value.length <= maxChars) return value;
+    return value.slice(0, maxChars) + "...";
+  };
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -393,7 +420,7 @@ const HistoricalData: React.FC = () => {
 
       <Card withBorder shadow="sm" mb="lg">
         <Group align="flex-start">
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: "250px" }}>
             <Stack gap={4}>
               <Autocomplete
                 label="Ticker"
@@ -427,113 +454,151 @@ const HistoricalData: React.FC = () => {
             max={30}
             style={{ width: 100 }}
           />
-          <Button
-            mt={24}
-            leftSection={<IconPlus size={16} />}
-            onClick={handleAdd}
-          >
-            Add
-          </Button>
-          <Button
-            mt={24}
-            color="orange"
-            variant="light"
-            leftSection={<IconRefresh size={16} />}
-            onClick={handleSyncAll}
-            loading={resyncingAll}
-          >
-            Sync All
-          </Button>
+          <Group gap="xs" mt={24}>
+            <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+              Add
+            </Button>
+            <Button
+              color="orange"
+              variant="light"
+              leftSection={<IconRefresh size={16} />}
+              onClick={handleSyncAll}
+              loading={resyncingAll}
+            >
+              Sync All
+            </Button>
+          </Group>
         </Group>
       </Card>
 
       <Card withBorder shadow="sm">
-        <Table highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Ticker</Table.Th>
-              <Table.Th>Source</Table.Th>
-              <Table.Th>Lookback (Y)</Table.Th>
-              <Table.Th>Status</Table.Th>
-              <Table.Th>Last Sync</Table.Th>
-              <Table.Th>Actions</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {configs.map((c) => (
-              <Table.Tr
-                key={c.ticker}
-                onClick={() => handleRowClick(c.ticker)}
-                style={{ cursor: "pointer" }}
-              >
-                <Table.Td>{c.ticker}</Table.Td>
-                <Table.Td>{c.source}</Table.Td>
-                <Table.Td>{c.lookback_years || 5}</Table.Td>
-                <Table.Td>
-                  <Switch
-                    checked={c.enabled}
-                    onChange={() => handleToggle(c)}
-                    onClick={(e) => e.stopPropagation()}
-                    label={c.enabled ? "Active" : "Disabled"}
-                  />
-                </Table.Td>
-                <Table.Td>
-                  {c.last_sync
-                    ? new Date(c.last_sync * 1000).toLocaleString()
-                    : "Never"}
-                </Table.Td>
-                <Table.Td>
-                  <Group gap="xs">
-                    <Tooltip label={getSyncTooltip(c)} withArrow>
-                      <ActionIcon
-                        variant="light"
-                        color="blue"
-                        onClick={(e) => handleSync(e, c.ticker)}
-                        disabled={!c.enabled}
-                      >
-                        <IconRefresh size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-
-                    <Tooltip label="Edit configuration" withArrow>
-                      <ActionIcon
-                        variant="light"
-                        color="orange"
-                        onClick={(e) => handleEditClick(e, c)}
-                      >
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-
-                    <Tooltip
-                      label="Delete configuration and all historical data"
-                      withArrow
-                      color="red"
-                    >
-                      <ActionIcon
-                        variant="light"
-                        color="red"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(c.ticker);
-                        }}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-            {configs.length === 0 && !loading && (
-              <Table.Tr>
-                <Table.Td colSpan={6} style={{ textAlign: "center" }}>
-                  No historical data configurations found
-                </Table.Td>
-              </Table.Tr>
+        <Group justify="space-between" mb="sm" wrap="wrap">
+          <Title order={4}>Configurations</Title>
+          <ActionIcon
+            variant="subtle"
+            onClick={() => setConfigTableCollapsed((v) => !v)}
+            aria-label={
+              configTableCollapsed
+                ? "Expand configurations"
+                : "Collapse configurations"
+            }
+          >
+            {configTableCollapsed ? (
+              <IconChevronDown size={18} />
+            ) : (
+              <IconChevronUp size={18} />
             )}
-          </Table.Tbody>
-        </Table>
+          </ActionIcon>
+        </Group>
+
+        <Collapse in={!configTableCollapsed}>
+          <Table.ScrollContainer minWidth={800}>
+            <Table highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Ticker</Table.Th>
+                  <Table.Th>Source</Table.Th>
+                  <Table.Th>Lookback (Y)</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Last Sync</Table.Th>
+                  <Table.Th>Actions</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {sortedConfigs.map((c) => (
+                  <Table.Tr
+                    key={c.ticker}
+                    onClick={() => handleRowClick(c.ticker)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <Table.Td>
+                      <Group gap={6} wrap="nowrap">
+                        <Text fw={600}>{c.ticker}</Text>
+                        {tickerNameMap.get(c.ticker) && (
+                          <Tooltip
+                            label={tickerNameMap.get(c.ticker) || ""}
+                            withArrow
+                          >
+                            <Text
+                              size="xs"
+                              c="dimmed"
+                              style={{ whiteSpace: "nowrap" }}
+                            >
+                              {truncate(tickerNameMap.get(c.ticker) || "", 10)}
+                            </Text>
+                          </Tooltip>
+                        )}
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>{c.source}</Table.Td>
+                    <Table.Td>{c.lookback_years || 5}</Table.Td>
+                    <Table.Td>
+                      <Switch
+                        checked={c.enabled}
+                        onChange={() => handleToggle(c)}
+                        onClick={(e) => e.stopPropagation()}
+                        label={c.enabled ? "Active" : "Disabled"}
+                      />
+                    </Table.Td>
+                    <Table.Td>
+                      {c.last_sync
+                        ? new Date(c.last_sync * 1000).toLocaleString()
+                        : "Never"}
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        <Tooltip label={getSyncTooltip(c)} withArrow>
+                          <ActionIcon
+                            variant="light"
+                            color="blue"
+                            onClick={(e) => handleSync(e, c.ticker)}
+                            disabled={!c.enabled}
+                          >
+                            <IconRefresh size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+
+                        <Tooltip label="Edit configuration" withArrow>
+                          <ActionIcon
+                            variant="light"
+                            color="orange"
+                            onClick={(e) => handleEditClick(e, c)}
+                          >
+                            <IconEdit size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+
+                        <Tooltip
+                          label="Delete configuration and all historical data"
+                          withArrow
+                          color="red"
+                        >
+                          <ActionIcon
+                            variant="light"
+                            color="red"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(c.ticker);
+                            }}
+                          >
+                            <IconTrash size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+                {sortedConfigs.length === 0 && !loading && (
+                  <Table.Tr>
+                    <Table.Td colSpan={6} style={{ textAlign: "center" }}>
+                      No historical data configurations found
+                    </Table.Td>
+                  </Table.Tr>
+                )}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </Collapse>
       </Card>
 
       <Modal
@@ -564,37 +629,39 @@ const HistoricalData: React.FC = () => {
 
         <div style={{ position: "relative", minHeight: 200 }}>
           <LoadingOverlay visible={historyLoading} />
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Date</Table.Th>
-                <Table.Th>Close</Table.Th>
-                <Table.Th>Adj Close</Table.Th>
-                <Table.Th>Currency</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {historyData.map((d, i) => (
-                <Table.Tr key={i}>
-                  <Table.Td>
-                    {new Date(d.timestamp * 1000).toLocaleDateString()}
-                  </Table.Td>
-                  <Table.Td>{d.price.toFixed(4)}</Table.Td>
-                  <Table.Td>
-                    {d.adj_close ? d.adj_close.toFixed(4) : "-"}
-                  </Table.Td>
-                  <Table.Td>{d.currency}</Table.Td>
-                </Table.Tr>
-              ))}
-              {historyData.length === 0 && (
+          <Table.ScrollContainer minWidth={500}>
+            <Table>
+              <Table.Thead>
                 <Table.Tr>
-                  <Table.Td colSpan={4} align="center">
-                    No data found
-                  </Table.Td>
+                  <Table.Th>Date</Table.Th>
+                  <Table.Th>Close</Table.Th>
+                  <Table.Th>Adj Close</Table.Th>
+                  <Table.Th>Currency</Table.Th>
                 </Table.Tr>
-              )}
-            </Table.Tbody>
-          </Table>
+              </Table.Thead>
+              <Table.Tbody>
+                {historyData.map((d, i) => (
+                  <Table.Tr key={i}>
+                    <Table.Td>
+                      {new Date(d.timestamp * 1000).toLocaleDateString()}
+                    </Table.Td>
+                    <Table.Td>{d.price.toFixed(4)}</Table.Td>
+                    <Table.Td>
+                      {d.adj_close ? d.adj_close.toFixed(4) : "-"}
+                    </Table.Td>
+                    <Table.Td>{d.currency}</Table.Td>
+                  </Table.Tr>
+                ))}
+                {historyData.length === 0 && (
+                  <Table.Tr>
+                    <Table.Td colSpan={4} align="center">
+                      No data found
+                    </Table.Td>
+                  </Table.Tr>
+                )}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
         </div>
 
         <Group justify="center" mt="md">
@@ -649,6 +716,8 @@ const HistoricalData: React.FC = () => {
           </div>
         )}
       </Modal>
+
+      <HistoricalCorrelation />
     </div>
   );
 };

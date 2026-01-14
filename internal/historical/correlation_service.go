@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os/exec"
+	"portfolio-manager/pkg/types"
 	"sort"
 	"strconv"
 	"time"
@@ -25,10 +26,13 @@ func (s *Service) CalculateCorrelation(ctx context.Context, tickers []string, fr
 	allDates := make(map[string]bool)
 
 	for _, ticker := range tickers {
-		data, _, err := s.mdataManager.GetHistoricalData(ticker, fromUnix, toUnix)
+		data, err := s.getAllHistoricalAssetData(ticker, fromUnix, toUnix)
 		if err != nil {
-			s.logger.Errorf("failed to get historical data ticker=%s error=%v", ticker, err)
-			return nil, fmt.Errorf("failed to fetch data for %s: %w", ticker, err)
+			s.logger.Errorf("failed to get stored historical data ticker=%s error=%v", ticker, err)
+			return nil, fmt.Errorf("failed to fetch stored historical data for %s: %w", ticker, err)
+		}
+		if len(data) == 0 {
+			return nil, fmt.Errorf("no stored historical data found for %s in the given date range; sync the ticker first", ticker)
 		}
 
 		for _, point := range data {
@@ -93,4 +97,24 @@ func (s *Service) CalculateCorrelation(ctx context.Context, tickers []string, fr
 	}
 
 	return outBuf.Bytes(), nil
+}
+
+func (s *Service) getAllHistoricalAssetData(ticker string, fromUnix, toUnix int64) ([]types.AssetData, error) {
+	const limit = 2000
+
+	page := 1
+	var out []types.AssetData
+	for {
+		chunk, total, err := s.GetHistoricalAssetData(ticker, fromUnix, toUnix, page, limit)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, chunk...)
+		if len(out) >= total || len(chunk) == 0 {
+			break
+		}
+		page++
+	}
+
+	return out, nil
 }

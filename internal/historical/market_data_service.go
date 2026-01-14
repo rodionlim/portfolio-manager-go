@@ -168,6 +168,15 @@ func (s *Service) SyncAssetData(ticker string) (string, error) {
 		fromDate = config.LastSync
 	}
 
+	// If last sync is already today, there's nothing to do.
+	fromDay := time.Unix(fromDate, 0).UTC().Format("2006-01-02")
+	toDay := time.Unix(now, 0).UTC().Format("2006-01-02")
+	if fromDay == toDay {
+		msg := fmt.Sprintf("Already up to date (%s). Nothing to sync.", toDay)
+		s.logger.Infof("Syncing historical data for %s: %s", ticker, msg)
+		return msg, nil
+	}
+
 	dateRangeMsg := fmt.Sprintf("Fetching from %s to %s", time.Unix(fromDate, 0).Format("2006-01-02"), time.Unix(now, 0).Format("2006-01-02"))
 	s.logger.Infof("Syncing historical data for %s: %s", ticker, dateRangeMsg)
 

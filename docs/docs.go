@@ -958,7 +958,7 @@ const docTemplate = `{
         },
         "/api/v1/historical/correlation": {
             "post": {
-                "description": "Calculate correlation matrix using quantlib",
+                "description": "Calculate correlation matrix using quantlib. If tickers is omitted/empty, uses all enabled tickers from historical config.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2880,14 +2880,18 @@ const docTemplate = `{
                 "options": {
                     "$ref": "#/definitions/historical.CorrelationOptions"
                 },
+                "resync": {
+                    "type": "boolean"
+                },
                 "tickers": {
+                    "description": "Optional. If omitted or empty, server will use all enabled tickers from historical config.",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "to": {
-                    "description": "YYYY-MM-DD",
+                    "description": "YYYY-MM-DD (optional; defaults to today)",
                     "type": "string"
                 }
             }

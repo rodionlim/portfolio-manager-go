@@ -1,3 +1,10 @@
+## [1.37.0] - 2026-01-14
+
+### 🚀 Features
+
+- *(ui)* Make historical data component mobile responsive
+- *(corr)* Rework correlation and add ui component
+
 ## [1.36.0] - 2026-01-13
 
 ### 🚀 Features

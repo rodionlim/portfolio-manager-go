@@ -1,3 +1,9 @@
+## [1.38.0] - 2026-01-17
+
+### 🚀 Features
+
+- *(ui,metrics)* Add benchmark capabilities to track excess returns #155
+
 ## [1.37.0] - 2026-01-14
 
 ### 🚀 Features

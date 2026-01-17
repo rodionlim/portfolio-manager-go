@@ -37,6 +37,55 @@ type MetricResultsWithCashFlows struct {
 	Label     string        `json:"label"` // Optional label for the metrics, e.g. book name, empty for entire portfolio
 }
 
+// BenchmarkCost defines broker cost for benchmark trades.
+// The effective cost is max(pct * notional, absolute).
+type BenchmarkCost struct {
+	Pct      float64 `json:"pct"`
+	Absolute float64 `json:"absolute"`
+}
+
+// BenchmarkMode defines how benchmark trades are simulated.
+type BenchmarkMode string
+
+const (
+	BenchmarkModeBuyAtStart  BenchmarkMode = "buy_at_start"
+	BenchmarkModeMatchTrades BenchmarkMode = "match_trades"
+)
+
+// BenchmarkTickerWeight defines benchmark ticker weights.
+type BenchmarkTickerWeight struct {
+	Ticker string  `json:"ticker"`
+	Weight float64 `json:"weight"`
+}
+
+// BenchmarkRequest defines parameters for benchmarking.
+type BenchmarkRequest struct {
+	BookFilter       string                  `json:"book_filter"`
+	BenchmarkCost    BenchmarkCost           `json:"benchmark_cost"`
+	Mode             BenchmarkMode           `json:"mode"`
+	Notional         float64                 `json:"notional,omitempty"`
+	BenchmarkTickers []BenchmarkTickerWeight `json:"benchmark_tickers"`
+}
+
+// BenchmarkMetrics represents benchmark results.
+type BenchmarkMetrics struct {
+	IRR       float64 `json:"irr"`
+	PricePaid float64 `json:"pricePaid"`
+	MV        float64 `json:"mv"`
+	Fees      float64 `json:"fees"`
+}
+
+// BenchmarkComparisonResult compares portfolio vs benchmark IRR.
+type BenchmarkComparisonResult struct {
+	PortfolioMetrics   MetricsResult    `json:"portfolio_metrics"`
+	BenchmarkMetrics   BenchmarkMetrics `json:"benchmark_metrics"`
+	PortfolioIRR       float64          `json:"portfolio_irr"`
+	BenchmarkIRR       float64          `json:"benchmark_irr"`
+	IRRDifference      float64          `json:"irr_difference"`
+	Winner             string           `json:"winner"` // portfolio | benchmark | tie
+	BenchmarkCashFlows []CashFlow       `json:"benchmark_cash_flows"`
+}
+
 // MetricsCalculator defines the interface for portfolio metrics calculations
 type MetricsCalculator interface {
 	// CalculateIRR computes the Internal Rate of Return (XIRR) for the portfolio
@@ -49,4 +98,6 @@ type MetricsServicer interface {
 	// It also stores other metrics such as price paid, market value of portfolio and total dividends
 	// If book_filter is specified, it filters trades by the given book
 	CalculatePortfolioMetrics(book_filter string) (MetricResultsWithCashFlows, error)
+	// BenchmarkPortfolioPerformance compares portfolio IRR against a benchmark
+	BenchmarkPortfolioPerformance(req BenchmarkRequest) (BenchmarkComparisonResult, error)
 }

@@ -354,6 +354,97 @@ definitions:
         description: Optional, empty for entire portfolio
         type: string
     type: object
+  metrics.BenchmarkComparisonResult:
+    properties:
+      benchmark_cash_flows:
+        items:
+          $ref: '#/definitions/metrics.CashFlow'
+        type: array
+      benchmark_irr:
+        type: number
+      benchmark_metrics:
+        $ref: '#/definitions/metrics.BenchmarkMetrics'
+      irr_difference:
+        type: number
+      portfolio_irr:
+        type: number
+      portfolio_metrics:
+        $ref: '#/definitions/metrics.MetricsResult'
+      winner:
+        description: portfolio | benchmark | tie
+        type: string
+    type: object
+  metrics.BenchmarkCost:
+    properties:
+      absolute:
+        type: number
+      pct:
+        type: number
+    type: object
+  metrics.BenchmarkMetrics:
+    properties:
+      fees:
+        type: number
+      irr:
+        type: number
+      mv:
+        type: number
+      pricePaid:
+        type: number
+    type: object
+  metrics.BenchmarkMode:
+    enum:
+    - buy_at_start
+    - match_trades
+    type: string
+    x-enum-varnames:
+    - BenchmarkModeBuyAtStart
+    - BenchmarkModeMatchTrades
+  metrics.BenchmarkRequest:
+    properties:
+      benchmark_cost:
+        $ref: '#/definitions/metrics.BenchmarkCost'
+      benchmark_tickers:
+        items:
+          $ref: '#/definitions/metrics.BenchmarkTickerWeight'
+        type: array
+      book_filter:
+        type: string
+      mode:
+        $ref: '#/definitions/metrics.BenchmarkMode'
+      notional:
+        type: number
+    type: object
+  metrics.BenchmarkTickerWeight:
+    properties:
+      ticker:
+        type: string
+      weight:
+        type: number
+    type: object
+  metrics.CashFlow:
+    properties:
+      cash:
+        type: number
+      date:
+        type: string
+      description:
+        $ref: '#/definitions/metrics.CashFlowType'
+      ticker:
+        type: string
+    type: object
+  metrics.CashFlowType:
+    enum:
+    - buy
+    - sell
+    - dividend
+    - final value
+    type: string
+    x-enum-varnames:
+    - CashFlowTypeBuy
+    - CashFlowTypeSell
+    - CashFlowTypeDividend
+    - CashFlowTypePortfolioValue
   metrics.MetricsResult:
     properties:
       irr:
@@ -1844,6 +1935,37 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: Get portfolio IRR
+      tags:
+      - metrics
+  /api/v1/metrics/benchmark:
+    post:
+      consumes:
+      - application/json
+      description: Compare portfolio IRR against a benchmark using buy_at_start or
+        match_trades mode
+      parameters:
+      - description: Benchmark request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/metrics.BenchmarkRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Benchmark comparison result
+          schema:
+            $ref: '#/definitions/metrics.BenchmarkComparisonResult'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to benchmark portfolio
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Benchmark portfolio performance
       tags:
       - metrics
   /api/v1/portfolio/cleanup:

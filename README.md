@@ -696,6 +696,38 @@ Get portfolio metrics filtered by a specific book:
 curl -X GET "http://localhost:8080/api/v1/metrics?book_filter=tactical"
 ```
 
+Benchmark portfolio performance against a user-specified benchmark:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/metrics/benchmark \
+  -H "Content-Type: application/json" \
+  -d '{
+    "book_filter": "tactical",
+    "benchmark_cost": {"pct": 0.0012, "absolute": 10.00},
+    "mode": "match_trades",
+    "benchmark_tickers": [
+      {"ticker": "ES3.SI", "weight": 1.0}
+    ]
+  }'
+```
+
+Benchmark portfolio performance against a two-ticker benchmark:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/metrics/benchmark \
+  -H "Content-Type: application/json" \
+  -d '{
+    "book_filter": "tactical",
+    "benchmark_cost": {"pct": 0.002, "absolute": 3.00},
+    "mode": "buy_at_start",
+    "notional": 100000,
+    "benchmark_tickers": [
+      {"ticker": "SPY", "weight": 0.7},
+      {"ticker": "AGG", "weight": 0.3}
+    ]
+  }'
+```
+
 ### Fetch Asset Prices
 
 ```sh

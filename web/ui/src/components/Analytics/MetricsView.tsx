@@ -4,6 +4,7 @@ import MetricsTable from "./MetricsTable";
 import MetricsChart from "./MetricsChart";
 import MetricsCashFlow from "./MetricsCashFlow";
 import CustomJobsTable from "./CustomJobsTable";
+import MetricsBenchmark from "./MetricsBenchmark";
 import type { VolatilityMethod } from "./volatility";
 
 const MetricsView: React.FC = () => {
@@ -19,6 +20,7 @@ const MetricsView: React.FC = () => {
         <Tabs.Tab value="table">Historical Metrics Table</Tabs.Tab>
         <Tabs.Tab value="chart">Metrics Chart</Tabs.Tab>
         <Tabs.Tab value="cashflow">Current Metrics & Cash Flows</Tabs.Tab>
+        <Tabs.Tab value="benchmark">Benchmark Simulation</Tabs.Tab>
         <Tabs.Tab value="jobs">Custom Jobs</Tabs.Tab>
       </Tabs.List>
 
@@ -56,6 +58,10 @@ const MetricsView: React.FC = () => {
 
       <Tabs.Panel value="jobs" pt="md">
         {activeTab === "jobs" && <CustomJobsTable />}
+      </Tabs.Panel>
+
+      <Tabs.Panel value="benchmark" pt="md">
+        {activeTab === "benchmark" && <MetricsBenchmark />}
       </Tabs.Panel>
     </Tabs>
   );

@@ -1990,6 +1990,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/metrics/benchmark": {
+            "post": {
+                "description": "Compare portfolio IRR against a benchmark using buy_at_start or match_trades mode",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "Benchmark portfolio performance",
+                "parameters": [
+                    {
+                        "description": "Benchmark request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/metrics.BenchmarkRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Benchmark comparison result",
+                        "schema": {
+                            "$ref": "#/definitions/metrics.BenchmarkComparisonResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to benchmark portfolio",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/portfolio/cleanup": {
             "post": {
                 "description": "Closes positions that have expired without a corresponding closure trade",
@@ -2973,6 +3019,141 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "metrics.BenchmarkComparisonResult": {
+            "type": "object",
+            "properties": {
+                "benchmark_cash_flows": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/metrics.CashFlow"
+                    }
+                },
+                "benchmark_irr": {
+                    "type": "number"
+                },
+                "benchmark_metrics": {
+                    "$ref": "#/definitions/metrics.BenchmarkMetrics"
+                },
+                "irr_difference": {
+                    "type": "number"
+                },
+                "portfolio_irr": {
+                    "type": "number"
+                },
+                "portfolio_metrics": {
+                    "$ref": "#/definitions/metrics.MetricsResult"
+                },
+                "winner": {
+                    "description": "portfolio | benchmark | tie",
+                    "type": "string"
+                }
+            }
+        },
+        "metrics.BenchmarkCost": {
+            "type": "object",
+            "properties": {
+                "absolute": {
+                    "type": "number"
+                },
+                "pct": {
+                    "type": "number"
+                }
+            }
+        },
+        "metrics.BenchmarkMetrics": {
+            "type": "object",
+            "properties": {
+                "fees": {
+                    "type": "number"
+                },
+                "irr": {
+                    "type": "number"
+                },
+                "mv": {
+                    "type": "number"
+                },
+                "pricePaid": {
+                    "type": "number"
+                }
+            }
+        },
+        "metrics.BenchmarkMode": {
+            "type": "string",
+            "enum": [
+                "buy_at_start",
+                "match_trades"
+            ],
+            "x-enum-varnames": [
+                "BenchmarkModeBuyAtStart",
+                "BenchmarkModeMatchTrades"
+            ]
+        },
+        "metrics.BenchmarkRequest": {
+            "type": "object",
+            "properties": {
+                "benchmark_cost": {
+                    "$ref": "#/definitions/metrics.BenchmarkCost"
+                },
+                "benchmark_tickers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/metrics.BenchmarkTickerWeight"
+                    }
+                },
+                "book_filter": {
+                    "type": "string"
+                },
+                "mode": {
+                    "$ref": "#/definitions/metrics.BenchmarkMode"
+                },
+                "notional": {
+                    "type": "number"
+                }
+            }
+        },
+        "metrics.BenchmarkTickerWeight": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            }
+        },
+        "metrics.CashFlow": {
+            "type": "object",
+            "properties": {
+                "cash": {
+                    "type": "number"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "$ref": "#/definitions/metrics.CashFlowType"
+                },
+                "ticker": {
+                    "type": "string"
+                }
+            }
+        },
+        "metrics.CashFlowType": {
+            "type": "string",
+            "enum": [
+                "buy",
+                "sell",
+                "dividend",
+                "final value"
+            ],
+            "x-enum-varnames": [
+                "CashFlowTypeBuy",
+                "CashFlowTypeSell",
+                "CashFlowTypeDividend",
+                "CashFlowTypePortfolioValue"
+            ]
         },
         "metrics.MetricsResult": {
             "type": "object",

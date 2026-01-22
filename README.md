@@ -372,8 +372,8 @@ Example tool call payload (conceptual):
   "arguments": {
     "book": "main",
     "ticker": "AAPL",
-    "confirm": "yes" // only after user confirms
-  }
+    "confirm": "yes", // only after user confirms
+  },
 }
 ```
 
@@ -841,7 +841,11 @@ curl -X DELETE "http://localhost:8080/api/v1/mdata/dividends/C2PU.SI?type=Offici
 
 ### Store Custom Dividends
 
-Note that customa dividends are concatenated against official dividends. Custom dividends always take precedence over official dividends, in case official figures are wrong. If official date is wrong, we can always input a dividend with value of 0.
+Note that custom dividends are concatenated against official dividends. Custom dividends always take precedence over official dividends, in case official figures are wrong. If official date is wrong, we can always input a dividend with value of 0.
+
+When uploading custom dividends, it is grouped by ticker. As long as the ticker is present in the csv, all dividends for that ticker will be replaced with the new set of dividends provided. Tickers which are not present in the upload will remain unchanged.
+
+Also, we store some of the custom dividends that are wrong from dividends.sg in ./templates/\*.csv for user reference.
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/mdata/dividends/AAPL \

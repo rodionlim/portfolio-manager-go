@@ -1,5 +1,13 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Box, FileInput, Select, Text, Tooltip } from "@mantine/core";
+import {
+  Box,
+  Button,
+  FileInput,
+  Select,
+  Text,
+  Tooltip,
+  useMantineColorScheme,
+} from "@mantine/core";
 import {
   MantineReactTable,
   MRT_ColumnDef,
@@ -8,7 +16,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
-import { IconUpload } from "@tabler/icons-react";
+import { IconUpload, IconDownload } from "@tabler/icons-react";
 
 interface Position {
   Ticker: string;
@@ -21,6 +29,15 @@ interface Dividend {
   Qty: number;
 }
 
+interface DividendsMetadata {
+  Ticker: string;
+  ExDate: string;
+  Amount: number;
+  Interest: number;
+  AvgInterest: number;
+  WithholdingTax: number;
+}
+
 interface DividendsTableProps {
   initialTicker?: string | null;
 }
@@ -28,9 +45,10 @@ interface DividendsTableProps {
 const DividendsTable: React.FC<DividendsTableProps> = ({
   initialTicker = null,
 }) => {
+  const { colorScheme } = useMantineColorScheme();
   const queryClient = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(
-    initialTicker
+    initialTicker,
   );
 
   // Effect to update selectedTicker when initialTicker changes (e.g., from navigation)
@@ -77,7 +95,7 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
   };
 
   const uploadDividendsCSV = async (
-    file: File
+    file: File,
   ): Promise<{ message: string }> => {
     const formData = new FormData();
     formData.append("file", file);
@@ -94,7 +112,7 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
         (error) => {
           console.error("error", error);
           throw new Error("An error occurred while uploading custom dividends");
-        }
+        },
       );
   };
 
@@ -117,8 +135,71 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
           title: "Error",
           message: `Unable to upload custom dividends to the market data service\n ${error}`,
         });
-      }
+      },
     );
+  };
+
+  // Handle exporting dividends to CSV
+  const handleExportCSV = async () => {
+    if (!selectedTicker) return;
+
+    try {
+      const resp = await fetch(
+        getUrl(`/api/v1/mdata/dividends/${selectedTicker}`),
+      );
+      const data: DividendsMetadata[] = await resp.json();
+
+      if (!data || data.length === 0) {
+        notifications.show({
+          color: "yellow",
+          title: "No data",
+          message: `No dividend metadata found for ${selectedTicker} to export.`,
+        });
+        return;
+      }
+
+      // Create CSV content
+      const headers = [
+        "Ticker",
+        "ExDate",
+        "Amount",
+        "Interest",
+        "AvgInterest",
+        "WithholdingTax",
+      ];
+      const csvRows = [
+        headers.join(","),
+        ...data.map((row) =>
+          [
+            selectedTicker,
+            new Date(row.ExDate).toISOString().split("T")[0],
+            row.Amount,
+            row.Interest,
+            row.AvgInterest,
+            row.WithholdingTax,
+          ].join(","),
+        ),
+      ];
+      const csvContent = csvRows.join("\n");
+
+      // Trigger download
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${selectedTicker}_dividends.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error: any) {
+      console.error("Error exporting dividends:", error);
+      notifications.show({
+        color: "red",
+        title: "Export Error",
+        message: `Unable to export dividends for ${selectedTicker}: ${error.message}`,
+      });
+    }
   };
 
   // Query to fetch positions for dropdown
@@ -181,7 +262,7 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
         },
       },
     ],
-    []
+    [],
   );
 
   // Configure the table
@@ -207,7 +288,7 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
         <Select
           placeholder="Select ticker..."
           data={Array.from(
-            new Set(positions.map((position) => position.Ticker))
+            new Set(positions.map((position) => position.Ticker)),
           )
             .sort()
             .map((ticker) => ({
@@ -237,10 +318,11 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
               <Text size="xs" mb="xs">
                 Ticker, ExDate, Amount, Interest, AvgInterest, WithholdingTax
               </Text>
-              <Text size="xs" c="yellow.2">
+              <Text size="xs" c={colorScheme === "dark" ? "red.6" : "yellow.8"}>
                 Note: Uploading will replace existing custom dividends for
-                tickers in the file. Always upload all custom dividends
-                together.
+                tickers in the file. Always upload all custom dividends for a
+                single ticker together. Tickers not in the upload will remain
+                unchanged.
               </Text>
             </Box>
           }
@@ -254,6 +336,15 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
             clearable
           />
         </Tooltip>
+        {selectedTicker && (
+          <Button
+            variant="light"
+            leftSection={<IconDownload size={16} />}
+            onClick={handleExportCSV}
+          >
+            Export CSV
+          </Button>
+        )}
       </Box>
     ),
   });

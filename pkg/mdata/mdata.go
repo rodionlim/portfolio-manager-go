@@ -295,7 +295,7 @@ func (m *Manager) ImportCustomDividendsFromCSVReader(reader *csv.Reader) (int, e
 
 		var withholdingTax float64
 		if row[5] != "" {
-			interest, err = strconv.ParseFloat(row[5], 64)
+			withholdingTax, err = strconv.ParseFloat(row[5], 64)
 			if err != nil {
 				return cnt, fmt.Errorf("invalid withholding tax at line %d: %w", lineNum, err)
 			}

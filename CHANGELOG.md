@@ -1,3 +1,9 @@
+## [1.39.0] - 2026-01-22
+
+### 🚀 Features
+
+- *(ui,mdata)* Allow export of dividends and clarify tooltip
+
 ## [1.38.0] - 2026-01-17
 
 ### 🚀 Features

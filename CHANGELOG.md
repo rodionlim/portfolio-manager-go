@@ -1,3 +1,9 @@
+## [1.40.0] - 2026-01-24
+
+### 🚀 Features
+
+- (historical): add caching of daily ticker prices and metrics #159
+
 ## [1.39.0] - 2026-01-22
 
 ### 🚀 Features

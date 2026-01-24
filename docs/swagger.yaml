@@ -254,6 +254,35 @@ definitions:
       ticker:
         type: string
     type: object
+  historical.CachedPrice:
+    properties:
+      price:
+        type: number
+      ticker:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  historical.CachedPricesRequest:
+    properties:
+      tickers:
+        items:
+          type: string
+        type: array
+    type: object
+  historical.CachedPricesResponse:
+    properties:
+      metrics:
+        $ref: '#/definitions/historical.TimestampedMetrics'
+      missing:
+        items:
+          type: string
+        type: array
+      prices:
+        items:
+          $ref: '#/definitions/historical.CachedPrice'
+        type: array
+    type: object
   historical.CorrelationOptions:
     properties:
       clip:
@@ -1620,6 +1649,37 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: Manually trigger metrics collection
+      tags:
+      - historical
+  /api/v1/historical/prices/cached:
+    post:
+      consumes:
+      - application/json
+      description: Return cached previous daily prices for provided tickers along
+        with the latest portfolio metrics snapshot
+      parameters:
+      - description: Tickers to fetch
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/historical.CachedPricesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/historical.CachedPricesResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to get cached prices
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get cached daily prices with latest metrics
       tags:
       - historical
   /api/v1/historical/sync:

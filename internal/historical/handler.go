@@ -154,6 +154,40 @@ func HandleDeleteMetrics(service HistoricalMetricsSetter) http.HandlerFunc {
 	}
 }
 
+// HandleGetCachedPrices handles the POST /api/v1/historical/prices/cached endpoint
+// @Summary Get cached daily prices with latest metrics
+// @Description Return cached previous daily prices for provided tickers along with the latest portfolio metrics snapshot
+// @Tags historical
+// @Accept json
+// @Produce json
+// @Param request body CachedPricesRequest true "Tickers to fetch"
+// @Success 200 {object} CachedPricesResponse
+// @Failure 400 {object} common.ErrorResponse "Invalid request payload"
+// @Failure 500 {object} common.ErrorResponse "Failed to get cached prices"
+// @Router /api/v1/historical/prices/cached [post]
+func HandleGetCachedPrices(service HistoricalCachedPricesGetter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request CachedPricesRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			common.WriteJSONError(w, "Invalid request payload: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if len(request.Tickers) == 0 {
+			common.WriteJSONError(w, "tickers is required", http.StatusBadRequest)
+			return
+		}
+
+		response, err := service.GetCachedPricesWithLatestMetrics(request.Tickers)
+		if err != nil {
+			common.WriteJSONError(w, "Failed to get cached prices: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
 // CreateMetricsJobRequest represents the request to create a metrics job
 type CreateMetricsJobRequest struct {
 	CronExpr   string `json:"cronExpr"`   // Optional, uses default if empty
@@ -381,6 +415,14 @@ func RegisterHandlers(mux *http.ServeMux, service *Service) {
 			return
 		}
 		HandleTriggerMetricsCollection(service).ServeHTTP(w, r)
+	})
+
+	mux.HandleFunc("/api/v1/historical/prices/cached", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			common.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleGetCachedPrices(service).ServeHTTP(w, r)
 	})
 
 	// Register historical market data endpoints

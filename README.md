@@ -17,6 +17,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Display detailed information for individual and aggregated assets
 - Collect and display portfolio statistics such as IRR, MV, Price Paid
 - Integration with Gemini to derive trading insights via Analytics module
+- Portfolio analytics such as generating correlation matrix and benchmarking book performance against user-defined benchmarks
 - OpenAPI compliant for easy integration with other systems
 - UI for end users
 - Cloud and Local backup and restore (Google Drive)
@@ -976,6 +977,16 @@ curl -X POST http://localhost:8080/api/v1/historical/metrics/delete \
       "2024-05-15T00:00:00Z",
       "2024-06-15T00:00:00Z"
     ]
+  }'
+```
+
+Fetch cached previous daily prices with latest metrics (batch tickers):
+
+```sh
+curl -X POST http://localhost:8080/api/v1/historical/prices/cached \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tickers": ["AAPL", "ES3.SI", "TSLA"]
   }'
 ```
 

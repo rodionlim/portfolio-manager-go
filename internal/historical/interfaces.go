@@ -63,6 +63,10 @@ type HistoricalMetricsCsvManager interface {
 	ImportMetricsFromCSVFile(file multipart.File) (int, error)
 }
 
+type HistoricalCachedPricesGetter interface {
+	GetCachedPricesWithLatestMetrics(tickers []string) (CachedPricesResponse, error)
+}
+
 // TimestampedMetrics represents portfolio metrics with a timestamp (date only)
 type TimestampedMetrics struct {
 	Timestamp time.Time             `json:"timestamp"` // Only the date portion of this field will be used
@@ -79,4 +83,23 @@ type DeleteMetricsResponse struct {
 	Deleted  int      `json:"deleted"`
 	Failed   int      `json:"failed"`
 	Failures []string `json:"failures,omitempty"`
+}
+
+// CachedPricesRequest represents the request for cached prices by ticker.
+type CachedPricesRequest struct {
+	Tickers []string `json:"tickers"`
+}
+
+// CachedPrice represents a cached daily price snapshot for a ticker.
+type CachedPrice struct {
+	Ticker    string    `json:"ticker"`
+	Price     float64   `json:"price"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// CachedPricesResponse returns cached prices with the latest metrics snapshot.
+type CachedPricesResponse struct {
+	Metrics *TimestampedMetrics `json:"metrics,omitempty"`
+	Prices  []CachedPrice       `json:"prices"`
+	Missing []string            `json:"missing,omitempty"`
 }

@@ -61,6 +61,7 @@ func TestStoreCurrentMetrics(t *testing.T) {
 		_, err := time.Parse("2006-01-02", dateStr)
 		assert.NoError(t, err, "Date format should be YYYY-MM-DD")
 	}).Return(nil)
+	mockDB.On("GetAllKeysWithPrefix", "POSITION").Return([]string{}, nil)
 
 	// Create the service with our mock
 	service := &Service{

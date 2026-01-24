@@ -1521,6 +1521,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/historical/prices/cached": {
+            "post": {
+                "description": "Return cached previous daily prices for provided tickers along with the latest portfolio metrics snapshot",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "historical"
+                ],
+                "summary": "Get cached daily prices with latest metrics",
+                "parameters": [
+                    {
+                        "description": "Tickers to fetch",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/historical.CachedPricesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/historical.CachedPricesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get cached prices",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/historical/sync": {
             "post": {
                 "description": "Trigger immediate historical data sync for a specific asset",
@@ -2869,6 +2915,51 @@ const docTemplate = `{
                 },
                 "ticker": {
                     "type": "string"
+                }
+            }
+        },
+        "historical.CachedPrice": {
+            "type": "object",
+            "properties": {
+                "price": {
+                    "type": "number"
+                },
+                "ticker": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "historical.CachedPricesRequest": {
+            "type": "object",
+            "properties": {
+                "tickers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "historical.CachedPricesResponse": {
+            "type": "object",
+            "properties": {
+                "metrics": {
+                    "$ref": "#/definitions/historical.TimestampedMetrics"
+                },
+                "missing": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "prices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/historical.CachedPrice"
+                    }
                 }
             }
         },

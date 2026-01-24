@@ -11,6 +11,7 @@ import (
 	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/internal/metrics"
+	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/pkg/csvutil"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
@@ -122,7 +123,137 @@ func (s *Service) StoreCurrentMetrics(book_filter string) error {
 	}
 
 	s.logger.Infof("Stored portfolio metrics [book_filter: %s] for timestamp %s", label, now.Format(time.RFC3339))
+
+	if book_filter == "" {
+		// This step is efficient, since calculate portfolio metrics previously will pre-cache prices for all positions
+		if err := s.cachePrevDailyPrices(dateOnly); err != nil {
+			s.logger.Warnf("Failed to cache daily prices: %v", err)
+		}
+	}
 	return nil
+}
+
+func (s *Service) cachePrevDailyPrices(dateOnly time.Time) error {
+	positionKeys, err := s.db.GetAllKeysWithPrefix(string(types.PositionKeyPrefix))
+	if err != nil {
+		return fmt.Errorf("failed to list position keys: %w", err)
+	}
+
+	seenTickers := map[string]struct{}{}
+	for _, key := range positionKeys {
+		var position portfolio.Position
+		if err := s.db.Get(key, &position); err != nil {
+			s.logger.Warnf("Failed to load position for key %s: %v", key, err)
+			continue
+		}
+		if position.Qty == 0 {
+			continue
+		}
+		if _, ok := seenTickers[position.Ticker]; ok {
+			continue
+		}
+		seenTickers[position.Ticker] = struct{}{}
+
+		assetData, err := s.mdataManager.GetAssetPrice(position.Ticker)
+		if err != nil {
+			s.logger.Warnf("Failed to fetch asset price for %s: %v", position.Ticker, err)
+			continue
+		}
+
+		cacheKey := fmt.Sprintf("%s:%s", types.CachedPrevDailyPricesKeyPrefix, position.Ticker)
+		entry := CachedPrice{
+			Ticker:    position.Ticker,
+			Price:     assetData.Price,
+			Timestamp: dateOnly,
+		}
+		if err := s.db.Put(cacheKey, entry); err != nil {
+			s.logger.Warnf("Failed to store cached price for %s: %v", position.Ticker, err)
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) getLatestMetricsSnapshot(book_filter string) (*TimestampedMetrics, error) {
+	label := s.transformBookFilter(book_filter)
+	prefix := fmt.Sprintf("%s:%s:", types.HistoricalMetricsKeyPrefix, label)
+	keys, err := s.db.GetAllKeysWithPrefix(prefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get metrics keys: %w", err)
+	}
+
+	var latestKey string
+	var latestDate time.Time
+	for _, key := range keys {
+		parts := strings.Split(key, ":")
+		if len(parts) < 3 {
+			s.logger.Warnf("Malformed metrics key: %s", key)
+			continue
+		}
+		dateStr := parts[2]
+		parsed, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			s.logger.Warnf("Failed to parse date from key %s: %v", key, err)
+			continue
+		}
+		if latestKey == "" || parsed.After(latestDate) {
+			latestKey = key
+			latestDate = parsed
+		}
+	}
+
+	if latestKey == "" {
+		return nil, fmt.Errorf("no metrics snapshots found for %s", label)
+	}
+
+	var metricsSnapshot TimestampedMetrics
+	if err := s.db.Get(latestKey, &metricsSnapshot); err != nil {
+		return nil, fmt.Errorf("failed to get latest metrics snapshot: %w", err)
+	}
+
+	return &metricsSnapshot, nil
+}
+
+func (s *Service) GetCachedPricesWithLatestMetrics(tickers []string) (CachedPricesResponse, error) {
+	response := CachedPricesResponse{
+		Prices:  []CachedPrice{},
+		Missing: []string{},
+	}
+
+	if len(tickers) == 0 {
+		return response, fmt.Errorf("tickers cannot be empty")
+	}
+
+	latestMetrics, err := s.getLatestMetricsSnapshot("")
+	if err != nil {
+		return response, err
+	}
+	response.Metrics = latestMetrics
+
+	seenTickers := map[string]struct{}{}
+	for _, ticker := range tickers {
+		ticker = strings.TrimSpace(ticker)
+		if ticker == "" {
+			continue
+		}
+		if _, ok := seenTickers[ticker]; ok {
+			continue
+		}
+		seenTickers[ticker] = struct{}{}
+
+		cacheKey := fmt.Sprintf("%s:%s", types.CachedPrevDailyPricesKeyPrefix, ticker)
+		var cached CachedPrice
+		if err := s.db.Get(cacheKey, &cached); err != nil {
+			response.Missing = append(response.Missing, ticker)
+			continue
+		}
+		if cached.Ticker == "" {
+			cached.Ticker = ticker
+		}
+		response.Prices = append(response.Prices, cached)
+	}
+
+	return response, nil
 }
 
 // GetMetrics retrieves all historical metrics

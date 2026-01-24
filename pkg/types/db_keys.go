@@ -18,8 +18,9 @@ const (
 	AnalyticsSummaryKeyPrefix  dbKey = "ANALYTICS_SUMMARY"
 	MigrationKeyPrefix         dbKey = "MIGRATION" // Key prefix for migration tracking
 
-	ScheduledJobKeyPrefix     dbKey = "SCHEDULED_JOB"   // Key prefix for registered scheduled jobs
-	CustomMetricsJobKeyPrefix dbKey = "METRICS_BY_BOOK" // Key prefix for custom metrics jobs
+	ScheduledJobKeyPrefix          dbKey = "SCHEDULED_JOB"           // Key prefix for registered scheduled jobs
+	CustomMetricsJobKeyPrefix      dbKey = "METRICS_BY_BOOK"         // Key prefix for custom metrics jobs
+	CachedPrevDailyPricesKeyPrefix dbKey = "CACHE_PREV_DAILY_PRICES" // Key prefix for cached previous daily prices
 
 	HistoricalAssetConfigKey     dbKey = "HISTORICAL_ASSET_CONFIG" // Key for historical asset configuration
 	HistoricalAssetDataKeyPrefix dbKey = "HISTORICAL_ASSET_DATA"   // Key prefix for historical asset data

@@ -99,7 +99,8 @@ type CachedPrice struct {
 
 // CachedPricesResponse returns cached prices with the latest metrics snapshot.
 type CachedPricesResponse struct {
-	Metrics *TimestampedMetrics `json:"metrics,omitempty"`
-	Prices  []CachedPrice       `json:"prices"`
-	Missing []string            `json:"missing,omitempty"`
+	Metrics     *TimestampedMetrics `json:"metrics,omitempty"`
+	Prices      []CachedPrice       `json:"prices"`
+	PricesPrev2 []CachedPrice       `json:"pricesPrev2"`
+	Missing     []string            `json:"missing,omitempty"`
 }

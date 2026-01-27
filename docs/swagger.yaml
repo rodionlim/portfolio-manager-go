@@ -282,6 +282,10 @@ definitions:
         items:
           $ref: '#/definitions/historical.CachedPrice'
         type: array
+      pricesPrev2:
+        items:
+          $ref: '#/definitions/historical.CachedPrice'
+        type: array
     type: object
   historical.CorrelationOptions:
     properties:
@@ -1655,7 +1659,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Return cached previous daily prices for provided tickers along
+      description: Return cached t-1 and t-2 daily prices for provided tickers along
         with the latest portfolio metrics snapshot
       parameters:
       - description: Tickers to fetch

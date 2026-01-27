@@ -51,6 +51,7 @@ interface CachedPricesResponse {
     };
   };
   prices: CachedPrice[];
+  pricesPrev2?: CachedPrice[];
   missing?: string[];
 }
 
@@ -59,6 +60,8 @@ const PositionTable: React.FC = () => {
   const refData = useSelector((state: RootState) => state.referenceData.data);
   const [filteredPositions, setFilteredPositions] = useState<Position[]>([]);
   const [hasBookFilter, setHasBookFilter] = useState(false);
+  const [hasAnyFilter, setHasAnyFilter] = useState(false);
+  const [priceLag, setPriceLag] = useState<"t-1" | "t-2">("t-1");
   const defaultTitleRef = useRef(document.title);
 
   const {
@@ -112,7 +115,7 @@ const PositionTable: React.FC = () => {
 
   const hasCachedMetrics = Boolean(cachedPricesData?.metrics);
 
-  const cachedPriceMap = useMemo(() => {
+  const cachedPriceMapT1 = useMemo(() => {
     const map = new Map<string, CachedPrice>();
     if (!hasCachedMetrics || !cachedPricesData?.prices) {
       return map;
@@ -122,6 +125,22 @@ const PositionTable: React.FC = () => {
     });
     return map;
   }, [cachedPricesData, hasCachedMetrics]);
+
+  const cachedPriceMapT2 = useMemo(() => {
+    const map = new Map<string, CachedPrice>();
+    if (!hasCachedMetrics || !cachedPricesData?.pricesPrev2) {
+      return map;
+    }
+    cachedPricesData.pricesPrev2.forEach((price) => {
+      map.set(price.ticker, price);
+    });
+    return map;
+  }, [cachedPricesData, hasCachedMetrics]);
+
+  const activeCachedPriceMap =
+    priceLag === "t-2" ? cachedPriceMapT2 : cachedPriceMapT1;
+
+  const hasPrev2Prices = Boolean(cachedPricesData?.pricesPrev2?.length);
 
   // Add this function to handle navigation
   const handleViewTrades = () => {
@@ -203,7 +222,7 @@ const PositionTable: React.FC = () => {
 
     return aggregatedPositions.map((position) => {
       const lookupTicker = position.RawTicker || position.Ticker;
-      const cachedPrice = cachedPriceMap.get(lookupTicker);
+      const cachedPrice = activeCachedPriceMap.get(lookupTicker);
       const prevPx = cachedPrice?.price;
       const currentPx = position.Px;
       const fxRate = position.FxRate || 1;
@@ -230,7 +249,7 @@ const PositionTable: React.FC = () => {
         DailyPct: dailyPct,
       };
     });
-  }, [aggregatedPositions, cachedPriceMap, hasCachedMetrics]);
+  }, [aggregatedPositions, activeCachedPriceMap, hasCachedMetrics]);
 
   const dailyTotals = useMemo(() => {
     if (!hasCachedMetrics) {
@@ -266,6 +285,35 @@ const PositionTable: React.FC = () => {
     return (dailyTotals.dailyPnl / dailyTotals.prevValue) * 100;
   }, [dailyTotals]);
 
+  const displayDailyTotals = useMemo(() => {
+    const positions = hasAnyFilter ? filteredPositions : positionsWithDaily;
+    if (!positions.length) {
+      return { dailyPnl: 0, prevValue: 0 };
+    }
+
+    return positions.reduce(
+      (acc, row) => {
+        const prevPx = row.PrevPx;
+        const currentPx = row.Px;
+        const fxRate = row.FxRate || 1;
+
+        if (
+          prevPx !== undefined &&
+          currentPx !== undefined &&
+          prevPx > 1 &&
+          currentPx > 1 &&
+          row.Qty !== 0
+        ) {
+          acc.prevValue += prevPx * row.Qty * fxRate;
+          acc.dailyPnl += (currentPx - prevPx) * row.Qty * fxRate;
+        }
+
+        return acc;
+      },
+      { dailyPnl: 0, prevValue: 0 },
+    );
+  }, [filteredPositions, positionsWithDaily, hasAnyFilter]);
+
   // Calculate totals based on filtered positions
   const totals = useMemo(() => {
     const positions =
@@ -289,29 +337,32 @@ const PositionTable: React.FC = () => {
 
   const columns = useMemo<MRT_ColumnDef<Position>[]>(() => {
     const dailyPctLabel =
-      hasCachedMetrics && !hasBookFilter && dailyTotals.prevValue
+      hasCachedMetrics && !hasAnyFilter && dailyTotals.prevValue
         ? ` (${dailyPnlPct.toFixed(2)}%)`
         : "";
+
+    const dailyLabel = priceLag === "t-2" ? "T-2" : "T-1";
 
     const baseColumns: MRT_ColumnDef<Position>[] = [
       {
         accessorKey: "Ticker",
         header: "Ticker",
-        Footer: () => (
-          <Text
-            size="sm"
-            className={classes["default-xs-font-size"]}
-            fw={500}
-            c={totals.Pnl > 0 ? "green" : "blue"}
-          >
-            {"P&L: $" +
-              totals.Pnl.toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              }) +
-              dailyPctLabel}
-          </Text>
-        ),
+        Footer: () =>
+          hasAnyFilter ? null : (
+            <Text
+              size="sm"
+              className={classes["default-xs-font-size"]}
+              fw={500}
+              c={totals.Pnl > 0 ? "green" : "blue"}
+            >
+              {"P&L: $" +
+                totals.Pnl.toLocaleString(undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                }) +
+                dailyPctLabel}
+            </Text>
+          ),
       },
       {
         accessorKey: "Name",
@@ -467,7 +518,7 @@ const PositionTable: React.FC = () => {
     const dailyColumns: MRT_ColumnDef<Position>[] = [
       {
         accessorKey: "PrevPx",
-        header: "Prev Px",
+        header: `Prev Px (${dailyLabel})`,
         Cell: ({ cell }) => {
           const value = cell.getValue<number>();
           if (!value || value <= 1) return <span>-</span>;
@@ -484,7 +535,20 @@ const PositionTable: React.FC = () => {
       },
       {
         accessorKey: "DailyPnl",
-        header: "Daily P&L (SGD)",
+        header: `${dailyLabel} P&L (SGD)`,
+        Footer: () => {
+          const value = displayDailyTotals.dailyPnl || 0;
+          const color = value < 0 ? "red" : "green";
+          return (
+            <span style={{ color }}>
+              $
+              {value.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+            </span>
+          );
+        },
         Cell: ({ cell }) => {
           const value = cell.getValue<number>() || 0;
           const color = value < 0 ? "red" : "green";
@@ -501,7 +565,7 @@ const PositionTable: React.FC = () => {
       },
       {
         accessorKey: "DailyPct",
-        header: "Daily %",
+        header: `${dailyLabel} %`,
         Cell: ({ cell }) => {
           const value = cell.getValue<number>() || 0;
           const color = value < 0 ? "red" : "green";
@@ -523,8 +587,11 @@ const PositionTable: React.FC = () => {
     refData,
     hasCachedMetrics,
     hasBookFilter,
+    hasAnyFilter,
     dailyTotals.prevValue,
     dailyPnlPct,
+    displayDailyTotals.dailyPnl,
+    priceLag,
   ]);
 
   const table = useMantineReactTable({
@@ -547,7 +614,7 @@ const PositionTable: React.FC = () => {
       const isOneRowSelected = selectedRows.length === 1;
 
       return (
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <Button
             leftSection={<IconHistory size={16} />}
             onClick={handleViewTrades}
@@ -568,6 +635,15 @@ const PositionTable: React.FC = () => {
           >
             View Dividends
           </Button>
+          <SegmentedControl
+            value={priceLag}
+            onChange={(value) => setPriceLag(value as "t-1" | "t-2")}
+            data={[
+              { label: "T-1", value: "t-1" },
+              { label: "T-2", value: "t-2", disabled: !hasPrev2Prices },
+            ]}
+            size="xs"
+          />
         </div>
       );
     },
@@ -580,10 +656,14 @@ const PositionTable: React.FC = () => {
         .getFilteredRowModel()
         .rows.map((row) => row.original);
       setFilteredPositions(filtered);
-      const bookFilterApplied = table
-        .getState()
-        .columnFilters.some((filter) => filter.id === "Book" && filter.value);
+      const { columnFilters, globalFilter } = table.getState();
+      const bookFilterApplied = columnFilters.some(
+        (filter) => filter.id === "Book" && filter.value,
+      );
+      const anyFilterApplied =
+        columnFilters.some((filter) => filter.value) || Boolean(globalFilter);
       setHasBookFilter(bookFilterApplied);
+      setHasAnyFilter(anyFilterApplied);
     }
   }, [
     table,
@@ -599,8 +679,15 @@ const PositionTable: React.FC = () => {
     }
 
     const titlePrefix = dailyPnlPct >= 0 ? "+" : "";
-    document.title = `${titlePrefix}${dailyPnlPct.toFixed(2)}% Daily P&L`;
-  }, [hasCachedMetrics, hasBookFilter, dailyTotals.prevValue, dailyPnlPct]);
+    const titleLabel = priceLag === "t-2" ? "T-2" : "T-1";
+    document.title = `${titlePrefix}${dailyPnlPct.toFixed(2)}% ${titleLabel} P&L`;
+  }, [
+    hasCachedMetrics,
+    hasBookFilter,
+    dailyTotals.prevValue,
+    dailyPnlPct,
+    priceLag,
+  ]);
 
   // Remove the separate loading check since the table handles it now
   if (error) return <div>Error loading positions</div>;

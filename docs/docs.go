@@ -1523,7 +1523,7 @@ const docTemplate = `{
         },
         "/api/v1/historical/prices/cached": {
             "post": {
-                "description": "Return cached previous daily prices for provided tickers along with the latest portfolio metrics snapshot",
+                "description": "Return cached t-1 and t-2 daily prices for provided tickers along with the latest portfolio metrics snapshot",
                 "consumes": [
                     "application/json"
                 ],
@@ -2956,6 +2956,12 @@ const docTemplate = `{
                     }
                 },
                 "prices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/historical.CachedPrice"
+                    }
+                },
+                "pricesPrev2": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/historical.CachedPrice"

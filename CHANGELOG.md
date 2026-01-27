@@ -1,3 +1,9 @@
+## [1.41.0] - 2026-01-27
+
+### 🚀 Features
+
+- *(historical)* Enhance caching to cache t-2 as well #159
+
 ## [1.40.0] - 2026-01-24
 
 ### 🚀 Features

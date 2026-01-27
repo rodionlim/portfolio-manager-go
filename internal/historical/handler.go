@@ -156,7 +156,7 @@ func HandleDeleteMetrics(service HistoricalMetricsSetter) http.HandlerFunc {
 
 // HandleGetCachedPrices handles the POST /api/v1/historical/prices/cached endpoint
 // @Summary Get cached daily prices with latest metrics
-// @Description Return cached previous daily prices for provided tickers along with the latest portfolio metrics snapshot
+// @Description Return cached t-1 and t-2 daily prices for provided tickers along with the latest portfolio metrics snapshot
 // @Tags historical
 // @Accept json
 // @Produce json

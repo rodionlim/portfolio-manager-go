@@ -161,6 +161,13 @@ func (s *Service) cachePrevDailyPrices(dateOnly time.Time) error {
 		}
 
 		cacheKey := fmt.Sprintf("%s:%s", types.CachedPrevDailyPricesKeyPrefix, position.Ticker)
+		prev2Key := fmt.Sprintf("%s:%s", types.CachedPrev2DailyPricesKeyPrefix, position.Ticker)
+		var prevCached CachedPrice
+		if err := s.db.Get(cacheKey, &prevCached); err == nil {
+			if err := s.db.Put(prev2Key, prevCached); err != nil {
+				s.logger.Warnf("Failed to store cached t-2 price for %s: %v", position.Ticker, err)
+			}
+		}
 		entry := CachedPrice{
 			Ticker:    position.Ticker,
 			Price:     assetData.Price,
@@ -216,8 +223,9 @@ func (s *Service) getLatestMetricsSnapshot(book_filter string) (*TimestampedMetr
 
 func (s *Service) GetCachedPricesWithLatestMetrics(tickers []string) (CachedPricesResponse, error) {
 	response := CachedPricesResponse{
-		Prices:  []CachedPrice{},
-		Missing: []string{},
+		Prices:      []CachedPrice{},
+		PricesPrev2: []CachedPrice{},
+		Missing:     []string{},
 	}
 
 	if len(tickers) == 0 {
@@ -251,6 +259,15 @@ func (s *Service) GetCachedPricesWithLatestMetrics(tickers []string) (CachedPric
 			cached.Ticker = ticker
 		}
 		response.Prices = append(response.Prices, cached)
+
+		prev2Key := fmt.Sprintf("%s:%s", types.CachedPrev2DailyPricesKeyPrefix, ticker)
+		var cachedPrev2 CachedPrice
+		if err := s.db.Get(prev2Key, &cachedPrev2); err == nil {
+			if cachedPrev2.Ticker == "" {
+				cachedPrev2.Ticker = ticker
+			}
+			response.PricesPrev2 = append(response.PricesPrev2, cachedPrev2)
+		}
 	}
 
 	return response, nil

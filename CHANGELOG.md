@@ -1,3 +1,9 @@
+## [1.42.0] - 2026-01-30
+
+### 🚀 Features
+
+- *(benchmark)* Add match monthly cf mode to benchmarking #155
+
 ## [1.41.0] - 2026-01-27
 
 ### 🚀 Features

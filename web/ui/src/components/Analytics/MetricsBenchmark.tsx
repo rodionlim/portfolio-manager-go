@@ -54,7 +54,7 @@ interface BenchmarkResponse {
 
 const MetricsBenchmark: React.FC = () => {
   const [bookFilter, setBookFilter] = useState("");
-  const [mode, setMode] = useState("match_trades");
+  const [mode, setMode] = useState("match_month_cf");
   const [notional, setNotional] = useState<number | "">(100000);
   const [costPct, setCostPct] = useState<number | "">(0.12);
   const [costAbsolute, setCostAbsolute] = useState<number | "">(10.9);
@@ -77,7 +77,7 @@ const MetricsBenchmark: React.FC = () => {
         if (!resp.ok) return;
         const jobs: MetricsJob[] = await resp.json();
         const books = Array.from(
-          new Set(jobs.map((j) => j.BookFilter).filter((b) => b && b.trim()))
+          new Set(jobs.map((j) => j.BookFilter).filter((b) => b && b.trim())),
         ).sort((a, b) => a.localeCompare(b));
         setBookOptions(books);
       } catch (e) {
@@ -102,10 +102,10 @@ const MetricsBenchmark: React.FC = () => {
   const handleTickerChange = (
     id: string,
     key: "ticker" | "weight",
-    value: string | number
+    value: string | number,
   ) => {
     setTickers((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, [key]: value } : t))
+      prev.map((t) => (t.id === id ? { ...t, [key]: value } : t)),
     );
   };
 
@@ -190,7 +190,7 @@ const MetricsBenchmark: React.FC = () => {
   const sortedCashFlows = useMemo(() => {
     if (!result?.benchmark_cash_flows) return [];
     return [...result.benchmark_cash_flows].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
   }, [result]);
 
@@ -221,6 +221,7 @@ const MetricsBenchmark: React.FC = () => {
               data={[
                 { value: "buy_at_start", label: "buy_at_start" },
                 { value: "match_trades", label: "match_trades" },
+                { value: "match_month_cf", label: "match_month_cf" },
               ]}
               style={{ width: 180 }}
             />
@@ -291,7 +292,7 @@ const MetricsBenchmark: React.FC = () => {
                         handleTickerChange(
                           t.id,
                           "ticker",
-                          e.currentTarget.value
+                          e.currentTarget.value,
                         )
                       }
                     />

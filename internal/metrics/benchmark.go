@@ -35,7 +35,7 @@ func (m *MetricsService) BenchmarkPortfolioPerformance(req BenchmarkRequest) (Be
 	}
 
 	mode := req.Mode
-	if mode != BenchmarkModeBuyAtStart && mode != BenchmarkModeMatchTrades {
+	if mode != BenchmarkModeBuyAtStart && mode != BenchmarkModeMatchTrades && mode != BenchmarkModeMatchMonthCF {
 		return BenchmarkComparisonResult{}, fmt.Errorf("unsupported benchmark mode: %s", mode)
 	}
 
@@ -115,7 +115,7 @@ func (m *MetricsService) BenchmarkPortfolioPerformance(req BenchmarkRequest) (Be
 
 			appendCashflow(startDate, -(alloc + allocFee), w.Ticker, CashFlowTypeBuy)
 		}
-	} else {
+	} else if mode == BenchmarkModeMatchTrades {
 		for _, trade := range trades {
 			tradeDate, err := time.Parse(time.RFC3339, trade.TradeDate)
 			if err != nil {
@@ -168,6 +168,94 @@ func (m *MetricsService) BenchmarkPortfolioPerformance(req BenchmarkRequest) (Be
 						QtyDelta: -qty,
 					})
 					appendCashflow(tradeDate, alloc-allocFee, w.Ticker, CashFlowTypeSell)
+				}
+			}
+		}
+	} else {
+		monthlyNet := map[string]struct {
+			Date time.Time
+			Net  float64
+		}{}
+
+		for _, trade := range trades {
+			tradeDate, err := time.Parse(time.RFC3339, trade.TradeDate)
+			if err != nil {
+				continue
+			}
+
+			notional := math.Abs(trade.Quantity * trade.Price * trade.Fx)
+			if notional == 0 {
+				continue
+			}
+
+			monthStart := time.Date(tradeDate.Year(), tradeDate.Month(), 1, 0, 0, 0, 0, tradeDate.Location())
+			key := monthStart.Format("2006-01-02")
+			entry := monthlyNet[key]
+			entry.Date = monthStart
+
+			if trade.Side == blotter.TradeSideBuy {
+				entry.Net += notional
+			} else {
+				entry.Net -= notional
+			}
+
+			monthlyNet[key] = entry
+		}
+
+		monthKeys := make([]string, 0, len(monthlyNet))
+		for key := range monthlyNet {
+			monthKeys = append(monthKeys, key)
+		}
+		sort.Strings(monthKeys)
+
+		for _, key := range monthKeys {
+			entry := monthlyNet[key]
+			if entry.Net == 0 {
+				continue
+			}
+
+			notional := math.Abs(entry.Net)
+			fee := computeBenchmarkFee(req.BenchmarkCost, notional)
+			feeTotal += fee
+
+			isBuy := entry.Net > 0
+			if isBuy {
+				pricePaid += notional + fee
+			} else {
+				pricePaid -= notional - fee
+			}
+
+			for _, w := range weights {
+				alloc := notional * w.Weight
+				allocFee := fee * w.Weight
+				price, err := priceCache.priceInSGDAt(w.Ticker, entry.Date)
+				if err != nil {
+					return BenchmarkComparisonResult{}, err
+				}
+				qty := 0.0
+				if price > 0 {
+					qty = alloc / price
+				}
+				pos := positions[w.Ticker]
+				if pos == nil {
+					pos = &benchmarkPosition{Ticker: w.Ticker}
+					positions[w.Ticker] = pos
+				}
+
+				if isBuy {
+					pos.Quantity += qty
+					positionChanges[w.Ticker] = append(positionChanges[w.Ticker], benchmarkPositionChange{
+						Date:     entry.Date,
+						QtyDelta: qty,
+					})
+					appendCashflow(entry.Date, -(alloc + allocFee), w.Ticker, CashFlowTypeBuy)
+				} else {
+					pos.Quantity -= qty
+					positionChanges[w.Ticker] = append(positionChanges[w.Ticker], benchmarkPositionChange{
+						Date:     entry.Date,
+						QtyDelta: -qty,
+					})
+					appendCashflow(entry.Date, alloc-allocFee, w.Ticker, CashFlowTypeSell)
 				}
 			}
 		}

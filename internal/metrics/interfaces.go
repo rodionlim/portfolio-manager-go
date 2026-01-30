@@ -48,8 +48,9 @@ type BenchmarkCost struct {
 type BenchmarkMode string
 
 const (
-	BenchmarkModeBuyAtStart  BenchmarkMode = "buy_at_start"
-	BenchmarkModeMatchTrades BenchmarkMode = "match_trades"
+	BenchmarkModeBuyAtStart   BenchmarkMode = "buy_at_start"
+	BenchmarkModeMatchTrades  BenchmarkMode = "match_trades"
+	BenchmarkModeMatchMonthCF BenchmarkMode = "match_month_cf"
 )
 
 // BenchmarkTickerWeight defines benchmark ticker weights.

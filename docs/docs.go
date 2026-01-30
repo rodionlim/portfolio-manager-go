@@ -2038,7 +2038,7 @@ const docTemplate = `{
         },
         "/api/v1/metrics/benchmark": {
             "post": {
-                "description": "Compare portfolio IRR against a benchmark using buy_at_start or match_trades mode",
+                "description": "Compare portfolio IRR against a benchmark using buy_at_start, match_trades, or match_month_cf mode",
                 "consumes": [
                     "application/json"
                 ],
@@ -3179,11 +3179,13 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "buy_at_start",
-                "match_trades"
+                "match_trades",
+                "match_month_cf"
             ],
             "x-enum-varnames": [
                 "BenchmarkModeBuyAtStart",
-                "BenchmarkModeMatchTrades"
+                "BenchmarkModeMatchTrades",
+                "BenchmarkModeMatchMonthCF"
             ]
         },
         "metrics.BenchmarkRequest": {

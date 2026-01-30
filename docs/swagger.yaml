@@ -429,10 +429,12 @@ definitions:
     enum:
     - buy_at_start
     - match_trades
+    - match_month_cf
     type: string
     x-enum-varnames:
     - BenchmarkModeBuyAtStart
     - BenchmarkModeMatchTrades
+    - BenchmarkModeMatchMonthCF
   metrics.BenchmarkRequest:
     properties:
       benchmark_cost:
@@ -2005,8 +2007,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Compare portfolio IRR against a benchmark using buy_at_start or
-        match_trades mode
+      description: Compare portfolio IRR against a benchmark using buy_at_start, match_trades,
+        or match_month_cf mode
       parameters:
       - description: Benchmark request
         in: body

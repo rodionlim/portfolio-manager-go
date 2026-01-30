@@ -38,7 +38,7 @@ func HandleGetPortfolioMetrics(service *MetricsService) http.HandlerFunc {
 
 // HandleBenchmarkMetrics handles benchmarking portfolio performance against a user-specified benchmark
 // @Summary Benchmark portfolio performance
-// @Description Compare portfolio IRR against a benchmark using buy_at_start or match_trades mode
+// @Description Compare portfolio IRR against a benchmark using buy_at_start, match_trades, or match_month_cf mode
 // @Tags metrics
 // @Accept json
 // @Produce json

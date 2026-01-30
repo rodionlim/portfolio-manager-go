@@ -9,6 +9,7 @@ const (
 	HeadSequencePortfolioKey dbKey = "PORTFOLIO_HEAD_SEQUENCE_NUM"
 
 	TradeKeyPrefix             dbKey = "TRADE"
+	ConfirmationKeyPrefix      dbKey = "CONFIRMATION"
 	PositionKeyPrefix          dbKey = "POSITION"
 	ReferenceDataKeyPrefix     dbKey = "REFDATA"
 	DividendsKeyPrefix         dbKey = "DIVIDENDS"

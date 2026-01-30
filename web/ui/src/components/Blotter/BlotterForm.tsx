@@ -234,7 +234,7 @@ export default function BlotterForm() {
     formData.append("file", file);
     
     try {
-      const resp = await fetch(getUrl(`api/v1/blotter/confirmation/${tradeId}`), {
+      const resp = await fetch(getUrl(`/api/v1/blotter/confirmation/${tradeId}`), {
         method: "POST",
         body: formData,
       });
@@ -251,10 +251,11 @@ export default function BlotterForm() {
       
       setConfirmationFile(null);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       notifications.show({
         color: "red",
         title: "Confirmation upload failed",
-        message: `Failed to upload confirmation: ${error}`,
+        message: `Failed to upload confirmation: ${errorMessage}`,
       });
     }
   };

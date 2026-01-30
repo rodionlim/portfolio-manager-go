@@ -2,8 +2,10 @@ package blotter
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
 	"strings"
@@ -24,22 +26,15 @@ import (
 // @Router /api/v1/blotter/confirmation/{tradeId} [post]
 func HandleConfirmationUpload(confirmationService *ConfirmationService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Extract trade ID from URL path
-		path := r.URL.Path
-		parts := strings.Split(path, "/")
-		if len(parts) < 6 {
-			common.WriteJSONError(w, "Invalid URL path", http.StatusBadRequest)
-			return
-		}
-		tradeID := parts[len(parts)-1]
-
-		if tradeID == "" {
-			common.WriteJSONError(w, "Trade ID is required", http.StatusBadRequest)
+		// Extract trade ID from URL path using helper
+		tradeID, err := extractTradeIDFromPath(r.URL.Path)
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		// Parse multipart form
-		err := r.ParseMultipartForm(10 << 20) // 10 MB max
+		err = r.ParseMultipartForm(10 << 20) // 10 MB max
 		if err != nil {
 			logging.GetLogger().Error("Failed to parse form", err)
 			common.WriteJSONError(w, "Failed to parse upload form", http.StatusBadRequest)
@@ -55,6 +50,18 @@ func HandleConfirmationUpload(confirmationService *ConfirmationService) http.Han
 		}
 		defer file.Close()
 
+		// Validate content type from header
+		contentType := header.Header.Get("Content-Type")
+		validContentTypes := map[string]bool{
+			"application/pdf": true,
+			"image/png":       true,
+			"image/jpeg":      true,
+		}
+		if !validContentTypes[contentType] {
+			common.WriteJSONError(w, "Invalid file type. Only PDF, PNG, and JPEG files are allowed", http.StatusBadRequest)
+			return
+		}
+
 		// Read file data
 		data, err := io.ReadAll(file)
 		if err != nil {
@@ -65,10 +72,10 @@ func HandleConfirmationUpload(confirmationService *ConfirmationService) http.Han
 
 		// Save confirmation
 		uploadedDate := time.Now().Format(time.RFC3339)
-		err = confirmationService.SaveConfirmation(tradeID, header.Filename, header.Header.Get("Content-Type"), data, uploadedDate)
+		err = confirmationService.SaveConfirmation(tradeID, header.Filename, contentType, data, uploadedDate)
 		if err != nil {
 			logging.GetLogger().Error("Failed to save confirmation", err)
-			common.WriteJSONError(w, "Failed to save confirmation", http.StatusInternalServerError)
+			common.WriteJSONError(w, "Failed to save confirmation: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -92,21 +99,14 @@ func HandleConfirmationUpload(confirmationService *ConfirmationService) http.Han
 // @Router /api/v1/blotter/confirmation/{tradeId} [delete]
 func HandleConfirmationDelete(confirmationService *ConfirmationService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Extract trade ID from URL path
-		path := r.URL.Path
-		parts := strings.Split(path, "/")
-		if len(parts) < 6 {
-			common.WriteJSONError(w, "Invalid URL path", http.StatusBadRequest)
-			return
-		}
-		tradeID := parts[len(parts)-1]
-
-		if tradeID == "" {
-			common.WriteJSONError(w, "Trade ID is required", http.StatusBadRequest)
+		// Extract trade ID from URL path using helper
+		tradeID, err := extractTradeIDFromPath(r.URL.Path)
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		err := confirmationService.DeleteConfirmation(tradeID)
+		err = confirmationService.DeleteConfirmation(tradeID)
 		if err != nil {
 			logging.GetLogger().Error("Failed to delete confirmation", err)
 			common.WriteJSONError(w, "Failed to delete confirmation", http.StatusInternalServerError)
@@ -133,17 +133,10 @@ func HandleConfirmationDelete(confirmationService *ConfirmationService) http.Han
 // @Router /api/v1/blotter/confirmation/{tradeId} [get]
 func HandleConfirmationGet(confirmationService *ConfirmationService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Extract trade ID from URL path
-		path := r.URL.Path
-		parts := strings.Split(path, "/")
-		if len(parts) < 6 {
-			common.WriteJSONError(w, "Invalid URL path", http.StatusBadRequest)
-			return
-		}
-		tradeID := parts[len(parts)-1]
-
-		if tradeID == "" {
-			common.WriteJSONError(w, "Trade ID is required", http.StatusBadRequest)
+		// Extract trade ID from URL path using helper
+		tradeID, err := extractTradeIDFromPath(r.URL.Path)
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -153,9 +146,9 @@ func HandleConfirmationGet(confirmationService *ConfirmationService) http.Handle
 			return
 		}
 
-		// Set appropriate headers
+		// Set appropriate headers with properly encoded filename
 		w.Header().Set("Content-Type", confirmation.Metadata.ContentType)
-		w.Header().Set("Content-Disposition", "attachment; filename="+confirmation.Metadata.FileName)
+		w.Header().Set("Content-Disposition", "attachment; "+sanitizeContentDispositionFilename(confirmation.Metadata.FileName))
 
 		w.Write(confirmation.Data)
 	}
@@ -173,17 +166,10 @@ func HandleConfirmationGet(confirmationService *ConfirmationService) http.Handle
 // @Router /api/v1/blotter/confirmation/{tradeId}/metadata [get]
 func HandleConfirmationMetadataGet(confirmationService *ConfirmationService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Extract trade ID from URL path
-		path := r.URL.Path
-		parts := strings.Split(path, "/")
-		if len(parts) < 7 {
-			common.WriteJSONError(w, "Invalid URL path", http.StatusBadRequest)
-			return
-		}
-		tradeID := parts[len(parts)-2]
-
-		if tradeID == "" {
-			common.WriteJSONError(w, "Trade ID is required", http.StatusBadRequest)
+		// Extract trade ID from URL path using helper
+		tradeID, err := extractTradeIDFromPath(r.URL.Path)
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -237,7 +223,7 @@ func HandleConfirmationsExport(confirmationService *ConfirmationService) http.Ha
 		filename := "confirmations_" + dateString + ".tar"
 
 		w.Header().Set("Content-Type", "application/x-tar")
-		w.Header().Set("Content-Disposition", "attachment; filename="+filename)
+		w.Header().Set("Content-Disposition", "attachment; "+sanitizeContentDispositionFilename(filename))
 
 		w.Write(tarData)
 	}
@@ -308,4 +294,29 @@ func RegisterConfirmationHandlers(mux *http.ServeMux, confirmationService *Confi
 		}
 		HandleConfirmationsMetadataGet(confirmationService).ServeHTTP(w, r)
 	})
+}
+
+// extractTradeIDFromPath extracts the trade ID from the URL path
+func extractTradeIDFromPath(path string) (string, error) {
+	parts := strings.Split(path, "/")
+	if len(parts) < 6 {
+		return "", fmt.Errorf("invalid URL path format")
+	}
+	
+	tradeID := parts[len(parts)-1]
+	if strings.HasSuffix(path, "/metadata") && len(parts) >= 7 {
+		tradeID = parts[len(parts)-2]
+	}
+	
+	if tradeID == "" {
+		return "", fmt.Errorf("trade ID cannot be empty")
+	}
+	
+	return tradeID, nil
+}
+
+// sanitizeContentDispositionFilename properly encodes filename for Content-Disposition header
+func sanitizeContentDispositionFilename(filename string) string {
+	// For simplicity, URL-encode the filename for RFC 6266 compatibility
+	return fmt.Sprintf("filename*=UTF-8''%s", url.QueryEscape(filename))
 }

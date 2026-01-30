@@ -37,7 +37,7 @@ const fetchTrades = async (): Promise<Trade[]> => {
 };
 
 const deleteTrades = async (trades: string[]): Promise<{ message: string }> => {
-  return fetch(getUrl("api/v1/blotter/trade"), {
+  return fetch(getUrl("/api/v1/blotter/trade"), {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
@@ -60,7 +60,7 @@ const uploadTradesCSV = async (file: File): Promise<{ message: string }> => {
   const formData = new FormData();
   formData.append("file", file);
 
-  return fetch(getUrl("api/v1/blotter/upload"), {
+  return fetch(getUrl("/api/v1/blotter/upload"), {
     method: "POST",
     body: formData,
   })

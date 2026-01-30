@@ -643,7 +643,7 @@ curl -X GET http://localhost:8080/api/v1/blotter/export-with-fx
 
 ### Upload Trade Confirmation
 
-Upload a confirmation file for a specific trade. Supported file types: PDF, PNG, JPEG.
+Upload a confirmation file for a specific trade. Supported file types: PDF, PNG, JPEG. Maximum file size: 10 MB.
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/blotter/confirmation/{tradeId} \

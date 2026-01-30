@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
+	"regexp"
 	"strings"
 )
 
@@ -50,6 +52,20 @@ func (cs *ConfirmationService) SaveConfirmation(tradeID string, fileName string,
 		return errors.New("confirmation data cannot be empty")
 	}
 
+	// Validate content type
+	validContentTypes := map[string]bool{
+		"application/pdf": true,
+		"image/png":       true,
+		"image/jpeg":      true,
+	}
+	if !validContentTypes[contentType] {
+		return fmt.Errorf("invalid content type: %s. Only PDF, PNG, and JPEG files are allowed", contentType)
+	}
+
+	// Sanitize filename - remove path components and restrict to safe characters
+	fileName = filepath.Base(fileName)
+	fileName = sanitizeFilename(fileName)
+
 	confirmation := Confirmation{
 		Metadata: ConfirmationMetadata{
 			TradeID:      tradeID,
@@ -70,6 +86,23 @@ func (cs *ConfirmationService) SaveConfirmation(tradeID string, fileName string,
 
 	logging.GetLogger().Infof("Saved confirmation for trade %s", tradeID)
 	return nil
+}
+
+// sanitizeFilename removes path traversal sequences and restricts to safe characters
+func sanitizeFilename(filename string) string {
+	// Remove any path components
+	filename = filepath.Base(filename)
+	
+	// Replace unsafe characters with underscore
+	reg := regexp.MustCompile(`[^a-zA-Z0-9._-]`)
+	filename = reg.ReplaceAllString(filename, "_")
+	
+	// Ensure it's not empty after sanitization
+	if filename == "" || filename == "." || filename == ".." {
+		filename = "confirmation.bin"
+	}
+	
+	return filename
 }
 
 // GetConfirmation retrieves a trade confirmation from the database

@@ -8,6 +8,7 @@ import {
   Switch,
   TextInput,
   Title,
+  FileInput,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
@@ -17,9 +18,12 @@ import { RootState } from "../../store";
 import { IsSGGovies, refDataByAssetClass } from "../../utils/referenceData";
 import { useLocation } from "react-router-dom";
 import { getUrl } from "../../utils/url";
+import { useState } from "react";
+import { IconPaperclip } from "@tabler/icons-react";
 
 export default function BlotterForm() {
   const location = useLocation();
+  const [confirmationFile, setConfirmationFile] = useState<File | null>(null);
 
   const defaultBook = localStorage.getItem("defaultBook") || "Main";
   const defaultBroker = localStorage.getItem("defaultBroker") || "DBS";
@@ -207,12 +211,52 @@ export default function BlotterForm() {
     }
   }
 
-  const handleSubmit = (
+  const handleSubmit = async (
     values: Omit<typeof form.values, "date"> & { date: string }
   ) => {
     localStorage.setItem("defaultBook", values.book);
     localStorage.setItem("defaultBroker", values.broker);
-    upsertTrade(values); // TODO: add error handling
+    
+    try {
+      const trade = await upsertTrade(values);
+      
+      // Upload confirmation if provided
+      if (confirmationFile && trade.TradeID) {
+        await uploadConfirmation(trade.TradeID, confirmationFile);
+      }
+    } catch (error) {
+      console.error("Error submitting trade:", error);
+    }
+  };
+
+  const uploadConfirmation = async (tradeId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      const resp = await fetch(getUrl(`api/v1/blotter/confirmation/${tradeId}`), {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!resp.ok) {
+        throw new Error("Failed to upload confirmation");
+      }
+      
+      notifications.show({
+        title: "Confirmation uploaded",
+        message: "Trade confirmation was successfully uploaded",
+        autoClose: 5000,
+      });
+      
+      setConfirmationFile(null);
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        title: "Confirmation upload failed",
+        message: `Failed to upload confirmation: ${error}`,
+      });
+    }
   };
 
   return (
@@ -315,6 +359,16 @@ export default function BlotterForm() {
             decimalScale={4}
             key={form.key("fx")}
             {...form.getInputProps("fx")}
+          />
+
+          <FileInput
+            label="Trade Confirmation (Optional)"
+            placeholder="Upload confirmation file"
+            accept="application/pdf,image/png,image/jpeg"
+            value={confirmationFile}
+            onChange={setConfirmationFile}
+            leftSection={<IconPaperclip size={16} />}
+            clearable
           />
 
           <div />

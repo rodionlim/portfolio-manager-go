@@ -129,6 +129,19 @@ definitions:
       weekEndingDate:
         type: string
     type: object
+  blotter.ConfirmationMetadata:
+    properties:
+      contentType:
+        type: string
+      fileName:
+        type: string
+      size:
+        type: integer
+      tradeId:
+        type: string
+      uploadedDate:
+        type: string
+    type: object
   blotter.Trade:
     properties:
       Account:
@@ -231,12 +244,15 @@ definitions:
   dividends.Dividends:
     properties:
       amount:
+        format: float64
         type: number
       amountPerShare:
+        format: float64
         type: number
       exDate:
         type: string
       qty:
+        format: float64
         type: number
     type: object
   historical.AssetConfig:
@@ -501,26 +517,34 @@ definitions:
       assetSubClass:
         type: string
       avgPx:
+        format: float64
         type: number
       book:
         type: string
       ccy:
         type: string
       dividends:
+        format: float64
         type: number
       fxRate:
+        format: float64
         type: number
       mv:
+        format: float64
         type: number
       pnL:
+        format: float64
         type: number
       px:
+        format: float64
         type: number
       qty:
+        format: float64
         type: number
       ticker:
         type: string
       totalPaid:
+        format: float64
         type: number
     type: object
   rdata.SuccessResponse:
@@ -591,19 +615,23 @@ definitions:
   types.DividendsMetadata:
     properties:
       amount:
+        format: float64
         type: number
       avgInterest:
         description: SSB, TBills and Bonds only, in percentage
+        format: float64
         type: number
       exDate:
         type: string
       interest:
         description: SSB, TBills and Bonds only, in percentage
+        format: float64
         type: number
       ticker:
         type: string
       withholdingTax:
         description: in decimal, not percentage
+        format: float64
         type: number
     type: object
   types.InterestRates:
@@ -922,6 +950,170 @@ paths:
       summary: Extract Weekly Top 10 stocks data from SGX Fund Flow reports
       tags:
       - analytics
+  /api/v1/blotter/confirmation/{tradeId}:
+    delete:
+      description: Delete a trade confirmation for a specific trade
+      parameters:
+      - description: Trade ID
+        in: path
+        name: tradeId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Confirmation deleted successfully
+          schema:
+            $ref: '#/definitions/common.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to delete confirmation
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Delete trade confirmation
+      tags:
+      - confirmations
+    get:
+      description: Get a trade confirmation file for a specific trade
+      parameters:
+      - description: Trade ID
+        in: path
+        name: tradeId
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Confirmation file
+          schema:
+            type: file
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "404":
+          description: Confirmation not found
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get trade confirmation
+      tags:
+      - confirmations
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a trade confirmation file for a specific trade
+      parameters:
+      - description: Trade ID
+        in: path
+        name: tradeId
+        required: true
+        type: string
+      - description: Confirmation file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Confirmation uploaded successfully
+          schema:
+            $ref: '#/definitions/common.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to upload confirmation
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Upload trade confirmation
+      tags:
+      - confirmations
+  /api/v1/blotter/confirmation/{tradeId}/metadata:
+    get:
+      description: Get metadata for a trade confirmation
+      parameters:
+      - description: Trade ID
+        in: path
+        name: tradeId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/blotter.ConfirmationMetadata'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "404":
+          description: Confirmation not found
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get trade confirmation metadata
+      tags:
+      - confirmations
+  /api/v1/blotter/confirmations/export:
+    post:
+      consumes:
+      - application/json
+      description: Export trade confirmations as a tar archive
+      parameters:
+      - description: Trade IDs to export
+        in: body
+        name: tradeIds
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/x-tar
+      responses:
+        "200":
+          description: confirmations_YYYYMMDD.tar
+          schema:
+            type: file
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to export confirmations
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Export confirmations
+      tags:
+      - confirmations
+  /api/v1/blotter/confirmations/metadata:
+    get:
+      description: Get metadata for all trade confirmations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/blotter.ConfirmationMetadata'
+            type: array
+        "500":
+          description: Failed to retrieve confirmations
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get all confirmations metadata
+      tags:
+      - confirmations
   /api/v1/blotter/export:
     get:
       description: Export all trades to a CSV file
@@ -966,6 +1158,7 @@ paths:
           description: Map of currencies to their current FX rates
           schema:
             additionalProperties:
+              format: float64
               type: number
             type: object
         "500":

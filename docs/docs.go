@@ -419,6 +419,254 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/blotter/confirmation/{tradeId}": {
+            "get": {
+                "description": "Get a trade confirmation file for a specific trade",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Get trade confirmation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Trade ID",
+                        "name": "tradeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Confirmation file",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Confirmation not found",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Upload a trade confirmation file for a specific trade",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Upload trade confirmation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Trade ID",
+                        "name": "tradeId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Confirmation file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Confirmation uploaded successfully",
+                        "schema": {
+                            "$ref": "#/definitions/common.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to upload confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a trade confirmation for a specific trade",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Delete trade confirmation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Trade ID",
+                        "name": "tradeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Confirmation deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/common.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/blotter/confirmation/{tradeId}/metadata": {
+            "get": {
+                "description": "Get metadata for a trade confirmation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Get trade confirmation metadata",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Trade ID",
+                        "name": "tradeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/blotter.ConfirmationMetadata"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Confirmation not found",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/blotter/confirmations/export": {
+            "post": {
+                "description": "Export trade confirmations as a tar archive",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/x-tar"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Export confirmations",
+                "parameters": [
+                    {
+                        "description": "Trade IDs to export",
+                        "name": "tradeIds",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "confirmations_YYYYMMDD.tar",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to export confirmations",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/blotter/confirmations/metadata": {
+            "get": {
+                "description": "Get metadata for all trade confirmations",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Get all confirmations metadata",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/blotter.ConfirmationMetadata"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve confirmations",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/blotter/export": {
             "get": {
                 "description": "Export all trades to a CSV file",
@@ -487,7 +735,8 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "type": "number"
+                                "type": "number",
+                                "format": "float64"
                             }
                         }
                     },
@@ -2744,6 +2993,26 @@ const docTemplate = `{
                 }
             }
         },
+        "blotter.ConfirmationMetadata": {
+            "type": "object",
+            "properties": {
+                "contentType": {
+                    "type": "string"
+                },
+                "fileName": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "tradeId": {
+                    "type": "string"
+                },
+                "uploadedDate": {
+                    "type": "string"
+                }
+            }
+        },
         "blotter.Trade": {
             "type": "object",
             "required": [
@@ -2883,16 +3152,19 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "amountPerShare": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "exDate": {
                     "type": "string"
                 },
                 "qty": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 }
             }
         },
@@ -3284,7 +3556,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "avgPx": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "book": {
                     "type": "string"
@@ -3293,28 +3566,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "dividends": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "fxRate": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "mv": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "pnL": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "px": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "qty": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "ticker": {
                     "type": "string"
                 },
                 "totalPaid": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 }
             }
         },
@@ -3418,25 +3698,29 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "avgInterest": {
                     "description": "SSB, TBills and Bonds only, in percentage",
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "exDate": {
                     "type": "string"
                 },
                 "interest": {
                     "description": "SSB, TBills and Bonds only, in percentage",
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "ticker": {
                     "type": "string"
                 },
                 "withholdingTax": {
                     "description": "in decimal, not percentage",
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 }
             }
         },

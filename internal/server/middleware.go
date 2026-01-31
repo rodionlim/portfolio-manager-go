@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+const maxLoggedBodyBytes = 1024
+
+func truncateForLog(body []byte) string {
+	if len(body) <= maxLoggedBodyBytes {
+		return string(body)
+	}
+	return fmt.Sprintf("%s...[truncated %d bytes]", string(body[:maxLoggedBodyBytes]), len(body)-maxLoggedBodyBytes)
+}
+
 // loggingMiddleware logs details about the request.
 func loggingMiddleware(next http.Handler, logger *logging.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +38,7 @@ func loggingMiddleware(next http.Handler, logger *logging.Logger) http.Handler {
 
 		// Log request details
 		logger.Info(fmt.Sprintf("Received request: method=%s uri=%s client_ip=%s user_agent=%s query_params=%s body=%s",
-			method, uri, clientIP, userAgent, query, string(bodyBytes)))
+			method, uri, clientIP, userAgent, query, truncateForLog(bodyBytes)))
 
 		// Call the next handler
 		next.ServeHTTP(w, r)

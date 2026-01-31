@@ -1,7 +1,7 @@
 package blotter
 
 import (
-	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -92,16 +92,16 @@ func (cs *ConfirmationService) SaveConfirmation(tradeID string, fileName string,
 func sanitizeFilename(filename string) string {
 	// Remove any path components
 	filename = filepath.Base(filename)
-	
+
 	// Replace unsafe characters with underscore
 	reg := regexp.MustCompile(`[^a-zA-Z0-9._-]`)
 	filename = reg.ReplaceAllString(filename, "_")
-	
+
 	// Ensure it's not empty after sanitization
 	if filename == "" || filename == "." || filename == ".." {
 		filename = "confirmation.bin"
 	}
-	
+
 	return filename
 }
 
@@ -174,15 +174,14 @@ func (cs *ConfirmationService) GetAllConfirmationMetadata() ([]ConfirmationMetad
 	return metadata, nil
 }
 
-// ExportConfirmationsAsTar exports confirmations for given trade IDs as a tar archive
-func (cs *ConfirmationService) ExportConfirmationsAsTar(tradeIDs []string) ([]byte, error) {
+// ExportConfirmationsAsZip exports confirmations for given trade IDs as a zip archive
+func (cs *ConfirmationService) ExportConfirmationsAsZip(tradeIDs []string) ([]byte, error) {
 	if len(tradeIDs) == 0 {
 		return nil, errors.New("no trade IDs provided")
 	}
 
 	var buf bytes.Buffer
-	tw := tar.NewWriter(&buf)
-	defer tw.Close()
+	zw := zip.NewWriter(&buf)
 
 	exportedCount := 0
 	for _, tradeID := range tradeIDs {
@@ -199,19 +198,20 @@ func (cs *ConfirmationService) ExportConfirmationsAsTar(tradeIDs []string) ([]by
 			fileExt = confirmation.Metadata.FileName[idx:]
 		}
 
-		// Create tar header for this file
+		// Create zip file header for this file
 		fileName := fmt.Sprintf("%s%s", tradeID, fileExt)
-		header := &tar.Header{
-			Name: fileName,
-			Mode: 0644,
-			Size: int64(len(confirmation.Data)),
+		header := &zip.FileHeader{
+			Name:   fileName,
+			Method: zip.Deflate,
+		}
+		header.SetMode(0644)
+
+		writer, err := zw.CreateHeader(header)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create zip entry for %s: %w", fileName, err)
 		}
 
-		if err := tw.WriteHeader(header); err != nil {
-			return nil, fmt.Errorf("failed to write tar header for %s: %w", fileName, err)
-		}
-
-		if _, err := tw.Write(confirmation.Data); err != nil {
+		if _, err := writer.Write(confirmation.Data); err != nil {
 			return nil, fmt.Errorf("failed to write data for %s: %w", fileName, err)
 		}
 
@@ -222,49 +222,54 @@ func (cs *ConfirmationService) ExportConfirmationsAsTar(tradeIDs []string) ([]by
 		return nil, errors.New("no confirmations found for the provided trade IDs")
 	}
 
+	if err := zw.Close(); err != nil {
+		return nil, fmt.Errorf("failed to finalize zip: %w", err)
+	}
+
 	logging.GetLogger().Infof("Exported %d confirmations", exportedCount)
 	return buf.Bytes(), nil
 }
 
-// ImportConfirmationsFromTar imports confirmations from a tar archive
-func (cs *ConfirmationService) ImportConfirmationsFromTar(tarData []byte, uploadedDate string) (int, error) {
-	buf := bytes.NewReader(tarData)
-	tr := tar.NewReader(buf)
+// ImportConfirmationsFromZip imports confirmations from a zip archive
+func (cs *ConfirmationService) ImportConfirmationsFromZip(zipData []byte, uploadedDate string) (int, error) {
+	buf := bytes.NewReader(zipData)
+	zr, err := zip.NewReader(buf, int64(len(zipData)))
+	if err != nil {
+		return 0, fmt.Errorf("error reading zip: %w", err)
+	}
 
 	importedCount := 0
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
+	for _, file := range zr.File {
+		if file.FileInfo().IsDir() {
+			continue
 		}
+
+		reader, err := file.Open()
 		if err != nil {
-			return importedCount, fmt.Errorf("error reading tar: %w", err)
+			return importedCount, fmt.Errorf("error opening file %s: %w", file.Name, err)
+		}
+		data, readErr := io.ReadAll(reader)
+		reader.Close()
+		if readErr != nil {
+			return importedCount, fmt.Errorf("error reading file %s: %w", file.Name, readErr)
 		}
 
-		// Read file data
-		data := make([]byte, header.Size)
-		if _, err := io.ReadFull(tr, data); err != nil {
-			return importedCount, fmt.Errorf("error reading file %s: %w", header.Name, err)
-		}
-
-		// Extract trade ID from filename (before extension)
-		fileName := header.Name
+		fileName := filepath.Base(file.Name)
 		tradeID := fileName
 		if idx := strings.LastIndex(fileName, "."); idx != -1 {
 			tradeID = fileName[:idx]
 		}
 
-		// Determine content type from extension
+		lowerName := strings.ToLower(fileName)
 		contentType := "application/octet-stream"
-		if strings.HasSuffix(fileName, ".pdf") {
+		if strings.HasSuffix(lowerName, ".pdf") {
 			contentType = "application/pdf"
-		} else if strings.HasSuffix(fileName, ".png") {
+		} else if strings.HasSuffix(lowerName, ".png") {
 			contentType = "image/png"
-		} else if strings.HasSuffix(fileName, ".jpg") || strings.HasSuffix(fileName, ".jpeg") {
+		} else if strings.HasSuffix(lowerName, ".jpg") || strings.HasSuffix(lowerName, ".jpeg") {
 			contentType = "image/jpeg"
 		}
 
-		// Save confirmation
 		err = cs.SaveConfirmation(tradeID, fileName, contentType, data, uploadedDate)
 		if err != nil {
 			logging.GetLogger().Warnf("Failed to import confirmation for %s: %v", tradeID, err)
@@ -274,7 +279,7 @@ func (cs *ConfirmationService) ImportConfirmationsFromTar(tarData []byte, upload
 		importedCount++
 	}
 
-	logging.GetLogger().Infof("Imported %d confirmations from tar", importedCount)
+	logging.GetLogger().Infof("Imported %d confirmations from zip", importedCount)
 	return importedCount, nil
 }
 

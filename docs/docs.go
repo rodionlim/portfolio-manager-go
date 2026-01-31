@@ -591,12 +591,12 @@ const docTemplate = `{
         },
         "/api/v1/blotter/confirmations/export": {
             "post": {
-                "description": "Export trade confirmations as a tar archive",
+                "description": "Export trade confirmations as a zip archive",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/x-tar"
+                    "application/zip"
                 ],
                 "tags": [
                     "confirmations"
@@ -618,7 +618,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "confirmations_YYYYMMDD.tar",
+                        "description": "confirmations_YYYYMMDD.zip",
                         "schema": {
                             "type": "file"
                         }
@@ -735,8 +735,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "type": "number",
-                                "format": "float64"
+                                "type": "number"
                             }
                         }
                     },
@@ -3152,19 +3151,16 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "amountPerShare": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "exDate": {
                     "type": "string"
                 },
                 "qty": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 }
             }
         },
@@ -3556,8 +3552,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "avgPx": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "book": {
                     "type": "string"
@@ -3566,35 +3561,28 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "dividends": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "fxRate": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "mv": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "pnL": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "px": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "qty": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "ticker": {
                     "type": "string"
                 },
                 "totalPaid": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 }
             }
         },
@@ -3698,29 +3686,25 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "avgInterest": {
                     "description": "SSB, TBills and Bonds only, in percentage",
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "exDate": {
                     "type": "string"
                 },
                 "interest": {
                     "description": "SSB, TBills and Bonds only, in percentage",
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "ticker": {
                     "type": "string"
                 },
                 "withholdingTax": {
                     "description": "in decimal, not percentage",
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 }
             }
         },

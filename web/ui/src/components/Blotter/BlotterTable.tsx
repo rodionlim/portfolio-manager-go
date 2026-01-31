@@ -24,15 +24,15 @@ const fetchTrades = async (): Promise<Trade[]> => {
       (data: Trade[]) => {
         return data.sort(
           (x, y) =>
-            new Date(y.TradeDate).getTime() - new Date(x.TradeDate).getTime()
+            new Date(y.TradeDate).getTime() - new Date(x.TradeDate).getTime(),
         );
       },
       (error) => {
         console.error("error", error);
         throw new Error(
-          `An error occurred while fetching trades ${error.message}`
+          `An error occurred while fetching trades ${error.message}`,
         );
-      }
+      },
     );
 };
 
@@ -52,7 +52,7 @@ const deleteTrades = async (trades: string[]): Promise<{ message: string }> => {
       (error) => {
         console.error("error", error);
         throw new Error("An error occurred while deleting trades");
-      }
+      },
     );
 };
 
@@ -72,11 +72,13 @@ const uploadTradesCSV = async (file: File): Promise<{ message: string }> => {
       (error) => {
         console.error("error", error);
         throw new Error("An error occurred while uploading trades");
-      }
+      },
     );
 };
 
-const fetchConfirmationsMetadata = async (): Promise<{ [tradeId: string]: boolean }> => {
+const fetchConfirmationsMetadata = async (): Promise<{
+  [tradeId: string]: boolean;
+}> => {
   return fetch(getUrl("/api/v1/blotter/confirmations/metadata"))
     .then((resp) => resp.json())
     .then(
@@ -90,7 +92,7 @@ const fetchConfirmationsMetadata = async (): Promise<{ [tradeId: string]: boolea
       (error) => {
         console.error("error fetching confirmations", error);
         return {};
-      }
+      },
     );
 };
 
@@ -101,13 +103,12 @@ const exportConfirmations = async (tradeIds: string[]): Promise<Blob> => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(tradeIds),
-  })
-    .then((resp) => {
-      if (!resp.ok) {
-        throw new Error("Failed to export confirmations");
-      }
-      return resp.blob();
-    });
+  }).then((resp) => {
+    if (!resp.ok) {
+      throw new Error("Failed to export confirmations");
+    }
+    return resp.blob();
+  });
 };
 
 const BlotterTable: React.FC = () => {
@@ -117,7 +118,9 @@ const BlotterTable: React.FC = () => {
   const [selectedTrades, setSelectedTrades] = useState<Trade[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const refData = useSelector((state: RootState) => state.referenceData.data);
-  const [confirmationsMap, setConfirmationsMap] = useState<{ [tradeId: string]: boolean }>({});
+  const [confirmationsMap, setConfirmationsMap] = useState<{
+    [tradeId: string]: boolean;
+  }>({});
 
   // Extract ticker filter from location state or search params
   const searchParams = new URLSearchParams(location.search);
@@ -227,7 +230,7 @@ const BlotterTable: React.FC = () => {
         Cell: ({ row }) => {
           const hasConfirmation = confirmationsMap[row.original.TradeID];
           if (!hasConfirmation) return null;
-          
+
           return (
             <Tooltip label="Has confirmation">
               <ActionIcon
@@ -235,7 +238,12 @@ const BlotterTable: React.FC = () => {
                 color="blue"
                 onClick={() => {
                   // Download confirmation
-                  window.open(getUrl(`/api/v1/blotter/confirmation/${row.original.TradeID}`), '_blank');
+                  window.open(
+                    getUrl(
+                      `/api/v1/blotter/confirmation/${row.original.TradeID}`,
+                    ),
+                    "_blank",
+                  );
                 }}
               >
                 <IconPaperclip size={18} />
@@ -247,7 +255,7 @@ const BlotterTable: React.FC = () => {
       // { accessorKey: "TradeType", header: "Trade Type" },
       // { accessorKey: "SeqNum", header: "Seq Num" },
     ],
-    [isMobile, refData, confirmationsMap]
+    [isMobile, refData, confirmationsMap],
   );
 
   const table = useMantineReactTable({
@@ -360,7 +368,7 @@ const BlotterTable: React.FC = () => {
   };
 
   const handleDeleteTrades = (
-    table: MRT_TableInstance<Trade>
+    table: MRT_TableInstance<Trade>,
   ): (() => void) => {
     return () => {
       const deletionTrades = table
@@ -382,7 +390,7 @@ const BlotterTable: React.FC = () => {
               title: "Error",
               message: `Unable to delete trades from the blotter\n ${error}`,
             });
-          }
+          },
         )
         .finally(() => {
           refetch();
@@ -441,7 +449,7 @@ const BlotterTable: React.FC = () => {
             title: "Error",
             message: `Unable to upload trades to the blotter\n ${error}`,
           });
-        }
+        },
       )
       .finally(() => {
         refetch();
@@ -453,7 +461,7 @@ const BlotterTable: React.FC = () => {
     const visibleColumns = table.getVisibleLeafColumns();
     // Exclude the selection column and any internal MRT columns if they exist
     const columnsToExport = visibleColumns.filter(
-      (col) => col.id !== "mrt-row-select" && col.id !== "mrt-row-actions"
+      (col) => col.id !== "mrt-row-select" && col.id !== "mrt-row-actions",
     );
 
     const headers = columnsToExport
@@ -509,13 +517,15 @@ const BlotterTable: React.FC = () => {
   const handleExportConfirmations = (table: MRT_TableInstance<Trade>) => {
     // Get filtered rows
     const filteredRows = table.getFilteredRowModel().rows;
-    
+
     // Get trade IDs from filtered rows
-    const tradeIds = filteredRows.map(row => row.original.TradeID);
-    
+    const tradeIds = filteredRows.map((row) => row.original.TradeID);
+
     // Filter to only include trades that have confirmations
-    const tradeIdsWithConfirmations = tradeIds.filter(id => confirmationsMap[id]);
-    
+    const tradeIdsWithConfirmations = tradeIds.filter(
+      (id) => confirmationsMap[id],
+    );
+
     if (tradeIdsWithConfirmations.length === 0) {
       notifications.show({
         color: "yellow",
@@ -524,20 +534,23 @@ const BlotterTable: React.FC = () => {
       });
       return;
     }
-    
+
     // Export confirmations
     exportConfirmations(tradeIdsWithConfirmations)
       .then((blob) => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        const dateString = new Date().toISOString().split('T')[0].replace(/-/g, '');
-        link.setAttribute("download", `confirmations_${dateString}.tar`);
+        const dateString = new Date()
+          .toISOString()
+          .split("T")[0]
+          .replace(/-/g, "");
+        link.setAttribute("download", `confirmations_${dateString}.zip`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        
+
         notifications.show({
           title: "Export Successful",
           message: `Exported ${tradeIdsWithConfirmations.length} confirmation(s)`,

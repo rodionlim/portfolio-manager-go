@@ -18,7 +18,7 @@ import { RootState } from "../../store";
 import { IsSGGovies, refDataByAssetClass } from "../../utils/referenceData";
 import { useLocation } from "react-router-dom";
 import { getUrl } from "../../utils/url";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { IconPaperclip } from "@tabler/icons-react";
 
 export default function BlotterForm() {
@@ -30,6 +30,96 @@ export default function BlotterForm() {
   const defaultAccount = localStorage.getItem("defaultAccount") || "CDP";
 
   const refData = useSelector((state: RootState) => state.referenceData.data);
+
+  const normalizeString = (value: unknown) =>
+    typeof value === "string"
+      ? value.trim()
+      : value
+        ? String(value).trim()
+        : "";
+
+  const normalizeNumber = (value: unknown) => {
+    const num = typeof value === "number" ? value : Number(value);
+    return Number.isNaN(num) ? 0 : num;
+  };
+
+  const normalizeDate = (value: unknown) => {
+    if (!value) return "";
+    const date = value instanceof Date ? value : new Date(String(value));
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("sv-SE") + "T00:00:00Z";
+  };
+
+  const normalizeTradeType = (value: unknown) => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") {
+      const lower = value.toLowerCase();
+      if (lower === "sell") return true;
+      if (lower === "buy") return false;
+    }
+    return Boolean(value);
+  };
+
+  const buildComparableTrade = (values: {
+    date?: unknown;
+    ticker?: unknown;
+    book?: unknown;
+    broker?: unknown;
+    account?: unknown;
+    status?: unknown;
+    originalTradeId?: unknown;
+    qty?: unknown;
+    price?: unknown;
+    value?: unknown;
+    fx?: unknown;
+    tradeType?: unknown;
+    seqNum?: unknown;
+  }) => {
+    const qty = normalizeNumber(values.qty);
+    const priceRaw = normalizeNumber(values.price);
+    const valueRaw = normalizeNumber(values.value);
+    const price =
+      priceRaw > 0
+        ? priceRaw
+        : valueRaw > 0 && qty > 0
+          ? valueRaw / qty
+          : priceRaw;
+
+    return {
+      date: normalizeDate(values.date),
+      ticker: normalizeString(values.ticker).toUpperCase(),
+      book: normalizeString(values.book),
+      broker: normalizeString(values.broker),
+      account: normalizeString(values.account),
+      status: normalizeString(values.status).toLowerCase(),
+      originalTradeId: normalizeString(values.originalTradeId),
+      qty,
+      price,
+      fx: normalizeNumber(values.fx),
+      tradeType: normalizeTradeType(values.tradeType),
+      seqNum: normalizeNumber(values.seqNum),
+    };
+  };
+
+  const areNumbersClose = (a: number, b: number, epsilon = 1e-6) =>
+    Math.abs(a - b) <= epsilon;
+
+  const areTradesEqual = (
+    a: ReturnType<typeof buildComparableTrade>,
+    b: ReturnType<typeof buildComparableTrade>,
+  ) =>
+    a.date === b.date &&
+    a.ticker === b.ticker &&
+    a.book === b.book &&
+    a.broker === b.broker &&
+    a.account === b.account &&
+    a.status === b.status &&
+    a.originalTradeId === b.originalTradeId &&
+    areNumbersClose(a.qty, b.qty) &&
+    areNumbersClose(a.price, b.price) &&
+    areNumbersClose(a.fx, b.fx) &&
+    a.tradeType === b.tradeType &&
+    areNumbersClose(a.seqNum, b.seqNum);
 
   const form = useForm({
     mode: "uncontrolled",
@@ -93,7 +183,7 @@ export default function BlotterForm() {
   });
 
   async function upsertTrade(
-    values: Omit<typeof form.values, "date"> & { date: string }
+    values: Omit<typeof form.values, "date"> & { date: string },
   ) {
     const tradeTypeAction = !values.tradeId ? "add" : "update";
     const tradeTypeActionPastTense = !values.tradeId ? "added" : "updated";
@@ -112,7 +202,7 @@ export default function BlotterForm() {
           const dt = values.date.replaceAll("-", "").slice(0, 8); // YYYYMMDD
           // fetch price as of historical date
           const historicalUrl = getUrl(
-            `api/v1/mdata/price/historical/${quoteCcy}-SGD?start=${dt}&end=${dt}`
+            `api/v1/mdata/price/historical/${quoteCcy}-SGD?start=${dt}&end=${dt}`,
           );
 
           try {
@@ -129,7 +219,7 @@ export default function BlotterForm() {
           } catch (error) {
             // Fallback to current FX rate
             console.warn(
-              `Historical FX rate not available, using current rate: ${error}`
+              `Historical FX rate not available, using current rate: ${error}`,
             );
             const currentUrl = getUrl(`api/v1/mdata/price/${quoteCcy}-SGD`);
             const currentResp = await fetch(currentUrl);
@@ -211,15 +301,51 @@ export default function BlotterForm() {
     }
   }
 
+  const initialTradeSnapshot = useMemo(() => {
+    if (!location.state?.tradeId) return null;
+    return buildComparableTrade({
+      date: location.state?.date,
+      ticker: location.state?.ticker,
+      book: location.state?.book || defaultBook,
+      broker: location.state?.broker || defaultBroker,
+      account: location.state?.account || defaultAccount,
+      status: location.state?.status || "open",
+      originalTradeId: location.state?.originalTradeId || "",
+      qty: location.state?.qty || 0,
+      price: location.state?.price || 0,
+      value: location.state?.value || 0,
+      fx: location.state?.fx || 0,
+      tradeType: location.state?.tradeType || false,
+      seqNum: location.state?.seqNum || 0,
+    });
+  }, [location.state, defaultBook, defaultBroker, defaultAccount]);
+
   const handleSubmit = async (
-    values: Omit<typeof form.values, "date"> & { date: string }
+    values: Omit<typeof form.values, "date"> & { date: string },
   ) => {
     localStorage.setItem("defaultBook", values.book);
     localStorage.setItem("defaultBroker", values.broker);
-    
+
     try {
+      const isUpdate = Boolean(values.tradeId);
+      const currentTradeSnapshot = buildComparableTrade(values);
+
+      if (isUpdate && initialTradeSnapshot) {
+        const hasChanges = !areTradesEqual(
+          currentTradeSnapshot,
+          initialTradeSnapshot,
+        );
+
+        if (!hasChanges) {
+          if (confirmationFile && values.tradeId) {
+            await uploadConfirmation(values.tradeId, confirmationFile);
+          }
+          return;
+        }
+      }
+
       const trade = await upsertTrade(values);
-      
+
       // Upload confirmation if provided
       if (confirmationFile && trade.TradeID) {
         await uploadConfirmation(trade.TradeID, confirmationFile);
@@ -232,26 +358,30 @@ export default function BlotterForm() {
   const uploadConfirmation = async (tradeId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    
+
     try {
-      const resp = await fetch(getUrl(`/api/v1/blotter/confirmation/${tradeId}`), {
-        method: "POST",
-        body: formData,
-      });
-      
+      const resp = await fetch(
+        getUrl(`/api/v1/blotter/confirmation/${tradeId}`),
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+
       if (!resp.ok) {
         throw new Error("Failed to upload confirmation");
       }
-      
+
       notifications.show({
         title: "Confirmation uploaded",
         message: "Trade confirmation was successfully uploaded",
         autoClose: 5000,
       });
-      
+
       setConfirmationFile(null);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       notifications.show({
         color: "red",
         title: "Confirmation upload failed",

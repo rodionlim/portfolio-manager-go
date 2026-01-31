@@ -184,14 +184,14 @@ func HandleConfirmationMetadataGet(confirmationService *ConfirmationService) htt
 	}
 }
 
-// HandleConfirmationsExport handles exporting confirmations as a tar file
+// HandleConfirmationsExport handles exporting confirmations as a zip file
 // @Summary Export confirmations
-// @Description Export trade confirmations as a tar archive
+// @Description Export trade confirmations as a zip archive
 // @Tags confirmations
 // @Accept  json
-// @Produce  application/x-tar
+// @Produce  application/zip
 // @Param   tradeIds  body  []string  true  "Trade IDs to export"
-// @Success 200 {file} file "confirmations_YYYYMMDD.tar"
+// @Success 200 {file} file "confirmations_YYYYMMDD.zip"
 // @Failure 400 {object} common.ErrorResponse "Invalid request"
 // @Failure 500 {object} common.ErrorResponse "Failed to export confirmations"
 // @Router /api/v1/blotter/confirmations/export [post]
@@ -210,7 +210,7 @@ func HandleConfirmationsExport(confirmationService *ConfirmationService) http.Ha
 			return
 		}
 
-		tarData, err := confirmationService.ExportConfirmationsAsTar(tradeIDs)
+		zipData, err := confirmationService.ExportConfirmationsAsZip(tradeIDs)
 		if err != nil {
 			logging.GetLogger().Error("Failed to export confirmations", err)
 			common.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
@@ -220,12 +220,12 @@ func HandleConfirmationsExport(confirmationService *ConfirmationService) http.Ha
 		// Generate filename with current date
 		now := time.Now()
 		dateString := now.Format("20060102")
-		filename := "confirmations_" + dateString + ".tar"
+		filename := "confirmations_" + dateString + ".zip"
 
-		w.Header().Set("Content-Type", "application/x-tar")
+		w.Header().Set("Content-Type", "application/zip")
 		w.Header().Set("Content-Disposition", "attachment; "+sanitizeContentDispositionFilename(filename))
 
-		w.Write(tarData)
+		w.Write(zipData)
 	}
 }
 
@@ -302,16 +302,16 @@ func extractTradeIDFromPath(path string) (string, error) {
 	if len(parts) < 6 {
 		return "", fmt.Errorf("invalid URL path format")
 	}
-	
+
 	tradeID := parts[len(parts)-1]
 	if strings.HasSuffix(path, "/metadata") && len(parts) >= 7 {
 		tradeID = parts[len(parts)-2]
 	}
-	
+
 	if tradeID == "" {
 		return "", fmt.Errorf("trade ID cannot be empty")
 	}
-	
+
 	return tradeID, nil
 }
 

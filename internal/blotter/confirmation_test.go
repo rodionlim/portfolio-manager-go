@@ -1,17 +1,47 @@
 package blotter
 
 import (
+	"archive/zip"
 	"bytes"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"portfolio-manager/internal/mocks"
 )
 
+type MockDatabase struct {
+	mock.Mock
+}
+
+func (m *MockDatabase) Put(key string, value interface{}) error {
+	args := m.Called(key, value)
+	return args.Error(0)
+}
+
+func (m *MockDatabase) Get(key string, value interface{}) error {
+	args := m.Called(key, value)
+	return args.Error(0)
+}
+
+func (m *MockDatabase) Delete(key string) error {
+	args := m.Called(key)
+	return args.Error(0)
+}
+
+func (m *MockDatabase) GetAllKeysWithPrefix(prefix string) ([]string, error) {
+	args := m.Called(prefix)
+	keys, _ := args.Get(0).([]string)
+	return keys, args.Error(1)
+}
+
+func (m *MockDatabase) Close() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func TestConfirmationService_SaveConfirmation(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	tradeID := "test-trade-id"
@@ -29,7 +59,7 @@ func TestConfirmationService_SaveConfirmation(t *testing.T) {
 }
 
 func TestConfirmationService_SaveConfirmation_EmptyTradeID(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	err := cs.SaveConfirmation("", "file.pdf", "application/pdf", []byte("data"), time.Now().Format(time.RFC3339))
@@ -39,7 +69,7 @@ func TestConfirmationService_SaveConfirmation_EmptyTradeID(t *testing.T) {
 }
 
 func TestConfirmationService_SaveConfirmation_EmptyData(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	err := cs.SaveConfirmation("trade-id", "file.pdf", "application/pdf", []byte{}, time.Now().Format(time.RFC3339))
@@ -49,7 +79,7 @@ func TestConfirmationService_SaveConfirmation_EmptyData(t *testing.T) {
 }
 
 func TestConfirmationService_GetConfirmation(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	tradeID := "test-trade-id"
@@ -79,7 +109,7 @@ func TestConfirmationService_GetConfirmation(t *testing.T) {
 }
 
 func TestConfirmationService_GetConfirmation_NotFound(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	mockDB.On("Get", mock.Anything, mock.Anything).Return(assert.AnError)
@@ -92,7 +122,7 @@ func TestConfirmationService_GetConfirmation_NotFound(t *testing.T) {
 }
 
 func TestConfirmationService_DeleteConfirmation(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	tradeID := "test-trade-id"
@@ -105,7 +135,7 @@ func TestConfirmationService_DeleteConfirmation(t *testing.T) {
 }
 
 func TestConfirmationService_DeleteConfirmation_EmptyTradeID(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	err := cs.DeleteConfirmation("")
@@ -115,7 +145,7 @@ func TestConfirmationService_DeleteConfirmation_EmptyTradeID(t *testing.T) {
 }
 
 func TestConfirmationService_HasConfirmation(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	tradeID := "test-trade-id"
@@ -137,7 +167,7 @@ func TestConfirmationService_HasConfirmation(t *testing.T) {
 }
 
 func TestConfirmationService_HasConfirmation_NotFound(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	mockDB.On("Get", mock.Anything, mock.Anything).Return(assert.AnError)
@@ -148,12 +178,12 @@ func TestConfirmationService_HasConfirmation_NotFound(t *testing.T) {
 	mockDB.AssertExpectations(t)
 }
 
-func TestConfirmationService_ExportConfirmationsAsTar(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+func TestConfirmationService_ExportConfirmationsAsZip(t *testing.T) {
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	tradeIDs := []string{"trade-1", "trade-2"}
-	
+
 	// Mock confirmations for both trades
 	confirmation1 := Confirmation{
 		Metadata: ConfirmationMetadata{
@@ -165,7 +195,7 @@ func TestConfirmationService_ExportConfirmationsAsTar(t *testing.T) {
 		},
 		Data: []byte("test data 1"),
 	}
-	
+
 	confirmation2 := Confirmation{
 		Metadata: ConfirmationMetadata{
 			TradeID:      "trade-2",
@@ -187,61 +217,63 @@ func TestConfirmationService_ExportConfirmationsAsTar(t *testing.T) {
 		*arg = confirmation2
 	}).Return(nil)
 
-	tarData, err := cs.ExportConfirmationsAsTar(tradeIDs)
+	zipData, err := cs.ExportConfirmationsAsZip(tradeIDs)
 
 	assert.NoError(t, err)
-	assert.NotNil(t, tarData)
-	assert.True(t, len(tarData) > 0)
+	assert.NotNil(t, zipData)
+	assert.True(t, len(zipData) > 0)
 	mockDB.AssertExpectations(t)
 }
 
-func TestConfirmationService_ExportConfirmationsAsTar_NoTradeIDs(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+func TestConfirmationService_ExportConfirmationsAsZip_NoTradeIDs(t *testing.T) {
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
-	tarData, err := cs.ExportConfirmationsAsTar([]string{})
+	zipData, err := cs.ExportConfirmationsAsZip([]string{})
 
 	assert.Error(t, err)
-	assert.Nil(t, tarData)
+	assert.Nil(t, zipData)
 	assert.Equal(t, "no trade IDs provided", err.Error())
 }
 
-func TestConfirmationService_ExportConfirmationsAsTar_NoConfirmationsFound(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+func TestConfirmationService_ExportConfirmationsAsZip_NoConfirmationsFound(t *testing.T) {
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	tradeIDs := []string{"trade-1", "trade-2"}
 
 	mockDB.On("Get", mock.Anything, mock.Anything).Return(assert.AnError)
 
-	tarData, err := cs.ExportConfirmationsAsTar(tradeIDs)
+	zipData, err := cs.ExportConfirmationsAsZip(tradeIDs)
 
 	assert.Error(t, err)
-	assert.Nil(t, tarData)
+	assert.Nil(t, zipData)
 	assert.Contains(t, err.Error(), "no confirmations found")
 	mockDB.AssertExpectations(t)
 }
 
-func TestConfirmationService_ImportConfirmationsFromTar(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+func TestConfirmationService_ImportConfirmationsFromZip(t *testing.T) {
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
-	// Create a simple tar with empty content
+	// Create an empty zip archive
 	var buf bytes.Buffer
-	
-	count, err := cs.ImportConfirmationsFromTar(buf.Bytes(), time.Now().Format(time.RFC3339))
+	zipWriter := zip.NewWriter(&buf)
+	_ = zipWriter.Close()
 
-	// Empty tar should not cause error, just return 0 count
+	count, err := cs.ImportConfirmationsFromZip(buf.Bytes(), time.Now().Format(time.RFC3339))
+
+	// Empty zip should not cause error, just return 0 count
 	assert.NoError(t, err)
 	assert.Equal(t, 0, count)
 }
 
 func TestConfirmationService_GetConfirmationsMap(t *testing.T) {
-	mockDB := new(mocks.MockDatabase)
+	mockDB := new(MockDatabase)
 	cs := NewConfirmationService(mockDB)
 
 	tradeIDs := []string{"trade-1", "trade-2", "trade-3"}
-	
+
 	// Mock only trade-1 and trade-2 having confirmations
 	mockDB.On("Get", "CONFIRMATION:trade-1", mock.Anything).Return(nil)
 	mockDB.On("Get", "CONFIRMATION:trade-2", mock.Anything).Return(nil)
@@ -259,6 +291,6 @@ func TestConfirmationService_GetConfirmationsMap(t *testing.T) {
 func TestGenerateConfirmationKey(t *testing.T) {
 	tradeID := "test-trade-id"
 	key := generateConfirmationKey(tradeID)
-	
+
 	assert.Equal(t, "CONFIRMATION:test-trade-id", key)
 }

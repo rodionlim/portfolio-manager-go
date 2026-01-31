@@ -244,15 +244,12 @@ definitions:
   dividends.Dividends:
     properties:
       amount:
-        format: float64
         type: number
       amountPerShare:
-        format: float64
         type: number
       exDate:
         type: string
       qty:
-        format: float64
         type: number
     type: object
   historical.AssetConfig:
@@ -517,34 +514,26 @@ definitions:
       assetSubClass:
         type: string
       avgPx:
-        format: float64
         type: number
       book:
         type: string
       ccy:
         type: string
       dividends:
-        format: float64
         type: number
       fxRate:
-        format: float64
         type: number
       mv:
-        format: float64
         type: number
       pnL:
-        format: float64
         type: number
       px:
-        format: float64
         type: number
       qty:
-        format: float64
         type: number
       ticker:
         type: string
       totalPaid:
-        format: float64
         type: number
     type: object
   rdata.SuccessResponse:
@@ -615,23 +604,19 @@ definitions:
   types.DividendsMetadata:
     properties:
       amount:
-        format: float64
         type: number
       avgInterest:
         description: SSB, TBills and Bonds only, in percentage
-        format: float64
         type: number
       exDate:
         type: string
       interest:
         description: SSB, TBills and Bonds only, in percentage
-        format: float64
         type: number
       ticker:
         type: string
       withholdingTax:
         description: in decimal, not percentage
-        format: float64
         type: number
     type: object
   types.InterestRates:
@@ -1067,7 +1052,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Export trade confirmations as a tar archive
+      description: Export trade confirmations as a zip archive
       parameters:
       - description: Trade IDs to export
         in: body
@@ -1078,10 +1063,10 @@ paths:
             type: string
           type: array
       produces:
-      - application/x-tar
+      - application/zip
       responses:
         "200":
-          description: confirmations_YYYYMMDD.tar
+          description: confirmations_YYYYMMDD.zip
           schema:
             type: file
         "400":
@@ -1158,7 +1143,6 @@ paths:
           description: Map of currencies to their current FX rates
           schema:
             additionalProperties:
-              format: float64
               type: number
             type: object
         "500":

@@ -1,3 +1,23 @@
+## [1.43.0] - 2026-01-31
+
+### 🚀 Features
+
+- Add backend support for trade confirmations
+- Add frontend support for trade confirmations
+- Switch from tar to zip and optimize upload to not retrigger portfolio calc
+
+### 🐛 Bug Fixes
+
+- Address security and quality issues from code review
+
+### 📚 Documentation
+
+- Add trade confirmation endpoints to README
+
+### 🧪 Testing
+
+- Add comprehensive tests for confirmation service
+
 ## [1.42.0] - 2026-01-30
 
 ### 🚀 Features

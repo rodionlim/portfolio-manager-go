@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from "react";
-import { Box, Button, FileInput } from "@mantine/core";
-import { IconUpload } from "@tabler/icons-react";
+import React, { useMemo, useState, useEffect } from "react";
+import { Box, Button, FileInput, ActionIcon, Tooltip } from "@mantine/core";
+import { IconUpload, IconPaperclip, IconDownload } from "@tabler/icons-react";
 import { useMediaQuery } from "@mantine/hooks";
 import {
   MantineReactTable,
@@ -24,20 +24,20 @@ const fetchTrades = async (): Promise<Trade[]> => {
       (data: Trade[]) => {
         return data.sort(
           (x, y) =>
-            new Date(y.TradeDate).getTime() - new Date(x.TradeDate).getTime()
+            new Date(y.TradeDate).getTime() - new Date(x.TradeDate).getTime(),
         );
       },
       (error) => {
         console.error("error", error);
         throw new Error(
-          `An error occurred while fetching trades ${error.message}`
+          `An error occurred while fetching trades ${error.message}`,
         );
-      }
+      },
     );
 };
 
 const deleteTrades = async (trades: string[]): Promise<{ message: string }> => {
-  return fetch(getUrl("api/v1/blotter/trade"), {
+  return fetch(getUrl("/api/v1/blotter/trade"), {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
@@ -52,7 +52,7 @@ const deleteTrades = async (trades: string[]): Promise<{ message: string }> => {
       (error) => {
         console.error("error", error);
         throw new Error("An error occurred while deleting trades");
-      }
+      },
     );
 };
 
@@ -60,7 +60,7 @@ const uploadTradesCSV = async (file: File): Promise<{ message: string }> => {
   const formData = new FormData();
   formData.append("file", file);
 
-  return fetch(getUrl("api/v1/blotter/upload"), {
+  return fetch(getUrl("/api/v1/blotter/upload"), {
     method: "POST",
     body: formData,
   })
@@ -72,8 +72,43 @@ const uploadTradesCSV = async (file: File): Promise<{ message: string }> => {
       (error) => {
         console.error("error", error);
         throw new Error("An error occurred while uploading trades");
-      }
+      },
     );
+};
+
+const fetchConfirmationsMetadata = async (): Promise<{
+  [tradeId: string]: boolean;
+}> => {
+  return fetch(getUrl("/api/v1/blotter/confirmations/metadata"))
+    .then((resp) => resp.json())
+    .then(
+      (data: Array<{ tradeId: string }>) => {
+        const map: { [tradeId: string]: boolean } = {};
+        data.forEach((item) => {
+          map[item.tradeId] = true;
+        });
+        return map;
+      },
+      (error) => {
+        console.error("error fetching confirmations", error);
+        return {};
+      },
+    );
+};
+
+const exportConfirmations = async (tradeIds: string[]): Promise<Blob> => {
+  return fetch(getUrl("/api/v1/blotter/confirmations/export"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(tradeIds),
+  }).then((resp) => {
+    if (!resp.ok) {
+      throw new Error("Failed to export confirmations");
+    }
+    return resp.blob();
+  });
 };
 
 const BlotterTable: React.FC = () => {
@@ -83,6 +118,9 @@ const BlotterTable: React.FC = () => {
   const [selectedTrades, setSelectedTrades] = useState<Trade[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const refData = useSelector((state: RootState) => state.referenceData.data);
+  const [confirmationsMap, setConfirmationsMap] = useState<{
+    [tradeId: string]: boolean;
+  }>({});
 
   // Extract ticker filter from location state or search params
   const searchParams = new URLSearchParams(location.search);
@@ -95,6 +133,11 @@ const BlotterTable: React.FC = () => {
     error,
     refetch,
   } = useQuery({ queryKey: ["trades"], queryFn: fetchTrades });
+
+  // Fetch confirmations metadata whenever trades change
+  useEffect(() => {
+    fetchConfirmationsMetadata().then(setConfirmationsMap);
+  }, [trades]);
 
   const columns = useMemo<MRT_ColumnDef<Trade>[]>(
     () => [
@@ -179,10 +222,40 @@ const BlotterTable: React.FC = () => {
         header: "Fx",
         Cell: ({ cell }) => Number(cell.getValue()).toFixed(4),
       },
+      {
+        id: "confirmation",
+        header: "Confirmation",
+        enableColumnFilter: false,
+        enableSorting: false,
+        Cell: ({ row }) => {
+          const hasConfirmation = confirmationsMap[row.original.TradeID];
+          if (!hasConfirmation) return null;
+
+          return (
+            <Tooltip label="Has confirmation">
+              <ActionIcon
+                variant="subtle"
+                color="blue"
+                onClick={() => {
+                  // Download confirmation
+                  window.open(
+                    getUrl(
+                      `/api/v1/blotter/confirmation/${row.original.TradeID}`,
+                    ),
+                    "_blank",
+                  );
+                }}
+              >
+                <IconPaperclip size={18} />
+              </ActionIcon>
+            </Tooltip>
+          );
+        },
+      },
       // { accessorKey: "TradeType", header: "Trade Type" },
       // { accessorKey: "SeqNum", header: "Seq Num" },
     ],
-    [isMobile, refData]
+    [isMobile, refData, confirmationsMap],
   );
 
   const table = useMantineReactTable({
@@ -201,6 +274,7 @@ const BlotterTable: React.FC = () => {
         category: false,
         sub_category: false,
         domicile: false,
+        confirmation: false,
       },
     },
     state: { density: "xs" },
@@ -252,6 +326,14 @@ const BlotterTable: React.FC = () => {
         >
           Export CSV
         </Button>
+        <Button
+          color="grape"
+          variant="outline"
+          onClick={() => handleExportConfirmations(table)}
+          leftSection={<IconDownload size={16} />}
+        >
+          Export Confirmations
+        </Button>
         <FileInput
           placeholder="Upload CSV"
           accept=".csv"
@@ -286,7 +368,7 @@ const BlotterTable: React.FC = () => {
   };
 
   const handleDeleteTrades = (
-    table: MRT_TableInstance<Trade>
+    table: MRT_TableInstance<Trade>,
   ): (() => void) => {
     return () => {
       const deletionTrades = table
@@ -308,7 +390,7 @@ const BlotterTable: React.FC = () => {
               title: "Error",
               message: `Unable to delete trades from the blotter\n ${error}`,
             });
-          }
+          },
         )
         .finally(() => {
           refetch();
@@ -367,7 +449,7 @@ const BlotterTable: React.FC = () => {
             title: "Error",
             message: `Unable to upload trades to the blotter\n ${error}`,
           });
-        }
+        },
       )
       .finally(() => {
         refetch();
@@ -379,7 +461,7 @@ const BlotterTable: React.FC = () => {
     const visibleColumns = table.getVisibleLeafColumns();
     // Exclude the selection column and any internal MRT columns if they exist
     const columnsToExport = visibleColumns.filter(
-      (col) => col.id !== "mrt-row-select" && col.id !== "mrt-row-actions"
+      (col) => col.id !== "mrt-row-select" && col.id !== "mrt-row-actions",
     );
 
     const headers = columnsToExport
@@ -429,6 +511,59 @@ const BlotterTable: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  // Handle export confirmations
+  const handleExportConfirmations = (table: MRT_TableInstance<Trade>) => {
+    // Get filtered rows
+    const filteredRows = table.getFilteredRowModel().rows;
+
+    // Get trade IDs from filtered rows
+    const tradeIds = filteredRows.map((row) => row.original.TradeID);
+
+    // Filter to only include trades that have confirmations
+    const tradeIdsWithConfirmations = tradeIds.filter(
+      (id) => confirmationsMap[id],
+    );
+
+    if (tradeIdsWithConfirmations.length === 0) {
+      notifications.show({
+        color: "yellow",
+        title: "No Confirmations",
+        message: "No confirmations found for the current selection",
+      });
+      return;
+    }
+
+    // Export confirmations
+    exportConfirmations(tradeIdsWithConfirmations)
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        const dateString = new Date()
+          .toISOString()
+          .split("T")[0]
+          .replace(/-/g, "");
+        link.setAttribute("download", `confirmations_${dateString}.zip`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        notifications.show({
+          title: "Export Successful",
+          message: `Exported ${tradeIdsWithConfirmations.length} confirmation(s)`,
+          autoClose: 5000,
+        });
+      })
+      .catch((error) => {
+        notifications.show({
+          color: "red",
+          title: "Export Failed",
+          message: `Failed to export confirmations: ${error.message}`,
+        });
+      });
   };
 
   if (isLoading) return <div>Loading...</div>;

@@ -26,31 +26,33 @@ import (
 
 // Server represents the HTTP server.
 type Server struct {
-	Addr       string
-	mux        *http.ServeMux
-	blotter    *blotter.TradeBlotter
-	portfolio  *portfolio.Portfolio
-	fxinfer    *fxinfer.Service
-	metrics    *metrics.MetricsService
-	historical *historical.Service
-	analytics  analytics.Service
-	user       *user.Service
-	mcpServer  *MCPServer
+	Addr         string
+	mux          *http.ServeMux
+	blotter      *blotter.TradeBlotter
+	confirmation *blotter.ConfirmationService
+	portfolio    *portfolio.Portfolio
+	fxinfer      *fxinfer.Service
+	metrics      *metrics.MetricsService
+	historical   *historical.Service
+	analytics    analytics.Service
+	user         *user.Service
+	mcpServer    *MCPServer
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service, analyticsSvc analytics.Service, userSvc *user.Service, mcpSvc *MCPServer) *Server {
+func NewServer(addr string, blotterSvc *blotter.TradeBlotter, confirmationSvc *blotter.ConfirmationService, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service, analyticsSvc analytics.Service, userSvc *user.Service, mcpSvc *MCPServer) *Server {
 	return &Server{
-		Addr:       addr,
-		mux:        http.NewServeMux(),
-		blotter:    blotterSvc,
-		portfolio:  portfolioSvc,
-		fxinfer:    fxinferSvc,
-		metrics:    metricsSvc,
-		historical: historicalSvc,
-		analytics:  analyticsSvc,
-		user:       userSvc,
-		mcpServer:  mcpSvc,
+		Addr:         addr,
+		mux:          http.NewServeMux(),
+		blotter:      blotterSvc,
+		confirmation: confirmationSvc,
+		portfolio:    portfolioSvc,
+		fxinfer:      fxinferSvc,
+		metrics:      metricsSvc,
+		historical:   historicalSvc,
+		analytics:    analyticsSvc,
+		user:         userSvc,
+		mcpServer:    mcpSvc,
 	}
 }
 
@@ -78,6 +80,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Application handlers registration
 	blotter.RegisterHandlers(s.mux, s.blotter)
+	blotter.RegisterConfirmationHandlers(s.mux, s.confirmation)
 	portfolio.RegisterHandlers(s.mux, s.portfolio)
 	if s.portfolio != nil {
 		// Register market data service handlers

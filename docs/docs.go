@@ -419,6 +419,254 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/blotter/confirmation/{tradeId}": {
+            "get": {
+                "description": "Get a trade confirmation file for a specific trade",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Get trade confirmation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Trade ID",
+                        "name": "tradeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Confirmation file",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Confirmation not found",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Upload a trade confirmation file for a specific trade",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Upload trade confirmation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Trade ID",
+                        "name": "tradeId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Confirmation file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Confirmation uploaded successfully",
+                        "schema": {
+                            "$ref": "#/definitions/common.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to upload confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a trade confirmation for a specific trade",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Delete trade confirmation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Trade ID",
+                        "name": "tradeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Confirmation deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/common.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/blotter/confirmation/{tradeId}/metadata": {
+            "get": {
+                "description": "Get metadata for a trade confirmation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Get trade confirmation metadata",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Trade ID",
+                        "name": "tradeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/blotter.ConfirmationMetadata"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Confirmation not found",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/blotter/confirmations/export": {
+            "post": {
+                "description": "Export trade confirmations as a zip archive",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/zip"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Export confirmations",
+                "parameters": [
+                    {
+                        "description": "Trade IDs to export",
+                        "name": "tradeIds",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "confirmations_YYYYMMDD.zip",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to export confirmations",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/blotter/confirmations/metadata": {
+            "get": {
+                "description": "Get metadata for all trade confirmations",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "confirmations"
+                ],
+                "summary": "Get all confirmations metadata",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/blotter.ConfirmationMetadata"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve confirmations",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/blotter/export": {
             "get": {
                 "description": "Export all trades to a CSV file",
@@ -2740,6 +2988,26 @@ const docTemplate = `{
                     }
                 },
                 "weekEndingDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "blotter.ConfirmationMetadata": {
+            "type": "object",
+            "properties": {
+                "contentType": {
+                    "type": "string"
+                },
+                "fileName": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "tradeId": {
+                    "type": "string"
+                },
+                "uploadedDate": {
                     "type": "string"
                 }
             }

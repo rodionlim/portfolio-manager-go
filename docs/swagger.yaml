@@ -129,6 +129,19 @@ definitions:
       weekEndingDate:
         type: string
     type: object
+  blotter.ConfirmationMetadata:
+    properties:
+      contentType:
+        type: string
+      fileName:
+        type: string
+      size:
+        type: integer
+      tradeId:
+        type: string
+      uploadedDate:
+        type: string
+    type: object
   blotter.Trade:
     properties:
       Account:
@@ -922,6 +935,170 @@ paths:
       summary: Extract Weekly Top 10 stocks data from SGX Fund Flow reports
       tags:
       - analytics
+  /api/v1/blotter/confirmation/{tradeId}:
+    delete:
+      description: Delete a trade confirmation for a specific trade
+      parameters:
+      - description: Trade ID
+        in: path
+        name: tradeId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Confirmation deleted successfully
+          schema:
+            $ref: '#/definitions/common.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to delete confirmation
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Delete trade confirmation
+      tags:
+      - confirmations
+    get:
+      description: Get a trade confirmation file for a specific trade
+      parameters:
+      - description: Trade ID
+        in: path
+        name: tradeId
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Confirmation file
+          schema:
+            type: file
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "404":
+          description: Confirmation not found
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get trade confirmation
+      tags:
+      - confirmations
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a trade confirmation file for a specific trade
+      parameters:
+      - description: Trade ID
+        in: path
+        name: tradeId
+        required: true
+        type: string
+      - description: Confirmation file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Confirmation uploaded successfully
+          schema:
+            $ref: '#/definitions/common.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to upload confirmation
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Upload trade confirmation
+      tags:
+      - confirmations
+  /api/v1/blotter/confirmation/{tradeId}/metadata:
+    get:
+      description: Get metadata for a trade confirmation
+      parameters:
+      - description: Trade ID
+        in: path
+        name: tradeId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/blotter.ConfirmationMetadata'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "404":
+          description: Confirmation not found
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get trade confirmation metadata
+      tags:
+      - confirmations
+  /api/v1/blotter/confirmations/export:
+    post:
+      consumes:
+      - application/json
+      description: Export trade confirmations as a zip archive
+      parameters:
+      - description: Trade IDs to export
+        in: body
+        name: tradeIds
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/zip
+      responses:
+        "200":
+          description: confirmations_YYYYMMDD.zip
+          schema:
+            type: file
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Failed to export confirmations
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Export confirmations
+      tags:
+      - confirmations
+  /api/v1/blotter/confirmations/metadata:
+    get:
+      description: Get metadata for all trade confirmations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/blotter.ConfirmationMetadata'
+            type: array
+        "500":
+          description: Failed to retrieve confirmations
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Get all confirmations metadata
+      tags:
+      - confirmations
   /api/v1/blotter/export:
     get:
       description: Export all trades to a CSV file

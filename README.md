@@ -641,6 +641,59 @@ Export trades with FX rates automatically inferred for trades where FX rate is m
 curl -X GET http://localhost:8080/api/v1/blotter/export-with-fx
 ```
 
+### Upload Trade Confirmation
+
+Upload a confirmation file for a specific trade. Supported file types: PDF, PNG, JPEG. Maximum file size: 10 MB.
+
+```sh
+curl -X POST http://localhost:8080/api/v1/blotter/confirmation/{tradeId} \
+  -F "file=@/path/to/confirmation.pdf"
+```
+
+### Download Trade Confirmation
+
+Download the confirmation file for a specific trade:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/blotter/confirmation/{tradeId} \
+  --output confirmation.pdf
+```
+
+### Delete Trade Confirmation
+
+Delete the confirmation file for a specific trade:
+
+```sh
+curl -X DELETE http://localhost:8080/api/v1/blotter/confirmation/{tradeId}
+```
+
+### Get Trade Confirmation Metadata
+
+Get metadata (filename, size, upload date) for a specific trade confirmation:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/blotter/confirmation/{tradeId}/metadata
+```
+
+### Get All Confirmations Metadata
+
+Get metadata for all trade confirmations:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/blotter/confirmations/metadata
+```
+
+### Export Trade Confirmations
+
+Export multiple trade confirmations as a tar archive. Provide an array of trade IDs:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/blotter/confirmations/export \
+  -H "Content-Type: application/json" \
+  -d '["trade-id-1", "trade-id-2", "trade-id-3"]' \
+  --output confirmations.tar
+```
+
 ### Get Portfolio Positions
 
 ```sh

@@ -130,6 +130,9 @@ func startServer(configFilePath string) {
 		logger.Fatalf("Failed to create blotter service: %s", err)
 	}
 
+	// Create a new confirmation service
+	confirmationSvc := blotter.NewConfirmationService(db)
+
 	// Create a new reference data manager
 	rdata, err := rdata.NewManager(db, config.RefDataSeedPath)
 	if err != nil {
@@ -227,7 +230,7 @@ func startServer(configFilePath string) {
 
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	srv := server.NewServer(addr, blotterSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc, analyticsSvc, userSvc, mcpServer)
+	srv := server.NewServer(addr, blotterSvc, confirmationSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc, analyticsSvc, userSvc, mcpServer)
 
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)

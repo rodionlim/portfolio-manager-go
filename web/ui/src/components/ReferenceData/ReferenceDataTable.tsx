@@ -20,6 +20,7 @@ interface RefData {
   google_ticker: string;
   dividends_sg_ticker: string;
   nasdaq_ticker: string;
+  barchart_ticker: string;
   asset_class: string;
   asset_sub_class: string;
   category: string;
@@ -42,14 +43,14 @@ const fetchData = async (): Promise<RefData[]> => {
       (error) => {
         console.error("error", error);
         throw new Error(
-          `An error occurred while fetching reference data ${error.message}`
+          `An error occurred while fetching reference data ${error.message}`,
         );
-      }
+      },
     );
 };
 
 const deleteRefData = async (
-  refData: string[]
+  refData: string[],
 ): Promise<{ message: string }> => {
   return fetch(getUrl("/api/v1/refdata"), {
     method: "DELETE",
@@ -66,7 +67,7 @@ const deleteRefData = async (
       (error) => {
         console.error("error", error);
         throw new Error("An error occurred while deleting reference data");
-      }
+      },
     );
 };
 
@@ -87,9 +88,9 @@ const uploadRefDataYAML = async (file: File): Promise<{ message: string }> => {
       (error) => {
         console.error("error", error);
         throw new Error(
-          "An error occurred while importing reference data YAML"
+          "An error occurred while importing reference data YAML",
         );
-      }
+      },
     );
 };
 
@@ -111,6 +112,7 @@ const ReferenceDataTable: React.FC = () => {
       { accessorKey: "google_ticker", header: "Google Ticker" },
       { accessorKey: "dividends_sg_ticker", header: "Dividends SG Ticker" },
       { accessorKey: "nasdaq_ticker", header: "Nasdaq Ticker" },
+      { accessorKey: "barchart_ticker", header: "Barchart Ticker" },
       { accessorKey: "asset_class", header: "Asset Class" },
       { accessorKey: "asset_sub_class", header: "Asset Subclass" },
       { accessorKey: "category", header: "Category" },
@@ -122,7 +124,7 @@ const ReferenceDataTable: React.FC = () => {
       //   { accessorKey: "StrikePrice", header: "Strike Price" },
       //   { accessorKey: "CallPut", header: "Call/Put" },
     ],
-    []
+    [],
   );
 
   const table = useMantineReactTable({
@@ -192,7 +194,7 @@ const ReferenceDataTable: React.FC = () => {
   };
 
   const handleDeleteRefData = (
-    table: MRT_TableInstance<RefData>
+    table: MRT_TableInstance<RefData>,
   ): (() => void) => {
     return () => {
       const refDataRows = table
@@ -214,7 +216,7 @@ const ReferenceDataTable: React.FC = () => {
               title: "Error",
               message: `Unable to delete reference data from the store\n ${error}`,
             });
-          }
+          },
         )
         .finally(() => {
           refetch();
@@ -224,7 +226,7 @@ const ReferenceDataTable: React.FC = () => {
 
   // handle update ref data allows routing to the update ref data page
   const handleUpdateRefData = (
-    table: MRT_TableInstance<RefData>
+    table: MRT_TableInstance<RefData>,
   ): (() => void) => {
     return () => {
       // first check if there is any selections
@@ -240,6 +242,7 @@ const ReferenceDataTable: React.FC = () => {
           google_ticker: selection.google_ticker,
           dividends_sg_ticker: selection.dividends_sg_ticker,
           nasdaq_ticker: selection.nasdaq_ticker,
+          barchart_ticker: selection.barchart_ticker,
           asset_class: selection.asset_class,
           asset_sub_class: selection.asset_sub_class,
           category: selection.category,
@@ -273,7 +276,7 @@ const ReferenceDataTable: React.FC = () => {
             title: "Error",
             message: `Unable to import reference data\n ${error}`,
           });
-        }
+        },
       )
       .finally(() => {
         refetch();

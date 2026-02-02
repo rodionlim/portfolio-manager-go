@@ -108,6 +108,13 @@ func HandleCalculateCorrelations(service *Service) http.HandlerFunc {
 }
 
 func resolveCorrelationTickers(requestTickers []string, configs []AssetConfig) []string {
+	futures := make(map[string]struct{}, len(configs))
+	for _, c := range configs {
+		if c.IsFutures {
+			futures[strings.ToUpper(strings.TrimSpace(c.Ticker))] = struct{}{}
+		}
+	}
+
 	// If user provided tickers, respect them (after trimming/normalizing).
 	if len(requestTickers) > 0 {
 		seen := make(map[string]struct{}, len(requestTickers))
@@ -115,6 +122,9 @@ func resolveCorrelationTickers(requestTickers []string, configs []AssetConfig) [
 		for _, t := range requestTickers {
 			ticker := strings.TrimSpace(t)
 			if ticker == "" {
+				continue
+			}
+			if _, ok := futures[strings.ToUpper(ticker)]; ok {
 				continue
 			}
 			if _, ok := seen[ticker]; ok {
@@ -131,6 +141,9 @@ func resolveCorrelationTickers(requestTickers []string, configs []AssetConfig) [
 	var out []string
 	for _, c := range configs {
 		if !c.Enabled {
+			continue
+		}
+		if c.IsFutures {
 			continue
 		}
 		ticker := strings.TrimSpace(c.Ticker)

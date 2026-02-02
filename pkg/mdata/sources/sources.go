@@ -8,4 +8,5 @@ const (
 	SSB                = "i_love_ssb"
 	MAS                = "mas"
 	Nasdaq             = "nasdaq"
+	Barcharts          = "barcharts"
 )

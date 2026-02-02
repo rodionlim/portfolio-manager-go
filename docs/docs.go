@@ -3167,7 +3167,17 @@ const docTemplate = `{
         "historical.AssetConfig": {
             "type": "object",
             "properties": {
+                "completed_series": {
+                    "description": "For futures: map of contract -\u003e completed / expired",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
+                    }
+                },
                 "enabled": {
+                    "type": "boolean"
+                },
+                "is_futures": {
                     "type": "boolean"
                 },
                 "last_sync": {
@@ -3177,6 +3187,10 @@ const docTemplate = `{
                 "lookback_years": {
                     "description": "Number of years to backfill",
                     "type": "integer"
+                },
+                "month_codes": {
+                    "description": "For futures: e.g. \"HMUZ\" for Mar, Jun, Sep, Dec",
+                    "type": "string"
                 },
                 "source": {
                     "type": "string"
@@ -3609,6 +3623,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "asset_sub_class": {
+                    "type": "string"
+                },
+                "barchart_ticker": {
                     "type": "string"
                 },
                 "call_put": {

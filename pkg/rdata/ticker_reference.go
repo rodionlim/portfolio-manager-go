@@ -23,6 +23,7 @@ type TickerReference struct {
 	GoogleTicker      string  `json:"google_ticker" yaml:"google_ticker" validate:"uppercase"`
 	DividendsSgTicker string  `json:"dividends_sg_ticker" yaml:"dividends_sg_ticker" validate:"uppercase"`
 	NasdaqTicker      string  `json:"nasdaq_ticker" yaml:"nasdaq_ticker" validate:"uppercase"`
+	BarchartTicker    string  `json:"barchart_ticker" yaml:"barchart_ticker" validate:"uppercase"`
 	AssetClass        string  `json:"asset_class" yaml:"asset_class" validate:"required,asset_class"`
 	AssetSubClass     string  `json:"asset_sub_class" yaml:"asset_sub_class" validate:"asset_sub_class"`
 	Category          string  `json:"category" yaml:"category" validate:"category"`
@@ -99,6 +100,7 @@ const (
 
 // Supported categories
 const (
+	CategoryAgriculture          = "agriculture"
 	CategoryConsumerCyclicals    = "consumercyclicals"
 	CategoryConsumerNonCyclicals = "consumernoncyclicals"
 	CategoryCrypto               = "crypto"
@@ -116,7 +118,7 @@ const (
 )
 
 // NewTickerReference creates a new TickerReference instance.
-func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, dividendsSgTicker, assetClass, assetSubClass, category, subcategory, ccy, domicile string, couponRate, strikePrice float64, maturityDate, callPut string) (*TickerReference, error) {
+func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, dividendsSgTicker, nasdaqTicker, barchartTicker, assetClass, assetSubClass, category, subcategory, ccy, domicile string, couponRate, strikePrice float64, maturityDate, callPut string) (*TickerReference, error) {
 	ref := TickerReference{
 		ID:                id,
 		Name:              name,
@@ -124,6 +126,8 @@ func NewTickerReference(id, name, underlyingTicker, yahooTicker, googleTicker, d
 		YahooTicker:       yahooTicker,
 		GoogleTicker:      googleTicker,
 		DividendsSgTicker: dividendsSgTicker,
+		NasdaqTicker:      nasdaqTicker,
+		BarchartTicker:    barchartTicker,
 		AssetClass:        assetClass,
 		AssetSubClass:     assetSubClass,
 		Category:          category,
@@ -166,7 +170,7 @@ func validateCategory(fl validator.FieldLevel) bool {
 	cat := fl.Field().String()
 
 	switch cat {
-	case CategoryConsumerCyclicals, CategoryConsumerNonCyclicals, CategoryCrypto, CategoryEnergy, CategoryFinance, CategoryFuneral, CategoryHealthcare, CategoryIndustrials, CategoryMaterials, CategoryRealEstate, CategoryREITs, CategoryTelecommunications, CategoryTechnology, CategoryUtilities:
+	case CategoryConsumerCyclicals, CategoryConsumerNonCyclicals, CategoryCrypto, CategoryEnergy, CategoryFinance, CategoryFuneral, CategoryHealthcare, CategoryIndustrials, CategoryMaterials, CategoryRealEstate, CategoryREITs, CategoryTelecommunications, CategoryTechnology, CategoryUtilities, CategoryAgriculture:
 		return true
 	default:
 		return false

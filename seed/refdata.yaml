@@ -737,3 +737,13 @@
   asset_class: "fx"
   asset_sub_class: "spot"
   ccy: "USD"
+
+- id: "HE"
+  name: "Lean Hogs"
+  underlying_ticker: "HE"
+  barchart_ticker: "HE"
+  asset_class: "cmdty"
+  asset_sub_class: "future"
+  category: "agriculture"
+  ccy: "USD"
+  domicile: "US"

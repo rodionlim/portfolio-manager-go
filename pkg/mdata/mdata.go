@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"portfolio-manager/internal/config"
 	"portfolio-manager/internal/dal"
@@ -30,15 +31,17 @@ type MarketDataManager interface {
 
 // Manager handles multiple data sources with fallback capability
 type Manager struct {
-	sources map[string]types.DataSource
-	rdata   rdata.ReferenceManager
+	sources        map[string]types.DataSource
+	futuresSources map[string]*sources.BarchartsSource
+	rdata          rdata.ReferenceManager
 }
 
 // NewManager creates a new data manager with initialized data sources
 func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error) {
 	m := &Manager{
-		sources: make(map[string]types.DataSource),
-		rdata:   rdata,
+		sources:        make(map[string]types.DataSource),
+		futuresSources: make(map[string]*sources.BarchartsSource),
+		rdata:          rdata,
 	}
 
 	// Initialize default data sources
@@ -66,6 +69,7 @@ func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error)
 	if err != nil {
 		return nil, err
 	}
+	barcharts := sources.NewBarcharts()
 
 	m.sources[sources.GoogleFinance] = google
 	m.sources[sources.YahooFinance] = yahoo
@@ -73,8 +77,9 @@ func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error)
 	m.sources[sources.SSB] = iLoveSsb
 	m.sources[sources.MAS] = mas
 	m.sources[sources.Nasdaq] = nasdaq
+	m.futuresSources[sources.Barcharts] = barcharts
 
-	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance, Dividends.sg, ILoveSsb, MAS and Nasdaq data sources")
+	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance, Dividends.sg, ILoveSsb, MAS, Nasdaq and Barcharts data sources")
 
 	return m, nil
 }
@@ -142,6 +147,39 @@ func (m *Manager) GetHistoricalData(ticker string, fromDate, toDate int64) ([]*t
 	if common.IsSSB(ticker) {
 		if iLoveSsb, ok := m.sources[sources.SSB]; ok {
 			return iLoveSsb.GetHistoricalData(ticker, fromDate, toDate)
+		}
+	}
+
+	if common.IsFutures(ticker) {
+		normalized := strings.ToUpper(strings.TrimSpace(ticker))
+		if len(normalized) >= 4 {
+			baseTicker := normalized[:len(normalized)-3]
+			if refData, err := m.getReferenceData(baseTicker); err == nil {
+				if fromDate > 0 && toDate > 0 {
+					duration := time.Unix(toDate, 0).Sub(time.Unix(fromDate, 0))
+					if duration > 2*365*24*time.Hour {
+						logging.GetLogger().Warnf("Barcharts request for %s spans more than 2 years; UI should cap to 2 years", normalized)
+					}
+				}
+
+				if barcharts, ok := m.futuresSources[sources.Barcharts]; ok {
+					futuresData, err := barcharts.GetHistoricalData(normalized, fromDate, toDate)
+					if err != nil {
+						return nil, false, err
+					}
+					assetData := make([]*types.AssetData, 0, len(futuresData))
+					for _, entry := range futuresData {
+						assetData = append(assetData, &types.AssetData{
+							Ticker:    normalized,
+							Price:     entry.LastPrice,
+							AdjClose:  0,
+							Currency:  refData.Ccy,
+							Timestamp: entry.Timestamp,
+						})
+					}
+					return assetData, false, nil
+				}
+			}
 		}
 	}
 

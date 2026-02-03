@@ -17,6 +17,7 @@ import {
   Autocomplete,
   Text,
   Stack,
+  SegmentedControl,
 } from "@mantine/core";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
@@ -40,6 +41,8 @@ interface AssetConfig {
   enabled: boolean;
   last_sync?: number;
   lookback_years?: number;
+  is_futures?: boolean;
+  month_codes?: string;
 }
 
 interface HistoricalRecord {
@@ -50,10 +53,59 @@ interface HistoricalRecord {
   timestamp: number;
 }
 
+const futuresMonthMap: Record<string, number> = {
+  F: 1,
+  G: 2,
+  H: 3,
+  J: 4,
+  K: 5,
+  M: 6,
+  N: 7,
+  Q: 8,
+  U: 9,
+  V: 10,
+  X: 11,
+  Z: 12,
+};
+
+const buildFuturesContracts = (
+  baseTicker: string,
+  monthCodes: string,
+  lookbackYears: number,
+) => {
+  const now = new Date();
+  const startYear = now.getUTCFullYear() - lookbackYears;
+  const endYear = now.getUTCFullYear();
+
+  const codes = Array.from(new Set(monthCodes.toUpperCase().split(""))).filter(
+    (code) => futuresMonthMap[code],
+  );
+
+  const contracts: string[] = [];
+  for (let year = startYear; year <= endYear; year += 1) {
+    const yy = String(year % 100).padStart(2, "0");
+    codes.forEach((code) => {
+      contracts.push(`${baseTicker.toUpperCase()}${code}${yy}`);
+    });
+  }
+
+  return contracts.sort((a, b) => {
+    const aCode = a.charAt(a.length - 3);
+    const bCode = b.charAt(b.length - 3);
+    const aYear = Number(a.slice(-2));
+    const bYear = Number(b.slice(-2));
+    if (aYear !== bYear) return aYear - bYear;
+    return (futuresMonthMap[aCode] || 0) - (futuresMonthMap[bCode] || 0);
+  });
+};
+
 const HistoricalData: React.FC = () => {
   const [configs, setConfigs] = useState<AssetConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [configTableCollapsed, setConfigTableCollapsed] = useState(false);
+  const [futuresFilter, setFuturesFilter] = useState<
+    "all" | "futures" | "non_futures"
+  >("all");
 
   const refData = useSelector((state: RootState) => state.referenceData.data);
   const tickerOptions = useMemo(() => {
@@ -69,15 +121,24 @@ const HistoricalData: React.FC = () => {
   const [newTicker, setNewTicker] = useState("");
   const [newSource, setNewSource] = useState("yahoo");
   const [newLookback, setNewLookback] = useState(5);
+  const [newIsFutures, setNewIsFutures] = useState(false);
+  const [newMonthCodes, setNewMonthCodes] = useState("");
   const [resyncingAll, setResyncingAll] = useState(false);
 
   const matchedName = useMemo(() => {
     if (!refData || !newTicker) return null;
     const match = Object.values(refData).find(
-      (item) => item.yahoo_ticker === newTicker || item.id === newTicker
+      (item) => item.yahoo_ticker === newTicker || item.id === newTicker,
     );
     return match ? match.name : null;
   }, [refData, newTicker]);
+
+  useEffect(() => {
+    if (newIsFutures) {
+      setNewSource("barcharts");
+      setNewLookback(2);
+    }
+  }, [newIsFutures]);
 
   const tickerNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -90,9 +151,14 @@ const HistoricalData: React.FC = () => {
     return map;
   }, [refData]);
 
-  const sortedConfigs = useMemo(() => {
-    return [...configs].sort((a, b) => a.ticker.localeCompare(b.ticker));
-  }, [configs]);
+  const filteredConfigs = useMemo(() => {
+    const base = configs.filter((c) => {
+      if (futuresFilter === "futures") return !!c.is_futures;
+      if (futuresFilter === "non_futures") return !c.is_futures;
+      return true;
+    });
+    return base.sort((a, b) => a.ticker.localeCompare(b.ticker));
+  }, [configs, futuresFilter]);
 
   const truncate = (value: string, maxChars: number) => {
     if (!value) return value;
@@ -103,6 +169,8 @@ const HistoricalData: React.FC = () => {
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const [historyTicker, setHistoryTicker] = useState<string | null>(null);
+  const [historyContracts, setHistoryContracts] = useState<string[]>([]);
 
   // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -138,19 +206,35 @@ const HistoricalData: React.FC = () => {
   };
 
   const handleRowClick = (ticker: string) => {
+    const config = configs.find((c) => c.ticker === ticker) || null;
     setSelectedTicker(ticker);
     setHistoryPage(1);
     setModalOpen(true);
     setFromDate(null);
     setToDate(null);
-    fetchHistoryWrapper(ticker, 1, null, null);
+    if (config?.is_futures && config.month_codes) {
+      const lookback = config.lookback_years || 2;
+      const contracts = buildFuturesContracts(
+        config.ticker,
+        config.month_codes,
+        lookback,
+      );
+      setHistoryContracts(contracts);
+      const initialContract = contracts[0] || config.ticker;
+      setHistoryTicker(initialContract);
+      fetchHistoryWrapper(initialContract, 1, null, null);
+    } else {
+      setHistoryContracts([]);
+      setHistoryTicker(ticker);
+      fetchHistoryWrapper(ticker, 1, null, null);
+    }
   };
 
   const fetchHistoryWrapper = (
     ticker: string,
     page: number,
     from: Date | null,
-    to: Date | null
+    to: Date | null,
   ) => {
     setHistoryLoading(true);
     const p = new URLSearchParams();
@@ -170,22 +254,22 @@ const HistoricalData: React.FC = () => {
           title: "Error",
           message: err.message,
           color: "red",
-        })
+        }),
       )
       .finally(() => setHistoryLoading(false));
   };
 
   const handlePageChange = (p: number) => {
     setHistoryPage(p);
-    if (selectedTicker) {
-      fetchHistoryWrapper(selectedTicker, p, fromDate, toDate);
+    if (historyTicker) {
+      fetchHistoryWrapper(historyTicker, p, fromDate, toDate);
     }
   };
 
   const handleDateSearch = () => {
-    if (selectedTicker) {
+    if (historyTicker) {
       setHistoryPage(1);
-      fetchHistoryWrapper(selectedTicker, 1, fromDate, toDate);
+      fetchHistoryWrapper(historyTicker, 1, fromDate, toDate);
     }
   };
 
@@ -196,7 +280,9 @@ const HistoricalData: React.FC = () => {
         ticker: newTicker,
         source: newSource,
         enabled: true,
-        lookback_years: newLookback,
+        lookback_years: newIsFutures ? 2 : newLookback,
+        is_futures: newIsFutures,
+        month_codes: newIsFutures ? newMonthCodes.toUpperCase() : undefined,
       };
 
       const response = await fetch(getUrl("/api/v1/historical/config"), {
@@ -209,6 +295,8 @@ const HistoricalData: React.FC = () => {
 
       notifications.show({ message: "Added " + newTicker, color: "green" });
       setNewTicker("");
+      setNewMonthCodes("");
+      setNewIsFutures(false);
       fetchConfigs();
     } catch (error: any) {
       notifications.show({
@@ -225,7 +313,7 @@ const HistoricalData: React.FC = () => {
         getUrl(`/api/v1/historical/config/${ticker}`),
         {
           method: "DELETE",
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to delete config");
 
@@ -295,7 +383,7 @@ const HistoricalData: React.FC = () => {
   const handleSyncAll = async () => {
     if (
       !window.confirm(
-        "Are you sure you want to resync ALL enabled assets? This may take time."
+        "Are you sure you want to resync ALL enabled assets? This may take time.",
       )
     )
       return;
@@ -419,9 +507,9 @@ const HistoricalData: React.FC = () => {
       </Title>
 
       <Card withBorder shadow="sm" mb="lg">
-        <Group align="flex-start">
-          <div style={{ flex: 1, minWidth: "250px" }}>
-            <Stack gap={4}>
+        <Stack gap="xs">
+          <Group align="flex-end">
+            <div style={{ width: 260 }}>
               <Autocomplete
                 label="Ticker"
                 placeholder="e.g. AAPL"
@@ -429,66 +517,101 @@ const HistoricalData: React.FC = () => {
                 onChange={(val) => setNewTicker(val.toUpperCase())}
                 data={tickerOptions}
               />
-              {matchedName && (
-                <Text c="dimmed" size="xs">
-                  {matchedName}
-                </Text>
-              )}
-            </Stack>
-          </div>
-          <Select
-            label="Source"
-            data={[
-              { value: "yahoo", label: "Yahoo Finance" },
-              { value: "google", label: "Google Finance" },
-            ]}
-            value={newSource}
-            onChange={(val) => setNewSource(val || "yahoo")}
-            style={{ width: 200 }}
-          />
-          <NumberInput
-            label="Years"
-            value={newLookback}
-            onChange={(val) => setNewLookback(Number(val) || 5)}
-            min={1}
-            max={30}
-            style={{ width: 100 }}
-          />
-          <Group gap="xs" mt={24}>
-            <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
-              Add
-            </Button>
-            <Button
-              color="orange"
-              variant="light"
-              leftSection={<IconRefresh size={16} />}
-              onClick={handleSyncAll}
-              loading={resyncingAll}
-            >
-              Sync All
-            </Button>
+            </div>
+            {newIsFutures && (
+              <div style={{ minWidth: "180px" }}>
+                <Autocomplete
+                  label="Month Codes"
+                  placeholder="e.g. HMUZ"
+                  value={newMonthCodes}
+                  onChange={(val) => setNewMonthCodes(val.toUpperCase())}
+                  data={[]}
+                />
+              </div>
+            )}
+            <Select
+              label="Source"
+              data={[
+                { value: "yahoo", label: "Yahoo Finance" },
+                { value: "google", label: "Google Finance" },
+                { value: "barcharts", label: "Barcharts" },
+              ]}
+              value={newSource}
+              onChange={(val) => setNewSource(val || "yahoo")}
+              style={{ width: 200 }}
+              disabled={newIsFutures}
+            />
+            <NumberInput
+              label="Years"
+              value={newIsFutures ? 2 : newLookback}
+              onChange={(val) => setNewLookback(Number(val) || 5)}
+              min={1}
+              max={30}
+              style={{ width: 100 }}
+              disabled={newIsFutures}
+            />
+            <Group gap="xs">
+              <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+                Add
+              </Button>
+              <Button
+                color="orange"
+                variant="light"
+                leftSection={<IconRefresh size={16} />}
+                onClick={handleSyncAll}
+                loading={resyncingAll}
+              >
+                Sync All
+              </Button>
+            </Group>
           </Group>
-        </Group>
+          <Group align="center" gap="sm">
+            <Switch
+              label="Is Futures"
+              checked={newIsFutures}
+              onChange={(event) => setNewIsFutures(event.currentTarget.checked)}
+            />
+            {matchedName && (
+              <Text c="dimmed" size="sm" lineClamp={1}>
+                {matchedName}
+              </Text>
+            )}
+          </Group>
+        </Stack>
       </Card>
 
       <Card withBorder shadow="sm">
         <Group justify="space-between" mb="sm" wrap="wrap">
           <Title order={4}>Configurations</Title>
-          <ActionIcon
-            variant="subtle"
-            onClick={() => setConfigTableCollapsed((v) => !v)}
-            aria-label={
-              configTableCollapsed
-                ? "Expand configurations"
-                : "Collapse configurations"
-            }
-          >
-            {configTableCollapsed ? (
-              <IconChevronDown size={18} />
-            ) : (
-              <IconChevronUp size={18} />
-            )}
-          </ActionIcon>
+          <Group gap="xs" align="center">
+            <SegmentedControl
+              size="xs"
+              value={futuresFilter}
+              onChange={(value) =>
+                setFuturesFilter(value as "all" | "futures" | "non_futures")
+              }
+              data={[
+                { value: "all", label: "All" },
+                { value: "futures", label: "Only futures" },
+                { value: "non_futures", label: "Without futures" },
+              ]}
+            />
+            <ActionIcon
+              variant="subtle"
+              onClick={() => setConfigTableCollapsed((v) => !v)}
+              aria-label={
+                configTableCollapsed
+                  ? "Expand configurations"
+                  : "Collapse configurations"
+              }
+            >
+              {configTableCollapsed ? (
+                <IconChevronDown size={18} />
+              ) : (
+                <IconChevronUp size={18} />
+              )}
+            </ActionIcon>
+          </Group>
         </Group>
 
         <Collapse in={!configTableCollapsed}>
@@ -498,6 +621,8 @@ const HistoricalData: React.FC = () => {
                 <Table.Tr>
                   <Table.Th>Ticker</Table.Th>
                   <Table.Th>Source</Table.Th>
+                  <Table.Th>Futures</Table.Th>
+                  <Table.Th>Month Codes</Table.Th>
                   <Table.Th>Lookback (Y)</Table.Th>
                   <Table.Th>Status</Table.Th>
                   <Table.Th>Last Sync</Table.Th>
@@ -505,7 +630,7 @@ const HistoricalData: React.FC = () => {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {sortedConfigs.map((c) => (
+                {filteredConfigs.map((c) => (
                   <Table.Tr
                     key={c.ticker}
                     onClick={() => handleRowClick(c.ticker)}
@@ -531,6 +656,8 @@ const HistoricalData: React.FC = () => {
                       </Group>
                     </Table.Td>
                     <Table.Td>{c.source}</Table.Td>
+                    <Table.Td>{c.is_futures ? "Yes" : "No"}</Table.Td>
+                    <Table.Td>{c.month_codes || "-"}</Table.Td>
                     <Table.Td>{c.lookback_years || 5}</Table.Td>
                     <Table.Td>
                       <Switch
@@ -588,9 +715,9 @@ const HistoricalData: React.FC = () => {
                     </Table.Td>
                   </Table.Tr>
                 ))}
-                {sortedConfigs.length === 0 && !loading && (
+                {filteredConfigs.length === 0 && !loading && (
                   <Table.Tr>
-                    <Table.Td colSpan={6} style={{ textAlign: "center" }}>
+                    <Table.Td colSpan={8} style={{ textAlign: "center" }}>
                       No historical data configurations found
                     </Table.Td>
                   </Table.Tr>
@@ -604,10 +731,33 @@ const HistoricalData: React.FC = () => {
       <Modal
         opened={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={<Title order={4}>Historical Data: {selectedTicker}</Title>}
+        title={
+          <Title order={4}>
+            Historical Data: {selectedTicker}
+            {historyTicker && selectedTicker && historyTicker !== selectedTicker
+              ? ` (${historyTicker})`
+              : ""}
+          </Title>
+        }
         size="lg"
       >
-        <Group mb="md">
+        <Group mb="md" align="flex-end" wrap="wrap">
+          {historyContracts.length > 0 && (
+            <Select
+              label="Contract"
+              placeholder="Select contract"
+              value={historyTicker}
+              onChange={(val) => {
+                const next = val || historyTicker;
+                if (!next) return;
+                setHistoryTicker(next);
+                setHistoryPage(1);
+                fetchHistoryWrapper(next, 1, fromDate, toDate);
+              }}
+              data={historyContracts.map((c) => ({ value: c, label: c }))}
+              style={{ minWidth: 180 }}
+            />
+          )}
           <DateInput
             value={fromDate}
             onChange={setFromDate}
@@ -689,15 +839,31 @@ const HistoricalData: React.FC = () => {
               data={[
                 { value: "yahoo", label: "Yahoo Finance" },
                 { value: "google", label: "Google Finance" },
+                { value: "barcharts", label: "Barcharts" },
               ]}
               value={editConfig.source}
               onChange={(val) =>
                 setEditConfig({ ...editConfig, source: val || "yahoo" })
               }
+              disabled={editConfig.is_futures}
             />
+            {(editConfig.is_futures || !!editConfig.month_codes) && (
+              <Autocomplete
+                label="Month Codes"
+                placeholder="e.g. HMUZ"
+                value={editConfig.month_codes || ""}
+                onChange={(val) =>
+                  setEditConfig({
+                    ...editConfig,
+                    month_codes: val.toUpperCase(),
+                  })
+                }
+                data={[]}
+              />
+            )}
             <NumberInput
               label="Lookback Years"
-              value={editConfig.lookback_years || 5}
+              value={editConfig.is_futures ? 2 : editConfig.lookback_years || 5}
               onChange={(val) =>
                 setEditConfig({
                   ...editConfig,
@@ -706,6 +872,7 @@ const HistoricalData: React.FC = () => {
               }
               min={1}
               max={30}
+              disabled={editConfig.is_futures}
             />
             <Group justify="flex-end" mt="md">
               <Button variant="default" onClick={() => setEditModalOpen(false)}>

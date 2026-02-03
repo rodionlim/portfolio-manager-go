@@ -4,16 +4,20 @@ import (
 	"fmt"
 	"portfolio-manager/pkg/types"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type AssetConfig struct {
-	Ticker        string `json:"ticker"`
-	Source        string `json:"source"`
-	Enabled       bool   `json:"enabled"`
-	LastSync      int64  `json:"last_sync,omitempty"`      // Unix timestamp
-	LookbackYears int    `json:"lookback_years,omitempty"` // Number of years to backfill
+	Ticker          string          `json:"ticker"`
+	Source          string          `json:"source"`
+	Enabled         bool            `json:"enabled"`
+	LastSync        int64           `json:"last_sync,omitempty"`      // Unix timestamp
+	LookbackYears   int             `json:"lookback_years,omitempty"` // Number of years to backfill
+	IsFutures       bool            `json:"is_futures,omitempty"`
+	MonthCodes      string          `json:"month_codes,omitempty"`      // For futures: e.g. "HMUZ" for Mar, Jun, Sep, Dec
+	CompletedSeries map[string]bool `json:"completed_series,omitempty"` // For futures: map of contract -> completed / expired
 }
 
 // GetAssetConfigs retrieves all configured assets for historical data collection
@@ -99,9 +103,12 @@ func (s *Service) RemoveAssetConfig(ticker string) error {
 
 	newConfigs := []AssetConfig{}
 	found := false
+	var removedConfig *AssetConfig
 	for _, c := range configs {
 		if c.Ticker == ticker {
 			found = true
+			removed := c
+			removedConfig = &removed
 			continue
 		}
 		newConfigs = append(newConfigs, c)
@@ -112,14 +119,26 @@ func (s *Service) RemoveAssetConfig(ticker string) error {
 	}
 
 	// Delete actual data from persistence
-	// We need to delete all keys with prefix HISTORICAL_ASSET_DATA:TICKER:
-	dataPrefix := fmt.Sprintf("%s:%s:", string(types.HistoricalAssetDataKeyPrefix), ticker)
-	keys, err := s.db.GetAllKeysWithPrefix(dataPrefix)
-	if err != nil {
-		s.logger.Errorf("Failed to list keys for deletion: %v", err)
-		// We continue to remove config even if data deletion fails partially?
-		// Or should we fail? Better to warn and proceed with config removal so user isn't stuck.
-	} else {
+	dataPrefixes := []string{fmt.Sprintf("%s:%s:", string(types.HistoricalAssetDataKeyPrefix), ticker)}
+	if removedConfig != nil && removedConfig.IsFutures && removedConfig.MonthCodes != "" {
+		lookbackYears := 2
+		if removedConfig.LookbackYears > 0 {
+			lookbackYears = removedConfig.LookbackYears
+		}
+		contracts := buildFuturesContracts(removedConfig.Ticker, removedConfig.MonthCodes, lookbackYears, time.Now().UTC())
+		for _, contract := range contracts {
+			dataPrefixes = append(dataPrefixes, fmt.Sprintf("%s:%s:", string(types.HistoricalAssetDataKeyPrefix), contract))
+		}
+	}
+
+	for _, dataPrefix := range dataPrefixes {
+		keys, err := s.db.GetAllKeysWithPrefix(dataPrefix)
+		if err != nil {
+			s.logger.Errorf("Failed to list keys for deletion: %v", err)
+			// We continue to remove config even if data deletion fails partially?
+			// Or should we fail? Better to warn and proceed with config removal so user isn't stuck.
+			continue
+		}
 		for _, k := range keys {
 			if err := s.db.Delete(k); err != nil {
 				s.logger.Warnf("Failed to delete key %s: %v", k, err)
@@ -151,6 +170,10 @@ func (s *Service) SyncAssetData(ticker string) (string, error) {
 
 	if !config.Enabled {
 		return "", fmt.Errorf("historical data collection disabled for ticker: %s", ticker)
+	}
+
+	if config.IsFutures && strings.EqualFold(config.Source, "barcharts") {
+		return s.syncFuturesAssetData(config)
 	}
 
 	now := time.Now().Unix()
@@ -222,12 +245,210 @@ func (s *Service) SyncAssetData(ticker string) (string, error) {
 	return fmt.Sprintf("Synced %d records. %s", len(data), dateRangeMsg), nil
 }
 
+func (s *Service) syncFuturesAssetData(config *AssetConfig) (string, error) {
+	if config.MonthCodes == "" {
+		return "", fmt.Errorf("month codes are required for futures ticker %s", config.Ticker)
+	}
+
+	now := time.Now().UTC()
+	lookbackYears := 2
+	if config.LookbackYears > 0 {
+		lookbackYears = config.LookbackYears
+	}
+
+	fromDate := now.AddDate(-lookbackYears, 0, 0).Unix()
+	if config.LastSync > 0 {
+		fromDate = config.LastSync
+	}
+
+	contracts := buildFuturesContracts(config.Ticker, config.MonthCodes, lookbackYears, now)
+	if len(contracts) == 0 {
+		return "", fmt.Errorf("no valid futures contracts for ticker %s", config.Ticker)
+	}
+
+	if config.CompletedSeries == nil {
+		config.CompletedSeries = make(map[string]bool)
+	}
+
+	allCompleted := true
+	inserted := 0
+	for _, contract := range contracts {
+		if config.CompletedSeries[contract] {
+			if label, ok := describeFuturesContract(contract); ok {
+				s.logger.Infof("Skipping completed futures contract %s for %s (%s)", contract, config.Ticker, label)
+			} else {
+				s.logger.Infof("Skipping completed futures contract %s for %s", contract, config.Ticker)
+			}
+			continue
+		}
+		allCompleted = false
+
+		if label, ok := describeFuturesContract(contract); ok {
+			s.logger.Infof("Syncing futures contract %s for %s (%s): Fetching from %s to %s", contract, config.Ticker, label, time.Unix(fromDate, 0).Format("2006-01-02"), now.Format("2006-01-02"))
+		} else {
+			s.logger.Infof("Syncing futures contract %s for %s: Fetching from %s to %s", contract, config.Ticker, time.Unix(fromDate, 0).Format("2006-01-02"), now.Format("2006-01-02"))
+		}
+
+		data, _, err := s.mdataManager.GetHistoricalData(contract, fromDate, now.Unix())
+		if err != nil {
+			return "", err
+		}
+
+		for _, d := range data {
+			dateStr := time.Unix(d.Timestamp, 0).Format("20060102")
+			key := fmt.Sprintf("%s:%s:%s", string(types.HistoricalAssetDataKeyPrefix), contract, dateStr)
+			if err := s.db.Put(key, d); err != nil {
+				s.logger.Errorf("Failed to save historical data for %s date %s: %v", contract, dateStr, err)
+				continue
+			}
+			inserted++
+		}
+
+		if isContractExpired(contract, now) && len(data) > 0 {
+			config.CompletedSeries[contract] = true
+			if label, ok := describeFuturesContract(contract); ok {
+				s.logger.Infof("Marked futures contract %s completed for %s (%s)", contract, config.Ticker, label)
+			} else {
+				s.logger.Infof("Marked futures contract %s completed for %s", contract, config.Ticker)
+			}
+		}
+	}
+
+	if allCompleted {
+		return "All futures contracts already completed. Nothing to sync.", nil
+	}
+
+	config.LastSync = now.Unix()
+	if err := s.UpdateAssetConfig(*config); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("Synced %d records for futures contracts", inserted), nil
+}
+
+func buildFuturesContracts(baseTicker, monthCodes string, lookbackYears int, now time.Time) []string {
+	monthCodes = strings.ToUpper(strings.TrimSpace(monthCodes))
+	monthCodeSet := map[rune]bool{}
+	for _, code := range monthCodes {
+		if _, ok := futuresMonthMap[code]; ok {
+			monthCodeSet[code] = true
+		}
+	}
+
+	if len(monthCodeSet) == 0 {
+		return nil
+	}
+
+	startYear := now.AddDate(-lookbackYears, 0, 0).Year()
+	endYear := now.Year()
+
+	contracts := []string{}
+	for year := startYear; year <= endYear; year++ {
+		yy := year % 100
+		for code := range monthCodeSet {
+			contracts = append(contracts, fmt.Sprintf("%s%c%02d", strings.ToUpper(baseTicker), code, yy))
+		}
+	}
+
+	return contracts
+}
+
+func isContractExpired(contract string, now time.Time) bool {
+	if len(contract) < 4 {
+		return false
+	}
+
+	code := rune(contract[len(contract)-3])
+	month, ok := futuresMonthMap[code]
+	if !ok {
+		return false
+	}
+
+	yearPart := contract[len(contract)-2:]
+	year, err := strconv.Atoi(yearPart)
+	if err != nil {
+		return false
+	}
+
+	fullYear := 2000 + year
+	contractEnd := time.Date(fullYear, time.Month(month), 1, 0, 0, 0, 0, time.UTC).AddDate(0, 1, 0)
+	return now.UTC().After(contractEnd)
+}
+
+func describeFuturesContract(contract string) (string, bool) {
+	if len(contract) < 4 {
+		return "", false
+	}
+
+	code := rune(contract[len(contract)-3])
+	month, ok := futuresMonthMap[code]
+	if !ok {
+		return "", false
+	}
+
+	yearPart := contract[len(contract)-2:]
+	year, err := strconv.Atoi(yearPart)
+	if err != nil {
+		return "", false
+	}
+
+	fullYear := 2000 + year
+	return fmt.Sprintf("%s %d", time.Month(month).String(), fullYear), true
+}
+
+var futuresMonthMap = map[rune]int{
+	'F': 1,
+	'G': 2,
+	'H': 3,
+	'J': 4,
+	'K': 5,
+	'M': 6,
+	'N': 7,
+	'Q': 8,
+	'U': 9,
+	'V': 10,
+	'X': 11,
+	'Z': 12,
+}
+
 // GetHistoricalAssetData retrieves historical data with pagination and filtering
 func (s *Service) GetHistoricalAssetData(ticker string, from, to int64, page, limit int) ([]types.AssetData, int, error) {
-	prefix := fmt.Sprintf("%s:%s:", string(types.HistoricalAssetDataKeyPrefix), ticker)
-	keys, err := s.db.GetAllKeysWithPrefix(prefix)
+	keys := []string{}
+	configs, err := s.GetAssetConfigs()
 	if err != nil {
 		return nil, 0, err
+	}
+
+	var config *AssetConfig
+	for i := range configs {
+		if strings.EqualFold(configs[i].Ticker, ticker) {
+			config = &configs[i]
+			break
+		}
+	}
+
+	if config != nil && config.IsFutures && config.MonthCodes != "" {
+		lookbackYears := 2
+		if config.LookbackYears > 0 {
+			lookbackYears = config.LookbackYears
+		}
+
+		contracts := buildFuturesContracts(config.Ticker, config.MonthCodes, lookbackYears, time.Now().UTC())
+		for _, contract := range contracts {
+			prefix := fmt.Sprintf("%s:%s:", string(types.HistoricalAssetDataKeyPrefix), contract)
+			contractKeys, err := s.db.GetAllKeysWithPrefix(prefix)
+			if err != nil {
+				s.logger.Warnf("Failed to list keys for %s: %v", contract, err)
+				continue
+			}
+			keys = append(keys, contractKeys...)
+		}
+	} else {
+		prefix := fmt.Sprintf("%s:%s:", string(types.HistoricalAssetDataKeyPrefix), ticker)
+		keys, err = s.db.GetAllKeysWithPrefix(prefix)
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 
 	// Filter keys by date range

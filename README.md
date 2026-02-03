@@ -7,7 +7,7 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 ## Features
 
 - Value assets of different currencies based on current market prices
-- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas, nasdaq), current and historical
+- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas, nasdaq, barcharts), current and historical
 - Import / Export portfolio blotter data using CSV file for easy migration to other portfolio systems
 - Allow users to supply their own custom dividends metadata
 - Export ticker reference data in yaml format
@@ -799,6 +799,9 @@ curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/AAPL?start=2024
 
 # Get historical price data for a specific date range
 curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/ES3.SI?start=20240101&end=20240501"
+
+# Get historical price data for a futures contract (Barcharts)
+curl -X GET "http://localhost:8080/api/v1/mdata/price/historical/HEJ26?start=20240101&end=20251231"
 ```
 
 ### Fetch Historical FX Rates

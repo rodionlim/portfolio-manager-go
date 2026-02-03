@@ -33,6 +33,7 @@ const assetSubClassOptions = [
 ];
 
 const categoryOptions = [
+  "agriculture",
   "consumercyclicals",
   "consumernoncyclicals",
   "crypto",
@@ -66,6 +67,7 @@ export default function ReferenceDataForm() {
       google_ticker: location.state?.google_ticker || "",
       dividends_sg_ticker: location.state?.dividends_sg_ticker || "",
       nasdaq_ticker: location.state?.nasdaq_ticker || "",
+      barchart_ticker: location.state?.barchart_ticker || "",
       asset_class: location.state?.asset_class || "",
       asset_sub_class: location.state?.asset_sub_class || "",
       category: location.state?.category || "",
@@ -197,6 +199,12 @@ export default function ReferenceDataForm() {
             placeholder="Nasdaq Ticker"
             key={form.key("nasdaq_ticker")}
             {...form.getInputProps("nasdaq_ticker")}
+          />
+          <TextInput
+            label="Barchart Ticker"
+            placeholder="Barchart Ticker"
+            key={form.key("barchart_ticker")}
+            {...form.getInputProps("barchart_ticker")}
           />
           <Autocomplete
             withAsterisk

@@ -17,6 +17,7 @@ import {
   Autocomplete,
   Text,
   Stack,
+  SegmentedControl,
 } from "@mantine/core";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
@@ -102,6 +103,9 @@ const HistoricalData: React.FC = () => {
   const [configs, setConfigs] = useState<AssetConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [configTableCollapsed, setConfigTableCollapsed] = useState(false);
+  const [futuresFilter, setFuturesFilter] = useState<
+    "all" | "futures" | "non_futures"
+  >("all");
 
   const refData = useSelector((state: RootState) => state.referenceData.data);
   const tickerOptions = useMemo(() => {
@@ -147,9 +151,14 @@ const HistoricalData: React.FC = () => {
     return map;
   }, [refData]);
 
-  const sortedConfigs = useMemo(() => {
-    return [...configs].sort((a, b) => a.ticker.localeCompare(b.ticker));
-  }, [configs]);
+  const filteredConfigs = useMemo(() => {
+    const base = configs.filter((c) => {
+      if (futuresFilter === "futures") return !!c.is_futures;
+      if (futuresFilter === "non_futures") return !c.is_futures;
+      return true;
+    });
+    return base.sort((a, b) => a.ticker.localeCompare(b.ticker));
+  }, [configs, futuresFilter]);
 
   const truncate = (value: string, maxChars: number) => {
     if (!value) return value;
@@ -500,27 +509,14 @@ const HistoricalData: React.FC = () => {
       <Card withBorder shadow="sm" mb="lg">
         <Stack gap="xs">
           <Group align="flex-end">
-            <div style={{ flex: 1, minWidth: "250px" }}>
-              <Group align="flex-end" wrap="nowrap" gap="xs">
-                <Autocomplete
-                  label="Ticker"
-                  placeholder="e.g. AAPL"
-                  value={newTicker}
-                  onChange={(val) => setNewTicker(val.toUpperCase())}
-                  data={tickerOptions}
-                  style={{ width: matchedName ? 200 : 260 }}
-                />
-                {matchedName && (
-                  <Text
-                    c="dimmed"
-                    size="sm"
-                    lineClamp={1}
-                    style={{ maxWidth: 240, marginBottom: 8 }}
-                  >
-                    {matchedName}
-                  </Text>
-                )}
-              </Group>
+            <div style={{ width: 260 }}>
+              <Autocomplete
+                label="Ticker"
+                placeholder="e.g. AAPL"
+                value={newTicker}
+                onChange={(val) => setNewTicker(val.toUpperCase())}
+                data={tickerOptions}
+              />
             </div>
             {newIsFutures && (
               <div style={{ minWidth: "180px" }}>
@@ -569,32 +565,53 @@ const HistoricalData: React.FC = () => {
               </Button>
             </Group>
           </Group>
-          <Switch
-            label="Is Futures"
-            checked={newIsFutures}
-            onChange={(event) => setNewIsFutures(event.currentTarget.checked)}
-          />
+          <Group align="center" gap="sm">
+            <Switch
+              label="Is Futures"
+              checked={newIsFutures}
+              onChange={(event) => setNewIsFutures(event.currentTarget.checked)}
+            />
+            {matchedName && (
+              <Text c="dimmed" size="sm" lineClamp={1}>
+                {matchedName}
+              </Text>
+            )}
+          </Group>
         </Stack>
       </Card>
 
       <Card withBorder shadow="sm">
         <Group justify="space-between" mb="sm" wrap="wrap">
           <Title order={4}>Configurations</Title>
-          <ActionIcon
-            variant="subtle"
-            onClick={() => setConfigTableCollapsed((v) => !v)}
-            aria-label={
-              configTableCollapsed
-                ? "Expand configurations"
-                : "Collapse configurations"
-            }
-          >
-            {configTableCollapsed ? (
-              <IconChevronDown size={18} />
-            ) : (
-              <IconChevronUp size={18} />
-            )}
-          </ActionIcon>
+          <Group gap="xs" align="center">
+            <SegmentedControl
+              size="xs"
+              value={futuresFilter}
+              onChange={(value) =>
+                setFuturesFilter(value as "all" | "futures" | "non_futures")
+              }
+              data={[
+                { value: "all", label: "All" },
+                { value: "futures", label: "Only futures" },
+                { value: "non_futures", label: "Without futures" },
+              ]}
+            />
+            <ActionIcon
+              variant="subtle"
+              onClick={() => setConfigTableCollapsed((v) => !v)}
+              aria-label={
+                configTableCollapsed
+                  ? "Expand configurations"
+                  : "Collapse configurations"
+              }
+            >
+              {configTableCollapsed ? (
+                <IconChevronDown size={18} />
+              ) : (
+                <IconChevronUp size={18} />
+              )}
+            </ActionIcon>
+          </Group>
         </Group>
 
         <Collapse in={!configTableCollapsed}>
@@ -613,7 +630,7 @@ const HistoricalData: React.FC = () => {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {sortedConfigs.map((c) => (
+                {filteredConfigs.map((c) => (
                   <Table.Tr
                     key={c.ticker}
                     onClick={() => handleRowClick(c.ticker)}
@@ -698,7 +715,7 @@ const HistoricalData: React.FC = () => {
                     </Table.Td>
                   </Table.Tr>
                 ))}
-                {sortedConfigs.length === 0 && !loading && (
+                {filteredConfigs.length === 0 && !loading && (
                   <Table.Tr>
                     <Table.Td colSpan={8} style={{ textAlign: "center" }}>
                       No historical data configurations found

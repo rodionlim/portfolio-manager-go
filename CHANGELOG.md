@@ -1,3 +1,10 @@
+## [1.44.0] - 2026-02-03
+
+### 🚀 Features
+
+- *(historical)* Add futures support with Barcharts integration #164
+- *(ui)* Add futures to historical market data #164
+
 ## [1.43.0] - 2026-01-31
 
 ### 🚀 Features

@@ -81,6 +81,14 @@ func (dm *DividendsManager) CalculateDividendsForAllTickers() (map[string][]Divi
 	return dividendsMap, nil
 }
 
+// ResetCache clears the dividends cache
+func (dm *DividendsManager) ResetCache() {
+	dm.cacheMutex.Lock()
+	dm.cachedDividends = nil
+	dm.cachedDividendsAt = time.Time{}
+	dm.cacheMutex.Unlock()
+}
+
 func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]Dividends, error) {
 	ticker = strings.ToUpper(ticker)
 

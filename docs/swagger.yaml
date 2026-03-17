@@ -1393,6 +1393,21 @@ paths:
       summary: Get dividends for a single ticker
       tags:
       - dividends
+  /api/v1/dividends/cache/reset:
+    post:
+      consumes:
+      - application/json
+      description: Reset dividends cache
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cache reset successfully
+          schema:
+            type: string
+      summary: Reset dividends cache
+      tags:
+      - dividends
   /api/v1/historical/config:
     get:
       description: Get configurations for historical data collection

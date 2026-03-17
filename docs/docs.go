@@ -1055,6 +1055,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dividends/cache/reset": {
+            "post": {
+                "description": "Reset dividends cache",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dividends"
+                ],
+                "summary": "Reset dividends cache",
+                "responses": {
+                    "200": {
+                        "description": "Cache reset successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dividends/{ticker}": {
             "get": {
                 "description": "Get dividends for a single ticker",

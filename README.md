@@ -937,6 +937,12 @@ All Tickers
 curl -X GET http://localhost:8080/api/v1/dividends
 ```
 
+#### Reset Dividends Cache
+
+```sh
+curl -X POST http://localhost:8080/api/v1/dividends/cache/reset
+```
+
 ### Fetch Benchmark Interest Rates
 
 Get default number of Singapore interest rates (250 records)

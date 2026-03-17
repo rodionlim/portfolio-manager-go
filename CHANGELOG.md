@@ -1,3 +1,9 @@
+## [1.44.1] - 2026-03-17
+
+### 🐛 Bug Fixes
+
+- *(dividends)* Add functionality to reset cache in case user updates dividends
+
 ## [1.44.0] - 2026-02-03
 
 ### 🚀 Features

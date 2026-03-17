@@ -58,6 +58,24 @@ func HandleGetAllDividends(manager *DividendsManager) http.HandlerFunc {
 	}
 }
 
+// HandleResetCache handles resetting the dividends cache.
+// @Summary Reset dividends cache
+// @Description Reset dividends cache
+// @Tags dividends
+// @Accept  json
+// @Produce  json
+// @Success 200 {string} string "Cache reset successfully"
+// @Router /api/v1/dividends/cache/reset [post]
+func HandleResetCache(manager *DividendsManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		manager.ResetCache()
+		logging.GetLogger().Info("Dividends cache reset manually")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Cache reset successfully"})
+	}
+}
+
 // RegisterHandlers registers the handlers for the dividends service.
 func RegisterHandlers(mux *http.ServeMux, manager *DividendsManager) {
 	mux.HandleFunc("/api/v1/dividends/", func(w http.ResponseWriter, r *http.Request) {
@@ -70,4 +88,12 @@ func RegisterHandlers(mux *http.ServeMux, manager *DividendsManager) {
 	})
 
 	mux.HandleFunc("/api/v1/dividends", HandleGetAllDividends(manager))
+
+	mux.HandleFunc("/api/v1/dividends/cache/reset", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		HandleResetCache(manager).ServeHTTP(w, r)
+	})
 }

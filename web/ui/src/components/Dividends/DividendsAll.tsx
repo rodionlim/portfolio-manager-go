@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { Box, Text } from "@mantine/core";
+import { Box, Button, Text } from "@mantine/core";
+import { IconRefresh } from "@tabler/icons-react";
 import {
   MantineReactTable,
   MRT_ColumnDef,
@@ -48,12 +49,36 @@ const DividendsAll: React.FC = () => {
     data: allDividends = {},
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ["allDividends"],
     queryFn: fetchAllDividends,
     refetchOnWindowFocus: false,
     retry: false,
   });
+
+  const resetCache = async () => {
+    try {
+      const resp = await fetch(getUrl("/api/v1/dividends/cache/reset"), {
+        method: "POST",
+      });
+      if (!resp.ok) {
+        throw new Error("Failed to reset cache");
+      }
+      notifications.show({
+        color: "green",
+        title: "Success",
+        message: "Dividends cache reset successfully",
+      });
+      refetch();
+    } catch (error: any) {
+      notifications.show({
+        color: "red",
+        title: "Error",
+        message: error.message,
+      });
+    }
+  };
 
   // Flatten and sort dividends by ExDate in descending order
   const flattenedDividends = useMemo(() => {
@@ -139,7 +164,7 @@ const DividendsAll: React.FC = () => {
         ),
       },
     ],
-    []
+    [],
   );
 
   // Configure the table
@@ -178,6 +203,14 @@ const DividendsAll: React.FC = () => {
         <Text size="sm" c="dimmed">
           ({flattenedDividends.length} records)
         </Text>
+        <Button
+          leftSection={<IconRefresh size={14} />}
+          onClick={resetCache}
+          variant="light"
+          size="xs"
+        >
+          Reset Cache
+        </Button>
       </Box>
     ),
   });

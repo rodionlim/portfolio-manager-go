@@ -791,6 +791,58 @@ curl -X GET http://localhost:8080/api/v1/mdata/price/eth-usd
 curl -X GET http://localhost:8080/api/v1/mdata/price/usd-sgd
 ```
 
+### Price Equity Options
+
+Price an American equity option using a Black-Scholes approximation. If `rate` is omitted, the backend interpolates the latest Fed H15 Treasury constant maturity curve for the option tenor and falls back to `0.0375` if the fetch fails. If `volatility` is omitted, the backend first tries to imply it from `premium` and otherwise estimates annualized volatility from recent underlying history. Historical volatility fallback supports `30`, `60`, `180`, and `360` calendar-day lookbacks via `volatilityLookbackDays`.
+
+```sh
+curl -X POST http://localhost:8080/api/v1/options/price \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ticker": "AAPL",
+    "optionType": "call",
+    "spot": 210.50,
+    "strike": 220,
+    "expiry": "2026-12-18",
+    "rate": 0.04,
+    "dividendYield": 0.005,
+    "volatility": 0.24
+  }'
+```
+
+Example with backend volatility estimation:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/options/price \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ticker": "MSFT",
+    "optionType": "put",
+    "spot": 415,
+    "strike": 400,
+    "expiry": "2026-09-18",
+    "dividendYield": 0.0,
+    "volatilityLookbackDays": 60
+  }'
+```
+
+Example with premium-driven implied volatility:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/options/price \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ticker": "AAPL",
+    "optionType": "call",
+    "spot": 210.50,
+    "strike": 220,
+    "expiry": "2026-12-18",
+    "rate": 0.04,
+    "dividendYield": 0.005,
+    "premium": 12.35
+  }'
+```
+
 ### Fetch Historical Price Data
 
 ```sh

@@ -5,6 +5,7 @@ import {
   IconCoin,
   IconDeviceLaptop,
   IconChartLine,
+  IconCalculator,
   IconHistory,
 } from "@tabler/icons-react";
 import { Code, Group, ScrollArea } from "@mantine/core";
@@ -53,6 +54,7 @@ const items = [
     ],
   },
   { label: "Historical Data", icon: IconHistory, link: "/historical" },
+  { label: "Option Pricer", icon: IconCalculator, link: "/options/pricer" },
   { label: "Settings", icon: IconAdjustments, link: "/settings" },
 ];
 

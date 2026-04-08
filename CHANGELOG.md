@@ -1,3 +1,10 @@
+## [1.45.0] - 2026-04-08
+
+### 🚀 Features
+
+- *(seed)* Seed defense and energy infra etfs
+- *(pricer)* Add option pricer #169
+
 ## [1.44.1] - 2026-03-17
 
 ### 🐛 Bug Fixes

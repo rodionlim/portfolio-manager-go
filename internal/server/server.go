@@ -11,6 +11,7 @@ import (
 	"portfolio-manager/internal/fxinfer"
 	"portfolio-manager/internal/historical"
 	"portfolio-manager/internal/metrics"
+	"portfolio-manager/internal/optionpricer"
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/internal/user"
 	"portfolio-manager/pkg/logging"
@@ -85,6 +86,7 @@ func (s *Server) Start(ctx context.Context) error {
 	if s.portfolio != nil {
 		// Register market data service handlers
 		mdata.RegisterHandlers(s.mux, s.portfolio.GetMdataManager())
+		optionpricer.RegisterHandlers(s.mux, optionpricer.NewService(s.portfolio.GetMdataManager()))
 		rdata.RegisterHandlers(s.mux, s.portfolio.GetRdataManager())
 		dividends.RegisterHandlers(s.mux, s.portfolio.GetDividendsManager())
 	}

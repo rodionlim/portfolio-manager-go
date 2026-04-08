@@ -2347,6 +2347,52 @@
                 }
             }
         },
+        "/api/v1/options/price": {
+            "post": {
+                "description": "Prices an American equity option using a Black-Scholes approximation. If rate is omitted, the backend interpolates the latest Fed H15 Treasury constant maturity curve for the option tenor and falls back to 3.75 percent if the fetch fails. If volatility is omitted, the backend first tries to imply it from the supplied premium and otherwise estimates annualized volatility from recent underlying history using a selectable 30, 60, 180, or 360 day lookback.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "options"
+                ],
+                "summary": "Price an equity option",
+                "parameters": [
+                    {
+                        "description": "Option pricing request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/optionpricer.PriceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Option valuation and Greeks",
+                        "schema": {
+                            "$ref": "#/definitions/optionpricer.PriceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to price option",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/portfolio/cleanup": {
             "post": {
                 "description": "Closes positions that have expired without a corresponding closure trade",
@@ -3570,6 +3616,106 @@
                 "totalDividends": {
                     "description": "Total dividends",
                     "type": "number"
+                }
+            }
+        },
+        "optionpricer.PriceRequest": {
+            "type": "object",
+            "properties": {
+                "dividendYield": {
+                    "type": "number"
+                },
+                "expiry": {
+                    "type": "string"
+                },
+                "optionType": {
+                    "type": "string"
+                },
+                "premium": {
+                    "type": "number"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "spot": {
+                    "type": "number"
+                },
+                "strike": {
+                    "type": "number"
+                },
+                "ticker": {
+                    "type": "string"
+                },
+                "volatility": {
+                    "type": "number"
+                },
+                "volatilityLookbackDays": {
+                    "type": "integer"
+                }
+            }
+        },
+        "optionpricer.PriceResponse": {
+            "type": "object",
+            "properties": {
+                "delta": {
+                    "type": "number"
+                },
+                "dividendYield": {
+                    "type": "number"
+                },
+                "expiry": {
+                    "type": "string"
+                },
+                "gamma": {
+                    "type": "number"
+                },
+                "npv": {
+                    "type": "number"
+                },
+                "optionType": {
+                    "type": "string"
+                },
+                "premium": {
+                    "type": "number"
+                },
+                "pricingModel": {
+                    "type": "string"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "rateCurveDate": {
+                    "type": "string"
+                },
+                "rateSource": {
+                    "type": "string"
+                },
+                "spot": {
+                    "type": "number"
+                },
+                "strike": {
+                    "type": "number"
+                },
+                "style": {
+                    "type": "string"
+                },
+                "theta": {
+                    "type": "number"
+                },
+                "ticker": {
+                    "type": "string"
+                },
+                "timeToExpiryYears": {
+                    "type": "number"
+                },
+                "volatility": {
+                    "type": "number"
+                },
+                "volatilityLookbackDays": {
+                    "type": "integer"
+                },
+                "volatilitySource": {
+                    "type": "string"
                 }
             }
         },

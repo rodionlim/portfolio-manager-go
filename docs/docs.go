@@ -3090,7 +3090,8 @@ const docTemplate = `{
                 "Quantity",
                 "Side",
                 "Ticker",
-                "TradeDate"
+                "TradeDate",
+                "TradeID"
             ],
             "properties": {
                 "Account": {
@@ -3105,9 +3106,18 @@ const docTemplate = `{
                     "description": "Broker who executed the trade",
                     "type": "string"
                 },
+                "CallPut": {
+                    "type": "string"
+                },
+                "ExpiryDate": {
+                    "type": "string"
+                },
                 "Fx": {
                     "description": "FX rate for the trade",
                     "type": "number"
+                },
+                "InstrumentType": {
+                    "type": "string"
                 },
                 "OrigTradeID": {
                     "description": "Original trade ID to link auto closed trades to the original trade",
@@ -3134,6 +3144,9 @@ const docTemplate = `{
                     "description": "Status of the trade (e.g. Open, AutoClosed, Closed), autoclosed if the trade is closed by the system automatically upon expiry (e.g. MAS Bills), closed if the trade is closed manually",
                     "type": "string"
                 },
+                "StrikePrice": {
+                    "type": "number"
+                },
                 "Ticker": {
                     "description": "Ticker symbol of the asset",
                     "type": "string"
@@ -3144,6 +3157,12 @@ const docTemplate = `{
                 },
                 "TradeID": {
                     "description": "Unique identifier for the trade",
+                    "type": "string"
+                },
+                "UnderlyingSpotRef": {
+                    "type": "number"
+                },
+                "UnderlyingTicker": {
                     "type": "string"
                 },
                 "Yield": {
@@ -3164,10 +3183,19 @@ const docTemplate = `{
                 "broker": {
                     "type": "string"
                 },
+                "callPut": {
+                    "type": "string"
+                },
+                "expiryDate": {
+                    "type": "string"
+                },
                 "fx": {
                     "type": "number"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "instrumentType": {
                     "type": "string"
                 },
                 "origTradeID": {
@@ -3180,7 +3208,6 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "seqNum": {
-                    "description": "Sequence number",
                     "type": "integer"
                 },
                 "side": {
@@ -3189,10 +3216,19 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
+                "strikePrice": {
+                    "type": "number"
+                },
                 "ticker": {
                     "type": "string"
                 },
                 "tradeDate": {
+                    "type": "string"
+                },
+                "underlyingSpotRef": {
+                    "type": "number"
+                },
+                "underlyingTicker": {
                     "type": "string"
                 },
                 "yield": {
@@ -3749,6 +3785,9 @@ const docTemplate = `{
                 "fxRate": {
                     "type": "number"
                 },
+                "instrumentType": {
+                    "type": "string"
+                },
                 "mv": {
                     "type": "number"
                 },
@@ -3766,6 +3805,12 @@ const docTemplate = `{
                 },
                 "totalPaid": {
                     "type": "number"
+                },
+                "underlyingGroup": {
+                    "type": "string"
+                },
+                "underlyingTicker": {
+                    "type": "string"
                 }
             }
         },

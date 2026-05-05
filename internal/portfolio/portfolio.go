@@ -34,7 +34,7 @@ type Portfolio struct {
 
 func NewPortfolio(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.ReferenceManager, dividendsSvc *dividends.DividendsManager) *Portfolio {
 	var currentSeqNum int
-	err := db.Get(string(types.HeadSequencePortfolioKey), currentSeqNum)
+	err := db.Get(string(types.HeadSequencePortfolioKey), &currentSeqNum)
 	if err != nil {
 		currentSeqNum = -1
 	}
@@ -56,7 +56,7 @@ func NewPortfolio(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.Re
 
 func NewPortfolioWithConfigurableExpiry(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.ReferenceManager, dividendsSvc *dividends.DividendsManager, fxDuration time.Duration) *Portfolio {
 	var currentSeqNum int
-	err := db.Get(string(types.HeadSequencePortfolioKey), currentSeqNum)
+	err := db.Get(string(types.HeadSequencePortfolioKey), &currentSeqNum)
 	if err != nil {
 		currentSeqNum = -1
 	}
@@ -144,6 +144,7 @@ func (p *Portfolio) DeletePositions() error {
 
 	p.positions = make(map[string]map[string]*Position) // reset positions in memory
 	p.currentSeqNum = -1                                // reset current sequence number
+	p.saveSeqNumToDAL(-1)
 
 	p.logger.Infof("Deleted %d positions from database", len(positionKeys))
 	return nil
@@ -311,6 +312,12 @@ func (p *Portfolio) updatePositionFromDb(position *Position) error {
 	positionToUpdate.AvgPx = position.AvgPx
 	positionToUpdate.TotalPaid = position.TotalPaid
 	positionToUpdate.FxRate = position.FxRate
+	positionToUpdate.Ccy = position.Ccy
+	positionToUpdate.AssetClass = position.AssetClass
+	positionToUpdate.AssetSubClass = position.AssetSubClass
+	positionToUpdate.InstrumentType = position.InstrumentType
+	positionToUpdate.UnderlyingTicker = position.UnderlyingTicker
+	positionToUpdate.UnderlyingGroup = position.UnderlyingGroup
 
 	return nil
 }
@@ -356,6 +363,7 @@ func (p *Portfolio) updatePosition(trade *blotter.Trade) error {
 	}
 
 	if trade.SeqNum > p.currentSeqNum {
+		p.currentSeqNum = trade.SeqNum
 		p.saveSeqNumToDAL(trade.SeqNum)
 	}
 
@@ -511,6 +519,21 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 	position.AssetClass = tickerRef.AssetClass
 	position.AssetSubClass = tickerRef.AssetSubClass
 	position.FxRate, _ = p.getFXRate(position.Ccy)
+	position.InstrumentType = resolveInstrumentType(tickerRef)
+	position.UnderlyingTicker = resolveUnderlyingTicker(position.Ticker, tickerRef)
+	position.UnderlyingGroup = position.UnderlyingTicker
+
+	if tickerRef.AssetSubClass == rdata.AssetSubClassOption {
+		position.Dividends = 0
+		position.Mv = 0
+		position.Px = 0
+		if position.Qty == 0 {
+			position.PnL = position.TotalPaid * -1
+		} else {
+			position.PnL = 0
+		}
+		return nil
+	}
 
 	switch tickerRef.AssetClass {
 	case rdata.AssetClassEquities, rdata.AssetClassBonds:
@@ -550,6 +573,24 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 	}
 
 	return nil
+}
+
+func resolveUnderlyingTicker(ticker string, tickerRef rdata.TickerReferenceWithSGXMapped) string {
+	if tickerRef.UnderlyingTicker != "" {
+		return tickerRef.UnderlyingTicker
+	}
+	return ticker
+}
+
+func resolveInstrumentType(tickerRef rdata.TickerReferenceWithSGXMapped) string {
+	switch tickerRef.AssetSubClass {
+	case rdata.AssetSubClassOption:
+		return blotter.InstrumentTypeOption
+	case rdata.AssetSubClassFuture:
+		return blotter.InstrumentTypeFuture
+	default:
+		return blotter.InstrumentTypeOutright
+	}
 }
 
 // saveSeqNumToDAL saves the current sequence number to the DAL database.

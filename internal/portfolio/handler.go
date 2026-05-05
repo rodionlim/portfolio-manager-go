@@ -24,7 +24,7 @@ func HandlePositionsGet(portfolio *Portfolio) http.HandlerFunc {
 		positions, err := portfolio.GetAllPositions()
 		if err != nil {
 			logging.GetLogger().Errorf("Failed to get positions: %v", err)
-			common.WriteJSONError(w, "Failed to get positions", http.StatusInternalServerError)
+			common.WriteJSONError(w, "Failed to get positions: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")

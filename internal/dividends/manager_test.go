@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setup() (*DividendsManager, *mocks.MockMarketDataManager, *mocks.MockTradeGetterBlotter, error) {
+func setup() (*DividendsManager, *mocks.MockMarketDataManager, *mockTradeGetterBlotter, error) {
 	db := mocks.NewMockDatabase()
 	mdataMgr := mocks.NewMockMarketDataManager()
 	rdataMgr := mocks.NewMockReferenceManager()
-	blotterMgr := mocks.NewMockTradeGetterBlotter()
+	blotterMgr := newMockTradeGetterBlotter()
 
 	mdataMgr.SetDividendMetadata("AAPL", []types.DividendsMetadata{
 		{Ticker: "AAPL", ExDate: "2023-01-01", Amount: 1.0, WithholdingTax: 0.3},

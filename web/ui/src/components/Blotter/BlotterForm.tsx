@@ -1,11 +1,15 @@
 import {
   Autocomplete,
+  Box,
   Button,
   Container,
+  Divider,
   Group,
   NumberInput,
+  Select,
   SimpleGrid,
   Switch,
+  Text,
   TextInput,
   Title,
   FileInput,
@@ -13,23 +17,148 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import { DatePickerInput } from "@mantine/dates";
+import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
+import { Trade } from "../../types/blotter";
 import { IsSGGovies, refDataByAssetClass } from "../../utils/referenceData";
 import { useLocation } from "react-router-dom";
 import { getUrl } from "../../utils/url";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { IconPaperclip } from "@tabler/icons-react";
+
+const instrumentTypeOptions = [
+  { value: "outright", label: "Outright" },
+  { value: "option", label: "Option" },
+];
+
+const callPutOptions = [
+  { value: "call", label: "Call" },
+  { value: "put", label: "Put" },
+];
+
+const formatOptionStrike = (value: number) => Math.round(value).toString();
+
+const buildOptionTickerPreview = (
+  underlyingTicker: string,
+  expiryDate: string,
+  strikePrice: number,
+  callPut: string,
+) => {
+  const normalizedUnderlying = underlyingTicker.trim().toUpperCase();
+  const normalizedExpiry = expiryDate.trim().replaceAll("-", "");
+  const normalizedCallPut = callPut.trim().toLowerCase();
+
+  if (
+    !normalizedUnderlying ||
+    !normalizedExpiry ||
+    strikePrice <= 0 ||
+    !["call", "put"].includes(normalizedCallPut)
+  ) {
+    return "";
+  }
+
+  const callPutCode = normalizedCallPut === "put" ? "p" : "c";
+  return `${normalizedUnderlying}_${normalizedExpiry}_${formatOptionStrike(strikePrice)}_${callPutCode}`.toUpperCase();
+};
+
+const formatDateForHistoricalQuery = (value: Date | null) => {
+  if (!value) return "";
+  const year = value.getFullYear();
+  const month = `${value.getMonth() + 1}`.padStart(2, "0");
+  const day = `${value.getDate()}`.padStart(2, "0");
+  return `${year}${month}${day}`;
+};
+
+const fetchTrades = async (): Promise<Trade[]> => {
+  const resp = await fetch(getUrl("/api/v1/blotter/trade"));
+  if (!resp.ok) {
+    throw new Error("Failed to fetch blotter trades");
+  }
+
+  return resp.json();
+};
+
+const buildAutocompleteOptions = (
+  values: Array<string | null | undefined>,
+): string[] =>
+  Array.from(
+    new Set(
+      values
+        .map((value) => value?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ).sort((left, right) => left.localeCompare(right));
 
 export default function BlotterForm() {
   const location = useLocation();
   const [confirmationFile, setConfirmationFile] = useState<File | null>(null);
+  const [tradeDateValue, setTradeDateValue] = useState<Date | null>(
+    location.state?.date instanceof Date
+      ? location.state.date
+      : location.state?.date
+        ? new Date(location.state.date)
+        : (() => {
+            const date = new Date();
+            date.setHours(9, 0, 0, 0);
+            return date;
+          })(),
+  );
+  const [instrumentTypeValue, setInstrumentTypeValue] = useState(
+    location.state?.instrumentType || "outright",
+  );
+  const [underlyingTickerValue, setUnderlyingTickerValue] = useState(
+    location.state?.underlyingTicker || "",
+  );
+  const [expiryDateValue, setExpiryDateValue] = useState(
+    location.state?.expiryDate || "",
+  );
+  const [strikePriceValue, setStrikePriceValue] = useState<number | string>(
+    location.state?.strikePrice || 0,
+  );
+  const [callPutValue, setCallPutValue] = useState(
+    location.state?.callPut || "",
+  );
 
   const defaultBook = localStorage.getItem("defaultBook") || "Main";
   const defaultBroker = localStorage.getItem("defaultBroker") || "DBS";
   const defaultAccount = localStorage.getItem("defaultAccount") || "CDP";
 
+  const { data: trades = [] } = useQuery({
+    queryKey: ["trades"],
+    queryFn: fetchTrades,
+    retry: false,
+  });
+
   const refData = useSelector((state: RootState) => state.referenceData.data);
+  const tickerOptions = useMemo(() => refDataByAssetClass(refData), [refData]);
+  const bookOptions = useMemo(
+    () =>
+      buildAutocompleteOptions([
+        defaultBook,
+        location.state?.book,
+        ...trades.map((trade) => trade.Book),
+      ]),
+    [defaultBook, location.state?.book, trades],
+  );
+  const brokerOptions = useMemo(
+    () =>
+      buildAutocompleteOptions([
+        defaultBroker,
+        location.state?.broker,
+        ...trades.map((trade) => trade.Broker),
+      ]),
+    [defaultBroker, location.state?.broker, trades],
+  );
+  const accountOptions = useMemo(
+    () =>
+      buildAutocompleteOptions([
+        defaultAccount,
+        location.state?.account,
+        ...trades.map((trade) => trade.Account),
+      ]),
+    [defaultAccount, location.state?.account, trades],
+  );
 
   const normalizeString = (value: unknown) =>
     typeof value === "string"
@@ -74,6 +203,12 @@ export default function BlotterForm() {
     fx?: unknown;
     tradeType?: unknown;
     seqNum?: unknown;
+    instrumentType?: unknown;
+    underlyingTicker?: unknown;
+    underlyingSpotRef?: unknown;
+    expiryDate?: unknown;
+    strikePrice?: unknown;
+    callPut?: unknown;
   }) => {
     const qty = normalizeNumber(values.qty);
     const priceRaw = normalizeNumber(values.price);
@@ -98,6 +233,12 @@ export default function BlotterForm() {
       fx: normalizeNumber(values.fx),
       tradeType: normalizeTradeType(values.tradeType),
       seqNum: normalizeNumber(values.seqNum),
+      instrumentType: normalizeString(values.instrumentType).toLowerCase(),
+      underlyingTicker: normalizeString(values.underlyingTicker).toUpperCase(),
+      underlyingSpotRef: normalizeNumber(values.underlyingSpotRef),
+      expiryDate: normalizeString(values.expiryDate),
+      strikePrice: normalizeNumber(values.strikePrice),
+      callPut: normalizeString(values.callPut).toLowerCase(),
     };
   };
 
@@ -119,21 +260,19 @@ export default function BlotterForm() {
     areNumbersClose(a.price, b.price) &&
     areNumbersClose(a.fx, b.fx) &&
     a.tradeType === b.tradeType &&
-    areNumbersClose(a.seqNum, b.seqNum);
+    areNumbersClose(a.seqNum, b.seqNum) &&
+    a.instrumentType === b.instrumentType &&
+    a.underlyingTicker === b.underlyingTicker &&
+    areNumbersClose(a.underlyingSpotRef, b.underlyingSpotRef) &&
+    a.expiryDate === b.expiryDate &&
+    areNumbersClose(a.strikePrice, b.strikePrice) &&
+    a.callPut === b.callPut;
 
   const form = useForm({
     mode: "uncontrolled",
     initialValues: {
       tradeId: location.state?.tradeId || "",
-      date:
-        location.state?.date ||
-        (() => {
-          // Create date at midnight
-          const date = new Date();
-          // Add 9 hours to get 9:00 AM local time
-          date.setHours(9, 0, 0, 0);
-          return date;
-        })(),
+      date: tradeDateValue,
       ticker: location.state?.ticker || "",
       book: location.state?.book || defaultBook,
       broker: location.state?.broker || defaultBroker,
@@ -146,6 +285,12 @@ export default function BlotterForm() {
       fx: location.state?.fx || 0, // optional: 0 means the rate will be inferred
       tradeType: location.state?.tradeType || false, // false for BUY, true for SELL
       seqNum: location.state?.seqNum || 0,
+      instrumentType: location.state?.instrumentType || "outright",
+      underlyingTicker: location.state?.underlyingTicker || "",
+      underlyingSpotRef: location.state?.underlyingSpotRef || 0,
+      expiryDate: location.state?.expiryDate || "",
+      strikePrice: location.state?.strikePrice || 0,
+      callPut: location.state?.callPut || "",
     },
     validate: {
       date: (value) => !value && "Date is required",
@@ -154,6 +299,29 @@ export default function BlotterForm() {
       status: (value) =>
         !["open", "autoclosed", "closed"].includes(value) &&
         "Status is required, and must be either open, autoclosed, or closed",
+      instrumentType: (value) =>
+        !["outright", "option"].includes(String(value).toLowerCase()) &&
+        "Instrument type must be either outright or option",
+      underlyingTicker: (value, values) =>
+        values.instrumentType === "option" && !String(value).trim()
+          ? "Underlying ticker is required for option trades"
+          : null,
+      expiryDate: (value, values) =>
+        values.instrumentType === "option" && !String(value).trim()
+          ? "Expiry date is required for option trades"
+          : null,
+      strikePrice: (value, values) =>
+        values.instrumentType === "option" && Number(value) <= 0
+          ? "Strike price must be greater than 0 for option trades"
+          : values.instrumentType === "option" &&
+              !Number.isInteger(Number(value))
+            ? "Strike price must be a whole number for option trades"
+            : null,
+      callPut: (value, values) =>
+        values.instrumentType === "option" &&
+        !["call", "put"].includes(String(value).toLowerCase())
+          ? "Call/Put is required for option trades"
+          : null,
       qty: (value) => value <= 0 && "Quantity must be greater than 0",
       price: (value, values) => {
         if (value <= 0 && values.value <= 0) {
@@ -177,10 +345,100 @@ export default function BlotterForm() {
     transformValues: (values) => ({
       ...values,
       ticker: values.ticker.toUpperCase(),
-      date: values.date.toLocaleDateString("sv-SE") + "T00:00:00Z",
+      date:
+        values.date instanceof Date
+          ? values.date.toLocaleDateString("sv-SE") + "T00:00:00Z"
+          : "",
       price: values.price > 0 ? values.price : values.value / values.qty,
+      underlyingTicker: values.underlyingTicker.toUpperCase(),
     }),
   });
+
+  const isOptionTrade = instrumentTypeValue === "option";
+  const optionTickerPreview = useMemo(
+    () =>
+      buildOptionTickerPreview(
+        underlyingTickerValue,
+        expiryDateValue,
+        Number(strikePriceValue) || 0,
+        callPutValue,
+      ),
+    [underlyingTickerValue, expiryDateValue, strikePriceValue, callPutValue],
+  );
+
+  useEffect(() => {
+    if (!isOptionTrade) {
+      return;
+    }
+
+    if (
+      optionTickerPreview &&
+      form.getValues().ticker !== optionTickerPreview
+    ) {
+      form.setFieldValue("ticker", optionTickerPreview);
+    }
+  }, [form, isOptionTrade, optionTickerPreview]);
+
+  useEffect(() => {
+    if (!isOptionTrade || !underlyingTickerValue || !tradeDateValue) {
+      return;
+    }
+
+    if (Number(form.getValues().underlyingSpotRef) > 0) {
+      return;
+    }
+
+    let cancelled = false;
+    const tradeDateKey = formatDateForHistoricalQuery(tradeDateValue);
+
+    const populateSpotReference = async () => {
+      const normalizedUnderlying = underlyingTickerValue.trim().toUpperCase();
+      const historicalUrl = getUrl(
+        `/api/v1/mdata/price/historical/${encodeURIComponent(normalizedUnderlying)}?start=${tradeDateKey}&end=${tradeDateKey}`,
+      );
+
+      try {
+        const historicalResp = await fetch(historicalUrl);
+        if (!historicalResp.ok) {
+          throw new Error("Historical spot lookup failed");
+        }
+
+        const historicalData = await historicalResp.json();
+        const historicalPrice = Array.isArray(historicalData)
+          ? historicalData[historicalData.length - 1]?.Price ||
+            historicalData[historicalData.length - 1]?.price
+          : undefined;
+
+        if (!cancelled && historicalPrice && Number(historicalPrice) > 0) {
+          form.setFieldValue("underlyingSpotRef", Number(historicalPrice));
+          return;
+        }
+
+        throw new Error("Historical spot not available");
+      } catch {
+        const currentResp = await fetch(
+          getUrl(
+            `/api/v1/mdata/price/${encodeURIComponent(normalizedUnderlying)}`,
+          ),
+        );
+        if (!currentResp.ok) {
+          return;
+        }
+
+        const currentData = await currentResp.json();
+        const currentPrice = currentData.Price || currentData.price;
+        if (!cancelled && currentPrice && Number(currentPrice) > 0) {
+          form.setFieldValue("underlyingSpotRef", Number(currentPrice));
+        }
+      }
+    };
+
+    populateSpotReference();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form, isOptionTrade, tradeDateValue, underlyingTickerValue]);
 
   async function upsertTrade(
     values: Omit<typeof form.values, "date"> & { date: string },
@@ -190,12 +448,17 @@ export default function BlotterForm() {
     const baseCcy = "SGD"; // TODO: make this dynamic based on user settings or location
     let usedCurrentRate = false;
 
+    const fxLookupTicker =
+      values.instrumentType === "option"
+        ? values.underlyingTicker
+        : values.ticker;
+
     if (values.fx === 0) {
       // Check if it is SG Govies, if so, set FX to 1
-      if (IsSGGovies(values.ticker) && baseCcy === "SGD") {
+      if (IsSGGovies(fxLookupTicker) && baseCcy === "SGD") {
         values.fx = 1; // SG Govies are always in SGD
-      } else if (refData && refData[values.ticker]?.ccy) {
-        const quoteCcy = refData[values.ticker].ccy;
+      } else if (refData && refData[fxLookupTicker]?.ccy) {
+        const quoteCcy = refData[fxLookupTicker].ccy;
         if (quoteCcy === baseCcy) {
           values.fx = 1;
         } else {
@@ -227,7 +490,7 @@ export default function BlotterForm() {
               notifications.show({
                 color: "red",
                 title: "Error",
-                message: `Unable to fetch FX rate for ${values.ticker}`,
+                message: `Unable to fetch FX rate for ${fxLookupTicker}`,
               });
               throw new Error("Unable to fetch FX rate");
             }
@@ -240,13 +503,11 @@ export default function BlotterForm() {
         notifications.show({
           color: "red",
           title: "Error",
-          message: `Unable to infer FX rate for ${values.ticker}`,
+          message: `Unable to infer FX rate for ${fxLookupTicker}`,
         });
         throw new Error("Unable to infer FX rate");
       }
     }
-
-    console.log(values.fx);
 
     const body = {
       id: values.tradeId,
@@ -256,12 +517,18 @@ export default function BlotterForm() {
       broker: values.broker,
       account: values.account,
       status: values.status,
-      originalTradeId: values.originalTradeId,
+      origTradeID: values.originalTradeId,
       quantity: values.qty,
       price: values.price,
       fx: values.fx, // Add FX rate to request body (0 means infer from backend)
       side: values.tradeType ? "sell" : "buy",
       seqNum: values.seqNum,
+      instrumentType: values.instrumentType,
+      underlyingTicker: values.underlyingTicker,
+      underlyingSpotRef: values.underlyingSpotRef,
+      expiryDate: values.expiryDate,
+      strikePrice: values.strikePrice,
+      callPut: values.callPut,
     };
 
     try {
@@ -310,13 +577,20 @@ export default function BlotterForm() {
       broker: location.state?.broker || defaultBroker,
       account: location.state?.account || defaultAccount,
       status: location.state?.status || "open",
-      originalTradeId: location.state?.originalTradeId || "",
+      originalTradeId:
+        location.state?.origTradeID || location.state?.originalTradeId || "",
       qty: location.state?.qty || 0,
       price: location.state?.price || 0,
       value: location.state?.value || 0,
       fx: location.state?.fx || 0,
       tradeType: location.state?.tradeType || false,
       seqNum: location.state?.seqNum || 0,
+      instrumentType: location.state?.instrumentType || "outright",
+      underlyingTicker: location.state?.underlyingTicker || "",
+      underlyingSpotRef: location.state?.underlyingSpotRef || 0,
+      expiryDate: location.state?.expiryDate || "",
+      strikePrice: location.state?.strikePrice || 0,
+      callPut: location.state?.callPut || "",
     });
   }, [location.state, defaultBook, defaultBroker, defaultAccount]);
 
@@ -325,6 +599,7 @@ export default function BlotterForm() {
   ) => {
     localStorage.setItem("defaultBook", values.book);
     localStorage.setItem("defaultBroker", values.broker);
+    localStorage.setItem("defaultAccount", values.account);
 
     try {
       const isUpdate = Boolean(values.tradeId);
@@ -392,11 +667,11 @@ export default function BlotterForm() {
 
   return (
     <Container size="md">
-      <Title order={2} mb="lg">
+      <Title order={2} mb="sm">
         {form.getValues().tradeId ? "Update" : "Add"} Trade to Blotter
       </Title>
       <form onSubmit={form.onSubmit(handleSubmit)}>
-        <SimpleGrid cols={2}>
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm" verticalSpacing="sm">
           {form.getValues().tradeId && (
             <TextInput
               withAsterisk
@@ -413,34 +688,91 @@ export default function BlotterForm() {
             label="Trade Date"
             placeholder="Select the trade date"
             key={form.key("date")}
-            {...form.getInputProps("date")}
+            value={tradeDateValue}
+            onChange={(value) => {
+              setTradeDateValue(value);
+              form.setFieldValue("date", value);
+            }}
+            error={form.errors.date}
           />
-          <Autocomplete
+          <Select
             withAsterisk
-            label="Ticker"
-            placeholder="ticker to be added, e.g. es3.si, sbjun25"
-            data={refDataByAssetClass(refData)}
-            key={form.key("ticker")}
-            {...form.getInputProps("ticker")}
+            label="Instrument Type"
+            data={instrumentTypeOptions}
+            key={form.key("instrumentType")}
+            value={instrumentTypeValue}
+            onChange={(value) => {
+              const normalizedValue = value || "outright";
+              setInstrumentTypeValue(normalizedValue);
+              form.setFieldValue("instrumentType", normalizedValue);
+              if (normalizedValue !== "option") {
+                setUnderlyingTickerValue("");
+                setExpiryDateValue("");
+                setStrikePriceValue(0);
+                setCallPutValue("");
+                form.setFieldValue("underlyingTicker", "");
+                form.setFieldValue("underlyingSpotRef", 0);
+                form.setFieldValue("expiryDate", "");
+                form.setFieldValue("strikePrice", 0);
+                form.setFieldValue("callPut", "");
+              }
+            }}
+            error={form.errors.instrumentType}
           />
-          <TextInput
+          {isOptionTrade ? (
+            <Autocomplete
+              withAsterisk
+              label="Underlying Ticker"
+              placeholder="underlying ticker, e.g. AAPL"
+              description="Used to derive the option preview and spot reference"
+              data={tickerOptions}
+              value={underlyingTickerValue}
+              onChange={(value) => {
+                const normalizedValue = value.toUpperCase();
+                setUnderlyingTickerValue(normalizedValue);
+                form.setFieldValue("underlyingTicker", normalizedValue);
+              }}
+              error={form.errors.underlyingTicker}
+            />
+          ) : (
+            <Autocomplete
+              withAsterisk
+              label="Ticker"
+              placeholder="ticker to be added, e.g. es3.si, sbjun25"
+              data={tickerOptions}
+              key={form.key("ticker")}
+              {...form.getInputProps("ticker")}
+            />
+          )}
+          {isOptionTrade && (
+            <TextInput
+              label="Option Ticker Preview"
+              value={optionTickerPreview || form.getValues().ticker}
+              readOnly
+              description="Auto-generated from the option fields"
+            />
+          )}
+          <Autocomplete
             withAsterisk
             label="Book"
             placeholder="book to be added, e.g. Main Book"
+            data={bookOptions}
             key={form.key("book")}
             {...form.getInputProps("book")}
           />
-          <TextInput
+          <Autocomplete
             withAsterisk
             label="Broker"
             placeholder="broker to be added, e.g. DBS"
+            data={brokerOptions}
             key={form.key("broker")}
             {...form.getInputProps("broker")}
           />
-          <TextInput
+          <Autocomplete
             withAsterisk
             label="Account"
             placeholder="account to be added, e.g. CDP"
+            data={accountOptions}
             key={form.key("account")}
             {...form.getInputProps("account")}
           />
@@ -491,6 +823,55 @@ export default function BlotterForm() {
             key={form.key("fx")}
             {...form.getInputProps("fx")}
           />
+          {isOptionTrade && (
+            <>
+              <TextInput
+                withAsterisk
+                label="Expiry Date"
+                placeholder="YYYY-MM-DD"
+                value={expiryDateValue}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setExpiryDateValue(value);
+                  form.setFieldValue("expiryDate", value);
+                }}
+                error={form.errors.expiryDate}
+              />
+              <NumberInput
+                withAsterisk
+                label="Strike Price"
+                placeholder="Strike"
+                allowDecimal={false}
+                decimalScale={0}
+                value={strikePriceValue}
+                onChange={(value) => {
+                  setStrikePriceValue(value || 0);
+                  form.setFieldValue("strikePrice", Number(value) || 0);
+                }}
+                error={form.errors.strikePrice}
+              />
+              <Select
+                withAsterisk
+                label="Call / Put"
+                data={callPutOptions}
+                value={callPutValue}
+                onChange={(value) => {
+                  const normalizedValue = value || "";
+                  setCallPutValue(normalizedValue);
+                  form.setFieldValue("callPut", normalizedValue);
+                }}
+                error={form.errors.callPut}
+              />
+              <NumberInput
+                label="Underlying Spot Reference"
+                placeholder="Auto-filled from historical spot if left empty"
+                allowDecimal={true}
+                decimalScale={4}
+                key={form.key("underlyingSpotRef")}
+                {...form.getInputProps("underlyingSpotRef")}
+              />
+            </>
+          )}
 
           <FileInput
             label="Trade Confirmation (Optional)"
@@ -502,8 +883,17 @@ export default function BlotterForm() {
             clearable
           />
 
-          <div />
-          <Group justify="flex-end">
+          {isOptionTrade && (
+            <Box style={{ gridColumn: "1 / -1" }}>
+              <Divider my={4} label="Option Booking" labelPosition="center" />
+              <Text size="xs" c="dimmed" mt={4}>
+                Spot reference is persisted on the trade. Open options keep zero
+                live MV and unrealized PnL until the closing trade is booked.
+              </Text>
+            </Box>
+          )}
+
+          <Group justify="flex-end" style={{ gridColumn: "1 / -1" }} mt={4}>
             <Switch
               size="xl"
               onLabel="SELL"

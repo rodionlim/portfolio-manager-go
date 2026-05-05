@@ -153,9 +153,15 @@ definitions:
       Broker:
         description: Broker who executed the trade
         type: string
+      CallPut:
+        type: string
+      ExpiryDate:
+        type: string
       Fx:
         description: FX rate for the trade
         type: number
+      InstrumentType:
+        type: string
       OrigTradeID:
         description: Original trade ID to link auto closed trades to the original
           trade
@@ -178,6 +184,8 @@ definitions:
           if the trade is closed by the system automatically upon expiry (e.g. MAS
           Bills), closed if the trade is closed manually
         type: string
+      StrikePrice:
+        type: number
       Ticker:
         description: Ticker symbol of the asset
         type: string
@@ -186,6 +194,10 @@ definitions:
         type: string
       TradeID:
         description: Unique identifier for the trade
+        type: string
+      UnderlyingSpotRef:
+        type: number
+      UnderlyingTicker:
         type: string
       Yield:
         description: Yield of the asset
@@ -198,6 +210,7 @@ definitions:
     - Side
     - Ticker
     - TradeDate
+    - TradeID
     type: object
   blotter.TradeRequest:
     properties:
@@ -207,9 +220,15 @@ definitions:
         type: string
       broker:
         type: string
+      callPut:
+        type: string
+      expiryDate:
+        type: string
       fx:
         type: number
       id:
+        type: string
+      instrumentType:
         type: string
       origTradeID:
         type: string
@@ -218,15 +237,20 @@ definitions:
       quantity:
         type: number
       seqNum:
-        description: Sequence number
         type: integer
       side:
         type: string
       status:
         type: string
+      strikePrice:
+        type: number
       ticker:
         type: string
       tradeDate:
+        type: string
+      underlyingSpotRef:
+        type: number
+      underlyingTicker:
         type: string
       yield:
         type: number
@@ -599,6 +623,8 @@ definitions:
         type: number
       fxRate:
         type: number
+      instrumentType:
+        type: string
       mv:
         type: number
       pnL:
@@ -611,6 +637,10 @@ definitions:
         type: string
       totalPaid:
         type: number
+      underlyingGroup:
+        type: string
+      underlyingTicker:
+        type: string
     type: object
   rdata.SuccessResponse:
     properties:

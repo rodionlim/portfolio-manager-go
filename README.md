@@ -151,11 +151,13 @@ Create a backup of the database:
 # Local backup to specific directory
 ./portfolio-manager backup --source local --uri /path/to/backup/location
 
-# Google Drive backup (personal account with OAuth2), if not uri specified, defaults to portfolio-manager-go/backups folder
+# Google Drive backup (personal account with OAuth2), if no uri specified, defaults to portfolio-manager-go/backups folder
 ./portfolio-manager backup --source gdrive --user ./credentials.json
+```
 
 **Note on Google Drive OAuth2:**
 If you are using a personal Google account, use OAuth2 Desktop credentials instead of a Service Account to avoid storage quota issues.
+
 1. Create an **OAuth 2.0 Client ID** of type **Desktop App** in Google Cloud Console.
 2. Download the JSON file and use it with the `--user` flag.
 3. **Important**: Google has blocked the out-of-band (OOB) "copy-paste" flow. The application now uses a local loopback server on port **8888** for authentication.
@@ -163,12 +165,14 @@ If you are using a personal Google account, use OAuth2 Desktop credentials inste
 5. On first run, follow the link in your terminal. After authorization, you will be redirected to the URI specified in your `credentials.json` (e.g., `http://localhost:8888` or your Tailscale domain) and the application will capture the code automatically.
 6. A `token.json` will be saved locally for future automatic backups.
 7. **Remote Servers (Proxmox/LXC)**: If you are running the app on a remote server, you have two options for the one-time authentication step:
-   - **Option A (Custom Domain)**: Use a reachable domain in your `redirect_uris` (like a Tailscale `.ts.net` address). Ensure port **8888** (or the port in your URI) is open in your server firewall. (*Note: Only works for "Web Application" client types, not "Desktop App"*).
+   - **Option A (Custom Domain)**: Use a reachable domain in your `redirect_uris` (like a Tailscale `.ts.net` address). Ensure port **8888** (or the port in your URI) is open in your server firewall. (_Note: Only works for "Web Application" client types, not "Desktop App"_).
    - **Option B (Port Forwarding)**: Keep `localhost:8888` in your credentials and "beam" the traffic from your local laptop to the server using one of these commands on your **local machine**:
      - **SSH Tunnel**: `ssh -L 8888:localhost:8888 your-server`
      - **Socat**: `socat TCP4-LISTEN:8888,fork TCP4:your-server:8888`
 
 # Nextcloud backup (not yet implemented)
+
+```sh
 ./portfolio-manager backup --source nextcloud --uri https://your-nextcloud.com --user username --password password
 ```
 
@@ -479,7 +483,7 @@ For more details, see [crontab.guru](https://crontab.guru/) or the [robfig/cron]
 
 ### Positions
 
-Users can get an aggregated view of all their positions via the positions component in the user interface.
+Users can get an aggregated view of all their positions via the positions component in the user interface. Positions are grouped by economic underlying in the outer row, with outright and derivative legs shown together in an expandable detail panel. Open option positions are intentionally displayed with zero live market value and zero unrealized PnL until the closing trade is booked.
 
 ![Position Table](docs/Positions.png)
 
@@ -576,13 +580,39 @@ curl -X POST http://localhost:8080/api/v1/blotter/trade \
         "broker": "DBS",
         "book": "BookA",
         "account": "CDP",
+    "status": "open",
         "quantity": 10,
         "price": 150.00,
         "fx": 1.33,
-        "type": "buy",
         "tradeDate": "2024-12-09T00:00:00Z"
     }'
 ```
+
+### Add Option Trade to Blotter
+
+```sh
+curl -X POST http://localhost:8080/api/v1/blotter/trade \
+  -H "Content-Type: application/json" \
+  -d '{
+    "side": "buy",
+    "broker": "DBS",
+    "book": "BookA",
+    "account": "CDP",
+    "status": "open",
+    "quantity": 1,
+    "price": 12.50,
+    "fx": 1.33,
+    "tradeDate": "2024-12-09T00:00:00Z",
+    "instrumentType": "option",
+    "underlyingTicker": "AAPL",
+    "expiryDate": "2025-06-20",
+    "strikePrice": 200,
+    "callPut": "call",
+    "underlyingSpotRef": 189.5
+  }'
+```
+
+For options, `price` is the booked option NPV per contract. The server derives the canonical option ticker from `underlyingTicker`, `expiryDate`, `strikePrice`, and `callPut`, and will auto-populate `underlyingSpotRef` from historical spot if it is omitted.
 
 ### Update Asset in Blotter
 
@@ -590,15 +620,17 @@ curl -X POST http://localhost:8080/api/v1/blotter/trade \
 curl -X PUT http://localhost:8080/api/v1/blotter/trade \
     -H "Content-Type: application/json" \
     -d '{
+    "id": "61570b49-2adb-4b99-be20-d14001e761a9",
         "ticker": "AAPL",
         "side": "buy",
         "broker": "DBS",
         "book": "BookA",
         "account": "CDP",
+    "status": "open",
         "quantity": 10,
         "price": 200.00,
         "fx": 1,
-        "type": "buy",
+    "seqNum": 1,
         "tradeDate": "2024-12-09T00:00:00Z"
     }'
 ```
@@ -621,6 +653,8 @@ curl -X DELETE http://localhost:8080/api/v1/portfolio/positions
 ### Import Trades from CSV (for migrating into portfolio-manager)
 
 Note that FX rate here is always with respect to portfolio revaluation currency per foreign ccy, e.g. USD/SGD if SGD is portfolio revaluation currency
+
+The CSV format now supports both outright and option trades. The additional option columns are `InstrumentType`, `UnderlyingTicker`, `ExpiryDate`, `StrikePrice`, `CallPut`, and `UnderlyingSpotRef`. Outright rows can leave those columns blank.
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/blotter/import \

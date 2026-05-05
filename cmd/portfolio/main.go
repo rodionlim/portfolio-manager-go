@@ -144,6 +144,7 @@ func startServer(configFilePath string) {
 	if err != nil {
 		logging.GetLogger().Fatalf("Failed to create market data manager")
 	}
+	blotterSvc.SetTradeSupportServices(rdata, mdata)
 
 	// Configure market data rate limiting
 	if config.MarketData.RateLimitMs > 0 {

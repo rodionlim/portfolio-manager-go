@@ -9,6 +9,8 @@ import (
 	"portfolio-manager/pkg/csvutil"
 	"portfolio-manager/pkg/event"
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/mdata"
+	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 	"sort"
 	"strings"
@@ -37,6 +39,88 @@ const (
 	StatusClosed    = "closed"
 )
 
+const csvImportDefaultBroker = "csv-import"
+
+var tradeCSVHeaderAliases = map[string]string{
+	"TradeDate":         "TradeDate",
+	"Date":              "TradeDate",
+	"Ticker":            "Ticker",
+	"Side":              "Side",
+	"Quantity":          "Quantity",
+	"Price":             "Price",
+	"Yield":             "Yield",
+	"Book":              "Book",
+	"Broker":            "Broker",
+	"Account":           "Account",
+	"Status":            "Status",
+	"Fx":                "Fx",
+	"InstrumentType":    "InstrumentType",
+	"Type":              "InstrumentType",
+	"UnderlyingTicker":  "UnderlyingTicker",
+	"Underlying":        "UnderlyingTicker",
+	"ExpiryDate":        "ExpiryDate",
+	"Expiry":            "ExpiryDate",
+	"StrikePrice":       "StrikePrice",
+	"Strike":            "StrikePrice",
+	"CallPut":           "CallPut",
+	"CP":                "CallPut",
+	"UnderlyingSpotRef": "UnderlyingSpotRef",
+	"TradeID":           "",
+	"Trade ID":          "",
+	"Name":              "",
+	"Value":             "",
+	"Asset Class":       "",
+	"Asset Sub Class":   "",
+	"CCY":               "",
+	"Category":          "",
+	"Sub Category":      "",
+	"Domicile":          "",
+	"Confirmation":      "",
+}
+
+type tradeCSVLayout struct {
+	indexes map[string]int
+}
+
+func newTradeCSVLayout(header []string) (*tradeCSVLayout, error) {
+	indexes := make(map[string]int, len(header))
+	for i, rawHeader := range header {
+		headerName := strings.TrimSpace(rawHeader)
+		canonical, ok := tradeCSVHeaderAliases[headerName]
+		if !ok {
+			return nil, fmt.Errorf("invalid CSV header: unsupported column %s at position %d", rawHeader, i)
+		}
+		if canonical == "" {
+			continue
+		}
+		if _, exists := indexes[canonical]; exists {
+			return nil, fmt.Errorf("invalid CSV header: duplicate column %s", rawHeader)
+		}
+		indexes[canonical] = i
+	}
+
+	for _, required := range []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Book", "Account"} {
+		if _, ok := indexes[required]; !ok {
+			return nil, fmt.Errorf("invalid CSV header: missing required column %s", required)
+		}
+	}
+
+	return &tradeCSVLayout{indexes: indexes}, nil
+}
+
+func (l *tradeCSVLayout) get(row []string, field string) string {
+	idx, ok := l.indexes[field]
+	if !ok || idx >= len(row) {
+		return ""
+	}
+	return strings.TrimSpace(row[idx])
+}
+
+func (l *tradeCSVLayout) has(field string) bool {
+	_, ok := l.indexes[field]
+	return ok
+}
+
 // TradeBlotter represents a service for managing trades.
 type TradeBlotter struct {
 	trades         []Trade
@@ -44,6 +128,8 @@ type TradeBlotter struct {
 	tradesByTicker map[string][]Trade
 	currentSeqNum  int // used as a pointer to the head of the blotter
 	db             dal.Database
+	rdataSvc       rdata.ReferenceManager
+	mdataSvc       mdata.MarketDataManager
 	eventBus       *event.EventBus
 	mu             sync.Mutex
 }
@@ -51,7 +137,7 @@ type TradeBlotter struct {
 // NewBlotter creates a new TradeBlotter instance.
 func NewBlotter(db dal.Database) *TradeBlotter {
 	var currentSeqNum int
-	err := db.Get(string(types.HeadSequenceBlotterKey), currentSeqNum)
+	err := db.Get(string(types.HeadSequenceBlotterKey), &currentSeqNum)
 	if err != nil {
 		currentSeqNum = -1
 	}
@@ -64,6 +150,11 @@ func NewBlotter(db dal.Database) *TradeBlotter {
 		db:             db,
 		eventBus:       event.NewEventBus(),
 	}
+}
+
+func (b *TradeBlotter) SetTradeSupportServices(rdataSvc rdata.ReferenceManager, mdataSvc mdata.MarketDataManager) {
+	b.rdataSvc = rdataSvc
+	b.mdataSvc = mdataSvc
 }
 
 func (b *TradeBlotter) LoadFromDB() error {
@@ -143,6 +234,9 @@ func (b *TradeBlotter) addTrade(trade Trade, isPreLoadFromDB bool) error {
 	b.trades = append(b.trades, trade)
 	b.tradesByID[trade.TradeID] = &trade
 	b.tradesByTicker[trade.Ticker] = append(b.tradesByTicker[trade.Ticker], trade)
+	if isPreLoadFromDB && trade.SeqNum > b.currentSeqNum {
+		b.currentSeqNum = trade.SeqNum
+	}
 
 	// Publish a new trade event
 	if !isPreLoadFromDB {
@@ -174,7 +268,7 @@ func (b *TradeBlotter) UpdateTrade(trade Trade) error {
 
 	// Remove trade from the indexes
 	delete(b.tradesByID, trade.TradeID)
-	b.tradesByTicker[trade.Ticker] = removeTradeFromSlice(b.tradesByTicker[trade.Ticker], trade.TradeID)
+	b.tradesByTicker[originalTrade.Ticker] = removeTradeFromSlice(b.tradesByTicker[originalTrade.Ticker], trade.TradeID)
 
 	// Add trade to the trades slice and indexes
 	b.trades = append(b.trades, trade)
@@ -201,7 +295,14 @@ func (b *TradeBlotter) RemoveAllTrades() error {
 	}
 
 	// Then remove them
-	return b.RemoveTrades(tradeIDs)
+	err := b.RemoveTrades(tradeIDs)
+	if err != nil {
+		return err
+	}
+
+	b.currentSeqNum = -1
+	b.saveSeqNumToDAL(-1)
+	return nil
 }
 
 func (b *TradeBlotter) RemoveTrades(tradeIDs []string) error {
@@ -367,44 +468,56 @@ func (b *TradeBlotter) saveSeqNumToDAL(seqNum int) {
 
 // Trade represents a trade in the blotter.
 type Trade struct {
-	TradeID     string  `json:"TradeID"`                       // Unique identifier for the trade
-	TradeDate   string  `json:"TradeDate" validate:"required"` // Date and time of the trade
-	Ticker      string  `json:"Ticker" validate:"required"`    // Ticker symbol of the asset
-	Side        string  `json:"Side" validate:"required"`      // Buy or Sell
-	Quantity    float64 `json:"Quantity" validate:"required"`  // Quantity of the asset
-	Price       float64 `json:"Price" validate:"gte=0"`        // Price per unit of the asset
-	Fx          float64 `json:"Fx"`                            // FX rate for the trade
-	Yield       float64 `json:"Yield"`                         // Yield of the asset
-	Book        string  `json:"Book" validate:"required"`      // Book associated with the trade
-	Broker      string  `json:"Broker" validate:"required"`    // Broker who executed the trade
-	Account     string  `json:"Account" validate:"required"`   // Account associated with the trade (CDP, MIP, Custodian)
-	Status      string  `json:"Status"`                        // Status of the trade (e.g. Open, AutoClosed, Closed), autoclosed if the trade is closed by the system automatically upon expiry (e.g. MAS Bills), closed if the trade is closed manually
-	OrigTradeID string  `json:"OrigTradeID"`                   // Original trade ID to link auto closed trades to the original trade
-	SeqNum      int     `json:"SeqNum"`                        // Sequence number
+	TradeID           string  `json:"TradeID" validate:"required"`   // Unique identifier for the trade
+	TradeDate         string  `json:"TradeDate" validate:"required"` // Date and time of the trade
+	Ticker            string  `json:"Ticker" validate:"required"`    // Ticker symbol of the asset
+	Side              string  `json:"Side" validate:"required"`      // Buy or Sell
+	Quantity          float64 `json:"Quantity" validate:"required"`  // Quantity of the asset
+	Price             float64 `json:"Price" validate:"gte=0"`        // Price per unit of the asset
+	Fx                float64 `json:"Fx"`                            // FX rate for the trade
+	Yield             float64 `json:"Yield"`                         // Yield of the asset
+	Book              string  `json:"Book" validate:"required"`      // Book associated with the trade
+	Broker            string  `json:"Broker" validate:"required"`    // Broker who executed the trade
+	Account           string  `json:"Account" validate:"required"`   // Account associated with the trade (CDP, MIP, Custodian)
+	Status            string  `json:"Status"`                        // Status of the trade (e.g. Open, AutoClosed, Closed), autoclosed if the trade is closed by the system automatically upon expiry (e.g. MAS Bills), closed if the trade is closed manually
+	OrigTradeID       string  `json:"OrigTradeID"`                   // Original trade ID to link auto closed trades to the original trade
+	SeqNum            int     `json:"SeqNum"`                        // Sequence number
+	InstrumentType    string  `json:"InstrumentType"`
+	UnderlyingTicker  string  `json:"UnderlyingTicker"`
+	UnderlyingSpotRef float64 `json:"UnderlyingSpotRef"`
+	ExpiryDate        string  `json:"ExpiryDate"`
+	StrikePrice       float64 `json:"StrikePrice"`
+	CallPut           string  `json:"CallPut"`
 }
 
 // Clone returns a deep copy of the Trade.
 func (t Trade) Clone() Trade {
 	return Trade{
-		TradeID:     t.TradeID,
-		TradeDate:   t.TradeDate,
-		Ticker:      t.Ticker,
-		Side:        t.Side,
-		Quantity:    t.Quantity,
-		Price:       t.Price,
-		Fx:          t.Fx,
-		Yield:       t.Yield,
-		Book:        t.Book,
-		Broker:      t.Broker,
-		Account:     t.Account,
-		Status:      t.Status,
-		OrigTradeID: t.OrigTradeID,
-		SeqNum:      t.SeqNum,
+		TradeID:           t.TradeID,
+		TradeDate:         t.TradeDate,
+		Ticker:            t.Ticker,
+		Side:              t.Side,
+		Quantity:          t.Quantity,
+		Price:             t.Price,
+		Fx:                t.Fx,
+		Yield:             t.Yield,
+		Book:              t.Book,
+		Broker:            t.Broker,
+		Account:           t.Account,
+		Status:            t.Status,
+		OrigTradeID:       t.OrigTradeID,
+		SeqNum:            t.SeqNum,
+		InstrumentType:    t.InstrumentType,
+		UnderlyingTicker:  t.UnderlyingTicker,
+		UnderlyingSpotRef: t.UnderlyingSpotRef,
+		ExpiryDate:        t.ExpiryDate,
+		StrikePrice:       t.StrikePrice,
+		CallPut:           t.CallPut,
 	}
 }
 
 // NewTrade creates a new Trade instance.
-func NewTrade(side string, quantity float64, ticker, book, broker, account, status, origTradeId string, price, fx float64, yield float64, tradeDate time.Time) (*Trade, error) {
+func NewTrade(side string, quantity float64, ticker, book, broker, account, status, origTradeId string, price, fx float64, yield float64, tradeDate time.Time, attributes ...TradeAttributes) (*Trade, error) {
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
 	}
@@ -413,28 +526,43 @@ func NewTrade(side string, quantity float64, ticker, book, broker, account, stat
 		return nil, fmt.Errorf("status must be either '%s', '%s' or '%s'", StatusOpen, StatusAutoClose, StatusClosed)
 	}
 
-	trade := Trade{
-		TradeID:     common.GenerateTradeID(),
-		TradeDate:   tradeDate.Format(time.RFC3339),
-		Ticker:      ticker,
-		Side:        side,
-		Quantity:    quantity,
-		Price:       price,
-		Fx:          fx,
-		Yield:       yield,
-		Book:        book,
-		Broker:      broker,
-		Account:     account,
-		Status:      status,
-		OrigTradeID: origTradeId,
+	tradeAttributes := TradeAttributes{}
+	if len(attributes) > 0 {
+		tradeAttributes = attributes[0]
+	}
+	tradeAttributes, err := NormalizeTradeAttributes(ticker, tradeAttributes)
+	if err != nil {
+		return nil, err
 	}
 
-	err := validateTrade(trade)
+	trade := Trade{
+		TradeID:           common.GenerateTradeID(),
+		TradeDate:         tradeDate.Format(time.RFC3339),
+		Ticker:            ticker,
+		Side:              side,
+		Quantity:          quantity,
+		Price:             price,
+		Fx:                fx,
+		Yield:             yield,
+		Book:              book,
+		Broker:            broker,
+		Account:           account,
+		Status:            status,
+		OrigTradeID:       origTradeId,
+		InstrumentType:    tradeAttributes.InstrumentType,
+		UnderlyingTicker:  tradeAttributes.UnderlyingTicker,
+		UnderlyingSpotRef: tradeAttributes.UnderlyingSpotRef,
+		ExpiryDate:        tradeAttributes.ExpiryDate,
+		StrikePrice:       tradeAttributes.StrikePrice,
+		CallPut:           tradeAttributes.CallPut,
+	}
+
+	err = validateTrade(trade)
 	return &trade, err
 }
 
 // NewTradeWithID creates a new Trade instance with a given trade ID, mainly for updating purposes
-func NewTradeWithID(tradeID string, side string, quantity float64, ticker, book, broker, account, status, origTradeId string, price, fx float64, yield float64, seqNum int, tradeDate time.Time) (*Trade, error) {
+func NewTradeWithID(tradeID string, side string, quantity float64, ticker, book, broker, account, status, origTradeId string, price, fx float64, yield float64, seqNum int, tradeDate time.Time, attributes ...TradeAttributes) (*Trade, error) {
 
 	if !isValidSide(side) {
 		return nil, errors.New("side must be either 'buy' or 'sell'")
@@ -444,24 +572,39 @@ func NewTradeWithID(tradeID string, side string, quantity float64, ticker, book,
 		return nil, fmt.Errorf("status must be either '%s', '%s' or '%s'", StatusOpen, StatusAutoClose, StatusClosed)
 	}
 
-	trade := Trade{
-		TradeID:     tradeID,
-		TradeDate:   tradeDate.Format(time.RFC3339),
-		Ticker:      ticker,
-		Side:        side,
-		Quantity:    quantity,
-		Price:       price,
-		Fx:          fx,
-		Yield:       yield,
-		Book:        book,
-		Broker:      broker,
-		Account:     account,
-		Status:      status,
-		OrigTradeID: origTradeId,
-		SeqNum:      seqNum,
+	tradeAttributes := TradeAttributes{}
+	if len(attributes) > 0 {
+		tradeAttributes = attributes[0]
+	}
+	tradeAttributes, err := NormalizeTradeAttributes(ticker, tradeAttributes)
+	if err != nil {
+		return nil, err
 	}
 
-	err := validateTrade(trade)
+	trade := Trade{
+		TradeID:           tradeID,
+		TradeDate:         tradeDate.Format(time.RFC3339),
+		Ticker:            ticker,
+		Side:              side,
+		Quantity:          quantity,
+		Price:             price,
+		Fx:                fx,
+		Yield:             yield,
+		Book:              book,
+		Broker:            broker,
+		Account:           account,
+		Status:            status,
+		OrigTradeID:       origTradeId,
+		SeqNum:            seqNum,
+		InstrumentType:    tradeAttributes.InstrumentType,
+		UnderlyingTicker:  tradeAttributes.UnderlyingTicker,
+		UnderlyingSpotRef: tradeAttributes.UnderlyingSpotRef,
+		ExpiryDate:        tradeAttributes.ExpiryDate,
+		StrikePrice:       tradeAttributes.StrikePrice,
+		CallPut:           tradeAttributes.CallPut,
+	}
+
+	err = validateTrade(trade)
 	return &trade, err
 }
 
@@ -478,7 +621,32 @@ func isValidStatus(status string) bool {
 // validateTrade validates the trade struct according to predefined rules.
 func validateTrade(trade Trade) error {
 	validate := validator.New()
-	return validate.Struct(trade)
+	if err := validate.Struct(trade); err != nil {
+		return err
+	}
+
+	trade.InstrumentType = NormalizeInstrumentType(trade.InstrumentType)
+	trade.CallPut = NormalizeCallPut(trade.CallPut)
+	if trade.InstrumentType == "" {
+		trade.InstrumentType = InstrumentTypeOutright
+	}
+
+	if trade.InstrumentType == InstrumentTypeOption {
+		if strings.TrimSpace(trade.UnderlyingTicker) == "" {
+			return fmt.Errorf("underlying ticker is required for option trades")
+		}
+		if trade.ExpiryDate == "" {
+			return fmt.Errorf("expiry date is required for option trades")
+		}
+		if trade.StrikePrice <= 0 {
+			return fmt.Errorf("strike price must be greater than 0 for option trades")
+		}
+		if trade.CallPut != CallPutCall && trade.CallPut != CallPutPut {
+			return fmt.Errorf("call put must be either '%s' or '%s' for option trades", CallPutCall, CallPutPut)
+		}
+	}
+
+	return nil
 }
 
 // ** Import / Export CSV Section **
@@ -508,20 +676,9 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) (int, error) {
 		return 0, fmt.Errorf("error reading CSV header: %w", err)
 	}
 
-	expectedHeaders := []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Book", "Broker", "Account", "Status", "Fx"}
-	fxRateMissing := false
-	if len(header) == len(expectedHeaders)-1 {
-		// for backwards compatibility, assume fx rate is not present
-		fxRateMissing = true
-		expectedHeaders = expectedHeaders[:len(expectedHeaders)-1]
-	} else if len(header) != len(expectedHeaders) {
-		return 0, fmt.Errorf("invalid CSV format: expected %d columns, got %d", len(expectedHeaders), len(header))
-	}
-
-	for i, h := range expectedHeaders {
-		if header[i] != h {
-			return 0, fmt.Errorf("invalid CSV header: expected %s at position %d, got %s", h, i, header[i])
-		}
+	layout, err := newTradeCSVLayout(header)
+	if err != nil {
+		return 0, err
 	}
 
 	// Read all rows and create trades
@@ -537,56 +694,80 @@ func (b *TradeBlotter) ImportFromCSVReader(reader *csv.Reader) (int, error) {
 			return cnt, fmt.Errorf("error reading CSV line %d: %w", lineNum, err)
 		}
 
-		quantity, err := strconv.ParseFloat(row[3], 64)
+		quantity, err := strconv.ParseFloat(layout.get(row, "Quantity"), 64)
 		if err != nil {
 			return cnt, fmt.Errorf("invalid quantity at line %d: %w", lineNum, err)
 		}
 
-		price, err := strconv.ParseFloat(row[4], 64)
+		price, err := strconv.ParseFloat(layout.get(row, "Price"), 64)
 		if err != nil {
 			return cnt, fmt.Errorf("invalid price at line %d: %w", lineNum, err)
 		}
 
 		fx := 0.0
-		if !fxRateMissing {
-			fx, err = strconv.ParseFloat(row[10], 64)
+		if layout.has("Fx") && layout.get(row, "Fx") != "" {
+			fx, err = strconv.ParseFloat(layout.get(row, "Fx"), 64)
 			if err != nil {
 				return cnt, fmt.Errorf("invalid fx rate at line %d: %w", lineNum, err)
 			}
 		}
 
 		var yield float64
-		if row[5] != "" {
-			yield, err = strconv.ParseFloat(row[5], 64)
+		if layout.has("Yield") && layout.get(row, "Yield") != "" {
+			yield, err = strconv.ParseFloat(layout.get(row, "Yield"), 64)
 			if err != nil {
 				return cnt, fmt.Errorf("invalid yield at line %d: %w", lineNum, err)
 			}
 		}
 
-		tradeDate, err := time.Parse(time.RFC3339, row[0])
+		tradeDate, err := time.Parse(time.RFC3339, layout.get(row, "TradeDate"))
 		if err != nil {
 			return cnt, fmt.Errorf("invalid trade date at line %d: %w", lineNum, err)
 		}
 
 		status := StatusOpen
-		if row[9] != "" {
-			status = row[9]
+		if layout.has("Status") && layout.get(row, "Status") != "" {
+			status = layout.get(row, "Status")
 		}
 
-		trade, err := NewTrade(
-			row[2], // Side
-			quantity,
-			row[1], // Ticker
-			row[6], // Book
-			row[7], // Broker
-			row[8], // Account
-			status, // Status
-			"",     // OrigTradeID (empty, for migration purposes, we don't allow migrating of trade IDs)
-			price,
-			fx,
-			yield,
-			tradeDate,
-		)
+		attributes := TradeAttributes{}
+		attributes.InstrumentType = layout.get(row, "InstrumentType")
+		attributes.UnderlyingTicker = layout.get(row, "UnderlyingTicker")
+		attributes.ExpiryDate = layout.get(row, "ExpiryDate")
+		attributes.CallPut = layout.get(row, "CallPut")
+		if layout.has("StrikePrice") && layout.get(row, "StrikePrice") != "" {
+			attributes.StrikePrice, err = strconv.ParseFloat(layout.get(row, "StrikePrice"), 64)
+			if err != nil {
+				return cnt, fmt.Errorf("invalid strike price at line %d: %w", lineNum, err)
+			}
+		}
+		if layout.has("UnderlyingSpotRef") && layout.get(row, "UnderlyingSpotRef") != "" {
+			attributes.UnderlyingSpotRef, err = strconv.ParseFloat(layout.get(row, "UnderlyingSpotRef"), 64)
+			if err != nil {
+				return cnt, fmt.Errorf("invalid underlying spot reference at line %d: %w", lineNum, err)
+			}
+		}
+
+		broker := layout.get(row, "Broker")
+		if broker == "" {
+			broker = csvImportDefaultBroker
+		}
+
+		trade, err := b.BuildTrade(TradeInput{
+			TradeDate:   tradeDate,
+			Ticker:      layout.get(row, "Ticker"),
+			Side:        layout.get(row, "Side"),
+			Quantity:    quantity,
+			Price:       price,
+			Fx:          fx,
+			Yield:       yield,
+			Book:        layout.get(row, "Book"),
+			Broker:      broker,
+			Account:     layout.get(row, "Account"),
+			Status:      status,
+			OrigTradeID: "",
+			Attributes:  attributes,
+		})
 		if err != nil {
 			return cnt, fmt.Errorf("error creating trade at line %d: %w", lineNum, err)
 		}
@@ -634,6 +815,12 @@ func (b *TradeBlotter) ExportToCSVBytes() ([]byte, error) {
 			trade.Account,
 			trade.Status,
 			csvutil.FormatFloat(trade.Fx, 4),
+			trade.InstrumentType,
+			trade.UnderlyingTicker,
+			trade.ExpiryDate,
+			csvutil.FormatFloat(trade.StrikePrice, 4),
+			trade.CallPut,
+			csvutil.FormatFloat(trade.UnderlyingSpotRef, 4),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error writing trade to CSV: %w", err)

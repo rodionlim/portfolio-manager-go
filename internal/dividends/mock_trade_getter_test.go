@@ -1,4 +1,4 @@
-package mocks
+package dividends
 
 import (
 	"errors"
@@ -6,12 +6,12 @@ import (
 	"portfolio-manager/internal/blotter"
 )
 
-type MockTradeGetterBlotter struct {
+type mockTradeGetterBlotter struct {
 	trades map[string][]blotter.Trade
 }
 
-func NewMockTradeGetterBlotter() *MockTradeGetterBlotter {
-	blotterTradeGetter := MockTradeGetterBlotter{
+func newMockTradeGetterBlotter() *mockTradeGetterBlotter {
+	blotterTradeGetter := mockTradeGetterBlotter{
 		trades: make(map[string][]blotter.Trade),
 	}
 	blotterTradeGetter.SetTrades("AAPL", []blotter.Trade{
@@ -22,11 +22,11 @@ func NewMockTradeGetterBlotter() *MockTradeGetterBlotter {
 	return &blotterTradeGetter
 }
 
-func (m *MockTradeGetterBlotter) SetTrades(ticker string, trades []blotter.Trade) {
+func (m *mockTradeGetterBlotter) SetTrades(ticker string, trades []blotter.Trade) {
 	m.trades[ticker] = trades
 }
 
-func (m *MockTradeGetterBlotter) GetTrades() []blotter.Trade {
+func (m *mockTradeGetterBlotter) GetTrades() []blotter.Trade {
 	var allTrades []blotter.Trade
 	for _, trades := range m.trades {
 		allTrades = append(allTrades, trades...)
@@ -34,7 +34,7 @@ func (m *MockTradeGetterBlotter) GetTrades() []blotter.Trade {
 	return allTrades
 }
 
-func (m *MockTradeGetterBlotter) GetAllTickers() ([]string, error) {
+func (m *mockTradeGetterBlotter) GetAllTickers() ([]string, error) {
 	if len(m.trades) == 0 {
 		return nil, errors.New("no trades found")
 	}
@@ -46,7 +46,7 @@ func (m *MockTradeGetterBlotter) GetAllTickers() ([]string, error) {
 	return tickers, nil
 }
 
-func (m *MockTradeGetterBlotter) GetTradesByTicker(ticker string) ([]blotter.Trade, error) {
+func (m *mockTradeGetterBlotter) GetTradesByTicker(ticker string) ([]blotter.Trade, error) {
 	if trades, ok := m.trades[ticker]; !ok {
 		return nil, fmt.Errorf("no trades found for the given ticker %s", ticker)
 	} else {
@@ -54,6 +54,6 @@ func (m *MockTradeGetterBlotter) GetTradesByTicker(ticker string) ([]blotter.Tra
 	}
 }
 
-func (m *MockTradeGetterBlotter) GetTradeByID(tradeID string) (*blotter.Trade, error) {
+func (m *mockTradeGetterBlotter) GetTradeByID(tradeID string) (*blotter.Trade, error) {
 	return nil, errors.New("not implemented")
 }

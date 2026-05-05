@@ -7,7 +7,7 @@ import (
 )
 
 // TradeHeaders contains the standard CSV headers for trade exports
-var TradeHeaders = []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Book", "Broker", "Account", "Status", "Fx"}
+var TradeHeaders = []string{"TradeDate", "Ticker", "Side", "Quantity", "Price", "Yield", "Book", "Broker", "Account", "Status", "Fx", "InstrumentType", "UnderlyingTicker", "ExpiryDate", "StrikePrice", "CallPut", "UnderlyingSpotRef"}
 
 // The numeric indices of each column in the trade CSV
 const (
@@ -22,6 +22,17 @@ const (
 	AccountIdx
 	StatusIdx
 	FxIdx
+	InstrumentTypeIdx
+	UnderlyingTickerIdx
+	ExpiryDateIdx
+	StrikePriceIdx
+	CallPutIdx
+	UnderlyingSpotRefIdx
+)
+
+const (
+	LegacyTradeColumnCount       = 10
+	LegacyTradeColumnCountWithFx = 11
 )
 
 // FormatFloat formats a float to display:

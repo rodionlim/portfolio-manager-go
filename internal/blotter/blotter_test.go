@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -132,6 +133,35 @@ func TestTradeSequenceNumber(t *testing.T) {
 	assert.Equal(t, 2, len(trades))
 	assert.Equal(t, 0, trades[0].SeqNum)
 	assert.Equal(t, 1, trades[1].SeqNum)
+}
+
+func TestLoadFromDBRestoresCurrentSequence(t *testing.T) {
+	db, dbPath := setupTempDB(t)
+	defer cleanupTempDB(t, db, dbPath)
+
+	blotterSvc := blotter.NewBlotter(db)
+	trade1, err := createTestTrade()
+	assert.NoError(t, err)
+	err = blotterSvc.AddTrade(*trade1)
+	assert.NoError(t, err)
+
+	trade2, err := createTestTrade()
+	assert.NoError(t, err)
+	err = blotterSvc.AddTrade(*trade2)
+	assert.NoError(t, err)
+
+	reloaded := blotter.NewBlotter(db)
+	err = reloaded.LoadFromDB()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, reloaded.GetCurrentSeqNum())
+	assert.Len(t, reloaded.GetTrades(), 2)
+
+	trade3, err := createTestTrade()
+	assert.NoError(t, err)
+	err = reloaded.AddTrade(*trade3)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, reloaded.GetCurrentSeqNum())
+	assert.Equal(t, 2, reloaded.GetTrades()[2].SeqNum)
 }
 
 func TestEventPublishingOnAddTrade(t *testing.T) {
@@ -277,4 +307,28 @@ func TestImportFromCSVFile(t *testing.T) {
 
 	trades := blotterSvc.GetTrades()
 	assert.Equal(t, len(expectedTrades), len(trades))
+}
+
+func TestImportFromCSVReader_UIExportHeaders(t *testing.T) {
+	db, dbPath := setupTempDB(t)
+	defer cleanupTempDB(t, db, dbPath)
+
+	blotterSvc := blotter.NewBlotter(db)
+	reader := csv.NewReader(strings.NewReader(strings.Join([]string{
+		"Trade ID,Date,Ticker,Name,Side,Book,Account,Quantity,Price,Value,Fx",
+		"legacy-1,2023-10-12T07:20:50Z,AAPL,Apple,buy,book1,cdp,100,150,15000,1",
+	}, "\n")))
+
+	count, err := blotterSvc.ImportFromCSVReader(reader)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, count)
+
+	trades := blotterSvc.GetTrades()
+	assert.Len(t, trades, 1)
+	assert.Equal(t, "AAPL", trades[0].Ticker)
+	assert.Equal(t, "book1", trades[0].Book)
+	assert.Equal(t, "cdp", trades[0].Account)
+	assert.Equal(t, "csv-import", trades[0].Broker)
+	assert.Equal(t, blotter.StatusOpen, trades[0].Status)
+	assert.Equal(t, "2023-10-12T07:20:50Z", trades[0].TradeDate)
 }

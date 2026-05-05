@@ -12,20 +12,26 @@ import (
 
 // TradeRequest represents the request payload for a trade.
 type TradeRequest struct {
-	ID          string  `json:"id"`
-	TradeDate   string  `json:"tradeDate"`
-	Ticker      string  `json:"ticker"`
-	Side        string  `json:"side"`
-	Quantity    float64 `json:"quantity"`
-	Price       float64 `json:"price"`
-	Fx          float64 `json:"fx"`
-	Yield       float64 `json:"yield"`
-	Book        string  `json:"book"`
-	Broker      string  `json:"broker"`
-	Account     string  `json:"account"`
-	Status      string  `json:"status"`
-	OrigTradeID string  `json:"origTradeID"`
-	SeqNum      int     `json:"seqNum"` // Sequence number
+	ID                string  `json:"id"`
+	TradeDate         string  `json:"tradeDate"`
+	Ticker            string  `json:"ticker"`
+	Side              string  `json:"side"`
+	Quantity          float64 `json:"quantity"`
+	Price             float64 `json:"price"`
+	Fx                float64 `json:"fx"`
+	Yield             float64 `json:"yield"`
+	Book              string  `json:"book"`
+	Broker            string  `json:"broker"`
+	Account           string  `json:"account"`
+	Status            string  `json:"status"`
+	OrigTradeID       string  `json:"origTradeID"`
+	SeqNum            int     `json:"seqNum"`
+	InstrumentType    string  `json:"instrumentType"`
+	UnderlyingTicker  string  `json:"underlyingTicker"`
+	UnderlyingSpotRef float64 `json:"underlyingSpotRef"`
+	ExpiryDate        string  `json:"expiryDate"`
+	StrikePrice       float64 `json:"strikePrice"`
+	CallPut           string  `json:"callPut"`
 }
 
 // HandleTradePost handles the addition of trades to the blotter service.
@@ -56,19 +62,28 @@ func HandleTradePost(blotter *TradeBlotter) http.HandlerFunc {
 			return
 		}
 
-		trade, err := NewTrade(
-			tradeRequest.Side,
-			tradeRequest.Quantity,
-			tradeRequest.Ticker,
-			tradeRequest.Book,
-			tradeRequest.Broker,
-			tradeRequest.Account,
-			tradeRequest.Status,
-			tradeRequest.OrigTradeID,
-			tradeRequest.Price,
-			tradeRequest.Fx,
-			tradeRequest.Yield,
-			tradeDate)
+		trade, err := blotter.BuildTrade(TradeInput{
+			TradeDate:   tradeDate,
+			Ticker:      tradeRequest.Ticker,
+			Side:        tradeRequest.Side,
+			Quantity:    tradeRequest.Quantity,
+			Price:       tradeRequest.Price,
+			Fx:          tradeRequest.Fx,
+			Yield:       tradeRequest.Yield,
+			Book:        tradeRequest.Book,
+			Broker:      tradeRequest.Broker,
+			Account:     tradeRequest.Account,
+			Status:      tradeRequest.Status,
+			OrigTradeID: tradeRequest.OrigTradeID,
+			Attributes: TradeAttributes{
+				InstrumentType:    tradeRequest.InstrumentType,
+				UnderlyingTicker:  tradeRequest.UnderlyingTicker,
+				UnderlyingSpotRef: tradeRequest.UnderlyingSpotRef,
+				ExpiryDate:        tradeRequest.ExpiryDate,
+				StrikePrice:       tradeRequest.StrikePrice,
+				CallPut:           tradeRequest.CallPut,
+			},
+		})
 		if err != nil {
 			common.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 			return
@@ -114,21 +129,30 @@ func HandleTradeUpdate(blotter *TradeBlotter) http.HandlerFunc {
 			return
 		}
 
-		trade, err := NewTradeWithID(
-			tradeRequest.ID,
-			tradeRequest.Side,
-			tradeRequest.Quantity,
-			tradeRequest.Ticker,
-			tradeRequest.Book,
-			tradeRequest.Broker,
-			tradeRequest.Account,
-			tradeRequest.Status,
-			tradeRequest.OrigTradeID,
-			tradeRequest.Price,
-			tradeRequest.Fx,
-			tradeRequest.Yield,
-			tradeRequest.SeqNum,
-			tradeDate)
+		trade, err := blotter.BuildTrade(TradeInput{
+			ID:          tradeRequest.ID,
+			TradeDate:   tradeDate,
+			Ticker:      tradeRequest.Ticker,
+			Side:        tradeRequest.Side,
+			Quantity:    tradeRequest.Quantity,
+			Price:       tradeRequest.Price,
+			Fx:          tradeRequest.Fx,
+			Yield:       tradeRequest.Yield,
+			Book:        tradeRequest.Book,
+			Broker:      tradeRequest.Broker,
+			Account:     tradeRequest.Account,
+			Status:      tradeRequest.Status,
+			OrigTradeID: tradeRequest.OrigTradeID,
+			SeqNum:      tradeRequest.SeqNum,
+			Attributes: TradeAttributes{
+				InstrumentType:    tradeRequest.InstrumentType,
+				UnderlyingTicker:  tradeRequest.UnderlyingTicker,
+				UnderlyingSpotRef: tradeRequest.UnderlyingSpotRef,
+				ExpiryDate:        tradeRequest.ExpiryDate,
+				StrikePrice:       tradeRequest.StrikePrice,
+				CallPut:           tradeRequest.CallPut,
+			},
+		})
 		if err != nil {
 			common.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 			return

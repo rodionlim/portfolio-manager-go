@@ -17,8 +17,10 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import { DatePickerInput } from "@mantine/dates";
+import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
+import { Trade } from "../../types/blotter";
 import { IsSGGovies, refDataByAssetClass } from "../../utils/referenceData";
 import { useLocation } from "react-router-dom";
 import { getUrl } from "../../utils/url";
@@ -68,6 +70,26 @@ const formatDateForHistoricalQuery = (value: Date | null) => {
   return `${year}${month}${day}`;
 };
 
+const fetchTrades = async (): Promise<Trade[]> => {
+  const resp = await fetch(getUrl("/api/v1/blotter/trade"));
+  if (!resp.ok) {
+    throw new Error("Failed to fetch blotter trades");
+  }
+
+  return resp.json();
+};
+
+const buildAutocompleteOptions = (
+  values: Array<string | null | undefined>,
+): string[] =>
+  Array.from(
+    new Set(
+      values
+        .map((value) => value?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ).sort((left, right) => left.localeCompare(right));
+
 export default function BlotterForm() {
   const location = useLocation();
   const [confirmationFile, setConfirmationFile] = useState<File | null>(null);
@@ -102,8 +124,41 @@ export default function BlotterForm() {
   const defaultBroker = localStorage.getItem("defaultBroker") || "DBS";
   const defaultAccount = localStorage.getItem("defaultAccount") || "CDP";
 
+  const { data: trades = [] } = useQuery({
+    queryKey: ["trades"],
+    queryFn: fetchTrades,
+    retry: false,
+  });
+
   const refData = useSelector((state: RootState) => state.referenceData.data);
   const tickerOptions = useMemo(() => refDataByAssetClass(refData), [refData]);
+  const bookOptions = useMemo(
+    () =>
+      buildAutocompleteOptions([
+        defaultBook,
+        location.state?.book,
+        ...trades.map((trade) => trade.Book),
+      ]),
+    [defaultBook, location.state?.book, trades],
+  );
+  const brokerOptions = useMemo(
+    () =>
+      buildAutocompleteOptions([
+        defaultBroker,
+        location.state?.broker,
+        ...trades.map((trade) => trade.Broker),
+      ]),
+    [defaultBroker, location.state?.broker, trades],
+  );
+  const accountOptions = useMemo(
+    () =>
+      buildAutocompleteOptions([
+        defaultAccount,
+        location.state?.account,
+        ...trades.map((trade) => trade.Account),
+      ]),
+    [defaultAccount, location.state?.account, trades],
+  );
 
   const normalizeString = (value: unknown) =>
     typeof value === "string"
@@ -261,7 +316,7 @@ export default function BlotterForm() {
           : values.instrumentType === "option" &&
               !Number.isInteger(Number(value))
             ? "Strike price must be a whole number for option trades"
-          : null,
+            : null,
       callPut: (value, values) =>
         values.instrumentType === "option" &&
         !["call", "put"].includes(String(value).toLowerCase())
@@ -544,6 +599,7 @@ export default function BlotterForm() {
   ) => {
     localStorage.setItem("defaultBook", values.book);
     localStorage.setItem("defaultBroker", values.broker);
+    localStorage.setItem("defaultAccount", values.account);
 
     try {
       const isUpdate = Boolean(values.tradeId);
@@ -696,24 +752,27 @@ export default function BlotterForm() {
               description="Auto-generated from the option fields"
             />
           )}
-          <TextInput
+          <Autocomplete
             withAsterisk
             label="Book"
             placeholder="book to be added, e.g. Main Book"
+            data={bookOptions}
             key={form.key("book")}
             {...form.getInputProps("book")}
           />
-          <TextInput
+          <Autocomplete
             withAsterisk
             label="Broker"
             placeholder="broker to be added, e.g. DBS"
+            data={brokerOptions}
             key={form.key("broker")}
             {...form.getInputProps("broker")}
           />
-          <TextInput
+          <Autocomplete
             withAsterisk
             label="Account"
             placeholder="account to be added, e.g. CDP"
+            data={accountOptions}
             key={form.key("account")}
             {...form.getInputProps("account")}
           />
@@ -828,7 +887,8 @@ export default function BlotterForm() {
             <Box style={{ gridColumn: "1 / -1" }}>
               <Divider my={4} label="Option Booking" labelPosition="center" />
               <Text size="xs" c="dimmed" mt={4}>
-                Spot reference is persisted on the trade. Open options keep zero live MV and unrealized PnL until the closing trade is booked.
+                Spot reference is persisted on the trade. Open options keep zero
+                live MV and unrealized PnL until the closing trade is booked.
               </Text>
             </Box>
           )}

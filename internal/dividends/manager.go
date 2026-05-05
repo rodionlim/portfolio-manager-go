@@ -97,6 +97,9 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 	if err != nil {
 		return nil, err
 	}
+	if tickerRef.AssetSubClass == rdata.AssetSubClassOption {
+		return []Dividends{}, nil
+	}
 
 	// If no dividends.sg ticker found, check if the ticker is a special case
 	if tickerRef.DividendsSgTicker == "" && (!common.IsSSB(ticker) && !common.IsSgTBill(ticker)) {
@@ -169,7 +172,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleBook(book string) (map[st
 
 			// Check if ticker is valid (has reference data for dividends)
 			tickerRef, err := dm.rdata.GetTicker(ticker)
-			if err == nil && (tickerRef.DividendsSgTicker != "" || tickerRef.YahooTicker != "" || common.IsSSB(ticker) || common.IsSgTBill(ticker)) {
+			if err == nil && tickerRef.AssetSubClass != rdata.AssetSubClassOption && (tickerRef.DividendsSgTicker != "" || tickerRef.YahooTicker != "" || common.IsSSB(ticker) || common.IsSgTBill(ticker)) {
 				validTickers[ticker] = true
 			}
 		}

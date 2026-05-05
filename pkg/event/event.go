@@ -63,10 +63,16 @@ func (bus *EventBus) Unsubscribe(eventName string, handlerID uuid.UUID) {
 // Publish sends an event to all subscribed handlers.
 func (bus *EventBus) Publish(event Event) {
 	bus.mu.RLock()
-	defer bus.mu.RUnlock()
-	if handlers, found := bus.handlers[event.Name]; found {
-		for _, handler := range handlers {
-			go handler.callback(event)
-		}
+	handlers, found := bus.handlers[event.Name]
+	if !found {
+		bus.mu.RUnlock()
+		return
+	}
+
+	handlersCopy := append([]EventHandler(nil), handlers...)
+	bus.mu.RUnlock()
+
+	for _, handler := range handlersCopy {
+		handler.callback(event)
 	}
 }

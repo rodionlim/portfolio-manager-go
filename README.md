@@ -479,7 +479,7 @@ For more details, see [crontab.guru](https://crontab.guru/) or the [robfig/cron]
 
 ### Positions
 
-Users can get an aggregated view of all their positions via the positions component in the user interface.
+Users can get an aggregated view of all their positions via the positions component in the user interface. Positions are grouped by economic underlying in the outer row, with outright and derivative legs shown together in an expandable detail panel. Open option positions are intentionally displayed with zero live market value and zero unrealized PnL until the closing trade is booked.
 
 ![Position Table](docs/Positions.png)
 
@@ -576,13 +576,39 @@ curl -X POST http://localhost:8080/api/v1/blotter/trade \
         "broker": "DBS",
         "book": "BookA",
         "account": "CDP",
+    "status": "open",
         "quantity": 10,
         "price": 150.00,
         "fx": 1.33,
-        "type": "buy",
         "tradeDate": "2024-12-09T00:00:00Z"
     }'
 ```
+
+### Add Option Trade to Blotter
+
+```sh
+curl -X POST http://localhost:8080/api/v1/blotter/trade \
+  -H "Content-Type: application/json" \
+  -d '{
+    "side": "buy",
+    "broker": "DBS",
+    "book": "BookA",
+    "account": "CDP",
+    "status": "open",
+    "quantity": 1,
+    "price": 12.50,
+    "fx": 1.33,
+    "tradeDate": "2024-12-09T00:00:00Z",
+    "instrumentType": "option",
+    "underlyingTicker": "AAPL",
+    "expiryDate": "2025-06-20",
+    "strikePrice": 200,
+    "callPut": "call",
+    "underlyingSpotRef": 189.5
+  }'
+```
+
+For options, `price` is the booked option NPV per contract. The server derives the canonical option ticker from `underlyingTicker`, `expiryDate`, `strikePrice`, and `callPut`, and will auto-populate `underlyingSpotRef` from historical spot if it is omitted.
 
 ### Update Asset in Blotter
 
@@ -590,15 +616,17 @@ curl -X POST http://localhost:8080/api/v1/blotter/trade \
 curl -X PUT http://localhost:8080/api/v1/blotter/trade \
     -H "Content-Type: application/json" \
     -d '{
+    "id": "61570b49-2adb-4b99-be20-d14001e761a9",
         "ticker": "AAPL",
         "side": "buy",
         "broker": "DBS",
         "book": "BookA",
         "account": "CDP",
+    "status": "open",
         "quantity": 10,
         "price": 200.00,
         "fx": 1,
-        "type": "buy",
+    "seqNum": 1,
         "tradeDate": "2024-12-09T00:00:00Z"
     }'
 ```
@@ -621,6 +649,8 @@ curl -X DELETE http://localhost:8080/api/v1/portfolio/positions
 ### Import Trades from CSV (for migrating into portfolio-manager)
 
 Note that FX rate here is always with respect to portfolio revaluation currency per foreign ccy, e.g. USD/SGD if SGD is portfolio revaluation currency
+
+The CSV format now supports both outright and option trades. The additional option columns are `InstrumentType`, `UnderlyingTicker`, `ExpiryDate`, `StrikePrice`, `CallPut`, and `UnderlyingSpotRef`. Outright rows can leave those columns blank.
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/blotter/import \

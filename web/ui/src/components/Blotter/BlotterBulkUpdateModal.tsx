@@ -30,7 +30,7 @@ const BlotterBulkUpdateModal: React.FC<BlotterBulkUpdateModalProps> = ({
   onSuccess,
 }) => {
   const [selectedField, setSelectedField] = useState<BulkUpdateField | null>(
-    null
+    null,
   );
   const [newValue, setNewValue] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -54,11 +54,17 @@ const BlotterBulkUpdateModal: React.FC<BlotterBulkUpdateModalProps> = ({
           tradeDate: trade.TradeDate,
           ticker:
             selectedField === "ticker" ? newValue.toUpperCase() : trade.Ticker,
+          instrumentType: trade.InstrumentType,
+          underlyingTicker: trade.UnderlyingTicker,
+          underlyingSpotRef: trade.UnderlyingSpotRef,
+          expiryDate: trade.ExpiryDate,
+          strikePrice: trade.StrikePrice,
+          callPut: trade.CallPut,
           book: selectedField === "book" ? newValue : trade.Book,
           broker: trade.Broker,
           account: trade.Account,
-          status: "open", // Default status for bulk updates
-          originalTradeId: "", // Not available in Trade interface
+          status: trade.Status || "open",
+          origTradeID: trade.OrigTradeID || "",
           quantity: trade.Quantity,
           price: trade.Price,
           fx: trade.Fx,
@@ -77,7 +83,7 @@ const BlotterBulkUpdateModal: React.FC<BlotterBulkUpdateModalProps> = ({
         if (!resp.ok) {
           const error = await resp.json();
           throw new Error(
-            error.message || `Failed to update trade ${trade.TradeID}`
+            error.message || `Failed to update trade ${trade.TradeID}`,
           );
         }
 

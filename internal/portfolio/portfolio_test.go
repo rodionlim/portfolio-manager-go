@@ -470,6 +470,49 @@ func TestSubscribeToBlotterWithTradeUpdate(t *testing.T) {
 	assert.Equal(t, 150.0, position.AvgPx)
 }
 
+func TestDeleteAllDataThenReimportRebuildsPositionsFromNewTrades(t *testing.T) {
+	p, mockDB := createTestPortfolio()
+	mockDB.On("GetAllKeysWithPrefix", string(types.PositionKeyPrefix)).Return([]string{}, nil)
+	blotterSvc := blotter.NewBlotter(mockDB)
+	p.SubscribeToBlotter(blotterSvc)
+
+	seedTrades := []*blotter.Trade{
+		must(blotter.NewTrade(blotter.TradeSideBuy, 100, "AAPL", "book1", "broker1", "cdp", blotter.StatusOpen, "", 150.0, 1, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideSell, 40, "AAPL", "book1", "broker1", "cdp", blotter.StatusOpen, "", 160.0, 1, 0.0, time.Now())),
+	}
+
+	for _, trade := range seedTrades {
+		err := blotterSvc.AddTrade(*trade)
+		assert.NoError(t, err)
+	}
+
+	position, err := p.GetPosition("book1", "AAPL")
+	assert.NoError(t, err)
+	assert.Equal(t, 60.0, position.Qty)
+
+	err = blotterSvc.RemoveAllTrades()
+	assert.NoError(t, err)
+	err = p.DeletePositions()
+	assert.NoError(t, err)
+
+	_, err = p.GetPosition("book1", "AAPL")
+	assert.Error(t, err)
+
+	importTrades := []*blotter.Trade{
+		must(blotter.NewTrade(blotter.TradeSideBuy, 8000, "AAPL", "book1", "broker1", "cdp", blotter.StatusOpen, "", 150.0, 1, 0.0, time.Now())),
+		must(blotter.NewTrade(blotter.TradeSideBuy, 601, "AAPL", "book1", "broker1", "cdp", blotter.StatusOpen, "", 151.0, 1, 0.0, time.Now())),
+	}
+
+	for _, trade := range importTrades {
+		err := blotterSvc.AddTrade(*trade)
+		assert.NoError(t, err)
+	}
+
+	position, err = p.GetPosition("book1", "AAPL")
+	assert.NoError(t, err)
+	assert.Equal(t, 8601.0, position.Qty)
+}
+
 func TestSubscribeToBlotterWithBookUpdate(t *testing.T) {
 	p, mockDB := createTestPortfolio()
 	blotterSvc := blotter.NewBlotter(mockDB)

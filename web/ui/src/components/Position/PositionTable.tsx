@@ -316,8 +316,8 @@ const PositionTable: React.FC = () => {
       if (
         prevPx !== undefined &&
         currentPx !== undefined &&
-          prevPx > 0 &&
-          currentPx > 0 &&
+        prevPx > 0 &&
+        currentPx > 0 &&
         position.Qty !== 0
       ) {
         const priceChange = currentPx - prevPx;
@@ -406,26 +406,28 @@ const PositionTable: React.FC = () => {
 
     return Array.from(grouped.values())
       .map((group) => {
-        const sortedChildren = [...(group.Children || [])].sort((left, right) => {
-          const instrumentRank = (value?: string) => {
-            switch ((value || "").toLowerCase()) {
-              case "outright":
-                return 0;
-              case "future":
-                return 1;
-              case "option":
-                return 2;
-              default:
-                return 3;
-            }
-          };
+        const sortedChildren = [...(group.Children || [])].sort(
+          (left, right) => {
+            const instrumentRank = (value?: string) => {
+              switch ((value || "").toLowerCase()) {
+                case "outright":
+                  return 0;
+                case "future":
+                  return 1;
+                case "option":
+                  return 2;
+                default:
+                  return 3;
+              }
+            };
 
-          return (
-            instrumentRank(left.InstrumentType) -
-              instrumentRank(right.InstrumentType) ||
-            left.Ticker.localeCompare(right.Ticker)
-          );
-        });
+            return (
+              instrumentRank(left.InstrumentType) -
+                instrumentRank(right.InstrumentType) ||
+              left.Ticker.localeCompare(right.Ticker)
+            );
+          },
+        );
         const summaryMetrics = resolveGroupSummaryMetrics(
           group.Ticker,
           sortedChildren,
@@ -939,8 +941,12 @@ const PositionTable: React.FC = () => {
       return (
         <Paper withBorder p={3} radius="sm">
           <Group justify="space-between" mb={3}>
-            <Text fw={600} size="xs">Underlying Components</Text>
-            <Badge variant="light" size="xs">{children.length} instruments</Badge>
+            <Text fw={600} size="xs">
+              Underlying Components
+            </Text>
+            <Badge variant="light" size="xs">
+              {children.length} instruments
+            </Badge>
           </Group>
           <table
             style={{
@@ -1087,8 +1093,12 @@ const PositionTable: React.FC = () => {
 
     return (
       <Box py="md">
-        <Text c="red" fw={500}>Error loading positions</Text>
-        <Text c="dimmed" size="sm">{message}</Text>
+        <Text c="red" fw={500}>
+          Error loading positions
+        </Text>
+        <Text c="dimmed" size="sm">
+          {message}
+        </Text>
       </Box>
     );
   }

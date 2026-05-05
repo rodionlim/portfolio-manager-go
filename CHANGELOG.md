@@ -1,3 +1,16 @@
+## [1.46.0] - 2026-05-05
+
+### 🚀 Features
+
+- Support option pricing #171
+- *(ui)* Add convenience to blotter entry to auto complete book, account and broker based on existing trades
+- Upgrade go to 1.26.2
+- Upgrade pipelines to use node v24
+
+### 🐛 Bug Fixes
+
+- Formatting issues with readme.md
+
 ## [1.45.0] - 2026-04-08
 
 ### 🚀 Features

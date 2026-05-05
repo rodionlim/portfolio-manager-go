@@ -151,11 +151,13 @@ Create a backup of the database:
 # Local backup to specific directory
 ./portfolio-manager backup --source local --uri /path/to/backup/location
 
-# Google Drive backup (personal account with OAuth2), if not uri specified, defaults to portfolio-manager-go/backups folder
+# Google Drive backup (personal account with OAuth2), if no uri specified, defaults to portfolio-manager-go/backups folder
 ./portfolio-manager backup --source gdrive --user ./credentials.json
+```
 
 **Note on Google Drive OAuth2:**
 If you are using a personal Google account, use OAuth2 Desktop credentials instead of a Service Account to avoid storage quota issues.
+
 1. Create an **OAuth 2.0 Client ID** of type **Desktop App** in Google Cloud Console.
 2. Download the JSON file and use it with the `--user` flag.
 3. **Important**: Google has blocked the out-of-band (OOB) "copy-paste" flow. The application now uses a local loopback server on port **8888** for authentication.
@@ -163,12 +165,14 @@ If you are using a personal Google account, use OAuth2 Desktop credentials inste
 5. On first run, follow the link in your terminal. After authorization, you will be redirected to the URI specified in your `credentials.json` (e.g., `http://localhost:8888` or your Tailscale domain) and the application will capture the code automatically.
 6. A `token.json` will be saved locally for future automatic backups.
 7. **Remote Servers (Proxmox/LXC)**: If you are running the app on a remote server, you have two options for the one-time authentication step:
-   - **Option A (Custom Domain)**: Use a reachable domain in your `redirect_uris` (like a Tailscale `.ts.net` address). Ensure port **8888** (or the port in your URI) is open in your server firewall. (*Note: Only works for "Web Application" client types, not "Desktop App"*).
+   - **Option A (Custom Domain)**: Use a reachable domain in your `redirect_uris` (like a Tailscale `.ts.net` address). Ensure port **8888** (or the port in your URI) is open in your server firewall. (_Note: Only works for "Web Application" client types, not "Desktop App"_).
    - **Option B (Port Forwarding)**: Keep `localhost:8888` in your credentials and "beam" the traffic from your local laptop to the server using one of these commands on your **local machine**:
      - **SSH Tunnel**: `ssh -L 8888:localhost:8888 your-server`
      - **Socat**: `socat TCP4-LISTEN:8888,fork TCP4:your-server:8888`
 
 # Nextcloud backup (not yet implemented)
+
+```sh
 ./portfolio-manager backup --source nextcloud --uri https://your-nextcloud.com --user username --password password
 ```
 

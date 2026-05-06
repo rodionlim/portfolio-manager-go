@@ -169,6 +169,24 @@ func (p *Portfolio) GetDividendsManager() *dividends.DividendsManager {
 func (p *Portfolio) SubscribeToBlotter(blotterSvc *blotter.TradeBlotter) {
 	p.blotter = blotterSvc
 
+	if p.currentSeqNum == -1 {
+		hasPersistedPositions := false
+		for _, books := range p.positions {
+			if len(books) > 0 {
+				hasPersistedPositions = true
+				break
+			}
+		}
+
+		if hasPersistedPositions {
+			p.logger.Warn("Portfolio sequence head missing while persisted positions exist; rebuilding positions from blotter")
+			if err := p.DeletePositions(); err != nil {
+				p.logger.Errorf("Failed to rebuild positions from blotter after missing sequence head: %v", err)
+				return
+			}
+		}
+	}
+
 	// Check if the currentSeqNum is less than the current sequence number of the blotter, i
 	// if it is, replay the trades from the blotter starting from the currentSeqNum
 	blotterSeqNum := blotterSvc.GetCurrentSeqNum()

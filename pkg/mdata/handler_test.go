@@ -98,7 +98,7 @@ func TestHandleDividendsDelete(t *testing.T) {
 	// Create a mock market data manager
 	mockManager := mocks.NewMockMarketDataManager()
 	mockManager.SetDividendMetadata("AAPL", []types.DividendsMetadata{
-		{Ticker: "AAPL", ExDate: "2023-01-01", Amount: 1.0, WithholdingTax: 0.3},
+		{Ticker: "AAPL", ExDate: "2023-01-01", Amount: 1.0, WithholdingTax: 0.3, Source: types.DividendSourceOfficial},
 	})
 
 	// Create a test request
@@ -140,4 +140,20 @@ func TestHandleDividendsDelete_InvalidType(t *testing.T) {
 	handler.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 	assert.Contains(t, recorder.Body.String(), "Invalid dividend type")
+}
+
+func TestHandleDividendsGet_IncludesSource(t *testing.T) {
+	mockManager := mocks.NewMockMarketDataManager()
+	mockManager.SetDividendMetadata("AAPL", []types.DividendsMetadata{
+		{Ticker: "AAPL", ExDate: "2023-01-01", Amount: 1.0, WithholdingTax: 0.3, Source: types.DividendSourceCustom},
+	})
+
+	req := httptest.NewRequest("GET", "/api/v1/mdata/dividends/AAPL", nil)
+	recorder := httptest.NewRecorder()
+	handler := HandleDividendsGet(mockManager)
+
+	handler.ServeHTTP(recorder, req)
+
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "\"Source\":\"Custom\"")
 }

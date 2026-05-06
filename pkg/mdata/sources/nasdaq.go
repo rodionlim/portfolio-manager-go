@@ -65,8 +65,6 @@ func (src *NasdaqSource) GetDividendsMetadata(ticker string, withholdingTax floa
 		return cachedData.([]types.DividendsMetadata), nil
 	}
 
-	officialDividendsMetadata, _ := src.GetSingleDividendsMetadataWithType(ticker, false)
-
 	url := fmt.Sprintf("https://api.nasdaq.com/api/quote/%s/dividends?assetclass=stocks", ticker)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -147,19 +145,15 @@ func (src *NasdaqSource) GetDividendsMetadata(ticker string, withholdingTax floa
 	sort.Slice(dividends, func(i, j int) bool {
 		return dividends[i].ExDate < dividends[j].ExDate
 	})
+	dividends = src.withDividendSource(dividends, types.DividendSourceOfficial)
 
 	if src.db != nil {
-		// Store in database if we have new data
-		if len(dividends) > len(officialDividendsMetadata) {
-			logger.Infof("New dividends for ticker %s, storing into database", ticker)
-			src.StoreDividendsMetadata(ticker, dividends, false)
-		}
+		return src.upsertOfficialDividendsMetadata(ticker, dividends)
 	}
 
-	// Store in cache
 	src.cache.Set(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends, cache.DefaultExpiration)
 
-	return src.GetSingleDividendsMetadata(ticker)
+	return dividends, nil
 }
 
 // convertDateFormat converts MM/DD/YYYY to YYYY-MM-DD

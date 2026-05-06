@@ -1,5 +1,10 @@
 package types
 
+const (
+	DividendSourceOfficial = "Official"
+	DividendSourceCustom   = "Custom"
+)
+
 type AssetData struct {
 	Ticker    string  `json:"ticker"`
 	Price     float64 `json:"price"`
@@ -15,6 +20,7 @@ type DividendsMetadata struct {
 	Interest       float64 // SSB, TBills and Bonds only, in percentage
 	AvgInterest    float64 // SSB, TBills and Bonds only, in percentage
 	WithholdingTax float64 // in decimal, not percentage
+	Source         string
 }
 
 type InterestRates struct {

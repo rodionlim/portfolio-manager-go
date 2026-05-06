@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import {
+  Badge,
   Box,
   Button,
   FileInput,
@@ -27,6 +28,7 @@ interface Dividend {
   Amount: number;
   AmountPerShare: number;
   Qty: number;
+  Source: string;
 }
 
 interface DividendsMetadata {
@@ -36,6 +38,7 @@ interface DividendsMetadata {
   Interest: number;
   AvgInterest: number;
   WithholdingTax: number;
+  Source: string;
 }
 
 interface DividendsTableProps {
@@ -245,6 +248,25 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
         header: "Quantity",
         Cell: ({ cell }) => {
           return cell.getValue<number>().toLocaleString();
+        },
+      },
+      {
+        accessorKey: "Source",
+        header: "Source",
+        Cell: ({ cell }) => {
+          const source = cell.getValue<string>() || "Unknown";
+          const color =
+            source === "Custom"
+              ? "orange"
+              : source === "Official"
+                ? "blue"
+                : "gray";
+
+          return (
+            <Badge color={color} variant="light">
+              {source}
+            </Badge>
+          );
         },
       },
       {

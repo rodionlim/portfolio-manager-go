@@ -24,8 +24,8 @@ func NewMockMarketDataManager() *MockMarketDataManager {
 
 	// some sensible defaults, though tests should set this themselves
 	mgr.SetDividendMetadata("AAPL", []types.DividendsMetadata{
-		{Ticker: "AAPL", ExDate: "2023-01-01", Amount: 1.0, WithholdingTax: 0.3},
-		{Ticker: "AAPL", ExDate: "2023-02-01", Amount: 2.0, WithholdingTax: 0.3},
+		{Ticker: "AAPL", ExDate: "2023-01-01", Amount: 1.0, WithholdingTax: 0.3, Source: types.DividendSourceOfficial},
+		{Ticker: "AAPL", ExDate: "2023-02-01", Amount: 2.0, WithholdingTax: 0.3, Source: types.DividendSourceOfficial},
 	})
 
 	return mgr

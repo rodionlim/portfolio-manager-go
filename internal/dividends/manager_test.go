@@ -17,9 +17,9 @@ func setup() (*DividendsManager, *mocks.MockMarketDataManager, *mockTradeGetterB
 	blotterMgr := newMockTradeGetterBlotter()
 
 	mdataMgr.SetDividendMetadata("AAPL", []types.DividendsMetadata{
-		{Ticker: "AAPL", ExDate: "2023-01-01", Amount: 1.0, WithholdingTax: 0.3},
-		{Ticker: "AAPL", ExDate: "2023-02-01", Amount: 2.0, WithholdingTax: 0.3},
-		{Ticker: "AAPL", ExDate: "2099-02-01", Amount: 5.0, WithholdingTax: 0.3},
+		{Ticker: "AAPL", ExDate: "2023-01-01", Amount: 1.0, WithholdingTax: 0.3, Source: types.DividendSourceOfficial},
+		{Ticker: "AAPL", ExDate: "2023-02-01", Amount: 2.0, WithholdingTax: 0.3, Source: types.DividendSourceOfficial},
+		{Ticker: "AAPL", ExDate: "2099-02-01", Amount: 5.0, WithholdingTax: 0.3, Source: types.DividendSourceOfficial},
 	})
 
 	rdataMgr.AddTicker(rdata.TickerReference{
@@ -49,8 +49,8 @@ func TestCalculateDividendsForSingleTickerOnlyBuys(t *testing.T) {
 	assert.Len(t, dividends, 2)
 
 	expectedDividends := []Dividends{
-		{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0, Qty: 100},
-		{ExDate: "2023-02-01", Amount: 420.0, AmountPerShare: 2.0, Qty: 300},
+		{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0, Qty: 100, Source: types.DividendSourceOfficial},
+		{ExDate: "2023-02-01", Amount: 420.0, AmountPerShare: 2.0, Qty: 300, Source: types.DividendSourceOfficial},
 	}
 
 	assert.Equal(t, expectedDividends, dividends)
@@ -72,7 +72,7 @@ func TestCalculateDividendsForSingleTickerBuysAndSells(t *testing.T) {
 	assert.Len(t, dividends, 1)
 
 	expectedDividends := []Dividends{
-		{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0, Qty: 100},
+		{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0, Qty: 100, Source: types.DividendSourceOfficial},
 	}
 
 	assert.Equal(t, expectedDividends, dividends)
@@ -96,7 +96,7 @@ func TestCalculateDividendsForSingleBookBuysAndSells(t *testing.T) {
 
 	expectedDividends := map[string][]Dividends{
 		"AAPL": {
-			{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0, Qty: 100},
+			{ExDate: "2023-01-01", Amount: 70.0, AmountPerShare: 1.0, Qty: 100, Source: types.DividendSourceOfficial},
 		},
 	}
 

@@ -75,6 +75,9 @@ func (src *ILoveSsb) GetDividendsMetadata(ticker string, withholdingTax float64)
 		src.db.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), &dividends)
 		if len(dividends) > 0 {
 			src.logger.Infof("Found SSB interest rates for ticker %s in database", ticker)
+			for i := range dividends {
+				dividends[i].Source = types.DividendSourceOfficial
+			}
 			return dividends, nil
 		}
 	}
@@ -178,6 +181,7 @@ func (src *ILoveSsb) GetDividendsMetadata(ticker string, withholdingTax float64)
 				Interest:       data.InterestRates[i],        // interest in percentage
 				AvgInterest:    data.AverageReturnPerYear[i], // average interest in percentage
 				WithholdingTax: withholdingTax,
+				Source:         types.DividendSourceOfficial,
 			})
 		}
 		if ticker == issuanceName {

@@ -46,6 +46,7 @@ const Settings = () => {
   const [email, setEmail] = useState("");
   const [avatar, setAvatar] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deletePositionsLoading, setDeletePositionsLoading] = useState(false);
   const [fxInferLoading, setFxInferLoading] = useState(false);
 
   // Load user profile data into form fields when component mounts or profile changes
@@ -67,7 +68,7 @@ const Settings = () => {
   const handleDeleteAllData = async () => {
     if (
       !window.confirm(
-        "WARNING: This will permanently delete ALL portfolio positions and trades. This action cannot be undone. Are you sure?"
+        "WARNING: This will permanently delete ALL portfolio positions and trades. This action cannot be undone. Are you sure?",
       )
     ) {
       return;
@@ -87,7 +88,7 @@ const Settings = () => {
         getUrl("api/v1/portfolio/positions"),
         {
           method: "DELETE",
-        }
+        },
       );
 
       if (!portfolioResponse.ok) {
@@ -108,6 +109,43 @@ const Settings = () => {
       });
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleDeleteAllPositions = async () => {
+    if (
+      !window.confirm(
+        "WARNING: This will permanently delete ALL portfolio positions but keep blotter trades intact. Use this when you want positions to be rebuilt from the blotter. This action cannot be undone. Are you sure?",
+      )
+    ) {
+      return;
+    }
+
+    setDeletePositionsLoading(true);
+    try {
+      const response = await fetch(getUrl("api/v1/portfolio/positions"), {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete portfolio positions");
+      }
+
+      notifications.show({
+        title: "Success",
+        message:
+          "All portfolio positions have been deleted. Blotter trades were kept intact.",
+        color: "green",
+      });
+    } catch (error) {
+      console.error("Error deleting portfolio positions:", error);
+      notifications.show({
+        title: "Error",
+        message: `Failed to delete portfolio positions: ${error}`,
+        color: "red",
+      });
+    } finally {
+      setDeletePositionsLoading(false);
     }
   };
 
@@ -186,7 +224,7 @@ const Settings = () => {
           username: username.trim(),
           email: email.trim(),
           avatar: avatar.trim(),
-        })
+        }),
       ).unwrap();
 
       notifications.show({
@@ -333,6 +371,28 @@ const Settings = () => {
                 >
                   Close Expired Positions
                 </Button>
+                <Divider my="lg" />
+
+                <Alert
+                  icon={<IconAlertCircle size={16} />}
+                  title="Delete All Positions"
+                  color="orange"
+                  mb="md"
+                >
+                  This will delete all portfolio positions but keep your blotter
+                  trades intact. Use this when you want positions to be rebuilt
+                  from the blotter.
+                </Alert>
+
+                <Button
+                  color="orange"
+                  onClick={handleDeleteAllPositions}
+                  loading={deletePositionsLoading}
+                  leftSection={<IconTrash size={16} />}
+                >
+                  Delete All Positions
+                </Button>
+
                 <Divider my="lg" />
 
                 <Alert

@@ -1,3 +1,13 @@
+## [1.47.0] - 2026-05-06
+
+### 🚀 Features
+
+- *(settings)* Add functionality to delete all portfolio positions while keeping blotter trades intact
+
+### 🐛 Bug Fixes
+
+- *(portfolio)* Implement rebuilding of positions when sequence head is missing
+
 ## [1.46.0] - 2026-05-05
 
 ### 🚀 Features

@@ -1,3 +1,9 @@
+## [1.48.0] - 2026-05-06
+
+### 🚀 Features
+
+- *(dividends)* Add source field to dividends metadata and update related components
+
 ## [1.47.0] - 2026-05-06
 
 ### 🚀 Features

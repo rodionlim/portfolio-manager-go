@@ -77,6 +77,9 @@ func (src *Mas) GetDividendsMetadata(ticker string, withholdingTax float64) ([]t
 		src.db.Get(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), &dividends)
 		if len(dividends) > 0 {
 			src.logger.Infof("Found coupons for ticker %s in database", ticker)
+			for i := range dividends {
+				dividends[i].Source = types.DividendSourceOfficial
+			}
 			return dividends, nil
 		}
 	}
@@ -125,6 +128,7 @@ func (src *Mas) GetDividendsMetadata(ticker string, withholdingTax float64) ([]t
 		Interest:       result.CutoffYield, // interest in percentage
 		AvgInterest:    result.CutoffYield, // interest in percentage
 		WithholdingTax: withholdingTax,
+		Source:         types.DividendSourceOfficial,
 	}}
 
 	// For issuance that are not found in leveldb, store it into level db

@@ -143,8 +143,6 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 		return cachedData.([]types.DividendsMetadata), nil
 	}
 
-	officialDividendsMetadata, _ := src.GetSingleDividendsMetadataWithType(ticker, false)
-
 	// Escape hatch for custom dividends with invalid dividend history on dividends.sg
 	specialTickers := []string{"FCOT.SI"}
 	if slices.Contains(specialTickers, ticker) {
@@ -256,14 +254,13 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 	sort.Slice(dividends, func(i, j int) bool {
 		return dividends[i].ExDate < dividends[j].ExDate
 	})
+	dividends = src.withDividendSource(dividends, types.DividendSourceOfficial)
 
 	if src.db != nil {
-		// Store in database if we have new data
-		if len(dividends) > len(officialDividendsMetadata) {
-			logger.Infof("New dividends for ticker %s, storing into database", ticker)
-			src.StoreDividendsMetadata(ticker, dividends, false)
-		}
+		return src.upsertOfficialDividendsMetadata(ticker, dividends)
 	}
 
-	return src.GetSingleDividendsMetadata(ticker)
+	src.cache.Set(fmt.Sprintf("%s:%s", types.DividendsKeyPrefix, ticker), dividends, cache.DefaultExpiration)
+
+	return dividends, nil
 }

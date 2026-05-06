@@ -275,6 +275,8 @@ definitions:
         type: string
       qty:
         type: number
+      source:
+        type: string
     type: object
   historical.AssetConfig:
     properties:
@@ -721,6 +723,8 @@ definitions:
       interest:
         description: SSB, TBills and Bonds only, in percentage
         type: number
+      source:
+        type: string
       ticker:
         type: string
       withholdingTax:

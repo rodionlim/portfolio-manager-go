@@ -3266,6 +3266,9 @@ const docTemplate = `{
                 },
                 "qty": {
                     "type": "number"
+                },
+                "source": {
+                    "type": "string"
                 }
             }
         },
@@ -3929,6 +3932,9 @@ const docTemplate = `{
                 "interest": {
                     "description": "SSB, TBills and Bonds only, in percentage",
                     "type": "number"
+                },
+                "source": {
+                    "type": "string"
                 },
                 "ticker": {
                     "type": "string"

@@ -29,6 +29,7 @@ type Dividends struct {
 	Amount         float64
 	AmountPerShare float64
 	Qty            float64
+	Source         string
 }
 
 func NewDividendsManager(db dal.Database, mdata mdata.MarketDataManager, rdata rdata.ReferenceManager, blotter blotter.TradeGetter) *DividendsManager {
@@ -149,6 +150,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 				Amount:         totalAmount,
 				AmountPerShare: dividend.Amount,
 				Qty:            totalQty,
+				Source:         dividend.Source,
 			})
 		}
 	}
@@ -223,6 +225,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleBook(book string) (map[st
 					Amount:         totalAmount,
 					AmountPerShare: dividend.Amount,
 					Qty:            totalQty,
+					Source:         dividend.Source,
 				})
 			}
 		}

@@ -447,20 +447,21 @@ export default function BlotterForm() {
     const tradeTypeActionPastTense = !values.tradeId ? "added" : "updated";
     const baseCcy = "SGD"; // TODO: make this dynamic based on user settings or location
     let usedCurrentRate = false;
+    let resolvedFx = normalizeNumber(values.fx);
 
     const fxLookupTicker =
       values.instrumentType === "option"
         ? values.underlyingTicker
         : values.ticker;
 
-    if (values.fx === 0) {
+    if (resolvedFx === 0) {
       // Check if it is SG Govies, if so, set FX to 1
       if (IsSGGovies(fxLookupTicker) && baseCcy === "SGD") {
-        values.fx = 1; // SG Govies are always in SGD
+        resolvedFx = 1; // SG Govies are always in SGD
       } else if (refData && refData[fxLookupTicker]?.ccy) {
         const quoteCcy = refData[fxLookupTicker].ccy;
         if (quoteCcy === baseCcy) {
-          values.fx = 1;
+          resolvedFx = 1;
         } else {
           const dt = values.date.replaceAll("-", "").slice(0, 8); // YYYYMMDD
           // fetch price as of historical date
@@ -477,8 +478,11 @@ export default function BlotterForm() {
             if (Array.isArray(vals) && vals.length === 0) {
               throw new Error("No historical FX rate found");
             }
-            const price = vals[0]["Price"] || vals[0]["price"];
-            values.fx = price;
+            const price = Number(vals[0]["Price"] || vals[0]["price"]);
+            if (!Number.isFinite(price) || price <= 0) {
+              throw new Error("Invalid historical FX rate");
+            }
+            resolvedFx = price;
           } catch (error) {
             // Fallback to current FX rate
             console.warn(
@@ -495,7 +499,16 @@ export default function BlotterForm() {
               throw new Error("Unable to fetch FX rate");
             }
             const currentData = await currentResp.json();
-            values.fx = currentData.Price;
+            const currentPrice = Number(currentData.Price || currentData.price);
+            if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
+              notifications.show({
+                color: "red",
+                title: "Error",
+                message: `Unable to infer FX rate for ${fxLookupTicker}`,
+              });
+              throw new Error("Unable to infer FX rate");
+            }
+            resolvedFx = currentPrice;
             usedCurrentRate = true;
           }
         }
@@ -509,6 +522,8 @@ export default function BlotterForm() {
       }
     }
 
+    form.setFieldValue("fx", resolvedFx);
+
     const body = {
       id: values.tradeId,
       tradeDate: values.date, // need to convert to 2024-12-09T00:00:00Z
@@ -520,7 +535,7 @@ export default function BlotterForm() {
       origTradeID: values.originalTradeId,
       quantity: values.qty,
       price: values.price,
-      fx: values.fx, // Add FX rate to request body (0 means infer from backend)
+      fx: resolvedFx, // Add FX rate to request body (0 means infer from backend)
       side: values.tradeType ? "sell" : "buy",
       seqNum: values.seqNum,
       instrumentType: values.instrumentType,
@@ -546,7 +561,7 @@ export default function BlotterForm() {
       }
 
       const data = await resp.json();
-      const fxParsed = parseFloat(values.fx.toFixed(4));
+      const fxParsed = parseFloat(resolvedFx.toFixed(4));
 
       notifications.show({
         title: "Trade successfully added",

@@ -1,3 +1,13 @@
+## [1.49.0] - 2026-06-01
+
+### 🚀 Features
+
+- *(seed)* Seed palantir
+
+### 🐛 Bug Fixes
+
+- *(blotter)* Handle error with infering fx #177
+
 ## [1.48.0] - 2026-05-06
 
 ### 🚀 Features

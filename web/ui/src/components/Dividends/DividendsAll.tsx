@@ -23,7 +23,11 @@ interface DividendWithTicker extends Dividend {
   Ticker: string;
 }
 
-const DividendsAll: React.FC = () => {
+interface DividendsAllProps {
+  initialMonth?: string | null;
+}
+
+const DividendsAll: React.FC<DividendsAllProps> = ({ initialMonth = null }) => {
   // Fetch all dividends for all tickers
   const fetchAllDividends = async (): Promise<Record<string, Dividend[]>> => {
     try {
@@ -80,7 +84,7 @@ const DividendsAll: React.FC = () => {
     }
   };
 
-  // Flatten and sort dividends by ExDate in descending order
+  // Flatten, optionally filter by month, and sort dividends by ExDate in descending order
   const flattenedDividends = useMemo(() => {
     const dividends: DividendWithTicker[] = [];
 
@@ -93,11 +97,15 @@ const DividendsAll: React.FC = () => {
       });
     });
 
+    const filteredDividends = initialMonth
+      ? dividends.filter((dividend) => dividend.ExDate.slice(0, 7) === initialMonth)
+      : dividends;
+
     // Sort by ExDate in descending order (most recent first)
-    return dividends.sort((a, b) => {
+    return filteredDividends.sort((a, b) => {
       return new Date(b.ExDate).getTime() - new Date(a.ExDate).getTime();
     });
-  }, [allDividends]);
+  }, [allDividends, initialMonth]);
 
   // Helper function to format numbers with thousands separators
   const formatNumber = (num: number): string => {
@@ -114,6 +122,14 @@ const DividendsAll: React.FC = () => {
       year: "numeric",
       month: "short",
       day: "numeric",
+    });
+  };
+
+  const formatMonth = (monthString: string): string => {
+    const date = new Date(`${monthString}-01`);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
     });
   };
 
@@ -198,7 +214,9 @@ const DividendsAll: React.FC = () => {
         }}
       >
         <Text fw={700} size="lg">
-          All Dividends Received
+          {initialMonth
+            ? `All Dividends Received - ${formatMonth(initialMonth)}`
+            : "All Dividends Received"}
         </Text>
         <Text size="sm" c="dimmed">
           ({flattenedDividends.length} records)

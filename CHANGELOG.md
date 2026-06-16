@@ -1,3 +1,10 @@
+## [1.50.0] - 2026-06-16
+
+### 🚀 Features
+
+- *(seed)* Add dell and wilmar
+- *(ui)* Add monthly dividends view #179
+
 ## [1.49.0] - 2026-06-01
 
 ### 🚀 Features

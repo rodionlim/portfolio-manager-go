@@ -37,11 +37,12 @@ type Server struct {
 	historical   *historical.Service
 	analytics    analytics.Service
 	user         *user.Service
+	screener     mdata.MarketDataScreener
 	mcpServer    *MCPServer
 }
 
 // NewServer creates a new Server instance.
-func NewServer(addr string, blotterSvc *blotter.TradeBlotter, confirmationSvc *blotter.ConfirmationService, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service, analyticsSvc analytics.Service, userSvc *user.Service, mcpSvc *MCPServer) *Server {
+func NewServer(addr string, blotterSvc *blotter.TradeBlotter, confirmationSvc *blotter.ConfirmationService, portfolioSvc *portfolio.Portfolio, fxinferSvc *fxinfer.Service, metricsSvc *metrics.MetricsService, historicalSvc *historical.Service, analyticsSvc analytics.Service, userSvc *user.Service, screenerSvc mdata.MarketDataScreener, mcpSvc *MCPServer) *Server {
 	return &Server{
 		Addr:         addr,
 		mux:          http.NewServeMux(),
@@ -53,6 +54,7 @@ func NewServer(addr string, blotterSvc *blotter.TradeBlotter, confirmationSvc *b
 		historical:   historicalSvc,
 		analytics:    analyticsSvc,
 		user:         userSvc,
+		screener:     screenerSvc,
 		mcpServer:    mcpSvc,
 	}
 }
@@ -86,6 +88,9 @@ func (s *Server) Start(ctx context.Context) error {
 	if s.portfolio != nil {
 		// Register market data service handlers
 		mdata.RegisterHandlers(s.mux, s.portfolio.GetMdataManager())
+		if s.screener != nil {
+			mdata.RegisterScreenerHandlers(s.mux, s.screener)
+		}
 		optionpricer.RegisterHandlers(s.mux, optionpricer.NewService(s.portfolio.GetMdataManager()))
 		rdata.RegisterHandlers(s.mux, s.portfolio.GetRdataManager())
 		dividends.RegisterHandlers(s.mux, s.portfolio.GetDividendsManager())

@@ -9,4 +9,5 @@ const (
 	MAS                = "mas"
 	Nasdaq             = "nasdaq"
 	Barcharts          = "barcharts"
+	TradingView        = "tradingview"
 )

@@ -345,7 +345,130 @@ func HandleDividendsDelete(mdataSvc MarketDataManager) http.HandlerFunc {
 	}
 }
 
-// RegisterHandlers registers the handlers for the market data service
+func HandleUSAIndustryOverviewGet(mdataSvc MarketDataScreener) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		data, err := mdataSvc.FetchUSAIndustryOverview()
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(newUSAIndustryOverviewResponse(data))
+	}
+}
+
+func HandleUSAIndustryPerformanceGet(mdataSvc MarketDataScreener) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		data, err := mdataSvc.FetchUSAIndustryPerformance()
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(newUSAIndustryPerformanceResponse(data))
+	}
+}
+
+func HandleUSAIndustryStocksOverviewGet(mdataSvc MarketDataScreener) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		industry := r.PathValue("industry")
+		if industry == "" {
+			common.WriteJSONError(w, "Industry is required", http.StatusBadRequest)
+			return
+		}
+		data, err := mdataSvc.FetchUSAIndustryStocksOverview(industry)
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(newUSAIndustryStocksOverviewResponse(industry, data))
+	}
+}
+
+func HandleUSAIndustryStocksPerformanceGet(mdataSvc MarketDataScreener) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		industry := r.PathValue("industry")
+		if industry == "" {
+			common.WriteJSONError(w, "Industry is required", http.StatusBadRequest)
+			return
+		}
+		data, err := mdataSvc.FetchUSAIndustryStocksPerformance(industry)
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(newUSAIndustryStocksPerformanceResponse(industry, data))
+	}
+}
+
+func handleETFFundFlowOverviewGet(screen string, fetch func() ([]types.ETFFundFlowOverview, error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		data, err := fetch()
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(newETFFundFlowOverviewResponse(screen, data))
+	}
+}
+
+func handleETFFundFlowPerformanceGet(screen string, fetch func() ([]types.ETFFundFlowPerformance, error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		data, err := fetch()
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(newETFFundFlowPerformanceResponse(screen, data))
+	}
+}
+
+func handleETFFundFlowsGet(screen string, fetch func() ([]types.ETFFundFlows, error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		data, err := fetch()
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(newETFFundFlowsResponse(screen, data))
+	}
+}
+
+func handleETFSectorOverviewGet(fetch func() ([]types.ETFSectorOverview, error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		data, err := fetch()
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(newETFSectorOverviewResponse(data))
+	}
+}
+
+// RegisterScreenerHandlers registers aggregate market screening handlers.
+func RegisterScreenerHandlers(mux *http.ServeMux, screenerSvc MarketDataScreener) {
+	mux.HandleFunc("GET /api/v1/mdata/screener/usa/industries/overview", HandleUSAIndustryOverviewGet(screenerSvc))
+	mux.HandleFunc("GET /api/v1/mdata/screener/usa/industries/performance", HandleUSAIndustryPerformanceGet(screenerSvc))
+	mux.HandleFunc("GET /api/v1/mdata/screener/usa/industries/{industry}/stocks/overview", HandleUSAIndustryStocksOverviewGet(screenerSvc))
+	mux.HandleFunc("GET /api/v1/mdata/screener/usa/industries/{industry}/stocks/performance", HandleUSAIndustryStocksPerformanceGet(screenerSvc))
+	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/largest-inflows/overview", handleETFFundFlowOverviewGet("largest-inflows", screenerSvc.FetchETFLargestInflowsOverview))
+	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/largest-inflows/performance", handleETFFundFlowPerformanceGet("largest-inflows", screenerSvc.FetchETFLargestInflowsPerformance))
+	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/largest-inflows/fund-flows", handleETFFundFlowsGet("largest-inflows", screenerSvc.FetchETFLargestInflowsFundFlows))
+	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/largest-outflows/overview", handleETFFundFlowOverviewGet("largest-outflows", screenerSvc.FetchETFLargestOutflowsOverview))
+	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/largest-outflows/performance", handleETFFundFlowPerformanceGet("largest-outflows", screenerSvc.FetchETFLargestOutflowsPerformance))
+	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/largest-outflows/fund-flows", handleETFFundFlowsGet("largest-outflows", screenerSvc.FetchETFLargestOutflowsFundFlows))
+	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/sector-etfs/overview", handleETFSectorOverviewGet(screenerSvc.FetchETFSectorOverview))
+	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/sector-etfs/performance", handleETFFundFlowPerformanceGet("sector-etfs", screenerSvc.FetchETFSectorPerformance))
+	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/sector-etfs/fund-flows", handleETFFundFlowsGet("sector-etfs", screenerSvc.FetchETFSectorFundFlows))
+}
+
+// RegisterHandlers registers the handlers for the market data service.
 func RegisterHandlers(mux *http.ServeMux, mdataSvc MarketDataManager) {
 	mux.HandleFunc("/api/v1/mdata/price/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {

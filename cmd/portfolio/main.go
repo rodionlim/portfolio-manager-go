@@ -223,7 +223,7 @@ func startServer(configFilePath string) {
 	var mcpServer *server.MCPServer
 	mcpAddr := fmt.Sprintf("%s:%s", config.MCP.Host, config.MCP.Port)
 	if config.MCP.Enabled {
-		mcpServer = server.NewMCPServer(mcpAddr, blotterSvc, portfolioSvc, mdata)
+		mcpServer = server.NewMCPServer(mcpAddr, blotterSvc, portfolioSvc, mdata, mdata)
 		logger.Infof("MCP server enabled and will start on %s", mcpAddr)
 	} else {
 		logger.Info("MCP server disabled")
@@ -231,7 +231,7 @@ func startServer(configFilePath string) {
 
 	// Start the http server to serve requests
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	srv := server.NewServer(addr, blotterSvc, confirmationSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc, analyticsSvc, userSvc, mcpServer)
+	srv := server.NewServer(addr, blotterSvc, confirmationSvc, portfolioSvc, fxInferSvc, metricsSvc, historicalSvc, analyticsSvc, userSvc, mdata, mcpServer)
 
 	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start server:", err)

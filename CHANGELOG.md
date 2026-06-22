@@ -1,3 +1,9 @@
+## [1.51.0] - 2026-06-22
+
+### 🚀 Features
+
+- *(mdata)* Add tradingview screening capabilities #181
+
 ## [1.50.0] - 2026-06-16
 
 ### 🚀 Features

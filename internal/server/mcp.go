@@ -12,22 +12,26 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
+const mcpInstructions = "Routing rule: distinguish stock-market industries from sector ETFs. Stock industries and their underlying stocks provide overview and performance only; they do not provide fund flows. For requests mentioning sector fund flows, capital flows, inflows, or outflows, use the sector ETF fund-flow tool unless the user explicitly rejects ETFs. If the user asks for underlying-stock fund flows, explain that this dataset is unavailable. If intent remains unclear, ask whether they mean stock-market industries or sector ETFs. Fund-flow periods are 1M, 3M, 1Y, 3Y, and YTD."
+
 // MCPServer represents the MCP server instance
 type MCPServer struct {
 	server    *server.MCPServer
 	blotter   *blotter.TradeBlotter
 	portfolio *portfolio.Portfolio
 	mdata     mdata.MarketDataManager
+	screener  mdata.MarketDataScreener
 	addr      string
 }
 
 // NewMCPServer creates a new MCP server instance
-func NewMCPServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, mdataSvc mdata.MarketDataManager) *MCPServer {
+func NewMCPServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, mdataSvc mdata.MarketDataManager, screenerSvc mdata.MarketDataScreener) *MCPServer {
 	// Create a new MCP server
 	s := server.NewMCPServer(
 		"Portfolio Manager MCP 📊",
 		"1.0.0",
 		server.WithToolCapabilities(true),
+		server.WithInstructions(mcpInstructions),
 		server.WithRecovery(),
 	)
 
@@ -36,6 +40,7 @@ func NewMCPServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *p
 		blotter:   blotterSvc,
 		portfolio: portfolioSvc,
 		mdata:     mdataSvc,
+		screener:  screenerSvc,
 		addr:      addr,
 	}
 
@@ -55,6 +60,9 @@ func (m *MCPServer) registerTools() {
 
 	// Register market data tools
 	mdata.RegisterMCPTools(m.server, m.mdata)
+	if m.screener != nil {
+		mdata.RegisterScreenerMCPTools(m.server, m.screener)
+	}
 }
 
 // Start starts the MCP server

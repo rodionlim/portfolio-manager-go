@@ -29,19 +29,164 @@ type MarketDataManager interface {
 	FetchBenchmarkInterestRates(country string, points int) ([]types.InterestRates, error)
 }
 
+// MarketDataScreener defines aggregate market screening operations.
+type MarketDataScreener interface {
+	FetchUSAIndustryPerformance() ([]types.USAIndustryPerformance, error)
+	FetchUSAIndustryOverview() ([]types.USAIndustryOverview, error)
+	FetchUSAIndustryStocksOverview(industry string) ([]types.USAIndustryStockOverview, error)
+	FetchUSAIndustryStocksPerformance(industry string) ([]types.USAIndustryStockPerformance, error)
+	FetchETFLargestInflowsOverview() ([]types.ETFFundFlowOverview, error)
+	FetchETFLargestInflowsPerformance() ([]types.ETFFundFlowPerformance, error)
+	FetchETFLargestInflowsFundFlows() ([]types.ETFFundFlows, error)
+	FetchETFLargestOutflowsOverview() ([]types.ETFFundFlowOverview, error)
+	FetchETFLargestOutflowsPerformance() ([]types.ETFFundFlowPerformance, error)
+	FetchETFLargestOutflowsFundFlows() ([]types.ETFFundFlows, error)
+	FetchETFSectorOverview() ([]types.ETFSectorOverview, error)
+	FetchETFSectorPerformance() ([]types.ETFFundFlowPerformance, error)
+	FetchETFSectorFundFlows() ([]types.ETFFundFlows, error)
+}
+
 // Manager handles multiple data sources with fallback capability
 type Manager struct {
-	sources        map[string]types.DataSource
-	futuresSources map[string]*sources.BarchartsSource
-	rdata          rdata.ReferenceManager
+	sources         map[string]types.DataSource
+	futuresSources  map[string]*sources.BarchartsSource
+	screenerSources map[string]types.ScreenerSource
+	rdata           rdata.ReferenceManager
+}
+
+var _ MarketDataManager = (*Manager)(nil)
+var _ MarketDataScreener = (*Manager)(nil)
+
+func newUSAIndustryOverviewResponse(industries []types.USAIndustryOverview) types.USAIndustryOverviewResponse {
+	return types.USAIndustryOverviewResponse{
+		PercentageValues: types.PercentageMetadata{
+			Unit:   "percent",
+			Fields: []string{"dividend_yield", "change"},
+			Note:   "Values are percentages: 5.26 means 5.26%, not 526%.",
+		},
+		Industries: industries,
+	}
+}
+
+func newUSAIndustryPerformanceResponse(industries []types.USAIndustryPerformance) types.USAIndustryPerformanceResponse {
+	return types.USAIndustryPerformanceResponse{
+		PercentageValues: types.PercentageMetadata{
+			Unit: "percent",
+			Fields: []string{
+				"change", "one_week", "one_month", "three_months", "six_months",
+				"ytd", "one_year", "five_years", "ten_years", "all_time",
+			},
+			Note: "Values are percentages: 5.26 means 5.26%, not 526%.",
+		},
+		Industries: industries,
+	}
+}
+
+func newUSAIndustryStocksOverviewResponse(industry string, stocks []types.USAIndustryStockOverview) types.USAIndustryStocksOverviewResponse {
+	return types.USAIndustryStocksOverviewResponse{
+		Industry: industry,
+		PercentageValues: types.PercentageMetadata{
+			Unit:   "percent",
+			Fields: []string{"change", "eps_diluted_growth_yoy_ttm", "dividend_yield_ttm"},
+			Note:   "Values are percentages: 5.26 means 5.26%, not 526%.",
+		},
+		Stocks: stocks,
+	}
+}
+
+func newUSAIndustryStocksPerformanceResponse(industry string, stocks []types.USAIndustryStockPerformance) types.USAIndustryStocksPerformanceResponse {
+	return types.USAIndustryStocksPerformanceResponse{
+		Industry: industry,
+		PercentageValues: types.PercentageMetadata{
+			Unit: "percent",
+			Fields: []string{
+				"change", "one_week", "one_month", "three_months", "six_months", "ytd",
+				"one_year", "five_years", "ten_years", "all_time",
+				"volatility_one_week", "volatility_one_month",
+			},
+			Note: "Values are percentages: 5.26 means 5.26%, not 526%.",
+		},
+		Stocks: stocks,
+	}
+}
+
+func newETFFundFlowOverviewResponse(screen string, etfs []types.ETFFundFlowOverview) types.ETFFundFlowOverviewResponse {
+	return types.ETFFundFlowOverviewResponse{
+		Screen: screen,
+		PercentageValues: types.PercentageMetadata{
+			Unit:   "percent",
+			Fields: []string{"change", "nav_total_return_3y", "expense_ratio"},
+			Note:   "Values are percentages: 5.26 means 5.26%, not 526%.",
+		},
+		MonetaryValues: types.MonetaryMetadata{
+			CurrencyFields: map[string]string{
+				"fund_flows_one_year":     "fund_flows_currency",
+				"volume":                  "volume_currency",
+				"assets_under_management": "aum_currency",
+			},
+			Fields: []string{"fund_flows_one_year", "volume", "assets_under_management"},
+			Note:   "Monetary values use the corresponding currency field on each ETF row.",
+		},
+		ETFs: etfs,
+	}
+}
+
+func newETFFundFlowPerformanceResponse(screen string, etfs []types.ETFFundFlowPerformance) types.ETFFundFlowPerformanceResponse {
+	return types.ETFFundFlowPerformanceResponse{
+		Screen: screen,
+		PercentageValues: types.PercentageMetadata{
+			Unit: "percent",
+			Fields: []string{
+				"change", "one_week", "one_month", "three_months", "six_months",
+				"ytd", "one_year", "five_years", "ten_years", "all_time",
+			},
+			Note: "Values are percentages: 5.26 means 5.26%, not 526%.",
+		},
+		ETFs: etfs,
+	}
+}
+
+func newETFFundFlowsResponse(screen string, etfs []types.ETFFundFlows) types.ETFFundFlowsResponse {
+	return types.ETFFundFlowsResponse{
+		Screen: screen,
+		MonetaryValues: types.MonetaryMetadata{
+			CurrencyFields: map[string]string{
+				"one_month": "currency", "three_months": "currency", "one_year": "currency",
+				"three_years": "currency", "ytd": "currency",
+			},
+			Fields: []string{"one_month", "three_months", "one_year", "three_years", "ytd"},
+			Note:   "Fund flows are signed monetary values; positive values are inflows and negative values are outflows.",
+		},
+		ETFs: etfs,
+	}
+}
+
+func newETFSectorOverviewResponse(etfs []types.ETFSectorOverview) types.ETFSectorOverviewResponse {
+	return types.ETFSectorOverviewResponse{
+		Screen: "sector-etfs",
+		PercentageValues: types.PercentageMetadata{
+			Unit:   "percent",
+			Fields: []string{"change", "nav_total_return_3y", "expense_ratio"},
+			Note:   "Values are percentages: 5.26 means 5.26%, not 526%.",
+		},
+		MonetaryValues: types.MonetaryMetadata{
+			CurrencyFields: map[string]string{
+				"volume": "volume_currency", "assets_under_management": "aum_currency",
+			},
+			Fields: []string{"volume", "assets_under_management"},
+			Note:   "Monetary values use the corresponding currency field on each ETF row.",
+		},
+		ETFs: etfs,
+	}
 }
 
 // NewManager creates a new data manager with initialized data sources
 func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error) {
 	m := &Manager{
-		sources:        make(map[string]types.DataSource),
-		futuresSources: make(map[string]*sources.BarchartsSource),
-		rdata:          rdata,
+		sources:         make(map[string]types.DataSource),
+		futuresSources:  make(map[string]*sources.BarchartsSource),
+		screenerSources: make(map[string]types.ScreenerSource),
+		rdata:           rdata,
 	}
 
 	// Initialize default data sources
@@ -70,6 +215,7 @@ func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error)
 		return nil, err
 	}
 	barcharts := sources.NewBarcharts()
+	tradingView := sources.NewTradingView()
 
 	m.sources[sources.GoogleFinance] = google
 	m.sources[sources.YahooFinance] = yahoo
@@ -78,10 +224,123 @@ func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error)
 	m.sources[sources.MAS] = mas
 	m.sources[sources.Nasdaq] = nasdaq
 	m.futuresSources[sources.Barcharts] = barcharts
+	m.screenerSources[sources.TradingView] = tradingView
 
-	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance, Dividends.sg, ILoveSsb, MAS, Nasdaq and Barcharts data sources")
+	logging.GetLogger().Info("Market data manager initialized with Yahoo/Google finance, Dividends.sg, ILoveSsb, MAS, Nasdaq, Barcharts and TradingView data sources")
 
 	return m, nil
+}
+
+func (m *Manager) FetchUSAIndustryPerformance() ([]types.USAIndustryPerformance, error) {
+	source, ok := m.screenerSources[sources.TradingView]
+	if !ok {
+		return nil, errors.New("TradingView screener source is not configured")
+	}
+	return source.FetchUSAIndustryPerformance()
+}
+
+func (m *Manager) FetchUSAIndustryOverview() ([]types.USAIndustryOverview, error) {
+	source, ok := m.screenerSources[sources.TradingView]
+	if !ok {
+		return nil, errors.New("TradingView screener source is not configured")
+	}
+	return source.FetchUSAIndustryOverview()
+}
+
+func (m *Manager) FetchUSAIndustryStocksOverview(industry string) ([]types.USAIndustryStockOverview, error) {
+	source, ok := m.screenerSources[sources.TradingView]
+	if !ok {
+		return nil, errors.New("TradingView screener source is not configured")
+	}
+	return source.FetchUSAIndustryStocksOverview(industry)
+}
+
+func (m *Manager) FetchUSAIndustryStocksPerformance(industry string) ([]types.USAIndustryStockPerformance, error) {
+	source, ok := m.screenerSources[sources.TradingView]
+	if !ok {
+		return nil, errors.New("TradingView screener source is not configured")
+	}
+	return source.FetchUSAIndustryStocksPerformance(industry)
+}
+
+func (m *Manager) FetchETFLargestInflowsOverview() ([]types.ETFFundFlowOverview, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchETFLargestInflowsOverview()
+}
+
+func (m *Manager) FetchETFLargestInflowsPerformance() ([]types.ETFFundFlowPerformance, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchETFLargestInflowsPerformance()
+}
+
+func (m *Manager) FetchETFLargestInflowsFundFlows() ([]types.ETFFundFlows, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchETFLargestInflowsFundFlows()
+}
+
+func (m *Manager) FetchETFLargestOutflowsOverview() ([]types.ETFFundFlowOverview, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchETFLargestOutflowsOverview()
+}
+
+func (m *Manager) FetchETFLargestOutflowsPerformance() ([]types.ETFFundFlowPerformance, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchETFLargestOutflowsPerformance()
+}
+
+func (m *Manager) FetchETFLargestOutflowsFundFlows() ([]types.ETFFundFlows, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchETFLargestOutflowsFundFlows()
+}
+
+func (m *Manager) FetchETFSectorOverview() ([]types.ETFSectorOverview, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchETFSectorOverview()
+}
+
+func (m *Manager) FetchETFSectorPerformance() ([]types.ETFFundFlowPerformance, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchETFSectorPerformance()
+}
+
+func (m *Manager) FetchETFSectorFundFlows() ([]types.ETFFundFlows, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchETFSectorFundFlows()
+}
+
+func (m *Manager) tradingViewScreener() (types.ScreenerSource, error) {
+	source, ok := m.screenerSources[sources.TradingView]
+	if !ok {
+		return nil, errors.New("TradingView screener source is not configured")
+	}
+	return source, nil
 }
 
 // GetAssetPrice attempts to fetch asset price from available sources

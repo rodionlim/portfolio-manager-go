@@ -4,10 +4,31 @@
 
 An application to value equities, fx, commodities, cash, bonds (corps / gov), and cryptocurrencies in your personal portfolio and use LLMs to generate trading insights.
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quickstart](#quickstart)
+- [CLI Commands](#cli-commands)
+- [Project Structure](#project-structure)
+- [For Developers](#for-developers)
+- [MCP Server Integration](#mcp-server-integration)
+  - [Connect Codex](#connect-codex-to-the-mcp-server)
+  - [Available MCP Tools](#available-tools)
+- [Built-in Scheduler](#built-in-scheduler)
+- [UI](#ui)
+- [Backend API Examples](#backend-api-examples)
+  - [Market Screening Data](#fetch-market-screening-data)
+- [Historical Market Data](#historical-market-data)
+- [Configurations](#configurations)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Features
 
 - Value assets of different currencies based on current market prices
-- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas, nasdaq, barcharts), current and historical
+- Fetch market data based on free data sources (Yahoo finance, Google finance, dividends.sg, ilovessb.com, mas, nasdaq, barcharts, TradingView), current and historical
 - Import / Export portfolio blotter data using CSV file for easy migration to other portfolio systems
 - Allow users to supply their own custom dividends metadata
 - Export ticker reference data in yaml format
@@ -342,8 +363,49 @@ Enable the MCP server by setting the following in your `config.yaml`:
 ```yaml
 mcp:
   enabled: true
+  host: 127.0.0.1
   port: 8081
 ```
+
+### Connect Codex to the MCP Server
+
+Portfolio Manager exposes a Streamable HTTP MCP server at `/mcp`. With Portfolio Manager running locally on port `8081`, add it to Codex using the CLI:
+
+```sh
+codex mcp add portfolio-manager --url http://localhost:8081/mcp
+```
+
+Confirm that Codex can see the configuration:
+
+```sh
+codex mcp list
+```
+
+Inside the Codex terminal UI, run `/mcp` to inspect the active server and its tools. You can then ask Codex questions such as “show me the best-performing USA semiconductor stocks over one month.”
+
+Alternatively, add the server directly to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.portfolio_manager]
+url = "http://localhost:8081/mcp"
+enabled = true
+tool_timeout_sec = 60
+```
+
+Codex also supports project-scoped configuration in `.codex/config.toml` for trusted projects. See the official [Codex MCP documentation](https://developers.openai.com/codex/mcp) for the complete configuration reference.
+
+#### Proxmox and Tailscale
+
+If Portfolio Manager runs in a Proxmox VM or LXC and Codex runs on another machine, replace `localhost` with the server's Tailscale MagicDNS hostname or stable Tailscale `100.x.y.z` address:
+
+```sh
+codex mcp add portfolio-manager --url http://portfolio-manager.your-tailnet.ts.net:8081/mcp
+
+# Or use the Tailscale IP directly
+codex mcp add portfolio-manager --url http://100.x.y.z:8081/mcp
+```
+
+Set `mcp.host` in `config.yaml` to the Proxmox guest's Tailscale IP, or to `0.0.0.0` if it must listen on every interface. Prefer the Tailscale IP and restrict access with Tailscale ACLs; the MCP endpoint should not be exposed directly to the public internet.
 
 ### Available Tools
 
@@ -389,6 +451,56 @@ Fetch benchmark interest rates for a specific country:
 - **country**: Country code (e.g., 'SG' for Singapore) **[Required]**
 - **points**: Number of data points to fetch (default: 100)
 
+#### 5. Fetch Stock Industry Overview (`fetch_stock_industry_overview`)
+
+Fetch TradingView overview data for all USA stock market industries, including market cap, indicated dividend yield, daily change, volume, sector, and number of stocks. This tool takes no arguments.
+
+#### 6. Fetch Stock Industry Performance (`fetch_stock_industry_performance`)
+
+Fetch TradingView performance data for all USA stock market industries, including daily, 1-week, 1-month, 3-month, 6-month, YTD, 1-year, 5-year, 10-year, and all-time performance. This tool takes no arguments.
+
+#### 7. Fetch Stocks Within an Industry (`fetch_stock_industry_stocks_overview`)
+
+Fetch overview screening data for the individual stocks in a USA industry:
+
+- **industry**: TradingView industry name or URL slug, such as `Semiconductors` or `semiconductors` **[Required]**
+
+#### 8. Fetch Stock Performance Within an Industry (`fetch_stock_industry_stocks_performance`)
+
+Fetch daily, weekly, monthly, YTD, multi-year, and volatility performance for the individual stocks in a USA industry:
+
+- **industry**: TradingView industry name or URL slug, such as `Semiconductors` or `semiconductors` **[Required]**
+
+#### 9–14. Fetch ETF Fund-Flow Screens
+
+Fetch the Overview, Performance, and Fund Flows tabs for the top 100 global ETFs ranked by largest inflows or outflows. These tools take no arguments:
+
+- `fetch_etf_largest_inflows_overview`
+- `fetch_etf_largest_inflows_performance`
+- `fetch_etf_largest_inflows_fund_flows`
+- `fetch_etf_largest_outflows_overview`
+- `fetch_etf_largest_outflows_performance`
+- `fetch_etf_largest_outflows_fund_flows`
+
+#### 15–17. Fetch Sector ETF Screens
+
+Fetch the Overview, Performance, and Fund Flows tabs for the top 100 global sector ETFs. These tools take no arguments:
+
+- `fetch_sector_etf_overview`
+- `fetch_sector_etf_performance`
+- `fetch_sector_etf_fund_flows`
+
+#### Stock Industries vs. Sector ETFs
+
+The MCP server treats these as distinct datasets:
+
+- **Stock industries** group operating companies and provide Overview and Performance data. They do not provide fund flows.
+- **Sector ETFs** are traded funds and provide Overview, Performance, and Fund Flows data.
+- Requests mentioning sector fund flows, capital flows, inflows, or outflows are routed to `fetch_sector_etf_fund_flows` unless the user explicitly rejects ETFs.
+- If a request could reasonably mean either dataset and contains no fund-flow signal, the MCP client should ask whether the user means stock-market industries or sector ETFs.
+
+These explicit names replace the older `fetch_usa_industry_*` and `fetch_etf_sector_*` MCP tool names. Restart Portfolio Manager and reconnect Codex after upgrading so it reloads the server instructions and tool list.
+
 ### Usage Examples
 
 Once configured and running, you can interact with your portfolio data through any MCP-compatible LLM interface. Example queries:
@@ -398,7 +510,12 @@ Once configured and running, you can interact with your portfolio data through a
 - "List all sell trades for the past quarter"
 - "Show me my portfolio positions with current market values"
 - "Fetch the latest benchmark interest rates for Singapore"
-- "Delete portfolio position for main book and ticker SBAUG24
+- "Show me the best-performing USA industries over the last month"
+- "Compare the USA semiconductor industry performance across all available periods"
+- "Show me the individual semiconductor stocks with the strongest one-month performance"
+- "Which ETFs have the largest one-year inflows, and how have they performed this month?"
+- "Which sector ETFs have the strongest performance and positive fund flows?"
+- "Delete portfolio position for main book and ticker SBAUG24"
 
 ### Potential Use Cases
 
@@ -422,7 +539,7 @@ The MCP server opens up numerous possibilities for LLM-powered portfolio analysi
 
 The MCP server essentially transforms your portfolio manager into an AI-queryable database, making your investment data accessible through natural language interfaces and enabling sophisticated AI-powered analysis workflows.
 
-## Built-in Scheduler (Cron-based)
+## Built-in Scheduler
 
 This project includes a flexible, cron-based scheduler component that can be used by any package to trigger jobs at specific times or intervals. The scheduler supports standard 5-field cron expressions, enabling developers to easily schedule tasks such as data collection, reporting, or maintenance jobs.
 
@@ -559,7 +676,7 @@ User can edit application wide settings, such as auto closing expired positions 
 
 ![Settings](docs/Settings.png)
 
-## Backend API - Sample Curl Commands
+## Backend API Examples
 
 All API calls are documented (OAS) under `http://localhost:8080/swagger/index.html`
 
@@ -823,6 +940,75 @@ curl -X GET http://localhost:8080/api/v1/mdata/price/es3.si
 curl -X GET http://localhost:8080/api/v1/mdata/price/temb
 curl -X GET http://localhost:8080/api/v1/mdata/price/eth-usd
 curl -X GET http://localhost:8080/api/v1/mdata/price/usd-sgd
+```
+
+### Fetch Market Screening Data
+
+Fetch TradingView overview data for all USA stock market industries:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/mdata/screener/usa/industries/overview
+```
+
+Fetch performance across daily, weekly, monthly, YTD, and multi-year periods:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/mdata/screener/usa/industries/performance
+```
+
+Drill down into the overview and performance tabs for individual stocks in an industry. The `{industry}` value is the TradingView URL slug:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/mdata/screener/usa/industries/semiconductors/stocks/overview
+curl -X GET http://localhost:8080/api/v1/mdata/screener/usa/industries/semiconductors/stocks/performance
+```
+
+Fetch the TradingView Overview, Performance, and Fund Flows tabs for the top 100 global ETFs ranked by inflows:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/mdata/screener/etfs/largest-inflows/overview
+curl -X GET http://localhost:8080/api/v1/mdata/screener/etfs/largest-inflows/performance
+curl -X GET http://localhost:8080/api/v1/mdata/screener/etfs/largest-inflows/fund-flows
+```
+
+Fetch the equivalent tabs for ETFs ranked by outflows:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/mdata/screener/etfs/largest-outflows/overview
+curl -X GET http://localhost:8080/api/v1/mdata/screener/etfs/largest-outflows/performance
+curl -X GET http://localhost:8080/api/v1/mdata/screener/etfs/largest-outflows/fund-flows
+```
+
+Fund-flow fields are signed monetary values in the currency declared on each ETF row: positive values represent inflows and negative values represent outflows. The ETF screens intentionally match TradingView's top-100 page limit.
+
+Fetch the Overview, Performance, and Fund Flows tabs for global sector ETFs:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/mdata/screener/etfs/sector-etfs/overview
+curl -X GET http://localhost:8080/api/v1/mdata/screener/etfs/sector-etfs/performance
+curl -X GET http://localhost:8080/api/v1/mdata/screener/etfs/sector-etfs/fund-flows
+```
+
+The endpoints return raw numeric values together with machine-readable percentage metadata. Percentage fields use percent units—for example, `5.26` means `5.26%`, not `526%`. Unavailable TradingView values are returned as `null`. Successful responses are cached independently for 1 hour; upstream failures are not cached.
+
+Example response shape:
+
+```json
+{
+  "percentage_values": {
+    "unit": "percent",
+    "fields": ["change", "one_week", "one_month"],
+    "note": "Values are percentages: 5.26 means 5.26%, not 526%."
+  },
+  "industries": [
+    {
+      "industry": "Semiconductors",
+      "change": 5.267984169157815,
+      "one_week": 11.787723632559361,
+      "one_month": 19.41835383155964
+    }
+  ]
+}
 ```
 
 ### Price Equity Options

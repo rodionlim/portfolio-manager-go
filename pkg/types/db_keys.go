@@ -17,6 +17,7 @@ const (
 	InterestRatesKeyPrefix     dbKey = "INTEREST_RATES" // Key prefix for interest rates data
 	HistoricalMetricsKeyPrefix dbKey = "METRICS"        // Key prefix for historical metrics
 	AnalyticsSummaryKeyPrefix  dbKey = "ANALYTICS_SUMMARY"
+	MarketRotationKeyPrefix    dbKey = "MARKET_ROTATION"
 	MigrationKeyPrefix         dbKey = "MIGRATION" // Key prefix for migration tracking
 
 	ScheduledJobKeyPrefix           dbKey = "SCHEDULED_JOB"            // Key prefix for registered scheduled jobs

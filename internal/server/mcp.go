@@ -12,7 +12,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-const mcpInstructions = "Routing rule: distinguish stock-market industries from sector ETFs. Stock industries and their underlying stocks provide overview and performance only; they do not provide fund flows. For requests mentioning sector fund flows, capital flows, inflows, or outflows, use the sector ETF fund-flow tool unless the user explicitly rejects ETFs. If the user asks for underlying-stock fund flows, explain that this dataset is unavailable. If intent remains unclear, ask whether they mean stock-market industries or sector ETFs. Fund-flow periods are 1M, 3M, 1Y, 3Y, and YTD."
+const mcpInstructions = "Routing rule: distinguish stock-market industries from sector ETFs. Stock industries and their underlying stocks provide overview and performance only; they do not provide fund flows. For raw requests mentioning sector fund flows, capital flows, inflows, or outflows, use the sector ETF fund-flow tool unless the user explicitly rejects ETFs. For a daily market brief, rotation screen, or ranked sector-to-stock drill-down, use screen_daily_market_rotation and preserve its precomputed order and classifications without recalculating. Describe its flows as ETF product flows, never direct stock-level institutional flows. If the user asks for underlying-stock fund flows, explain that this dataset is unavailable. If raw dataset intent remains unclear, ask whether they mean stock-market industries or sector ETFs. Fund-flow periods are 1M, 3M, 1Y, 3Y, and YTD."
 
 // MCPServer represents the MCP server instance
 type MCPServer struct {

@@ -11,4 +11,6 @@ func TestMCPInstructionsDisambiguateStockIndustriesAndSectorETFs(t *testing.T) {
 	require.Contains(t, mcpInstructions, "sector ETF fund-flow tool")
 	require.Contains(t, mcpInstructions, "ask whether they mean stock-market industries or sector ETFs")
 	require.Contains(t, mcpInstructions, "1M, 3M, 1Y, 3Y, and YTD")
+	require.Contains(t, mcpInstructions, "screen_daily_market_rotation")
+	require.Contains(t, mcpInstructions, "never direct stock-level institutional flows")
 }

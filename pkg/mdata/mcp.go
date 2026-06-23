@@ -18,6 +18,7 @@ const (
 	toolFetchSectorETFOverview              = "fetch_sector_etf_overview"
 	toolFetchSectorETFPerformance           = "fetch_sector_etf_performance"
 	toolFetchSectorETFFundFlows             = "fetch_sector_etf_fund_flows"
+	toolScreenDailyMarketRotation           = "screen_daily_market_rotation"
 )
 
 // RegisterMCPTools registers market data MCP tools.
@@ -87,6 +88,14 @@ func RegisterScreenerMCPTools(mcpServer *server.MCPServer, screener MarketDataSc
 		mcp.NewTool(toolFetchSectorETFOverview, mcp.WithDescription("Fetch overview metrics for the top 100 global sector ETFs. This returns ETFs, not stock-market industries or their underlying companies.")),
 		createHandleFetchETFSectorOverview(screener.FetchETFSectorOverview),
 	)
+	if rotationScreener, ok := screener.(MarketRotationScreener); ok {
+		rotationTool := mcp.NewTool(toolScreenDailyMarketRotation,
+			mcp.WithDescription("Build a deterministic daily US market-rotation brief from TradingView sector ETF fund flows, sector/industry performance, and stock performance. All joins, calculations, rankings, exclusions, and history transitions are precomputed; narrate the returned order without recalculating or inventing stock-level fund flows."),
+			mcp.WithBoolean("persist_history", mcp.Description("Persist this US session for transition detection. Defaults to true; set false for validation and dry runs.")),
+			mcp.WithNumber("max_stock_candidates", mcp.Description("Maximum stock candidates to return, from 1 to 5. Defaults to 5.")),
+		)
+		mcpServer.AddTool(rotationTool, createHandleScreenDailyMarketRotation(rotationScreener))
+	}
 }
 
 func createHandleFetchUSAIndustryOverview(manager MarketDataScreener) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -174,6 +183,30 @@ func createHandleFetchETFSectorOverview(fetch func() ([]types.ETFSectorOverview,
 			return mcp.NewToolResultError(fmt.Sprintf("Failed to fetch sector ETF overview: %v", err)), nil
 		}
 		return industryToolResult(newETFSectorOverviewResponse(etfs))
+	}
+}
+
+func createHandleScreenDailyMarketRotation(screener MarketRotationScreener) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		maxCandidates, err := request.RequireInt("max_stock_candidates")
+		if err != nil {
+			maxCandidates = defaultMaxStockCandidates
+		}
+		if maxCandidates < 1 || maxCandidates > defaultMaxStockCandidates {
+			return mcp.NewToolResultError("max_stock_candidates must be between 1 and 5"), nil
+		}
+		brief, err := screener.ScreenDailyMarketRotation(MarketRotationOptions{
+			PersistHistory:     request.GetBool("persist_history", true),
+			MaxStockCandidates: maxCandidates,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Failed to screen daily market rotation: %v", err)), nil
+		}
+		jsonData, err := json.Marshal(brief)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal market rotation brief: %v", err)), nil
+		}
+		return mcp.NewToolResultText(string(jsonData)), nil
 	}
 }
 

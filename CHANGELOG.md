@@ -1,3 +1,9 @@
+## [1.52.0] - 2026-06-23
+
+### 🚀 Features
+
+- *(mdata)* Add market rotation screener strategy #183
+
 ## [1.51.0] - 2026-06-22
 
 ### 🚀 Features

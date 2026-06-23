@@ -46,8 +46,20 @@ type MarketDataScreener interface {
 	FetchETFSectorFundFlows() ([]types.ETFFundFlows, error)
 }
 
+// MarketRotationScreener provides deterministic, compact daily rotation analysis.
+type MarketRotationScreener interface {
+	ScreenDailyMarketRotation(options MarketRotationOptions) (*types.MarketRotationBrief, error)
+}
+
+// MarketRotationOptions controls persistence and response size.
+type MarketRotationOptions struct {
+	PersistHistory     bool
+	MaxStockCandidates int
+}
+
 // Manager handles multiple data sources with fallback capability
 type Manager struct {
+	db              dal.Database
 	sources         map[string]types.DataSource
 	futuresSources  map[string]*sources.BarchartsSource
 	screenerSources map[string]types.ScreenerSource
@@ -183,6 +195,7 @@ func newETFSectorOverviewResponse(etfs []types.ETFSectorOverview) types.ETFSecto
 // NewManager creates a new data manager with initialized data sources
 func NewManager(db dal.Database, rdata rdata.ReferenceManager) (*Manager, error) {
 	m := &Manager{
+		db:              db,
 		sources:         make(map[string]types.DataSource),
 		futuresSources:  make(map[string]*sources.BarchartsSource),
 		screenerSources: make(map[string]types.ScreenerSource),

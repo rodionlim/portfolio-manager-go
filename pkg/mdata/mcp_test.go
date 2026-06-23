@@ -26,6 +26,7 @@ func TestScreenerMCPToolNamesDisambiguateStockIndustriesAndSectorETFs(t *testing
 		toolFetchSectorETFOverview,
 		toolFetchSectorETFPerformance,
 		toolFetchSectorETFFundFlows,
+		toolScreenDailyMarketRotation,
 	} {
 		require.Contains(t, tools, name)
 	}
@@ -38,6 +39,29 @@ func TestScreenerMCPToolNamesDisambiguateStockIndustriesAndSectorETFs(t *testing
 	}
 	require.Contains(t, tools[toolFetchStockIndustryPerformance].Tool.Description, "no fund-flow fields")
 	require.Contains(t, tools[toolFetchSectorETFFundFlows].Tool.Description, "stock industries do not provide fund flows")
+}
+
+func TestScreenDailyMarketRotationMCPHandler(t *testing.T) {
+	runner := &rotationMCPTestRunner{brief: &types.MarketRotationBrief{MethodologyVersion: types.MarketRotationMethodologyVersion}}
+	request := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+		"persist_history": false, "max_stock_candidates": float64(3),
+	}}}
+
+	result, err := createHandleScreenDailyMarketRotation(runner)(context.Background(), request)
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+	require.False(t, runner.options.PersistHistory)
+	require.Equal(t, 3, runner.options.MaxStockCandidates)
+}
+
+type rotationMCPTestRunner struct {
+	brief   *types.MarketRotationBrief
+	options MarketRotationOptions
+}
+
+func (r *rotationMCPTestRunner) ScreenDailyMarketRotation(options MarketRotationOptions) (*types.MarketRotationBrief, error) {
+	r.options = options
+	return r.brief, nil
 }
 
 func TestFetchUSAIndustryOverviewMCPHandler(t *testing.T) {

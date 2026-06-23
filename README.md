@@ -490,6 +490,15 @@ Fetch the Overview, Performance, and Fund Flows tabs for the top 100 global sect
 - `fetch_sector_etf_performance`
 - `fetch_sector_etf_fund_flows`
 
+#### 18. Screen Daily Market Rotation (`screen_daily_market_rotation`)
+
+Build a deterministic US market-rotation payload from the TradingView Sector ETFs Overview, Performance, and Fund Flows tabs plus USA stock-industry and stock-performance data. The tool computes sector-level 1M flows, acceleration, breadth, broad/subsector divergence, industry mappings, setup classifications, and zero to five stock candidates before returning data to the LLM.
+
+- **persist_history**: persist the session for transition detection; defaults to `true`. Use `false` for dry runs.
+- **max_stock_candidates**: maximum candidates from 1 to 5; defaults to 5.
+
+The LLM should narrate the returned ranking without recalculating it and must describe flows as ETF product flows, not direct stock-level institutional flows. See [the OpenClaw prompt and schedule](docs/openclaw-market-rotation.md).
+
 #### Stock Industries vs. Sector ETFs
 
 The MCP server treats these as distinct datasets:

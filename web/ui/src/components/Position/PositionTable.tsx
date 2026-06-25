@@ -180,6 +180,11 @@ const sameFilteredRows = (left: PositionRow[], right: PositionRow[]) => {
   });
 };
 
+const rowValueInSGD = (
+  row: PositionRow,
+  field: "Mv" | "PnL" | "Dividends",
+) => row[field] * (row.IsGroup ? 1 : row.FxRate || 1);
+
 const PositionTable: React.FC = () => {
   const navigate = useNavigate();
   const refData = useSelector((state: RootState) => state.referenceData.data);
@@ -501,12 +506,16 @@ const PositionTable: React.FC = () => {
     const positions = hasAnyFilter ? filteredPositions : groupedPositions;
     const res = positions.reduce(
       (acc, row) => {
-        acc.Mv += row.Mv * row.FxRate;
-        acc.Pnl += row.PnL * row.FxRate;
-        acc.Dividends += row.Dividends * row.FxRate;
+        const marketValue = rowValueInSGD(row, "Mv");
+        const pnl = rowValueInSGD(row, "PnL");
+        const dividends = rowValueInSGD(row, "Dividends");
+
+        acc.Mv += marketValue;
+        acc.Pnl += pnl;
+        acc.Dividends += dividends;
 
         if (row.AssetSubClass !== "govies") {
-          acc.MvLessGovies += row.Mv * (row.FxRate ? row.FxRate : 1);
+          acc.MvLessGovies += marketValue;
         }
 
         return acc;
@@ -536,22 +545,21 @@ const PositionTable: React.FC = () => {
 
           return <Text size="sm">{value}</Text>;
         },
-        Footer: () =>
-          hasAnyFilter ? null : (
-            <Text
-              size="sm"
-              className={classes["default-xs-font-size"]}
-              fw={500}
-              c={totals.Pnl > 0 ? "green" : "blue"}
-            >
-              {"P&L: $" +
-                totals.Pnl.toLocaleString(undefined, {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                }) +
-                dailyPctLabel}
-            </Text>
-          ),
+        Footer: () => (
+          <Text
+            size="sm"
+            className={classes["default-xs-font-size"]}
+            fw={500}
+            c={totals.Pnl > 0 ? "green" : "blue"}
+          >
+            {"P&L: $" +
+              totals.Pnl.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              }) +
+              dailyPctLabel}
+          </Text>
+        ),
       },
       {
         accessorKey: "Name",
@@ -622,8 +630,7 @@ const PositionTable: React.FC = () => {
         accessorKey: "Mv",
         header: "Mv (SGD)",
         Cell: ({ cell }) => {
-          const fxRate = cell.row.original.FxRate;
-          const value = cell.getValue<number>() * fxRate;
+          const value = rowValueInSGD(cell.row.original, "Mv");
           const percentage = totals.Mv ? (value / totals.Mv) * 100 : 0;
           return (
             <span>
@@ -670,8 +677,7 @@ const PositionTable: React.FC = () => {
           </div>
         ),
         Cell: ({ cell }) => {
-          const fxRate = cell.row.original.FxRate;
-          const value = cell.getValue<number>() * fxRate;
+          const value = rowValueInSGD(cell.row.original, "PnL");
           const color = value < 0 ? "red" : "green";
 
           return (
@@ -689,11 +695,13 @@ const PositionTable: React.FC = () => {
         accessorKey: "Dividends",
         header: "Dividends (SGD)",
         Cell: ({ cell }) => {
-          const fxRate = cell.row.original.FxRate;
           return (
             <span>
               $
-              {(cell.getValue<number>() * fxRate).toLocaleString(undefined, {
+              {rowValueInSGD(
+                cell.row.original,
+                "Dividends",
+              ).toLocaleString(undefined, {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0,
               })}

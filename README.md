@@ -138,11 +138,22 @@ The portfolio-manager binary includes CLI commands for interacting with a local/
 ./portfolio-manager position-delete <book> <ticker>
 ```
 
+#### Reference data CRUD
+
+```sh
+./portfolio-manager refdata-list --asset-class eq
+./portfolio-manager refdata-get --id AAPL --json
+./portfolio-manager refdata-add --id AAPL --name Apple --underlying-ticker AAPL --asset-class eq --asset-sub-class stock --category technology --ccy USD --domicile US
+./portfolio-manager refdata-update --file ./refdata-aapl.yaml
+./portfolio-manager refdata-delete --id AAPL --yes
+```
+
 #### Specify custom server URL
 
 ```sh
 ./portfolio-manager --url=http://localhost:8080 position-list
 ./portfolio-manager --url=http://localhost:8080 position-delete "Rodion" "AAPL"
+./portfolio-manager --url=http://localhost:8080 refdata-list --id AAPL
 ```
 
 ### Database Backup

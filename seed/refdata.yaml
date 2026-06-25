@@ -339,6 +339,7 @@
   dividends_sg_ticker: "CLR"
   asset_class: "eq"
   asset_sub_class: "etf"
+  category: "reits"
   ccy: "SGD"
   domicile: "SG"
 - id: "D05.SI"

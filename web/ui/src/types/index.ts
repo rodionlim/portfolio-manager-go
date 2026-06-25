@@ -5,6 +5,8 @@ export interface ReferenceDataItem {
   yahoo_ticker: string;
   google_ticker: string;
   dividends_sg_ticker: string;
+  nasdaq_ticker?: string;
+  barchart_ticker?: string;
   asset_class: string;
   asset_sub_class: string;
   category: string;

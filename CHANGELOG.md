@@ -1,3 +1,11 @@
+## [1.53.0] - 2026-06-25
+
+### 🚀 Features
+
+- *(seed,claw)* Add xli and cspx.l and openclaw cron prompt for market screener
+- *(rdata)* Add mcp capabilities on updating reference data #185
+- *(cli,ui)* Add a portfolio summary view and refdata functions to cli #185 #186
+
 ## [1.52.0] - 2026-06-23
 
 ### 🚀 Features

@@ -7,6 +7,7 @@ import (
 	"portfolio-manager/internal/portfolio"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
+	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 
 	"github.com/mark3labs/mcp-go/server"
@@ -21,11 +22,12 @@ type MCPServer struct {
 	portfolio *portfolio.Portfolio
 	mdata     mdata.MarketDataManager
 	screener  mdata.MarketDataScreener
+	rdata     rdata.ReferenceManager
 	addr      string
 }
 
 // NewMCPServer creates a new MCP server instance
-func NewMCPServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, mdataSvc mdata.MarketDataManager, screenerSvc mdata.MarketDataScreener) *MCPServer {
+func NewMCPServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *portfolio.Portfolio, mdataSvc mdata.MarketDataManager, screenerSvc mdata.MarketDataScreener, rdataSvc rdata.ReferenceManager) *MCPServer {
 	// Create a new MCP server
 	s := server.NewMCPServer(
 		"Portfolio Manager MCP 📊",
@@ -41,6 +43,7 @@ func NewMCPServer(addr string, blotterSvc *blotter.TradeBlotter, portfolioSvc *p
 		portfolio: portfolioSvc,
 		mdata:     mdataSvc,
 		screener:  screenerSvc,
+		rdata:     rdataSvc,
 		addr:      addr,
 	}
 
@@ -62,6 +65,11 @@ func (m *MCPServer) registerTools() {
 	mdata.RegisterMCPTools(m.server, m.mdata)
 	if m.screener != nil {
 		mdata.RegisterScreenerMCPTools(m.server, m.screener)
+	}
+
+	// Register reference data tools
+	if m.rdata != nil {
+		rdata.RegisterMCPTools(m.server, m.rdata)
 	}
 }
 

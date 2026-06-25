@@ -7,6 +7,7 @@ import {
   IconChartLine,
   IconCalculator,
   IconHistory,
+  IconLayoutDashboard,
 } from "@tabler/icons-react";
 import { Code, Group, ScrollArea } from "@mantine/core";
 import React from "react";
@@ -19,6 +20,7 @@ import { VERSION } from "../../utils/version";
 import classes from "./NavbarNested.module.css";
 
 const items = [
+  { label: "Summary", icon: IconLayoutDashboard, link: "/summary" },
   { label: "Positions", icon: IconCoin, link: "/positions" },
   {
     label: "Blotter",

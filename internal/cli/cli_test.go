@@ -1,9 +1,17 @@
 package cli
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"portfolio-manager/pkg/rdata"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCLI(t *testing.T) {
@@ -62,4 +70,128 @@ func TestGetVersion(t *testing.T) {
 	version, err := getVersion()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, version)
+}
+
+func TestReferenceDataCLICommands(t *testing.T) {
+	t.Run("list reference data", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, http.MethodGet, r.Method)
+			require.Equal(t, "/api/v1/refdata", r.URL.Path)
+			json.NewEncoder(w).Encode(map[string]rdata.TickerReferenceWithSGXMapped{
+				"AAPL": {
+					TickerReference: rdata.TickerReference{
+						ID:            "AAPL",
+						Name:          "Apple",
+						AssetClass:    rdata.AssetClassEquities,
+						AssetSubClass: rdata.AssetSubClassStock,
+						Category:      rdata.CategoryTechnology,
+						Ccy:           "USD",
+						Domicile:      "US",
+					},
+				},
+			})
+		}))
+		defer server.Close()
+
+		cli := NewCLI()
+		cli.SetBaseURL(server.URL)
+
+		require.NoError(t, cli.handleReferenceDataList([]string{"--asset-class", rdata.AssetClassEquities}))
+	})
+
+	t.Run("get reference data", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, http.MethodGet, r.Method)
+			json.NewEncoder(w).Encode(map[string]rdata.TickerReferenceWithSGXMapped{
+				"AAPL": {
+					TickerReference: rdata.TickerReference{
+						ID:   "AAPL",
+						Name: "Apple",
+					},
+				},
+			})
+		}))
+		defer server.Close()
+
+		cli := NewCLI()
+		cli.SetBaseURL(server.URL)
+
+		require.NoError(t, cli.handleReferenceDataGet([]string{"AAPL"}))
+	})
+
+	t.Run("add reference data", func(t *testing.T) {
+		var payload rdata.TickerReference
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, http.MethodPost, r.Method)
+			require.Equal(t, "application/json", r.Header.Get("Content-Type"))
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+			json.NewEncoder(w).Encode(payload.ID)
+		}))
+		defer server.Close()
+
+		cli := NewCLI()
+		cli.SetBaseURL(server.URL)
+
+		require.NoError(t, cli.handleReferenceDataAdd([]string{
+			"--id", "aapl",
+			"--name", "Apple",
+			"--underlying-ticker", "aapl",
+			"--asset-class", rdata.AssetClassEquities,
+			"--asset-sub-class", rdata.AssetSubClassStock,
+			"--category", rdata.CategoryTechnology,
+			"--ccy", "usd",
+			"--domicile", "us",
+		}))
+		require.Equal(t, "AAPL", payload.ID)
+		require.Equal(t, "AAPL", payload.UnderlyingTicker)
+		require.Equal(t, "USD", payload.Ccy)
+		require.Equal(t, "US", payload.Domicile)
+	})
+
+	t.Run("update reference data from file", func(t *testing.T) {
+		tempDir := t.TempDir()
+		filePath := filepath.Join(tempDir, "refdata.yaml")
+		require.NoError(t, os.WriteFile(filePath, []byte(`
+id: msft
+name: Microsoft
+underlying_ticker: msft
+asset_class: eq
+asset_sub_class: stock
+category: technology
+ccy: usd
+domicile: us
+`), 0o600))
+
+		var payload rdata.TickerReference
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, http.MethodPut, r.Method)
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+			json.NewEncoder(w).Encode(payload)
+		}))
+		defer server.Close()
+
+		cli := NewCLI()
+		cli.SetBaseURL(server.URL)
+
+		require.NoError(t, cli.handleReferenceDataUpdate([]string{"--file", filePath}))
+		require.Equal(t, "MSFT", payload.ID)
+		require.Equal(t, "MSFT", payload.UnderlyingTicker)
+		require.Equal(t, "USD", payload.Ccy)
+	})
+
+	t.Run("delete reference data", func(t *testing.T) {
+		var payload []string
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, http.MethodDelete, r.Method)
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+			json.NewEncoder(w).Encode(map[string]string{"message": "deleted"})
+		}))
+		defer server.Close()
+
+		cli := NewCLI()
+		cli.SetBaseURL(server.URL)
+
+		require.NoError(t, cli.handleReferenceDataDelete([]string{"--id", "aapl,msft", "--yes"}))
+		require.Equal(t, []string{"AAPL", "MSFT"}, payload)
+	})
 }

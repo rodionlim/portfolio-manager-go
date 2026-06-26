@@ -1,3 +1,9 @@
+## [1.54.0] - 2026-06-26
+
+### 🚀 Features
+
+- *(blotter)* Add insertion of new trades to mcp #188
+
 ## [1.53.0] - 2026-06-25
 
 ### 🚀 Features

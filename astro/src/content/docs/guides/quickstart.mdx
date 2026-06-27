@@ -1,0 +1,67 @@
+---
+title: Quickstart
+description: Common runtime, development, and test commands.
+---
+
+# Quickstart
+
+## Run the Backend
+
+```sh
+make run
+```
+
+## Run Backend and UI
+
+```sh
+make run-full
+```
+
+For hot-reloading UI development:
+
+```sh
+make run
+cd web/ui
+npm run dev
+```
+
+The UI dev server runs at `http://localhost:5173`.
+
+## Build
+
+```sh
+make
+```
+
+## Test
+
+```sh
+make test
+make test-integration
+```
+
+## CLI Examples
+
+List positions:
+
+```sh
+./portfolio-manager position-list
+```
+
+Delete a position:
+
+```sh
+./portfolio-manager position-delete <book> <ticker>
+```
+
+List reference data:
+
+```sh
+./portfolio-manager refdata-list --asset-class eq
+```
+
+Use a custom backend URL:
+
+```sh
+./portfolio-manager --url=http://localhost:8080 position-list
+```

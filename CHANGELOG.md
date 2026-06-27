@@ -1,3 +1,46 @@
+## [1.54.0] - 2026-06-26
+
+### 🚀 Features
+
+- *(blotter)* Add insertion of new trades to mcp #188
+
+## [1.53.0] - 2026-06-25
+
+### 🚀 Features
+
+- *(seed,claw)* Add xli and cspx.l and openclaw cron prompt for market screener
+- *(rdata)* Add mcp capabilities on updating reference data #185
+- *(cli,ui)* Add a portfolio summary view and refdata functions to cli #185 #186
+
+## [1.52.0] - 2026-06-23
+
+### 🚀 Features
+
+- *(mdata)* Add market rotation screener strategy #183
+
+## [1.51.0] - 2026-06-22
+
+### 🚀 Features
+
+- *(mdata)* Add tradingview screening capabilities #181
+
+## [1.50.0] - 2026-06-16
+
+### 🚀 Features
+
+- *(seed)* Add dell and wilmar
+- *(ui)* Add monthly dividends view #179
+
+## [1.49.0] - 2026-06-01
+
+### 🚀 Features
+
+- *(seed)* Seed palantir
+
+### 🐛 Bug Fixes
+
+- *(blotter)* Handle error with infering fx #177
+
 ## [1.48.0] - 2026-05-06
 
 ### 🚀 Features

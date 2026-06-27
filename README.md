@@ -1,6 +1,6 @@
 # Portfolio Manager
 
-[![CI](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml/badge.svg)](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.48.0-blue.svg)](https://github.com/rodionlim/portfolio-manager-go/blob/main/VERSION)
+[![CI](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml/badge.svg)](https://github.com/rodionlim/portfolio-manager-go/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.54.0-blue.svg)](https://github.com/rodionlim/portfolio-manager-go/blob/main/VERSION)
 
 An application to value equities, fx, commodities, cash, bonds (corps / gov), and cryptocurrencies in your personal portfolio and use LLMs to generate trading insights.
 
@@ -298,10 +298,16 @@ For users running portfolio-manager in a Proxmox LXC container:
 
 ```
 portfolio-manager/
+├── astro/
+│   ├── astro.config.mjs    # Astro/Starlight docs site for GitHub Pages
+│   └── src/content/docs/   # Published documentation content
 ├── cmd/
 │   └── portfolio/
 │       └── main.go
 ├── docs/
+│   ├── market-rotation-strategy.md
+│   ├── mcp-pattern.md
+│   ├── openclaw-market-rotation.md
 │   └── swagger.json
 ├── internal/
 │   ├── analytics/
@@ -338,6 +344,8 @@ portfolio-manager/
 └── README.md
 ```
 
+The Astro docs site lives under `astro/` and is published separately to GitHub Pages by `.github/workflows/pages.yml`.
+
 ## For Developers
 
 ### Testing and Mocking Strategy
@@ -362,6 +370,18 @@ mockService.On("MethodName", arg1, arg2).Return(expectedResult)
 // Later verify expectations
 mockService.AssertExpectations(t)
 ```
+
+### Astro Docs Site
+
+The Astro/Starlight documentation site is built from the `astro/` directory.
+
+```sh
+cd astro
+npm install
+npm run dev
+```
+
+Use `npm run build` to validate the site locally before publishing changes.
 
 ## MCP Server Integration
 

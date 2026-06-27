@@ -1,0 +1,34 @@
+---
+title: MCP Integration
+description: How Portfolio Manager exposes LLM-facing tools.
+---
+
+# MCP Integration
+
+Portfolio Manager exposes LLM-facing capabilities through a central MCP server with module-local tool registration.
+
+## Registration Pattern
+
+Each module that exposes MCP tools owns a local `mcp.go` file. That file defines tool names, schemas, handlers, and `RegisterMCPTools`.
+
+The shared server registration is wired from `internal/server/mcp.go`, while application startup passes required services into `server.NewMCPServer` from `cmd/portfolio/main.go`.
+
+Existing module examples include:
+
+- `internal/portfolio/mcp.go`
+- `internal/blotter/mcp.go`
+- `pkg/mdata/mcp.go`
+- `pkg/rdata/mcp.go`
+
+## Safety Rules
+
+- Mark read-only tools with MCP read-only annotations where available.
+- Mark write and delete tools as destructive where appropriate.
+- Require explicit confirmation for write operations before mutating data.
+- Prefer a `confirm` argument and only proceed when its value is exactly `yes`.
+
+## Context Discipline
+
+MCP tools should return compact, structured JSON and expose filters, IDs, and limits rather than whole datasets by default. This keeps LLM interactions predictable and avoids forcing clients to parse prose.
+
+For LLM-facing operations, prefer MCP tools over shelling out to the CLI. The CLI remains useful for humans and automation scripts, but MCP is better suited for schema-described, confirmation-gated LLM workflows.

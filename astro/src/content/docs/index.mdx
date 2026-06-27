@@ -1,0 +1,28 @@
+---
+title: Portfolio Manager
+description: Documentation for Portfolio Manager.
+template: splash
+hero:
+  tagline: Value portfolios, collect market data, analyze performance, and expose safe LLM-facing tools from one local Go application.
+  actions:
+    - text: Get started
+      link: /portfolio-manager-go/guides/overview/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/rodionlim/portfolio-manager-go
+      icon: external
+---
+
+## What is Portfolio Manager?
+
+Portfolio Manager is a Go application for tracking personal portfolios across equities, FX, commodities, cash, bonds, and cryptocurrencies. It combines market data collection, portfolio valuation, analytics, import/export workflows, and an optional web UI.
+
+The project also exposes a Model Context Protocol server so LLM clients can inspect portfolio and market data through typed, discoverable tools.
+
+## Documentation Map
+
+- [Overview](/portfolio-manager-go/guides/overview/) explains the major capabilities and project shape.
+- [Installation](/portfolio-manager-go/guides/installation/) covers local setup and Proxmox helper scripts.
+- [Quickstart](/portfolio-manager-go/guides/quickstart/) shows common development and runtime commands.
+- [MCP Integration](/portfolio-manager-go/concepts/mcp-integration/) documents the project pattern for LLM-facing tools.
+- [Market Rotation](/portfolio-manager-go/concepts/market-rotation/) summarizes the daily market-rotation screen.

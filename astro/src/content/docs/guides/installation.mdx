@@ -1,0 +1,43 @@
+---
+title: Installation
+description: Install and build Portfolio Manager locally.
+---
+
+# Installation
+
+## Requirements
+
+- Go `1.26.2` or higher.
+- Node.js and npm when working on the web UI or this Astro documentation site.
+
+## Build Locally
+
+Clone the repository and build the application:
+
+```sh
+git clone https://github.com/rodionlim/portfolio-manager-go.git
+cd portfolio-manager-go
+make
+```
+
+Start the application backend with a custom config file:
+
+```sh
+./portfolio-manager -config custom-config.yaml
+```
+
+## Environment Variables
+
+`GEMINI_API_KEY` overrides the Gemini API key configured in `config.yaml`.
+
+`ANALYTICS_SCHEDULE` overrides the analytics cron schedule configured in `config.yaml`.
+
+## Proxmox VE Helper Script
+
+For Proxmox LXC installation, run:
+
+```sh
+bash -c "$(wget -qLO - https://github.com/rodionlim/portfolio-manager-go/raw/main/lxc/portfolio-manager.sh)"
+```
+
+For environment variables in Proxmox, edit the generated systemd unit and point it at an environment file such as `/etc/sysconfig/PortfolioManager`.

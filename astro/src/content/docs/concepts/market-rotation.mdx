@@ -1,0 +1,44 @@
+---
+title: Market Rotation
+description: Daily sector rotation and stock candidate screening strategy.
+---
+
+# Market Rotation
+
+The daily market-rotation screen produces a post-US-close brief that explains one-month sector ETF product flows, identifies broad and subsector rotations, drills into matching USA stock industries, and returns zero to five liquid stock candidates.
+
+Deterministic Go code owns data joins, calculations, exclusions, classifications, rankings, and history comparisons. The LLM owns concise interpretation only.
+
+## Data Universe
+
+The source is TradingView's Sector ETFs page via table ID `etfs_funds.sector_etfs`. The rotation scorer restricts aggregates to US-listed, USD-denominated equity ETFs.
+
+The screen excludes foreign listings, non-USD funds, non-equity funds, thematic funds, leveraged or inverse products, and single-stock ETFs from sector aggregates.
+
+## Flow Analysis
+
+For each sector, the screen precomputes combined AUM, one-month and three-month ETF product flows, normalized flow percentages, flow acceleration, breadth, broad versus subsector agreement, positive and negative contributors, and history state.
+
+These are ETF product flows, not direct stock-level institutional flows.
+
+## Signal Lanes
+
+The strategy classifies opportunities into three lanes:
+
+- Broad-sector flow and performance confirmed.
+- Independent subsector rotation.
+- Performance-led industry without flow confirmation.
+
+Flow disagreement reduces confidence but does not automatically eliminate strong industry performance.
+
+## Stock Candidate Gates
+
+A qualified candidate must have USD pricing, market capitalization of at least `$2B`, price of at least `$5`, daily dollar turnover of at least `$20M`, positive short-term performance, positive return acceleration, and no disqualifying one-day spike.
+
+The screen must not fill a candidate quota when no setup qualifies.
+
+## MCP Contract
+
+Use `screen_daily_market_rotation` with `persist_history` and `max_stock_candidates`.
+
+The compact response contains sector flow summaries, rotations, performance-led industries, stock candidates, rejection counts, lost confirmations, data-quality notes, and narration instructions. OpenClaw must preserve returned ordering and must not recompute or rerank results.

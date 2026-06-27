@@ -44,9 +44,11 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Cloud and Local backup and restore (Google Drive)
 - MCP (Model Context Protocol) server for LLM integration
 
+Full Documentation: https://rodionlim.github.io/portfolio-manager-go/
+
 ## Installation
 
-1. Install Go version <b>1.24.3</b> or higher.
+1. Install Go version <b>1.26.2</b> or higher.
 2. Clone the repository to your local machine.
 3. Run `make` to build and install the application
 4. Run the `portfolio-manager` binary to start the application. Pass in config flag `-config custom-config.yaml`
@@ -298,10 +300,16 @@ For users running portfolio-manager in a Proxmox LXC container:
 
 ```
 portfolio-manager/
+├── astro/
+│   ├── astro.config.mjs    # Astro/Starlight docs site for GitHub Pages
+│   └── src/content/docs/   # Published documentation content
 ├── cmd/
 │   └── portfolio/
 │       └── main.go
 ├── docs/
+│   ├── market-rotation-strategy.md
+│   ├── mcp-pattern.md
+│   ├── openclaw-market-rotation.md
 │   └── swagger.json
 ├── internal/
 │   ├── analytics/
@@ -338,6 +346,8 @@ portfolio-manager/
 └── README.md
 ```
 
+The Astro docs site lives under `astro/` and is published separately to GitHub Pages by `.github/workflows/pages.yml`.
+
 ## For Developers
 
 ### Testing and Mocking Strategy
@@ -362,6 +372,18 @@ mockService.On("MethodName", arg1, arg2).Return(expectedResult)
 // Later verify expectations
 mockService.AssertExpectations(t)
 ```
+
+### Astro Docs Site
+
+The Astro/Starlight documentation site is built from the `astro/` directory.
+
+```sh
+cd astro
+npm install
+npm run dev
+```
+
+Use `npm run build` to validate the site locally before publishing changes.
 
 ## MCP Server Integration
 

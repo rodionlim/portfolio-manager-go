@@ -1,3 +1,15 @@
+## [1.55.0] - 2026-06-27
+
+### 🚀 Features
+
+- *(docs)* Add astro docs support
+- *(docs)* Add astro docs to README and update go version
+
+### 💼 Other
+
+- *(review)* Fix docs base path and quickstart steps
+- *(document)* Synced Astro docs references
+
 ## [1.54.0] - 2026-06-26
 
 ### 🚀 Features

@@ -1,7 +1,7 @@
 package types
 
 // MarketRotationMethodologyVersion changes whenever scoring or classification semantics change.
-const MarketRotationMethodologyVersion = "1.0.0"
+const MarketRotationMethodologyVersion = "1.4.0"
 
 // ETFContribution explains which ETF materially affected a sector's aggregate flow.
 type ETFContribution struct {
@@ -35,6 +35,7 @@ type SectorFundFlowSummary struct {
 	OneMonthFlowUSD                     float64             `json:"one_month_flow_usd"`
 	ThreeMonthFlowUSD                   float64             `json:"three_month_flow_usd"`
 	OneMonthFlowPercentAUM              float64             `json:"one_month_flow_percent_aum"`
+	ThreeMonthFlowPercentAUM            float64             `json:"three_month_flow_percent_aum"`
 	PriorTwoMonthMonthlyFlowUSD         float64             `json:"prior_two_month_monthly_flow_usd"`
 	PriorTwoMonthMonthlyPercentAUM      float64             `json:"prior_two_month_monthly_percent_aum"`
 	FlowAccelerationPercentAUM          float64             `json:"flow_acceleration_percent_aum"`
@@ -63,17 +64,18 @@ type SectorRotationSignal struct {
 
 // SubsectorRotationSignal describes an independently confirmed industry/subsector ETF move.
 type SubsectorRotationSignal struct {
-	Ticker           string              `json:"ticker"`
-	Fund             string              `json:"fund"`
-	Sector           string              `json:"sector"`
-	MappedIndustries []string            `json:"mapped_industries,omitempty"`
-	Setup            string              `json:"setup"`
-	Score            float64             `json:"score"`
-	Transition       string              `json:"transition"`
-	OneMonthFlowUSD  float64             `json:"one_month_flow_usd"`
-	FlowPercentAUM   float64             `json:"one_month_flow_percent_aum"`
-	FlowAcceleration float64             `json:"flow_acceleration_percent_aum"`
-	Performance      RotationPerformance `json:"performance"`
+	Ticker                   string              `json:"ticker"`
+	Fund                     string              `json:"fund"`
+	Sector                   string              `json:"sector"`
+	MappedIndustries         []string            `json:"mapped_industries,omitempty"`
+	Setup                    string              `json:"setup"`
+	Score                    float64             `json:"score"`
+	Transition               string              `json:"transition"`
+	OneMonthFlowUSD          float64             `json:"one_month_flow_usd"`
+	FlowPercentAUM           float64             `json:"one_month_flow_percent_aum"`
+	ThreeMonthFlowPercentAUM float64             `json:"three_month_flow_percent_aum"`
+	FlowAcceleration         float64             `json:"flow_acceleration_percent_aum"`
+	Performance              RotationPerformance `json:"performance"`
 }
 
 // IndustryRotationSignal is an industry selected for stock drill-down.

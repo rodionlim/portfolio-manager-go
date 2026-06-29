@@ -6,7 +6,7 @@ Tracking: [GitHub issue #183](https://github.com/rodionlim/portfolio-manager-go/
 
 ## Objective
 
-Produce a daily, post-US-close brief that explains one-month sector ETF product flows, identifies broad and subsector rotations, drills into matching USA stock industries, and returns zero to five liquid stock candidates. Deterministic Go code owns data joins, calculations, exclusions, classifications, rankings, and history comparisons. The LLM owns concise interpretation only.
+Produce a daily, post-US-close brief that explains one- to three-month sector ETF product flows, identifies broad and subsector rotations, drills into matching USA stock industries, and returns zero to five liquid stock candidates. Deterministic Go code owns data joins, calculations, exclusions, classifications, rankings, and history comparisons. The LLM owns concise interpretation only.
 
 The strategy targets weeks-to-months holding periods and prefers confirmed turns over anticipatory entries. It must never fill a candidate quota when no setup qualifies.
 
@@ -14,21 +14,24 @@ The strategy targets weeks-to-months holding periods and prefers confirmed turns
 
 The source is TradingView's [Sector ETFs page](https://www.tradingview.com/markets/etfs/funds-sector-etfs/) via table ID `etfs_funds.sector_etfs`, using its Overview, Performance, and Fund Flows tabs. The raw MCP tools retain the top-100 global screen. The rotation scorer restricts aggregates to US-listed, USD-denominated equity ETFs.
 
-Exclude foreign listings, non-USD funds, non-equity funds, thematic funds, leveraged/inverse products, and single-stock ETFs from sector aggregates. Return exclusion counts by reason.
+Exclude foreign listings, non-USD funds, non-equity funds, leveraged/inverse products, and single-stock ETFs from sector aggregates. Include eligible thematic ETFs by mapping recognizable themes to their economic sectors, with an unmapped Thematic fallback bucket. Return exclusion counts by reason.
 
 Classify remaining ETFs as:
 
 - Broad sector: the explicit pairs XLC/VOX, XLY/VCR, XLP/VDC, XLE/VDE, XLF/VFH, XLV/VHT, XLI/VIS, XLB/VAW, XLRE/VNQ, XLK/VGT, and XLU/VPU.
-- Subsector: other eligible, unleveraged sector or industry ETFs.
+- Subsector: other eligible, unleveraged sector, industry, or thematic ETFs.
 
-Subsector ETFs can create an independent secondary signal without claiming that the entire broad sector is confirmed.
+Subsector and thematic ETFs can create independent secondary signals without claiming that an entire broad sector is confirmed.
 
-## One-month sector flow analysis
+Map common themes deterministically from ticker and fund name into economic sectors and stock-industry hints: semiconductors and AI/robotics/software themes → Information Technology, defense/space → Industrials, metals/uranium/lithium → Materials, clean energy → Energy, biotech/genomics → Health Care, crypto/fintech → Financials, gaming/media → Communication Services, and retail/EV themes → Consumer Discretionary.
+
+## One- to three-month sector flow analysis
 
 For each sector, precompute:
 
 - Combined AUM and 1M/3M ETF product flows.
-- 1M flow as a percentage of combined AUM.
+- 1M and 3M flows as percentages of combined AUM.
+- Sector flow landscape ordering by an equal-weight blend of 1M and 3M flow/AUM percentages.
 - Prior two-month average monthly flow: `(Flow3M - Flow1M) / 2`.
 - Flow acceleration: current 1M normalized flow minus the prior two-month normalized monthly pace.
 - Breadth: positive-flow ETF count and percentage.
@@ -61,6 +64,8 @@ Reject actionable setups driven primarily by one top-decile trading day. Maintai
 2. Independent subsector rotation: medium-high confidence and explicitly labeled.
 3. Performance-led industry without flow confirmation: eligible but lower confidence.
 
+Score broad-sector and subsector ETF signals with 20% 1M flow/AUM percentile, 20% 3M flow/AUM percentile, 25% flow acceleration percentile, and 35% ETF performance acceleration percentile.
+
 Flow disagreement reduces confidence; it does not automatically eliminate strong industry performance.
 
 ## Industry mapping
@@ -81,14 +86,14 @@ Common explicit subsector hints include KBWB/KRE/KBE → banks, XBI/IBB → biot
 
 ## Stock eligibility and ranking
 
-Drill into at most five selected industries. A stock must have:
+Drill into at most three selected industries, using only the top three sorted industry signals. A stock must have:
 
 - USD pricing.
 - Market capitalization of at least $2 billion.
 - Price of at least $5.
 - Current daily dollar turnover of at least $20 million.
 - Monthly volatility outside the highest peer quintile.
-- Positive 1W and 1M performance with positive return acceleration.
+- Positive 1W, 1M, and 3M performance with positive return acceleration.
 - No disqualifying one-day spike.
 
 Do not use relative volume. Rank qualified stocks using individual performance/acceleration (60%), inherited sector-industry confidence (30%), and history state (10%). Fundamentals are tie-breakers and risk flags, not primary gates.
@@ -110,7 +115,7 @@ The full narration prompt, validation prompt, and suggested 6:30 a.m. Asia/Singa
 
 The brief order is:
 
-1. 1M sector fund-flow landscape.
+1. 1M/3M sector fund-flow landscape.
 2. Performance alignment and divergences.
 3. Broad-sector rotations.
 4. Independent subsector rotations.

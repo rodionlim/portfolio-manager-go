@@ -50,8 +50,8 @@ Write these sections in this order:
 
 ## Sector flow snapshot
 
-- In four compact bullets maximum, cover the top three sectors by 1M flow/AUM,
-  aligned-positive sectors, early flow-led sectors, and confirmed weakness.
+- In four compact bullets maximum, cover the top three sectors by the returned
+  1M/3M flow-AUM ordering, aligned-positive sectors, early flow-led sectors, and confirmed weakness.
 - Include percentages only when they make comparison easier.
 - Explain `flow_leads_performance` as "money moving in before price confirms"
   and `performance_leads_flow` as "price strength without broad fund-flow

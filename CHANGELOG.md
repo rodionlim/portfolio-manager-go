@@ -1,3 +1,9 @@
+## [1.56.0] - 2026-06-29
+
+### 🚀 Features
+
+- *(mdata)* Refine market rotation to give more weight to 3m funds flow
+
 ## [1.55.0] - 2026-06-27
 
 ### 🚀 Features

@@ -140,6 +140,12 @@ const ReferenceDataTable: React.FC = () => {
     },
     state: { density: "xs" },
     enableRowSelection: true,
+    mantineTopToolbarProps: {
+      style: {
+        overflowX: "auto",
+        paddingBottom: "4px",
+      },
+    },
     positionToolbarAlertBanner: "bottom",
     renderTopToolbarCustomActions: ({ table }) => (
       <Box
@@ -148,6 +154,8 @@ const ReferenceDataTable: React.FC = () => {
           gap: "16px",
           padding: "4px",
           alignItems: "center",
+          flexWrap: "nowrap",
+          minWidth: "max-content",
         }}
       >
         <Button

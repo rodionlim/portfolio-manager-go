@@ -48,7 +48,9 @@ func TestThemeETFsMapToEconomicSectorsWhenPossible(t *testing.T) {
 		wantHints  []string
 	}{
 		{"SMH", "VanEck Semiconductor ETF", "Information technology", []string{"Semiconductors"}},
+		{"DRAM", "Roundhill Memory ETF", "Information technology", []string{"Semiconductors"}},
 		{"AIQ", "Global X Artificial Intelligence & Technology ETF", "Information technology", []string{"Semiconductors", "Packaged Software"}},
+		{"BAI", "iShares A.I. Innovation and Tech Active ETF", "Information technology", []string{"Semiconductors", "Packaged Software"}},
 		{"ITA", "iShares U.S. Aerospace & Defense ETF", "Industrials", []string{"Aerospace & Defense"}},
 		{"URA", "Global X Uranium ETF", "Materials", []string{"Precious Metals", "Other Metals/Minerals"}},
 		{"ARKG", "ARK Genomic Revolution ETF", "Health care", []string{"Biotechnology", "Medical Specialties"}},

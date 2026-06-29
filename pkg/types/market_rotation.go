@@ -1,7 +1,7 @@
 package types
 
 // MarketRotationMethodologyVersion changes whenever scoring or classification semantics change.
-const MarketRotationMethodologyVersion = "1.4.0"
+const MarketRotationMethodologyVersion = "1.5.0"
 
 // ETFContribution explains which ETF materially affected a sector's aggregate flow.
 type ETFContribution struct {

@@ -43,6 +43,7 @@ var subsectorIndustryHints = map[string][]string{
 	"KBE":  {"Major Banks", "Regional Banks", "Savings Banks"},
 	"XBI":  {"Biotechnology"},
 	"IBB":  {"Biotechnology"},
+	"DRAM": {"Semiconductors"},
 	"SMH":  {"Semiconductors"},
 	"SOXX": {"Semiconductors"},
 	"IGV":  {"Packaged Software"},
@@ -66,14 +67,14 @@ var thematicETFMappings = []thematicETFMapping{
 	{
 		sector:     "Information technology",
 		industries: []string{"Semiconductors"},
-		keywords:   []string{"semiconductor", "semiconductors", "chip ", "chips"},
+		keywords:   []string{"semiconductor", "semiconductors", "memory", "chip ", "chips"},
 		tickers:    []string{"SMH", "SOXX", "SOXQ"},
 	},
 	{
 		sector:     "Information technology",
 		industries: []string{"Semiconductors", "Packaged Software"},
-		keywords:   []string{"artificial intelligence", " ai ", "robotics", "automation", "quantum"},
-		tickers:    []string{"AIQ", "BOTZ", "ROBO", "ARKQ", "IRBO", "CHAT"},
+		keywords:   []string{"artificial intelligence", " a.i. ", " ai ", "robotics", "automation", "quantum"},
+		tickers:    []string{"AIQ", "BAI", "BOTZ", "ROBO", "ARKQ", "IRBO", "CHAT"},
 	},
 	{
 		sector:     "Information technology",

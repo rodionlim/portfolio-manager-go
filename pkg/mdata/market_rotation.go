@@ -17,7 +17,7 @@ import (
 const (
 	defaultMaxStockCandidates = 5
 	maxRotationHistory        = 20
-	maxIndustryDrilldowns     = 5
+	maxIndustryDrilldowns     = 3
 	marketRotationSourceURL   = "https://www.tradingview.com/markets/etfs/funds-sector-etfs/"
 )
 
@@ -55,6 +55,76 @@ var subsectorIndustryHints = map[string][]string{
 	"XME":  {"Steel", "Aluminum", "Other Metals/Minerals"},
 }
 
+type thematicETFMapping struct {
+	sector     string
+	industries []string
+	keywords   []string
+	tickers    []string
+}
+
+var thematicETFMappings = []thematicETFMapping{
+	{
+		sector:     "Information technology",
+		industries: []string{"Semiconductors"},
+		keywords:   []string{"semiconductor", "semiconductors", "chip ", "chips"},
+		tickers:    []string{"SMH", "SOXX", "SOXQ"},
+	},
+	{
+		sector:     "Information technology",
+		industries: []string{"Semiconductors", "Packaged Software"},
+		keywords:   []string{"artificial intelligence", " ai ", "robotics", "automation", "quantum"},
+		tickers:    []string{"AIQ", "BOTZ", "ROBO", "ARKQ", "IRBO", "CHAT"},
+	},
+	{
+		sector:     "Information technology",
+		industries: []string{"Packaged Software"},
+		keywords:   []string{"software", "cloud", "cybersecurity", "cyber security"},
+		tickers:    []string{"IGV", "CIBR", "HACK", "SKYY", "WCLD"},
+	},
+	{
+		sector:     "Industrials",
+		industries: []string{"Aerospace & Defense"},
+		keywords:   []string{"aerospace", "defense", "defence", "space", "drone", "drones"},
+		tickers:    []string{"ITA", "PPA", "XAR", "UFO"},
+	},
+	{
+		sector:     "Materials",
+		industries: []string{"Precious Metals", "Other Metals/Minerals"},
+		keywords:   []string{"gold", "silver", "copper", "lithium", "rare earth", "uranium", "metals", "mining"},
+		tickers:    []string{"GDX", "GDXJ", "COPX", "XME", "LIT", "URA", "URNM", "REMX"},
+	},
+	{
+		sector:     "Energy",
+		industries: []string{"Oil & Gas Production", "Oilfield Services/Equipment"},
+		keywords:   []string{"energy", "oil", "gas", "solar", "wind", "hydrogen", "clean power", "renewable"},
+		tickers:    []string{"TAN", "ICLN", "QCLN", "FAN", "PBW"},
+	},
+	{
+		sector:     "Health care",
+		industries: []string{"Biotechnology", "Medical Specialties"},
+		keywords:   []string{"biotech", "biotechnology", "genomics", "genomic", "medical", "health care", "healthcare"},
+		tickers:    []string{"XBI", "IBB", "ARKG"},
+	},
+	{
+		sector:     "Financials",
+		industries: []string{"Investment Banks/Brokers", "Finance/Rental/Leasing"},
+		keywords:   []string{"fintech", "blockchain", "crypto", "bitcoin"},
+		tickers:    []string{"BLOK", "BITQ", "FINX"},
+	},
+	{
+		sector:     "Communication services",
+		industries: []string{"Internet Software/Services", "Movies/Entertainment"},
+		keywords:   []string{"internet", "social media", "metaverse", "gaming", "video game", "streaming", "media"},
+		tickers:    []string{"SOCL", "HERO", "ESPO", "META"},
+	},
+	{
+		sector:     "Consumer discretionary",
+		industries: []string{"Internet Retail", "Motor Vehicles", "Specialty Stores"},
+		keywords:   []string{"ecommerce", "e-commerce", "retail", "consumer discretionary", "electric vehicle", "electric vehicles"},
+		tickers:    []string{"IBUY", "ONLN", "DRIV", "IDRV"},
+	},
+}
+
 type joinedSectorETF struct {
 	overview    types.ETFSectorOverview
 	performance types.ETFFundFlowPerformance
@@ -62,6 +132,7 @@ type joinedSectorETF struct {
 	class       string
 	sector      string
 	flow1Pct    float64
+	flow3Pct    float64
 	flowPrior2  float64
 	flowAccel   float64
 	perf        types.RotationPerformance
@@ -166,7 +237,7 @@ func screenDailyMarketRotation(screener MarketDataScreener, db databaseStore, op
 		},
 		BriefInstructions: []string{
 			"Use the precomputed values and rankings exactly; do not recalculate or reorder them.",
-			"Start with the 1M sector fund-flow landscape, then performance alignment and divergences.",
+			"Start with the 1M/3M sector fund-flow landscape, then performance alignment and divergences.",
 			"Cover broad-sector rotations, subsector rotations, performance-led opportunities, and zero to five stock candidates.",
 			"Describe ETF product flows, never direct stock-level institutional flows.",
 			"End with data-quality, exclusion, and invalidation notes.",
@@ -231,7 +302,7 @@ func joinAndFilterSectorETFs(overviews []types.ETFSectorOverview, performances [
 			continue
 		}
 		class := "subsector"
-		sector := canonicalETFSector(row.Focus)
+		sector := canonicalETFSector(row)
 		if broadSector, ok := broadSectorETFs[strings.ToUpper(row.Ticker)]; ok {
 			class = "broad"
 			sector = broadSector
@@ -246,6 +317,7 @@ func joinAndFilterSectorETFs(overviews []types.ETFSectorOverview, performances [
 		result = append(result, joinedSectorETF{
 			overview: row, performance: perf, flows: flow, class: class, sector: sector,
 			flow1Pct:   100 * flow1 / aum,
+			flow3Pct:   100 * flow3 / aum,
 			flowPrior2: 100 * ((flow3 - flow1) / 2) / aum,
 			flowAccel:  100 * (flow1 - ((flow3 - flow1) / 2)) / aum,
 			perf:       rotationPerformance(perf.Change, perf.OneWeek, perf.OneMonth, perf.ThreeMonths, perf.SixMonths, perf.OneYear),
@@ -263,9 +335,6 @@ func exclusionReason(row types.ETFSectorOverview, flow types.ETFFundFlows) strin
 	}
 	if !strings.EqualFold(row.AssetClass, "Equity") {
 		return "non_equity"
-	}
-	if strings.EqualFold(row.Focus, "Theme") {
-		return "thematic"
 	}
 	name := strings.ToLower(row.Fund + " " + row.Ticker)
 	for _, token := range []string{" leveraged", " inverse", " ultra", "ultrapro", " bull ", " bear ", "daily ", " daily", " 2x", " 3x", "-2x", "-3x", "single-stock", "single stock"} {
@@ -285,13 +354,49 @@ func isUSExchange(exchange string) bool {
 	}
 }
 
-func canonicalETFSector(focus string) string {
+func canonicalETFSector(row types.ETFSectorOverview) string {
+	if strings.EqualFold(row.Focus, "Theme") {
+		if mapping, ok := thematicMappingForETF(row.Ticker, row.Fund); ok {
+			return mapping.sector
+		}
+		return "Thematic"
+	}
 	for _, sector := range []string{"Communication services", "Consumer discretionary", "Consumer staples", "Energy", "Financials", "Health care", "Industrials", "Information technology", "Materials", "Real estate", "Utilities"} {
-		if strings.EqualFold(focus, sector) {
+		if strings.EqualFold(row.Focus, sector) {
 			return sector
 		}
 	}
 	return ""
+}
+
+func thematicMappingForETF(ticker, fund string) (thematicETFMapping, bool) {
+	upperTicker := strings.ToUpper(strings.TrimSpace(ticker))
+	searchText := " " + strings.ToLower(fund+" "+ticker) + " "
+	for _, mapping := range thematicETFMappings {
+		for _, candidate := range mapping.tickers {
+			if upperTicker == candidate {
+				return mapping, true
+			}
+		}
+		for _, keyword := range mapping.keywords {
+			if strings.Contains(searchText, keyword) {
+				return mapping, true
+			}
+		}
+	}
+	return thematicETFMapping{}, false
+}
+
+func mappedIndustriesForETF(row joinedSectorETF) []string {
+	if industries := subsectorIndustryHints[strings.ToUpper(row.overview.Ticker)]; len(industries) > 0 {
+		return industries
+	}
+	if strings.EqualFold(row.overview.Focus, "Theme") {
+		if mapping, ok := thematicMappingForETF(row.overview.Ticker, row.overview.Fund); ok {
+			return mapping.industries
+		}
+	}
+	return nil
 }
 
 func aggregateSectorFlows(etfs []joinedSectorETF) []types.SectorFundFlowSummary {
@@ -327,13 +432,14 @@ func aggregateSectorFlows(etfs []joinedSectorETF) []types.SectorFundFlowSummary 
 		broadPriorFlow := (group.broadFlow3 - group.broadFlow1) / 2
 		subPriorFlow := (group.subFlow3 - group.subFlow1) / 2
 		flowPct := safePercent(group.flow1, group.aum)
+		threeMonthFlowPct := safePercent(group.flow3, group.aum)
 		priorPct := safePercent(priorFlow, group.aum)
 		broadPerf := weightedPerformance(group.broad)
 		result = append(result, types.SectorFundFlowSummary{
 			Sector: group.sector, ETFCount: len(group.etfs), BroadETFCount: len(group.broad), SubsectorETFCount: len(group.subsector),
 			PositiveFlowETFCount: group.positive, PositiveFlowBreadthPercent: round(safePercent(float64(group.positive), float64(len(group.etfs))), 1),
 			CombinedAUMUSD: round(group.aum, 0), OneMonthFlowUSD: round(group.flow1, 0), ThreeMonthFlowUSD: round(group.flow3, 0),
-			OneMonthFlowPercentAUM: round(flowPct, 3), PriorTwoMonthMonthlyFlowUSD: round(priorFlow, 0),
+			OneMonthFlowPercentAUM: round(flowPct, 3), ThreeMonthFlowPercentAUM: round(threeMonthFlowPct, 3), PriorTwoMonthMonthlyFlowUSD: round(priorFlow, 0),
 			PriorTwoMonthMonthlyPercentAUM: round(priorPct, 3), FlowAccelerationPercentAUM: round(flowPct-priorPct, 3),
 			BroadOneMonthFlowUSD: round(group.broadFlow1, 0), SubsectorOneMonthFlowUSD: round(group.subFlow1, 0),
 			BroadFlowAccelerationPercentAUM:     round(safePercent(group.broadFlow1-broadPriorFlow, group.broadAUM), 3),
@@ -344,8 +450,14 @@ func aggregateSectorFlows(etfs []joinedSectorETF) []types.SectorFundFlowSummary 
 			LargestContributors:      contributions(group.etfs, true), LargestDetractors: contributions(group.etfs, false),
 		})
 	}
-	sort.Slice(result, func(i, j int) bool { return result[i].OneMonthFlowPercentAUM > result[j].OneMonthFlowPercentAUM })
+	sort.Slice(result, func(i, j int) bool {
+		return sectorFlowSortScore(result[i]) > sectorFlowSortScore(result[j])
+	})
 	return result
+}
+
+func sectorFlowSortScore(row types.SectorFundFlowSummary) float64 {
+	return 0.5*row.OneMonthFlowPercentAUM + 0.5*row.ThreeMonthFlowPercentAUM
 }
 
 func applySectorFlowTransitions(rows []types.SectorFundFlowSummary, previous *marketRotationSnapshot) {
@@ -491,9 +603,10 @@ func buildBroadSectorSignals(flows []types.SectorFundFlowSummary, previous *mark
 		if !aligned || setup == "unconfirmed" {
 			continue
 		}
-		score := 100 * (0.35*percentileRank(flowMetric(flows, func(x types.SectorFundFlowSummary) float64 { return x.OneMonthFlowPercentAUM }), row.OneMonthFlowPercentAUM) +
+		score := 100 * (0.20*percentileRank(flowMetric(flows, func(x types.SectorFundFlowSummary) float64 { return x.OneMonthFlowPercentAUM }), row.OneMonthFlowPercentAUM) +
+			0.20*percentileRank(flowMetric(flows, func(x types.SectorFundFlowSummary) float64 { return x.ThreeMonthFlowPercentAUM }), row.ThreeMonthFlowPercentAUM) +
 			0.25*percentileRank(flowMetric(flows, func(x types.SectorFundFlowSummary) float64 { return x.FlowAccelerationPercentAUM }), row.FlowAccelerationPercentAUM) +
-			0.40*percentileRank(accels, perf.Acceleration))
+			0.35*percentileRank(accels, perf.Acceleration))
 		result = append(result, types.SectorRotationSignal{Sector: row.Sector, Setup: setup, Score: round(score, 1), Transition: sectorTransition(previous, row.Sector, score), FlowTrend: row.FlowTrend, Performance: perf})
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Score > result[j].Score })
@@ -518,11 +631,14 @@ func buildSubsectorSignals(etfs []joinedSectorETF, previous *marketRotationSnaps
 		if setup == "unconfirmed" {
 			continue
 		}
-		score := 100 * (0.35*percentileRank(etfMetric(etfs, func(x joinedSectorETF) float64 { return x.flow1Pct }), row.flow1Pct) + 0.25*percentileRank(etfMetric(etfs, func(x joinedSectorETF) float64 { return x.flowAccel }), row.flowAccel) + 0.40*percentileRank(accels, row.perf.Acceleration))
+		score := 100 * (0.20*percentileRank(etfMetric(etfs, func(x joinedSectorETF) float64 { return x.flow1Pct }), row.flow1Pct) +
+			0.20*percentileRank(etfMetric(etfs, func(x joinedSectorETF) float64 { return x.flow3Pct }), row.flow3Pct) +
+			0.25*percentileRank(etfMetric(etfs, func(x joinedSectorETF) float64 { return x.flowAccel }), row.flowAccel) +
+			0.35*percentileRank(accels, row.perf.Acceleration))
 		result = append(result, types.SubsectorRotationSignal{
-			Ticker: row.overview.Ticker, Fund: row.overview.Fund, Sector: row.sector, MappedIndustries: subsectorIndustryHints[strings.ToUpper(row.overview.Ticker)],
+			Ticker: row.overview.Ticker, Fund: row.overview.Fund, Sector: row.sector, MappedIndustries: mappedIndustriesForETF(row),
 			Setup: setup, Score: round(score, 1), Transition: subsectorTransition(previous, row.overview.Ticker, score), OneMonthFlowUSD: round(*row.flows.OneMonth, 0),
-			FlowPercentAUM: round(row.flow1Pct, 3), FlowAcceleration: round(row.flowAccel, 3), Performance: row.perf,
+			FlowPercentAUM: round(row.flow1Pct, 3), ThreeMonthFlowPercentAUM: round(row.flow3Pct, 3), FlowAcceleration: round(row.flowAccel, 3), Performance: row.perf,
 		})
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Score > result[j].Score })
@@ -678,6 +794,10 @@ func scoreIndustryStocks(industry industryAnalysis, overviews []types.USAIndustr
 			continue
 		}
 		setup := setupType(row.shape, percentileRank(sixMonths, row.shape.SixMonths), percentileRank(accels, row.shape.Acceleration), percentileRank(threeMonths, row.shape.ThreeMonths))
+		if row.shape.ThreeMonths <= 0 {
+			rejected["three_month_performance_non_positive"]++
+			continue
+		}
 		if row.shape.OneWeek <= 0 || row.shape.OneMonth <= 0 || row.shape.Acceleration <= 0 || setup == "unconfirmed" {
 			rejected["unconfirmed_return_shape"]++
 			continue
@@ -693,35 +813,17 @@ func scoreIndustryStocks(industry industryAnalysis, overviews []types.USAIndustr
 			Lane: industry.signal.Lane, Setup: setup, Score: round(score, 1), Transition: stockTransition(previous, row.overview.Ticker, score),
 			MarketCapUSD: round(*row.overview.MarketCap, 0), DailyTurnoverUSD: round(row.turnover, 0), MonthlyVolatility: round(row.vol, 3),
 			EPSGrowthYoY: row.overview.EPSDilutedGrowthYoYTTM, AnalystRating: row.overview.AnalystRating, Performance: row.shape,
-			Invalidation: "The setup loses confirmation if 1W or 1M performance turns non-positive, return acceleration turns negative, or its sector/industry lane loses confirmation.",
+			Invalidation: "The setup loses confirmation if 1W, 1M, or 3M performance turns non-positive, return acceleration turns negative, or its sector/industry lane loses confirmation.",
 		})
 	}
 	return result
 }
 
 func selectIndustryDrilldowns(industries []industryAnalysis) []industryAnalysis {
-	result := make([]industryAnalysis, 0, maxIndustryDrilldowns)
-	lanes := []string{"broad_sector_confirmed", "subsector_rotation", "performance_led"}
-	seen := make(map[string]bool)
-	for _, lane := range lanes {
-		for _, row := range industries {
-			if row.signal.Lane == lane && !seen[row.signal.Industry] {
-				result = append(result, row)
-				seen[row.signal.Industry] = true
-				break
-			}
-		}
+	if len(industries) <= maxIndustryDrilldowns {
+		return append([]industryAnalysis(nil), industries...)
 	}
-	for _, row := range industries {
-		if len(result) >= maxIndustryDrilldowns {
-			break
-		}
-		if !seen[row.signal.Industry] {
-			result = append(result, row)
-			seen[row.signal.Industry] = true
-		}
-	}
-	return result
+	return append([]industryAnalysis(nil), industries[:maxIndustryDrilldowns]...)
 }
 
 func topIndustrySignals(industries []industryAnalysis, limit int) []types.IndustryRotationSignal {

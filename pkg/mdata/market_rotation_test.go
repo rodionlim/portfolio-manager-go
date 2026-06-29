@@ -29,12 +29,40 @@ func TestJoinAndFilterSectorETFsExcludesUnsafeProducts(t *testing.T) {
 	}
 
 	joined, excluded := joinAndFilterSectorETFs(overviews, performances, flows)
-	require.Len(t, joined, 2)
+	require.Len(t, joined, 3)
 	require.Equal(t, "broad", joined[0].class)
 	require.Equal(t, "subsector", joined[1].class)
+	require.Equal(t, "subsector", joined[2].class)
+	require.Equal(t, "Information technology", joined[2].sector)
+	require.ElementsMatch(t, []string{"Semiconductors", "Packaged Software"}, mappedIndustriesForETF(joined[2]))
 	require.Equal(t, 1, excluded["leveraged_inverse_or_single_stock"])
 	require.Equal(t, 1, excluded["foreign_listing"])
-	require.Equal(t, 1, excluded["thematic"])
+	require.Zero(t, excluded["thematic"])
+}
+
+func TestThemeETFsMapToEconomicSectorsWhenPossible(t *testing.T) {
+	tests := []struct {
+		ticker     string
+		fund       string
+		wantSector string
+		wantHints  []string
+	}{
+		{"SMH", "VanEck Semiconductor ETF", "Information technology", []string{"Semiconductors"}},
+		{"AIQ", "Global X Artificial Intelligence & Technology ETF", "Information technology", []string{"Semiconductors", "Packaged Software"}},
+		{"ITA", "iShares U.S. Aerospace & Defense ETF", "Industrials", []string{"Aerospace & Defense"}},
+		{"URA", "Global X Uranium ETF", "Materials", []string{"Precious Metals", "Other Metals/Minerals"}},
+		{"ARKG", "ARK Genomic Revolution ETF", "Health care", []string{"Biotechnology", "Medical Specialties"}},
+		{"MISC", "Miscellaneous Future Themes ETF", "Thematic", nil},
+	}
+
+	for _, test := range tests {
+		t.Run(test.ticker, func(t *testing.T) {
+			overview := sectorOverview(strings.ToLower(test.ticker), test.ticker, test.fund, "NASDAQ", "Theme", 100)
+			require.Equal(t, test.wantSector, canonicalETFSector(overview))
+			joined := joinedSectorETF{overview: overview}
+			require.ElementsMatch(t, test.wantHints, mappedIndustriesForETF(joined))
+		})
+	}
 }
 
 func TestAggregateSectorFlowsSeparatesBroadAndSubsector(t *testing.T) {
@@ -47,11 +75,24 @@ func TestAggregateSectorFlowsSeparatesBroadAndSubsector(t *testing.T) {
 	require.Equal(t, "Financials", row.Sector)
 	require.InDelta(t, 8, row.OneMonthFlowUSD, 0.001)
 	require.InDelta(t, 5.333, row.OneMonthFlowPercentAUM, 0.001)
+	require.InDelta(t, 9.333, row.ThreeMonthFlowPercentAUM, 0.001)
 	require.InDelta(t, 7.5, row.BroadFlowAccelerationPercentAUM, 0.001)
 	require.InDelta(t, -5, row.SubsectorFlowAccelerationPercentAUM, 0.001)
 	require.Equal(t, "broad_inflow_subsector_outflow", row.BroadSubsectorRelationship)
 	require.Equal(t, "XLF", row.LargestContributors[0].Ticker)
 	require.Equal(t, "KBWB", row.LargestDetractors[0].Ticker)
+}
+
+func TestAggregateSectorFlowsSortsByOneAndThreeMonthFlowPercentAUM(t *testing.T) {
+	shortBurst := joinedETFForTest("XLE", "broad", 100, 12, 12)
+	shortBurst.sector = "Energy"
+	sustained := joinedETFForTest("XLK", "broad", 100, 8, 30)
+	sustained.sector = "Information technology"
+
+	rows := aggregateSectorFlows([]joinedSectorETF{shortBurst, sustained})
+	require.Len(t, rows, 2)
+	require.Equal(t, "Information technology", rows[0].Sector)
+	require.Equal(t, "Energy", rows[1].Sector)
 }
 
 func TestIndustryCrosswalkCoversMixedTradingViewSectors(t *testing.T) {
@@ -151,9 +192,27 @@ func TestScreenDailyMarketRotationReturnsOnlyQualifiedStocks(t *testing.T) {
 	for _, stock := range brief.StockCandidates {
 		require.GreaterOrEqual(t, stock.MarketCapUSD, 2_000_000_000.0)
 		require.GreaterOrEqual(t, stock.DailyTurnoverUSD, 20_000_000.0)
+		require.Greater(t, stock.Performance.ThreeMonths, 0.0)
 		require.NotEqual(t, "LOWCAP", stock.Ticker)
+		require.NotEqual(t, "NEG3M", stock.Ticker)
 	}
 	require.Greater(t, brief.RejectedStockCounts["market_cap_below_2b"], 0)
+	require.Greater(t, brief.RejectedStockCounts["three_month_performance_non_positive"], 0)
+}
+
+func TestSelectIndustryDrilldownsUsesTopThreeSortedIndustries(t *testing.T) {
+	industries := []industryAnalysis{
+		{signal: types.IndustryRotationSignal{Industry: "Semiconductors", Lane: "subsector_rotation", Score: 95}},
+		{signal: types.IndustryRotationSignal{Industry: "Packaged Software", Lane: "performance_led", Score: 90}},
+		{signal: types.IndustryRotationSignal{Industry: "Aerospace & Defense", Lane: "broad_sector_confirmed", Score: 85}},
+		{signal: types.IndustryRotationSignal{Industry: "Major Banks", Lane: "broad_sector_confirmed", Score: 80}},
+	}
+
+	selected := selectIndustryDrilldowns(industries)
+	require.Len(t, selected, 3)
+	require.Equal(t, "Semiconductors", selected[0].signal.Industry)
+	require.Equal(t, "Packaged Software", selected[1].signal.Industry)
+	require.Equal(t, "Aerospace & Defense", selected[2].signal.Industry)
 }
 
 type rotationTestScreener struct {
@@ -260,8 +319,8 @@ func industryPerformance(id, industry string, day, week, month, three, six, year
 }
 
 func makeTestStockOverviews() []types.USAIndustryStockOverview {
-	result := make([]types.USAIndustryStockOverview, 0, 6)
-	for i, ticker := range []string{"BANKA", "BANKB", "BANKC", "BANKD", "BANKE", "LOWCAP"} {
+	result := make([]types.USAIndustryStockOverview, 0, 7)
+	for i, ticker := range []string{"BANKA", "NEG3M", "BANKB", "BANKC", "BANKD", "BANKE", "LOWCAP"} {
 		marketCap := 10_000_000_000.0 + float64(i)*1_000_000_000
 		if ticker == "LOWCAP" {
 			marketCap = 500_000_000
@@ -273,12 +332,15 @@ func makeTestStockOverviews() []types.USAIndustryStockOverview {
 }
 
 func makeTestStockPerformance() []types.USAIndustryStockPerformance {
-	result := make([]types.USAIndustryStockPerformance, 0, 6)
-	for i, ticker := range []string{"BANKA", "BANKB", "BANKC", "BANKD", "BANKE", "LOWCAP"} {
+	result := make([]types.USAIndustryStockPerformance, 0, 7)
+	for i, ticker := range []string{"BANKA", "NEG3M", "BANKB", "BANKC", "BANKD", "BANKE", "LOWCAP"} {
 		day := 0.1
 		week := 2.0 + float64(i)/10
 		month := 5.0 + float64(i)
 		three, six, year := 4.0, -3.0, -2.0
+		if ticker == "NEG3M" {
+			three = -1.0
+		}
 		volatility := 1.0 + float64(i)/10
 		result = append(result, types.USAIndustryStockPerformance{ID: strings.ToLower(ticker), Ticker: ticker, Change: &day, OneWeek: &week, OneMonth: &month, ThreeMonths: &three, SixMonths: &six, OneYear: &year, VolatilityOneMonth: &volatility})
 	}

@@ -218,11 +218,175 @@ func bindReferenceDataWriteArgs(request mcp.CallToolRequest) (referenceDataWrite
 	if err := request.BindArguments(&args); err != nil {
 		return args, fmt.Errorf("invalid arguments: %w", err)
 	}
-	args.Ticker.ID = strings.ToUpper(strings.TrimSpace(args.Ticker.ID))
+	normalizeReferenceDataWriteTicker(&args.Ticker)
 	if args.Ticker.ID == "" {
 		return args, fmt.Errorf("missing required ticker.id")
 	}
+	if args.Ticker.UnderlyingTicker == "" {
+		return args, fmt.Errorf("missing required ticker.underlying_ticker and no alternate ticker field was available")
+	}
+	if !isUpperAlphaCode(args.Ticker.Ccy, 3) {
+		return args, fmt.Errorf("ticker.ccy must be a three-letter uppercase currency code")
+	}
+	if !isUpperAlphaCode(args.Ticker.Domicile, 2) {
+		return args, fmt.Errorf("ticker.domicile must be a two-letter uppercase country code")
+	}
 	return args, nil
+}
+
+func normalizeReferenceDataWriteTicker(ticker *TickerReference) {
+	ticker.ID = normalizeReferenceDataCode(ticker.ID)
+	ticker.UnderlyingTicker = normalizeReferenceDataCode(ticker.UnderlyingTicker)
+	ticker.YahooTicker = normalizeReferenceDataCode(ticker.YahooTicker)
+	ticker.GoogleTicker = normalizeGoogleFinanceTicker(ticker.GoogleTicker, ticker)
+	ticker.DividendsSgTicker = normalizeReferenceDataCode(ticker.DividendsSgTicker)
+	ticker.NasdaqTicker = normalizeReferenceDataCode(ticker.NasdaqTicker)
+	ticker.BarchartTicker = normalizeReferenceDataCode(ticker.BarchartTicker)
+	ticker.Ccy = normalizeReferenceDataCode(ticker.Ccy)
+	ticker.Domicile = normalizeReferenceDataCode(ticker.Domicile)
+
+	if ticker.UnderlyingTicker == "" {
+		ticker.UnderlyingTicker = inferUnderlyingTicker(*ticker)
+	}
+	if ticker.Ccy == "" {
+		ticker.Ccy = inferReferenceDataCurrency(*ticker)
+	}
+	if ticker.Domicile == "" {
+		ticker.Domicile = inferReferenceDataDomicile(*ticker)
+	}
+}
+
+func normalizeReferenceDataCode(value string) string {
+	return strings.ToUpper(strings.TrimSpace(value))
+}
+
+func isUpperAlphaCode(value string, length int) bool {
+	if len(value) != length {
+		return false
+	}
+	for _, r := range value {
+		if r < 'A' || r > 'Z' {
+			return false
+		}
+	}
+	return true
+}
+
+func inferUnderlyingTicker(ticker TickerReference) string {
+	for _, candidate := range []string{
+		ticker.YahooTicker,
+		ticker.DividendsSgTicker,
+		ticker.NasdaqTicker,
+		ticker.BarchartTicker,
+		googleFinanceSymbol(ticker.GoogleTicker),
+		ticker.ID,
+	} {
+		if candidate != "" {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func inferReferenceDataCurrency(ticker TickerReference) string {
+	for _, candidate := range referenceDataTickerCandidates(ticker) {
+		switch {
+		case strings.HasSuffix(candidate, ".SI"):
+			return "SGD"
+		case strings.HasSuffix(candidate, ".HK"):
+			return "HKD"
+		case strings.HasSuffix(candidate, ".L"):
+			return "USD"
+		}
+	}
+	if ticker.ID != "" {
+		return "USD"
+	}
+	return ""
+}
+
+func inferReferenceDataDomicile(ticker TickerReference) string {
+	for _, candidate := range referenceDataTickerCandidates(ticker) {
+		switch {
+		case strings.HasSuffix(candidate, ".SI"):
+			return "SG"
+		case strings.HasSuffix(candidate, ".HK"):
+			return "HK"
+		case strings.HasSuffix(candidate, ".L"):
+			return "IE"
+		}
+	}
+	if ticker.ID != "" {
+		return "US"
+	}
+	return ""
+}
+
+func referenceDataTickerCandidates(ticker TickerReference) []string {
+	return []string{
+		ticker.YahooTicker,
+		ticker.UnderlyingTicker,
+		ticker.ID,
+		ticker.DividendsSgTicker,
+		ticker.NasdaqTicker,
+		ticker.BarchartTicker,
+		googleFinanceSymbol(ticker.GoogleTicker),
+	}
+}
+
+func normalizeGoogleFinanceTicker(value string, ticker *TickerReference) string {
+	normalized := normalizeReferenceDataCode(value)
+	if normalized == "" || !strings.Contains(normalized, ":") {
+		return normalized
+	}
+
+	parts := strings.Split(normalized, ":")
+	if len(parts) != 2 {
+		return normalized
+	}
+	left := strings.TrimSpace(parts[0])
+	right := strings.TrimSpace(parts[1])
+	if left == "" || right == "" {
+		return normalized
+	}
+
+	if isKnownGoogleFinanceExchange(left) && !isKnownGoogleFinanceExchange(right) {
+		if right == ticker.ID || right == ticker.YahooTicker || right == ticker.UnderlyingTicker || ticker.ID == "" {
+			return right + ":" + googleFinanceExchangeForSymbol(right, left)
+		}
+	}
+	return left + ":" + right
+}
+
+func googleFinanceSymbol(value string) string {
+	normalized := normalizeReferenceDataCode(value)
+	if normalized == "" {
+		return ""
+	}
+	parts := strings.Split(normalized, ":")
+	if len(parts) == 2 {
+		if isKnownGoogleFinanceExchange(parts[0]) && !isKnownGoogleFinanceExchange(parts[1]) {
+			return parts[1]
+		}
+		return parts[0]
+	}
+	return normalized
+}
+
+func googleFinanceExchangeForSymbol(symbol, exchange string) string {
+	if symbol == "DRAM" && exchange == "NASDAQ" {
+		return "BATS"
+	}
+	return exchange
+}
+
+func isKnownGoogleFinanceExchange(value string) bool {
+	switch value {
+	case "NASDAQ", "NYSE", "NYSEARCA", "BATS", "LON", "SGX", "HKG", "TSE", "ASX":
+		return true
+	default:
+		return false
+	}
 }
 
 func referenceDataToolResult(data any) (*mcp.CallToolResult, error) {
@@ -257,9 +421,9 @@ func tickerReferenceSchemaOptions() []mcp.PropertyOption {
 		mcp.Properties(map[string]any{
 			"id":                  map[string]any{"type": "string", "description": "Ticker reference id, for example AAPL or C31.SI."},
 			"name":                map[string]any{"type": "string"},
-			"underlying_ticker":   map[string]any{"type": "string"},
-			"yahoo_ticker":        map[string]any{"type": "string"},
-			"google_ticker":       map[string]any{"type": "string"},
+			"underlying_ticker":   map[string]any{"type": "string", "description": "Canonical underlying/ref ticker. If omitted, the server uses yahoo_ticker first, then another ticker field."},
+			"yahoo_ticker":        map[string]any{"type": "string", "description": "Yahoo Finance ticker. When present, this is preferred for underlying_ticker."},
+			"google_ticker":       map[string]any{"type": "string", "description": "Google Finance ticker in SYMBOL:EXCHANGE order, for example DRAM:BATS."},
 			"dividends_sg_ticker": map[string]any{"type": "string"},
 			"nasdaq_ticker":       map[string]any{"type": "string"},
 			"barchart_ticker":     map[string]any{"type": "string"},
@@ -267,8 +431,8 @@ func tickerReferenceSchemaOptions() []mcp.PropertyOption {
 			"asset_sub_class":     map[string]any{"type": "string", "enum": []string{AssetSubClassBond, AssetSubClassCash, AssetSubClassETF, AssetSubClassFuture, AssetSubClassGovies, AssetSubClassOption, AssetSubClassReit, AssetSubClassSpot, AssetSubClassStock}},
 			"category":            map[string]any{"type": "string", "enum": []string{CategoryAgriculture, CategoryConsumerCyclicals, CategoryConsumerNonCyclicals, CategoryCrypto, CategoryEnergy, CategoryFinance, CategoryFuneral, CategoryHealthcare, CategoryIndustrials, CategoryMaterials, CategoryRealEstate, CategoryREITs, CategoryTelecommunications, CategoryTechnology, CategoryUtilities}},
 			"sub_category":        map[string]any{"type": "string"},
-			"ccy":                 map[string]any{"type": "string"},
-			"domicile":            map[string]any{"type": "string"},
+			"ccy":                 map[string]any{"type": "string", "description": "Three-letter uppercase currency code, for example USD, SGD, or HKD."},
+			"domicile":            map[string]any{"type": "string", "description": "Two-letter uppercase country code, for example US, SG, HK, or IE."},
 			"coupon_rate":         map[string]any{"type": "number"},
 			"maturity_date":       map[string]any{"type": "string", "description": "YYYY-MM-DD when applicable."},
 			"strike_price":        map[string]any{"type": "number"},

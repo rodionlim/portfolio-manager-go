@@ -106,6 +106,75 @@ func TestReferenceDataWriteMCPHandlersApplyWithConfirmation(t *testing.T) {
 	require.Equal(t, []string{"AAPL"}, manager.deletedIDs)
 }
 
+func TestReferenceDataWriteMCPHandlerNormalizesCanonicalFields(t *testing.T) {
+	manager := &mcpTestReferenceManager{tickers: map[string]TickerReference{}}
+	request := referenceDataWriteRequest(TickerReference{
+		ID:           "dram",
+		Name:         "Global X Data Center REITs & Digital Infrastructure ETF",
+		YahooTicker:  "dram",
+		GoogleTicker: "NASDAQ:DRAM",
+	})
+	request.Params.Arguments.(map[string]any)["confirm"] = "yes"
+
+	result, err := createHandleAddReferenceData(manager)(context.Background(), request)
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	ticker := manager.tickers["DRAM"]
+	require.Equal(t, "DRAM", ticker.UnderlyingTicker)
+	require.Equal(t, "DRAM", ticker.YahooTicker)
+	require.Equal(t, "DRAM:BATS", ticker.GoogleTicker)
+	require.Equal(t, "USD", ticker.Ccy)
+	require.Equal(t, "US", ticker.Domicile)
+}
+
+func TestReferenceDataWriteMCPHandlerInfersCurrencyAndDomicileFromTickerSuffix(t *testing.T) {
+	manager := &mcpTestReferenceManager{tickers: map[string]TickerReference{}}
+	request := referenceDataWriteRequest(TickerReference{
+		ID:          "c31.si",
+		Name:        "CapitaLand Integrated Commercial Trust",
+		YahooTicker: "c31.si",
+	})
+	request.Params.Arguments.(map[string]any)["confirm"] = "yes"
+
+	result, err := createHandleAddReferenceData(manager)(context.Background(), request)
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	ticker := manager.tickers["C31.SI"]
+	require.Equal(t, "C31.SI", ticker.UnderlyingTicker)
+	require.Equal(t, "SGD", ticker.Ccy)
+	require.Equal(t, "SG", ticker.Domicile)
+}
+
+func TestReferenceDataWriteMCPHandlerRejectsInvalidCurrencyAndDomicile(t *testing.T) {
+	manager := &mcpTestReferenceManager{tickers: map[string]TickerReference{}}
+
+	invalidCurrencyRequest := referenceDataWriteRequest(TickerReference{
+		ID:       "AAPL",
+		Name:     "Apple",
+		Ccy:      "US",
+		Domicile: "US",
+	})
+	invalidCurrencyRequest.Params.Arguments.(map[string]any)["confirm"] = "yes"
+	result, err := createHandleAddReferenceData(manager)(context.Background(), invalidCurrencyRequest)
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+	require.Contains(t, result.Content[0].(mcp.TextContent).Text, "ticker.ccy")
+
+	invalidDomicileRequest := referenceDataWriteRequest(TickerReference{
+		ID:       "AAPL",
+		Name:     "Apple",
+		Ccy:      "USD",
+		Domicile: "USA",
+	})
+	invalidDomicileRequest.Params.Arguments.(map[string]any)["confirm"] = "yes"
+	result, err = createHandleAddReferenceData(manager)(context.Background(), invalidDomicileRequest)
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+	require.Contains(t, result.Content[0].(mcp.TextContent).Text, "ticker.domicile")
+}
+
 func TestGetReferenceDataMCPHandlerReturnsError(t *testing.T) {
 	manager := &mcpTestReferenceManager{getErr: errors.New("not found")}
 	request := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
@@ -122,10 +191,24 @@ func TestGetReferenceDataMCPHandlerReturnsError(t *testing.T) {
 func referenceDataWriteRequest(ticker TickerReference) mcp.CallToolRequest {
 	return mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
 		"ticker": map[string]any{
-			"id":       ticker.ID,
-			"name":     ticker.Name,
-			"ccy":      ticker.Ccy,
-			"domicile": ticker.Domicile,
+			"id":                  ticker.ID,
+			"name":                ticker.Name,
+			"underlying_ticker":   ticker.UnderlyingTicker,
+			"yahoo_ticker":        ticker.YahooTicker,
+			"google_ticker":       ticker.GoogleTicker,
+			"dividends_sg_ticker": ticker.DividendsSgTicker,
+			"nasdaq_ticker":       ticker.NasdaqTicker,
+			"barchart_ticker":     ticker.BarchartTicker,
+			"asset_class":         ticker.AssetClass,
+			"asset_sub_class":     ticker.AssetSubClass,
+			"category":            ticker.Category,
+			"sub_category":        ticker.SubCategory,
+			"ccy":                 ticker.Ccy,
+			"domicile":            ticker.Domicile,
+			"coupon_rate":         ticker.CouponRate,
+			"maturity_date":       ticker.MaturityDate,
+			"strike_price":        ticker.StrikePrice,
+			"call_put":            ticker.CallPut,
 		},
 	}}}
 }

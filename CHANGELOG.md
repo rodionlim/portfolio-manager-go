@@ -1,3 +1,14 @@
+## [1.56.1] - 2026-06-29
+
+### 🐛 Bug Fixes
+
+- *(ui)* Reference data update button not accessible in mobile view
+- *(refdata)* Refdata mcp needs better written prompts to fill in the right data #194
+
+### ⚙️ Miscellaneous Tasks
+
+- *(mdata)* Market rotation were missing DRAM sector hints
+
 ## [1.56.0] - 2026-06-29
 
 ### 🚀 Features

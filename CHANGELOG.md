@@ -1,3 +1,10 @@
+## [1.58.0] - 2026-07-04
+
+### 🚀 Features
+
+- *(ui)* Add market value to summary values
+- *(ui)* Add daily pnl change to summary values
+
 ## [1.57.0] - 2026-07-04
 
 ### 🚀 Features

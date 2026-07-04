@@ -586,6 +586,14 @@ const SummaryView: React.FC = () => {
       ),
     [positions],
   );
+  const overallMarketValue = useMemo(
+    () =>
+      positions.reduce(
+        (sum, position) => sum + position.Mv * (position.FxRate || 1),
+        0,
+      ),
+    [positions],
+  );
 
   const { byBook, byCurrency, byCategory, byAssetSubClass } = useMemo(() => {
     const bookTotals = new Map<string, SummaryRow>();
@@ -746,17 +754,29 @@ const SummaryView: React.FC = () => {
         Summary
       </Title>
       <Paper withBorder p="md" radius="sm" mb="md">
-        <Text c="dimmed" size="sm" fw={600}>
-          Overall P&amp;L
-        </Text>
-        <Text
-          fw={700}
-          size="xl"
-          c={overallPnl < 0 ? "red" : "green"}
-          style={{ lineHeight: 1.2, ...numberStyle }}
-        >
-          {formatMoney(overallPnl, "SGD")}
-        </Text>
+        <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="md">
+          <Box>
+            <Text c="dimmed" size="sm" fw={600}>
+              Market Value
+            </Text>
+            <Text fw={700} size="xl" style={{ lineHeight: 1.2, ...numberStyle }}>
+              {formatMoney(overallMarketValue, "SGD")}
+            </Text>
+          </Box>
+          <Box>
+            <Text c="dimmed" size="sm" fw={600}>
+              Overall P&amp;L
+            </Text>
+            <Text
+              fw={700}
+              size="xl"
+              c={overallPnl < 0 ? "red" : "green"}
+              style={{ lineHeight: 1.2, ...numberStyle }}
+            >
+              {formatMoney(overallPnl, "SGD")}
+            </Text>
+          </Box>
+        </SimpleGrid>
       </Paper>
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md" style={{ minWidth: 0 }}>
         <SummaryTable

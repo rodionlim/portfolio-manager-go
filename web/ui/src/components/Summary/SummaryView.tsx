@@ -39,6 +39,8 @@ interface Position {
   Mv: number;
   PnL: number;
   FxRate: number;
+  Qty: number;
+  Px: number;
 }
 
 interface SummaryDetail {
@@ -49,6 +51,7 @@ interface SummaryDetail {
   assetSubClass: string;
   marketValue: number;
   pnl: number;
+  dailyPnl: number;
   referenceData?: ReferenceDataItem;
 }
 
@@ -57,11 +60,33 @@ interface SummaryRow {
   displayLabel?: string;
   marketValue: number;
   pnl: number;
+  dailyPnl: number;
   currency: string;
   details?: SummaryDetail[];
 }
 
-type SummarySortKey = "marketValue" | "pnl";
+interface CachedPrice {
+  ticker: string;
+  price: number;
+  timestamp: string;
+}
+
+interface CachedPricesResponse {
+  metrics?: {
+    timestamp: string;
+    metrics: {
+      irr: number;
+      pricePaid: number;
+      mv: number;
+      totalDividends: number;
+    };
+  };
+  prices: CachedPrice[];
+  pricesPrev2?: CachedPrice[];
+  missing?: string[];
+}
+
+type SummarySortKey = "marketValue" | "pnl" | "dailyPnl";
 type SummarySortDirection = "asc" | "desc";
 
 const formatMoney = (value: number, currency: string) =>
@@ -70,12 +95,45 @@ const formatMoney = (value: number, currency: string) =>
     maximumFractionDigits: 0,
   })}`;
 
+const formatAmount = (value: number) =>
+  value.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
 const formatPercentage = (value: number, total: number) => {
   if (!total) {
     return "0%";
   }
   return `${((value / total) * 100).toFixed(0)}%`;
 };
+
+const numberStyle: React.CSSProperties = {
+  fontVariantNumeric: "tabular-nums",
+  fontFeatureSettings: '"tnum" 1',
+};
+
+const inlineMetricStyle: React.CSSProperties = {
+  ...numberStyle,
+  display: "inline-flex",
+  alignItems: "baseline",
+  justifyContent: "flex-end",
+  gap: 6,
+  whiteSpace: "nowrap",
+};
+
+const AmountWithShare: React.FC<{
+  value: number;
+  shareValue?: number;
+  total: number;
+}> = ({ value, shareValue = value, total }) => (
+  <span style={inlineMetricStyle}>
+    <span>{formatAmount(value)}</span>
+    <Text c="dimmed" component="span" size="xs">
+      {formatPercentage(Math.abs(shareValue), total)}
+    </Text>
+  </span>
+);
 
 const categoryLabels: Record<string, string> = {
   consumercyclicals: "Consumer Cyclicals",
@@ -110,10 +168,12 @@ const summarizeDetails = (details: SummaryDetail[]) => {
         assetSubClass: detail.assetSubClass,
         marketValue: 0,
         pnl: 0,
+        dailyPnl: 0,
         referenceData: detail.referenceData,
       } satisfies SummaryDetail);
     existing.marketValue += detail.marketValue;
     existing.pnl += detail.pnl;
+    existing.dailyPnl += detail.dailyPnl;
     existing.referenceData = existing.referenceData || detail.referenceData;
     totals.set(detail.ticker, existing);
   });
@@ -128,21 +188,35 @@ const summarizeDetails = (details: SummaryDetail[]) => {
 const SummaryTable: React.FC<{
   title: string;
   rows: SummaryRow[];
+  showDailyPnl?: boolean;
+  defaultSort?: {
+    key: SummarySortKey;
+    direction: SummarySortDirection;
+  };
   expandable?: boolean;
   onEditReferenceData?: (detail: SummaryDetail) => void;
+  onViewPositionsByBook?: (book: string) => void;
 }> = ({
   title,
   rows,
+  showDailyPnl = false,
+  defaultSort = null,
   expandable = false,
   onEditReferenceData,
+  onViewPositionsByBook,
 }) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<{
     key: SummarySortKey;
     direction: SummarySortDirection;
-  } | null>(null);
+  } | null>(defaultSort);
   const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
   const totalPnl = rows.reduce((sum, row) => sum + Math.abs(row.pnl), 0);
+  const totalDailyPnl = rows.reduce(
+    (sum, row) => sum + Math.abs(row.dailyPnl),
+    0,
+  );
+  const detailColSpan = showDailyPnl ? 4 : 3;
   const sortedRows = useMemo(() => {
     if (!sort) {
       return rows;
@@ -213,20 +287,38 @@ const SummaryTable: React.FC<{
   };
 
   return (
-    <Paper withBorder p="md" radius="sm">
-      <Title order={4} mb="sm">
+    <Paper
+      withBorder
+      p={{ base: "xs", sm: "md" }}
+      radius="sm"
+      style={{ minWidth: 0 }}
+    >
+      <Title order={4} mb="sm" size="h5">
         {title}
       </Title>
-      <Table striped highlightOnHover withTableBorder>
+      <Table.ScrollContainer minWidth={showDailyPnl ? 560 : 420}>
+        <Table
+          striped
+          highlightOnHover
+          withTableBorder
+          fz="sm"
+          horizontalSpacing="xs"
+          verticalSpacing="xs"
+        >
         <Table.Thead>
           <Table.Tr>
             <Table.Th />
             <Table.Th style={{ textAlign: "right" }}>
-              <SortHeader label="Market Value" sortKey="marketValue" />
+              <SortHeader label="Value" sortKey="marketValue" />
             </Table.Th>
             <Table.Th style={{ textAlign: "right" }}>
               <SortHeader label="P&L" sortKey="pnl" />
             </Table.Th>
+            {showDailyPnl ? (
+              <Table.Th style={{ textAlign: "right" }}>
+                <SortHeader label="Day" sortKey="dailyPnl" />
+              </Table.Th>
+            ) : null}
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -234,6 +326,7 @@ const SummaryTable: React.FC<{
             const isExpanded = expandedRows.has(row.label);
             const details = summarizeDetails(row.details || []);
             const canExpand = expandable && details.length > 0;
+            const canViewPositionsByBook = Boolean(onViewPositionsByBook);
 
             return (
               <React.Fragment key={row.label}>
@@ -248,23 +341,40 @@ const SummaryTable: React.FC<{
                           <IconChevronRight
                             size={14}
                             style={{
+                              flexShrink: 0,
                               transform: isExpanded
                                 ? "rotate(90deg)"
                                 : "none",
                             }}
                           />
-                          <Text fw={500}>{row.displayLabel || row.label}</Text>
+                          <Text fw={500} size="sm">
+                            {row.displayLabel || row.label}
+                          </Text>
+                        </Group>
+                      </UnstyledButton>
+                    ) : canViewPositionsByBook ? (
+                      <UnstyledButton
+                        onClick={() => onViewPositionsByBook?.(row.label)}
+                        style={{ width: "100%" }}
+                      >
+                        <Group gap={4} wrap="nowrap">
+                          <Text fw={500} size="sm" c="blue">
+                            {row.displayLabel || row.label}
+                          </Text>
+                          <IconChevronRight size={14} style={{ flexShrink: 0 }} />
                         </Group>
                       </UnstyledButton>
                     ) : (
-                      <Text fw={500}>{row.displayLabel || row.label}</Text>
+                      <Text fw={500} size="sm">
+                        {row.displayLabel || row.label}
+                      </Text>
                     )}
                   </Table.Td>
                   <Table.Td style={{ textAlign: "right" }}>
-                    {formatMoney(row.marketValue, row.currency)}{" "}
-                    <Text c="dimmed" component="span" size="sm">
-                      ({formatPercentage(row.marketValue, totalMarketValue)})
-                    </Text>
+                    <AmountWithShare
+                      value={row.marketValue}
+                      total={totalMarketValue}
+                    />
                   </Table.Td>
                   <Table.Td
                     style={{
@@ -275,29 +385,55 @@ const SummaryTable: React.FC<{
                           : "var(--mantine-color-green-6)",
                     }}
                   >
-                    {formatMoney(row.pnl, row.currency)}{" "}
-                    <Text c="dimmed" component="span" size="sm">
-                      ({formatPercentage(Math.abs(row.pnl), totalPnl)})
-                    </Text>
+                    <AmountWithShare value={row.pnl} total={totalPnl} />
                   </Table.Td>
+                  {showDailyPnl ? (
+                    <Table.Td
+                      style={{
+                        textAlign: "right",
+                        color:
+                          row.dailyPnl < 0
+                            ? "var(--mantine-color-red-6)"
+                            : "var(--mantine-color-green-6)",
+                      }}
+                    >
+                      <AmountWithShare
+                        value={row.dailyPnl}
+                        total={totalDailyPnl}
+                      />
+                    </Table.Td>
+                  ) : null}
                 </Table.Tr>
                 {canExpand ? (
                   <Table.Tr>
-                    <Table.Td colSpan={3} p={0}>
+                    <Table.Td colSpan={detailColSpan} p={0}>
                       <Collapse in={isExpanded}>
                         <Box p="xs">
-                          <Table withColumnBorders>
+                          <Table.ScrollContainer
+                            minWidth={showDailyPnl ? 600 : 480}
+                          >
+                            <Table
+                              withColumnBorders
+                              fz="sm"
+                              horizontalSpacing="xs"
+                              verticalSpacing="xs"
+                            >
                             <Table.Thead>
                               <Table.Tr>
                                 <Table.Th>Ticker</Table.Th>
                                 <Table.Th>Name</Table.Th>
-                                <Table.Th style={{ width: 44 }} />
+                                <Table.Th style={{ width: 36 }} />
                                 <Table.Th style={{ textAlign: "right" }}>
-                                  Market Value
+                                  Value
                                 </Table.Th>
                                 <Table.Th style={{ textAlign: "right" }}>
                                   P&amp;L
                                 </Table.Th>
+                                {showDailyPnl ? (
+                                  <Table.Th style={{ textAlign: "right" }}>
+                                    Day
+                                  </Table.Th>
+                                ) : null}
                               </Table.Tr>
                             </Table.Thead>
                             <Table.Tbody>
@@ -321,24 +457,45 @@ const SummaryTable: React.FC<{
                                       </Tooltip>
                                     ) : null}
                                   </Table.Td>
-                                  <Table.Td style={{ textAlign: "right" }}>
-                                    {formatMoney(detail.marketValue, "SGD")}
+                                  <Table.Td
+                                    style={{
+                                      textAlign: "right",
+                                      ...numberStyle,
+                                    }}
+                                  >
+                                    {formatAmount(detail.marketValue)}
                                   </Table.Td>
                                   <Table.Td
                                     style={{
                                       textAlign: "right",
+                                      ...numberStyle,
                                       color:
                                         detail.pnl < 0
                                           ? "var(--mantine-color-red-6)"
                                           : "var(--mantine-color-green-6)",
                                     }}
                                   >
-                                    {formatMoney(detail.pnl, "SGD")}
+                                    {formatAmount(detail.pnl)}
                                   </Table.Td>
+                                  {showDailyPnl ? (
+                                    <Table.Td
+                                      style={{
+                                        textAlign: "right",
+                                        ...numberStyle,
+                                        color:
+                                          detail.dailyPnl < 0
+                                            ? "var(--mantine-color-red-6)"
+                                            : "var(--mantine-color-green-6)",
+                                      }}
+                                    >
+                                      {formatAmount(detail.dailyPnl)}
+                                    </Table.Td>
+                                  ) : null}
                                 </Table.Tr>
                               ))}
                             </Table.Tbody>
-                          </Table>
+                            </Table>
+                          </Table.ScrollContainer>
                         </Box>
                       </Collapse>
                     </Table.Td>
@@ -348,7 +505,8 @@ const SummaryTable: React.FC<{
             );
           })}
         </Table.Tbody>
-      </Table>
+        </Table>
+      </Table.ScrollContainer>
     </Paper>
   );
 };
@@ -376,6 +534,59 @@ const SummaryView: React.FC = () => {
     refetchOnWindowFocus: false,
   });
 
+  const uniqueTickers = useMemo(() => {
+    const tickers = new Set<string>();
+    positions.forEach((position) => {
+      if (position.Ticker && position.Qty !== 0) {
+        tickers.add(position.Ticker);
+      }
+    });
+    return Array.from(tickers);
+  }, [positions]);
+
+  const { data: cachedPricesData } = useQuery<CachedPricesResponse | null>({
+    queryKey: ["cachedDailyPrices", uniqueTickers],
+    queryFn: async () => {
+      if (uniqueTickers.length === 0) return null;
+      const resp = await fetch(getUrl("/api/v1/historical/prices/cached"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tickers: uniqueTickers }),
+      });
+      if (!resp.ok) {
+        return null;
+      }
+      return resp.json();
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    enabled: uniqueTickers.length > 0,
+  });
+
+  const hasCachedMetrics = Boolean(cachedPricesData?.metrics);
+
+  const cachedPriceMap = useMemo(() => {
+    const map = new Map<string, CachedPrice>();
+    if (!hasCachedMetrics || !cachedPricesData?.prices) {
+      return map;
+    }
+    cachedPricesData.prices.forEach((price) => {
+      map.set(price.ticker, price);
+    });
+    return map;
+  }, [cachedPricesData, hasCachedMetrics]);
+
+  const overallPnl = useMemo(
+    () =>
+      positions.reduce(
+        (sum, position) => sum + position.PnL * (position.FxRate || 1),
+        0,
+      ),
+    [positions],
+  );
+
   const { byBook, byCurrency, byCategory, byAssetSubClass } = useMemo(() => {
     const bookTotals = new Map<string, SummaryRow>();
     const currencyTotals = new Map<string, SummaryRow>();
@@ -387,6 +598,7 @@ const SummaryView: React.FC = () => {
       label: string,
       marketValue: number,
       pnl: number,
+      dailyPnl: number,
     ) => {
       const row =
         totals.get(label) ||
@@ -394,11 +606,13 @@ const SummaryView: React.FC = () => {
           label,
           marketValue: 0,
           pnl: 0,
+          dailyPnl: 0,
           currency: "SGD",
           details: [],
         } satisfies SummaryRow);
       row.marketValue += marketValue;
       row.pnl += pnl;
+      row.dailyPnl += dailyPnl;
       totals.set(label, row);
     };
 
@@ -408,6 +622,15 @@ const SummaryView: React.FC = () => {
       const currency = position.Ccy || "SGD";
       const marketValue = position.Mv * fxRate;
       const pnl = position.PnL * fxRate;
+      const previousPrice = cachedPriceMap.get(position.Ticker)?.price;
+      const dailyPnl =
+        hasCachedMetrics &&
+        previousPrice !== undefined &&
+        previousPrice > 0 &&
+        position.Px > 0 &&
+        position.Qty !== 0
+          ? (position.Px - previousPrice) * position.Qty * fxRate
+          : 0;
       const ref =
         refData?.[position.Ticker] ||
         Object.values(refData || {}).find(
@@ -429,14 +652,21 @@ const SummaryView: React.FC = () => {
         assetSubClass,
         marketValue,
         pnl,
+        dailyPnl,
         referenceData: ref,
       } satisfies SummaryDetail;
 
-      addSGDTotal(bookTotals, book, marketValue, pnl);
-      addSGDTotal(currencyTotals, currency, marketValue, pnl);
-      addSGDTotal(categoryTotals, category, marketValue, pnl);
+      addSGDTotal(bookTotals, book, marketValue, pnl, dailyPnl);
+      addSGDTotal(currencyTotals, currency, marketValue, pnl, dailyPnl);
+      addSGDTotal(categoryTotals, category, marketValue, pnl, dailyPnl);
       categoryTotals.get(category)?.details?.push(detail);
-      addSGDTotal(assetSubClassTotals, assetSubClass, marketValue, pnl);
+      addSGDTotal(
+        assetSubClassTotals,
+        assetSubClass,
+        marketValue,
+        pnl,
+        dailyPnl,
+      );
     });
 
     const sortedRows = (totals: Map<string, SummaryRow>) =>
@@ -450,7 +680,7 @@ const SummaryView: React.FC = () => {
       byCategory: sortedRows(categoryTotals),
       byAssetSubClass: sortedRows(assetSubClassTotals),
     };
-  }, [positions, refData]);
+  }, [positions, refData, cachedPriceMap, hasCachedMetrics]);
 
   const handleEditReferenceData = (detail: SummaryDetail) => {
     const ref = detail.referenceData;
@@ -476,6 +706,12 @@ const SummaryView: React.FC = () => {
         strike_price: ref?.strike_price || 0,
         call_put: ref?.call_put || "",
       },
+    });
+  };
+
+  const handleViewPositionsByBook = (book: string) => {
+    navigate("/positions", {
+      state: { book },
     });
   };
 
@@ -505,20 +741,48 @@ const SummaryView: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box style={{ minWidth: 0 }}>
       <Title order={2} mb="md">
         Summary
       </Title>
-      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-        <SummaryTable title="By Book" rows={byBook} />
-        <SummaryTable title="By Currency" rows={byCurrency} />
+      <Paper withBorder p="md" radius="sm" mb="md">
+        <Text c="dimmed" size="sm" fw={600}>
+          Overall P&amp;L
+        </Text>
+        <Text
+          fw={700}
+          size="xl"
+          c={overallPnl < 0 ? "red" : "green"}
+          style={{ lineHeight: 1.2, ...numberStyle }}
+        >
+          {formatMoney(overallPnl, "SGD")}
+        </Text>
+      </Paper>
+      <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md" style={{ minWidth: 0 }}>
+        <SummaryTable
+          title="By Book"
+          rows={byBook}
+          showDailyPnl={hasCachedMetrics}
+          onViewPositionsByBook={handleViewPositionsByBook}
+        />
+        <SummaryTable
+          title="By Currency"
+          rows={byCurrency}
+          showDailyPnl={hasCachedMetrics}
+        />
         <SummaryTable
           title="By Category"
           rows={byCategory}
+          showDailyPnl={hasCachedMetrics}
+          defaultSort={{ key: "marketValue", direction: "desc" }}
           expandable
           onEditReferenceData={handleEditReferenceData}
         />
-        <SummaryTable title="By Asset Subclass" rows={byAssetSubClass} />
+        <SummaryTable
+          title="By Asset Subclass"
+          rows={byAssetSubClass}
+          showDailyPnl={hasCachedMetrics}
+        />
       </SimpleGrid>
     </Box>
   );

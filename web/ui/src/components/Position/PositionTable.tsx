@@ -18,7 +18,7 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { getUrl } from "../../utils/url";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { IconHistory, IconCoins } from "@tabler/icons-react";
 
 import classes from "../../styles.module.css";
@@ -75,6 +75,19 @@ interface CachedPricesResponse {
   pricesPrev2?: CachedPrice[];
   missing?: string[];
 }
+
+interface PositionLocationState {
+  book?: unknown;
+}
+
+const getBookFromLocationState = (state: unknown) => {
+  if (!state || typeof state !== "object" || !("book" in state)) {
+    return null;
+  }
+
+  const book = (state as PositionLocationState).book;
+  return typeof book === "string" && book ? book : null;
+};
 
 const isTBillTicker = (ticker: string) =>
   ticker.length === 8 &&
@@ -187,14 +200,19 @@ const rowValueInSGD = (
 
 const PositionTable: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const bookFromLocationState = getBookFromLocationState(location.state);
   const refData = useSelector((state: RootState) => state.referenceData.data);
   const [filteredPositions, setFilteredPositions] = useState<PositionRow[]>([]);
   const [columnFilters, setColumnFilters] = useState<
     Array<{ id: string; value: unknown }>
-  >([]);
+  >(() =>
+    bookFromLocationState ? [{ id: "Book", value: bookFromLocationState }] : [],
+  );
   const [globalFilter, setGlobalFilter] = useState("");
   const [priceLag, setPriceLag] = useState<"t-1" | "t-2">("t-1");
   const defaultTitleRef = useRef(document.title);
+  const appliedBookFilterRef = useRef<string | null>(bookFromLocationState);
 
   const {
     data: rawPositions = [],
@@ -275,6 +293,21 @@ const PositionTable: React.FC = () => {
     priceLag === "t-2" ? cachedPriceMapT2 : cachedPriceMapT1;
 
   const hasPrev2Prices = Boolean(cachedPricesData?.pricesPrev2?.length);
+
+  useEffect(() => {
+    if (
+      !bookFromLocationState ||
+      appliedBookFilterRef.current === bookFromLocationState
+    ) {
+      return;
+    }
+
+    appliedBookFilterRef.current = bookFromLocationState;
+    setColumnFilters((current) => [
+      ...current.filter((filter) => filter.id !== "Book"),
+      { id: "Book", value: bookFromLocationState },
+    ]);
+  }, [bookFromLocationState]);
 
   const groupedTargetTicker = (position: PositionRow) =>
     position.UnderlyingGroup || position.UnderlyingTicker || position.Ticker;

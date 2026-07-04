@@ -69,7 +69,7 @@ function App() {
               breakpoint: "sm",
               collapsed: { mobile: !opened, desktop: false },
             }}
-            padding="lg"
+            padding={isMobile ? "sm" : "lg"}
           >
             <AppShellHeader>
               <Group h="100%" px="md">

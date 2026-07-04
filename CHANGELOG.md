@@ -1,3 +1,9 @@
+## [1.57.0] - 2026-07-04
+
+### 🚀 Features
+
+- *(ui)* Add quick links and improvements to summary view #196
+
 ## [1.56.1] - 2026-06-29
 
 ### 🐛 Bug Fixes

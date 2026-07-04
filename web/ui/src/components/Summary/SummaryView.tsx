@@ -594,6 +594,34 @@ const SummaryView: React.FC = () => {
       ),
     [positions],
   );
+  const overallDailyChange = useMemo(() => {
+    if (!hasCachedMetrics) {
+      return { dailyPnl: 0, prevValue: 0 };
+    }
+
+    return positions.reduce(
+      (acc, position) => {
+        const fxRate = position.FxRate || 1;
+        const previousPrice = cachedPriceMap.get(position.Ticker)?.price;
+
+        if (
+          previousPrice !== undefined &&
+          previousPrice > 0 &&
+          position.Px > 0 &&
+          position.Qty !== 0
+        ) {
+          acc.dailyPnl += (position.Px - previousPrice) * position.Qty * fxRate;
+          acc.prevValue += previousPrice * position.Qty * fxRate;
+        }
+
+        return acc;
+      },
+      { dailyPnl: 0, prevValue: 0 },
+    );
+  }, [positions, cachedPriceMap, hasCachedMetrics]);
+  const overallDailyChangePct = overallDailyChange.prevValue
+    ? (overallDailyChange.dailyPnl / overallDailyChange.prevValue) * 100
+    : 0;
 
   const { byBook, byCurrency, byCategory, byAssetSubClass } = useMemo(() => {
     const bookTotals = new Map<string, SummaryRow>();
@@ -754,7 +782,10 @@ const SummaryView: React.FC = () => {
         Summary
       </Title>
       <Paper withBorder p="md" radius="sm" mb="md">
-        <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="md">
+        <SimpleGrid
+          cols={{ base: 1, xs: 2, md: hasCachedMetrics ? 3 : 2 }}
+          spacing="md"
+        >
           <Box>
             <Text c="dimmed" size="sm" fw={600}>
               Market Value
@@ -776,6 +807,24 @@ const SummaryView: React.FC = () => {
               {formatMoney(overallPnl, "SGD")}
             </Text>
           </Box>
+          {hasCachedMetrics ? (
+            <Box>
+              <Text c="dimmed" size="sm" fw={600}>
+                Day Change
+              </Text>
+              <Text
+                fw={700}
+                size="xl"
+                c={overallDailyChange.dailyPnl < 0 ? "red" : "green"}
+                style={{ lineHeight: 1.2, ...numberStyle }}
+              >
+                {formatMoney(overallDailyChange.dailyPnl, "SGD")}{" "}
+                <Text c="dimmed" component="span" size="md" fw={600}>
+                  ({overallDailyChangePct.toFixed(2)}%)
+                </Text>
+              </Text>
+            </Box>
+          ) : null}
         </SimpleGrid>
       </Paper>
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md" style={{ minWidth: 0 }}>

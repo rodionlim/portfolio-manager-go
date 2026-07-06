@@ -1,3 +1,9 @@
+## [1.59.0] - 2026-07-06
+
+### 🚀 Features
+
+- *(screener)* Add two more tradingview endpoints on unusual volume and most active premarket, simplify installation #199 #200
+
 ## [1.58.0] - 2026-07-04
 
 ### 🚀 Features

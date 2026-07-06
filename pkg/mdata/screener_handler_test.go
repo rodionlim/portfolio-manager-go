@@ -49,6 +49,43 @@ func TestUSAIndustryStocksOverviewHandler(t *testing.T) {
 	require.Equal(t, "semiconductors", manager.requestedIndustry)
 }
 
+func TestUSAStockUnusualVolumeOverviewHandler(t *testing.T) {
+	relativeVolume := 916.75
+	manager := &mcpTestScreener{unusualVolume: []types.USAStockUnusualVolumeOverview{
+		{Ticker: "LUCY", RelativeVolume: &relativeVolume},
+	}}
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/mdata/screener/usa/market-movers/unusual-volume/overview", nil)
+
+	HandleUSAStockUnusualVolumeOverviewGet(manager).ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var response types.USAStockUnusualVolumeOverviewResponse
+	require.NoError(t, json.NewDecoder(recorder.Body).Decode(&response))
+	require.Equal(t, "unusual-volume", response.Screen)
+	require.Equal(t, "percent", response.PercentageValues.Unit)
+	require.Contains(t, response.MonetaryValues.CurrencyFields, "market_cap")
+	require.Equal(t, "LUCY", response.Stocks[0].Ticker)
+}
+
+func TestUSAStockPreMarketMostActiveOverviewHandler(t *testing.T) {
+	preMarketVolume := 303349565.0
+	manager := &mcpTestScreener{preMarketMostActive: []types.USAStockPreMarketMostActiveOverview{
+		{Ticker: "YHC", PreMarketVolume: &preMarketVolume},
+	}}
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/mdata/screener/usa/market-movers/pre-market-most-active/overview", nil)
+
+	HandleUSAStockPreMarketMostActiveOverviewGet(manager).ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var response types.USAStockPreMarketMostActiveOverviewResponse
+	require.NoError(t, json.NewDecoder(recorder.Body).Decode(&response))
+	require.Equal(t, "pre-market-most-active", response.Screen)
+	require.Contains(t, response.PercentageValues.Fields, "pre_market_gap")
+	require.Equal(t, "YHC", response.Stocks[0].Ticker)
+}
+
 func TestETFFundFlowOverviewHandler(t *testing.T) {
 	flows := 390148137674.63
 	fetch := func() ([]types.ETFFundFlowOverview, error) {

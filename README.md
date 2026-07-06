@@ -4,6 +4,8 @@
 
 An application to value equities, fx, commodities, cash, bonds (corps / gov), and cryptocurrencies in your personal portfolio and use LLMs to generate trading insights.
 
+> **Full Documentation:** https://rodionlim.github.io/portfolio-manager-go/
+
 ## Table of Contents
 
 - [Features](#features)
@@ -44,14 +46,44 @@ An application to value equities, fx, commodities, cash, bonds (corps / gov), an
 - Cloud and Local backup and restore (Google Drive)
 - MCP (Model Context Protocol) server for LLM integration
 
-Full Documentation: https://rodionlim.github.io/portfolio-manager-go/
-
 ## Installation
+
+The easiest way to install Portfolio Manager is to download the latest release with the setup script. This does not require Go, Node.js, or cloning the repository.
+
+### macOS and Linux
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash
+cd ~/portfolio-manager
+./portfolio-manager
+```
+
+To install and start the app in one command:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash -s -- --run
+```
+
+### Windows
+
+Run this in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.ps1 | iex
+cd "$env:USERPROFILE\portfolio-manager"
+.\portfolio-manager.exe
+```
+
+After startup, the backend is available at `http://localhost:8080` and the MCP server is available at `http://localhost:8081/mcp`.
+
+### Build from Source
+
+Use this path if you want to develop Portfolio Manager locally or build from the repository.
 
 1. Install Go version <b>1.26.2</b> or higher.
 2. Clone the repository to your local machine.
-3. Run `make` to build and install the application
-4. Run the `portfolio-manager` binary to start the application. Pass in config flag `-config custom-config.yaml`
+3. Run `make` to build and install the application.
+4. Run the `portfolio-manager` binary to start the application. Pass in config flag `-config custom-config.yaml` if you want to use a custom config file.
 
 ### Environment Variables
 
@@ -504,7 +536,14 @@ Fetch daily, weekly, monthly, YTD, multi-year, and volatility performance for th
 
 - **industry**: TradingView industry name or URL slug, such as `Semiconductors` or `semiconductors` **[Required]**
 
-#### 9–14. Fetch ETF Fund-Flow Screens
+#### 9–10. Fetch Stock Market-Mover Screens
+
+Fetch TradingView USA stock market-mover overview screens. These tools take no arguments and return stocks, not ETFs:
+
+- `fetch_stock_unusual_volume_overview`
+- `fetch_stock_premarket_most_active_overview`
+
+#### 11–16. Fetch ETF Fund-Flow Screens
 
 Fetch the Overview, Performance, and Fund Flows tabs for the top 100 global ETFs ranked by largest inflows or outflows. These tools take no arguments:
 
@@ -515,7 +554,7 @@ Fetch the Overview, Performance, and Fund Flows tabs for the top 100 global ETFs
 - `fetch_etf_largest_outflows_performance`
 - `fetch_etf_largest_outflows_fund_flows`
 
-#### 15–17. Fetch Sector ETF Screens
+#### 17–19. Fetch Sector ETF Screens
 
 Fetch the Overview, Performance, and Fund Flows tabs for the top 100 global sector ETFs. These tools take no arguments:
 
@@ -523,7 +562,7 @@ Fetch the Overview, Performance, and Fund Flows tabs for the top 100 global sect
 - `fetch_sector_etf_performance`
 - `fetch_sector_etf_fund_flows`
 
-#### 18. Screen Daily Market Rotation (`screen_daily_market_rotation`)
+#### 20. Screen Daily Market Rotation (`screen_daily_market_rotation`)
 
 Build a deterministic US market-rotation payload from the TradingView Sector ETFs Overview, Performance, and Fund Flows tabs plus USA stock-industry and stock-performance data. The tool computes sector-level 1M flows, acceleration, breadth, broad/subsector divergence, industry mappings, setup classifications, and zero to five stock candidates before returning data to the LLM.
 
@@ -537,6 +576,7 @@ The LLM should narrate the returned ranking without recalculating it and must de
 The MCP server treats these as distinct datasets:
 
 - **Stock industries** group operating companies and provide Overview and Performance data. They do not provide fund flows.
+- **Stock market movers** are TradingView USA stock screens such as unusual volume and pre-market most active. They provide stock overview metrics only and do not provide fund flows.
 - **Sector ETFs** are traded funds and provide Overview, Performance, and Fund Flows data.
 - Requests mentioning sector fund flows, capital flows, inflows, or outflows are routed to `fetch_sector_etf_fund_flows` unless the user explicitly rejects ETFs.
 - If a request could reasonably mean either dataset and contains no fund-flow signal, the MCP client should ask whether the user means stock-market industries or sector ETFs.
@@ -1003,6 +1043,13 @@ Drill down into the overview and performance tabs for individual stocks in an in
 ```sh
 curl -X GET http://localhost:8080/api/v1/mdata/screener/usa/industries/semiconductors/stocks/overview
 curl -X GET http://localhost:8080/api/v1/mdata/screener/usa/industries/semiconductors/stocks/performance
+```
+
+Fetch TradingView USA stock market-mover overview screens:
+
+```sh
+curl -X GET http://localhost:8080/api/v1/mdata/screener/usa/market-movers/unusual-volume/overview
+curl -X GET http://localhost:8080/api/v1/mdata/screener/usa/market-movers/pre-market-most-active/overview
 ```
 
 Fetch the TradingView Overview, Performance, and Fund Flows tabs for the top 100 global ETFs ranked by inflows:

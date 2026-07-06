@@ -5,7 +5,55 @@ description: Install and build Portfolio Manager locally.
 
 # Installation
 
-## Requirements
+## Easiest Install
+
+For most users, install a prebuilt binary from the [latest GitHub release](https://github.com/rodionlim/portfolio-manager-go/releases/latest). You do not need Go, Node.js, or a local checkout for this path.
+
+The app uses an embedded default configuration when `config.yaml` is not present. It creates local files such as `portfolio-manager.db` and `portfolio-manager.log` in the folder where you run it, so put the binary in a dedicated folder.
+
+### Windows
+
+Open PowerShell and run:
+
+```powershell
+irm https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.ps1 | iex
+```
+
+Then start it:
+
+```powershell
+cd "$env:USERPROFILE\portfolio-manager"
+.\portfolio-manager.exe
+```
+
+The backend starts on `http://localhost:8080`. The MCP server starts on `http://localhost:8081/mcp` when enabled by the embedded config.
+
+### macOS and Linux
+
+Current releases provide macOS Apple Silicon and Linux AMD64 binaries. Open Terminal and run:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash
+```
+
+Then start it:
+
+```sh
+cd ~/portfolio-manager
+./portfolio-manager
+```
+
+The backend starts on `http://localhost:8080`. The MCP server starts on `http://localhost:8081/mcp` when enabled by the embedded config.
+
+To install and start immediately on macOS or Linux, run:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash -s -- --run
+```
+
+If you need to customize ports, database location, schedules, or API keys, create a `config.yaml` beside the binary and start with `./portfolio-manager -config config.yaml`.
+
+## Developer Requirements
 
 - Go `1.26.2` or higher.
 - Node.js and npm when working on the web UI or this Astro documentation site.

@@ -42,6 +42,22 @@ func (m *MockMarketDataScreener) FetchUSAIndustryStocksPerformance(industry stri
 	return args.Get(0).([]types.USAIndustryStockPerformance), args.Error(1)
 }
 
+func (m *MockMarketDataScreener) FetchUSAStockUnusualVolumeOverview() ([]types.USAStockUnusualVolumeOverview, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]types.USAStockUnusualVolumeOverview), args.Error(1)
+}
+
+func (m *MockMarketDataScreener) FetchUSAStockPreMarketMostActiveOverview() ([]types.USAStockPreMarketMostActiveOverview, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]types.USAStockPreMarketMostActiveOverview), args.Error(1)
+}
+
 func (m *MockMarketDataScreener) FetchETFLargestInflowsOverview() ([]types.ETFFundFlowOverview, error) {
 	return mockETFFundFlowOverview(m.Called())
 }

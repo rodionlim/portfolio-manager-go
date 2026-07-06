@@ -98,6 +98,47 @@ type USAIndustryStockPerformance struct {
 	VolatilityOneMonth *float64 `json:"volatility_one_month"`
 }
 
+type USAStockUnusualVolumeOverview struct {
+	ID                     string   `json:"id"`
+	Ticker                 string   `json:"ticker"`
+	Company                string   `json:"company"`
+	Exchange               string   `json:"exchange"`
+	RelativeVolume         *float64 `json:"relative_volume"`
+	Currency               string   `json:"currency"`
+	Price                  *float64 `json:"price"`
+	Change                 *float64 `json:"change"`
+	Volume                 *float64 `json:"volume"`
+	MarketCap              *float64 `json:"market_cap"`
+	MarketCapCurrency      string   `json:"market_cap_currency"`
+	PriceToEarnings        *float64 `json:"price_to_earnings"`
+	EPSDilutedTTM          *float64 `json:"eps_diluted_ttm"`
+	EPSDilutedCurrency     string   `json:"eps_diluted_currency"`
+	EPSDilutedGrowthYoYTTM *float64 `json:"eps_diluted_growth_yoy_ttm"`
+	DividendYieldTTM       *float64 `json:"dividend_yield_ttm"`
+	Sector                 string   `json:"sector"`
+	AnalystRating          string   `json:"analyst_rating"`
+}
+
+type USAStockPreMarketMostActiveOverview struct {
+	ID                   string   `json:"id"`
+	Ticker               string   `json:"ticker"`
+	Company              string   `json:"company"`
+	Exchange             string   `json:"exchange"`
+	PreMarketVolume      *float64 `json:"pre_market_volume"`
+	PreMarketClose       *float64 `json:"pre_market_close"`
+	PreMarketCurrency    string   `json:"pre_market_currency"`
+	PreMarketChangeAbs   *float64 `json:"pre_market_change_abs"`
+	PreMarketChange      *float64 `json:"pre_market_change"`
+	PreMarketGap         *float64 `json:"pre_market_gap"`
+	Currency             string   `json:"currency"`
+	Price                *float64 `json:"price"`
+	Change               *float64 `json:"change"`
+	Volume               *float64 `json:"volume"`
+	MarketCap            *float64 `json:"market_cap"`
+	MarketCapCurrency    string   `json:"market_cap_currency"`
+	MarketCapPerformance *float64 `json:"market_cap_performance"`
+}
+
 type ETFFundFlowOverview struct {
 	ID                    string   `json:"id"`
 	Ticker                string   `json:"ticker"`
@@ -204,6 +245,20 @@ type USAIndustryStocksPerformanceResponse struct {
 	Stocks           []USAIndustryStockPerformance `json:"stocks"`
 }
 
+type USAStockUnusualVolumeOverviewResponse struct {
+	Screen           string                          `json:"screen"`
+	PercentageValues PercentageMetadata              `json:"percentage_values"`
+	MonetaryValues   MonetaryMetadata                `json:"monetary_values"`
+	Stocks           []USAStockUnusualVolumeOverview `json:"stocks"`
+}
+
+type USAStockPreMarketMostActiveOverviewResponse struct {
+	Screen           string                                `json:"screen"`
+	PercentageValues PercentageMetadata                    `json:"percentage_values"`
+	MonetaryValues   MonetaryMetadata                      `json:"monetary_values"`
+	Stocks           []USAStockPreMarketMostActiveOverview `json:"stocks"`
+}
+
 type ETFFundFlowOverviewResponse struct {
 	Screen           string                `json:"screen"`
 	PercentageValues PercentageMetadata    `json:"percentage_values"`
@@ -236,6 +291,8 @@ type ScreenerSource interface {
 	FetchUSAIndustryOverview() ([]USAIndustryOverview, error)
 	FetchUSAIndustryStocksOverview(industry string) ([]USAIndustryStockOverview, error)
 	FetchUSAIndustryStocksPerformance(industry string) ([]USAIndustryStockPerformance, error)
+	FetchUSAStockUnusualVolumeOverview() ([]USAStockUnusualVolumeOverview, error)
+	FetchUSAStockPreMarketMostActiveOverview() ([]USAStockPreMarketMostActiveOverview, error)
 	FetchETFLargestInflowsOverview() ([]ETFFundFlowOverview, error)
 	FetchETFLargestInflowsPerformance() ([]ETFFundFlowPerformance, error)
 	FetchETFLargestInflowsFundFlows() ([]ETFFundFlows, error)

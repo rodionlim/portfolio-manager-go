@@ -403,6 +403,30 @@ func HandleUSAIndustryStocksPerformanceGet(mdataSvc MarketDataScreener) http.Han
 	}
 }
 
+func HandleUSAStockUnusualVolumeOverviewGet(mdataSvc MarketDataScreener) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		data, err := mdataSvc.FetchUSAStockUnusualVolumeOverview()
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(newUSAStockUnusualVolumeOverviewResponse(data))
+	}
+}
+
+func HandleUSAStockPreMarketMostActiveOverviewGet(mdataSvc MarketDataScreener) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		data, err := mdataSvc.FetchUSAStockPreMarketMostActiveOverview()
+		if err != nil {
+			common.WriteJSONError(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(newUSAStockPreMarketMostActiveOverviewResponse(data))
+	}
+}
+
 func handleETFFundFlowOverviewGet(screen string, fetch func() ([]types.ETFFundFlowOverview, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		data, err := fetch()
@@ -457,6 +481,8 @@ func RegisterScreenerHandlers(mux *http.ServeMux, screenerSvc MarketDataScreener
 	mux.HandleFunc("GET /api/v1/mdata/screener/usa/industries/performance", HandleUSAIndustryPerformanceGet(screenerSvc))
 	mux.HandleFunc("GET /api/v1/mdata/screener/usa/industries/{industry}/stocks/overview", HandleUSAIndustryStocksOverviewGet(screenerSvc))
 	mux.HandleFunc("GET /api/v1/mdata/screener/usa/industries/{industry}/stocks/performance", HandleUSAIndustryStocksPerformanceGet(screenerSvc))
+	mux.HandleFunc("GET /api/v1/mdata/screener/usa/market-movers/unusual-volume/overview", HandleUSAStockUnusualVolumeOverviewGet(screenerSvc))
+	mux.HandleFunc("GET /api/v1/mdata/screener/usa/market-movers/pre-market-most-active/overview", HandleUSAStockPreMarketMostActiveOverviewGet(screenerSvc))
 	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/largest-inflows/overview", handleETFFundFlowOverviewGet("largest-inflows", screenerSvc.FetchETFLargestInflowsOverview))
 	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/largest-inflows/performance", handleETFFundFlowPerformanceGet("largest-inflows", screenerSvc.FetchETFLargestInflowsPerformance))
 	mux.HandleFunc("GET /api/v1/mdata/screener/etfs/largest-inflows/fund-flows", handleETFFundFlowsGet("largest-inflows", screenerSvc.FetchETFLargestInflowsFundFlows))

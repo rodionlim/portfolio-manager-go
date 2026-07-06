@@ -35,6 +35,8 @@ type MarketDataScreener interface {
 	FetchUSAIndustryOverview() ([]types.USAIndustryOverview, error)
 	FetchUSAIndustryStocksOverview(industry string) ([]types.USAIndustryStockOverview, error)
 	FetchUSAIndustryStocksPerformance(industry string) ([]types.USAIndustryStockPerformance, error)
+	FetchUSAStockUnusualVolumeOverview() ([]types.USAStockUnusualVolumeOverview, error)
+	FetchUSAStockPreMarketMostActiveOverview() ([]types.USAStockPreMarketMostActiveOverview, error)
 	FetchETFLargestInflowsOverview() ([]types.ETFFundFlowOverview, error)
 	FetchETFLargestInflowsPerformance() ([]types.ETFFundFlowPerformance, error)
 	FetchETFLargestInflowsFundFlows() ([]types.ETFFundFlows, error)
@@ -117,6 +119,49 @@ func newUSAIndustryStocksPerformanceResponse(industry string, stocks []types.USA
 				"volatility_one_week", "volatility_one_month",
 			},
 			Note: "Values are percentages: 5.26 means 5.26%, not 526%.",
+		},
+		Stocks: stocks,
+	}
+}
+
+func newUSAStockUnusualVolumeOverviewResponse(stocks []types.USAStockUnusualVolumeOverview) types.USAStockUnusualVolumeOverviewResponse {
+	return types.USAStockUnusualVolumeOverviewResponse{
+		Screen: "unusual-volume",
+		PercentageValues: types.PercentageMetadata{
+			Unit:   "percent",
+			Fields: []string{"change", "eps_diluted_growth_yoy_ttm", "dividend_yield_ttm"},
+			Note:   "Values are percentages: 5.26 means 5.26%, not 526%.",
+		},
+		MonetaryValues: types.MonetaryMetadata{
+			CurrencyFields: map[string]string{
+				"price":           "currency",
+				"market_cap":      "market_cap_currency",
+				"eps_diluted_ttm": "eps_diluted_currency",
+			},
+			Fields: []string{"price", "market_cap", "eps_diluted_ttm"},
+			Note:   "Monetary values use the corresponding currency field on each stock row.",
+		},
+		Stocks: stocks,
+	}
+}
+
+func newUSAStockPreMarketMostActiveOverviewResponse(stocks []types.USAStockPreMarketMostActiveOverview) types.USAStockPreMarketMostActiveOverviewResponse {
+	return types.USAStockPreMarketMostActiveOverviewResponse{
+		Screen: "pre-market-most-active",
+		PercentageValues: types.PercentageMetadata{
+			Unit:   "percent",
+			Fields: []string{"pre_market_change", "pre_market_gap", "change", "market_cap_performance"},
+			Note:   "Values are percentages: 5.26 means 5.26%, not 526%.",
+		},
+		MonetaryValues: types.MonetaryMetadata{
+			CurrencyFields: map[string]string{
+				"pre_market_close":      "pre_market_currency",
+				"pre_market_change_abs": "pre_market_currency",
+				"price":                 "currency",
+				"market_cap":            "market_cap_currency",
+			},
+			Fields: []string{"pre_market_close", "pre_market_change_abs", "price", "market_cap"},
+			Note:   "Monetary values use the corresponding currency field on each stock row.",
 		},
 		Stocks: stocks,
 	}
@@ -274,6 +319,22 @@ func (m *Manager) FetchUSAIndustryStocksPerformance(industry string) ([]types.US
 		return nil, errors.New("TradingView screener source is not configured")
 	}
 	return source.FetchUSAIndustryStocksPerformance(industry)
+}
+
+func (m *Manager) FetchUSAStockUnusualVolumeOverview() ([]types.USAStockUnusualVolumeOverview, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchUSAStockUnusualVolumeOverview()
+}
+
+func (m *Manager) FetchUSAStockPreMarketMostActiveOverview() ([]types.USAStockPreMarketMostActiveOverview, error) {
+	source, err := m.tradingViewScreener()
+	if err != nil {
+		return nil, err
+	}
+	return source.FetchUSAStockPreMarketMostActiveOverview()
 }
 
 func (m *Manager) FetchETFLargestInflowsOverview() ([]types.ETFFundFlowOverview, error) {

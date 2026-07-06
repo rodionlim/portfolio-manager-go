@@ -23,6 +23,8 @@ func TestScreenerMCPToolNamesDisambiguateStockIndustriesAndSectorETFs(t *testing
 		toolFetchStockIndustryPerformance,
 		toolFetchStockIndustryStocksOverview,
 		toolFetchStockIndustryStocksPerformance,
+		toolFetchStockUnusualVolumeOverview,
+		toolFetchStockPreMarketActiveOverview,
 		toolFetchSectorETFOverview,
 		toolFetchSectorETFPerformance,
 		toolFetchSectorETFFundFlows,
@@ -38,6 +40,9 @@ func TestScreenerMCPToolNamesDisambiguateStockIndustriesAndSectorETFs(t *testing
 		require.NotContains(t, tools, oldName)
 	}
 	require.Contains(t, tools[toolFetchStockIndustryPerformance].Tool.Description, "no fund-flow fields")
+	require.Contains(t, tools[toolFetchStockUnusualVolumeOverview].Tool.Description, "does not provide fund flows")
+	require.NotNil(t, tools[toolFetchStockPreMarketActiveOverview].Tool.Annotations.ReadOnlyHint)
+	require.True(t, *tools[toolFetchStockPreMarketActiveOverview].Tool.Annotations.ReadOnlyHint)
 	require.Contains(t, tools[toolFetchSectorETFFundFlows].Tool.Description, "stock industries do not provide fund flows")
 }
 
@@ -116,6 +121,43 @@ func TestFetchUSAIndustryStocksPerformanceMCPHandler(t *testing.T) {
 	require.Equal(t, "NVDA", response.Stocks[0].Ticker)
 }
 
+func TestFetchUSAStockUnusualVolumeOverviewMCPHandler(t *testing.T) {
+	relativeVolume := 916.75
+	manager := &mcpTestScreener{unusualVolume: []types.USAStockUnusualVolumeOverview{
+		{Ticker: "LUCY", RelativeVolume: &relativeVolume},
+	}}
+
+	result, err := createHandleFetchUSAStockUnusualVolumeOverview(manager)(context.Background(), mcp.CallToolRequest{})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+	content, ok := result.Content[0].(mcp.TextContent)
+	require.True(t, ok)
+	var response types.USAStockUnusualVolumeOverviewResponse
+	require.NoError(t, json.Unmarshal([]byte(content.Text), &response))
+	require.Equal(t, "unusual-volume", response.Screen)
+	require.Equal(t, "percent", response.PercentageValues.Unit)
+	require.Equal(t, "LUCY", response.Stocks[0].Ticker)
+	require.Equal(t, 916.75, *response.Stocks[0].RelativeVolume)
+}
+
+func TestFetchUSAStockPreMarketMostActiveOverviewMCPHandler(t *testing.T) {
+	volume := 303349565.0
+	manager := &mcpTestScreener{preMarketMostActive: []types.USAStockPreMarketMostActiveOverview{
+		{Ticker: "YHC", PreMarketVolume: &volume},
+	}}
+
+	result, err := createHandleFetchUSAStockPreMarketMostActiveOverview(manager)(context.Background(), mcp.CallToolRequest{})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+	content, ok := result.Content[0].(mcp.TextContent)
+	require.True(t, ok)
+	var response types.USAStockPreMarketMostActiveOverviewResponse
+	require.NoError(t, json.Unmarshal([]byte(content.Text), &response))
+	require.Equal(t, "pre-market-most-active", response.Screen)
+	require.Contains(t, response.PercentageValues.Fields, "pre_market_change")
+	require.Equal(t, "YHC", response.Stocks[0].Ticker)
+}
+
 func TestFetchETFFundFlowsMCPHandler(t *testing.T) {
 	oneMonth := -125000000.0
 	fetch := func() ([]types.ETFFundFlows, error) {
@@ -144,6 +186,10 @@ type mcpTestScreener struct {
 	stocksOverviewErr    error
 	stocksPerformance    []types.USAIndustryStockPerformance
 	stocksPerformanceErr error
+	unusualVolume        []types.USAStockUnusualVolumeOverview
+	unusualVolumeErr     error
+	preMarketMostActive  []types.USAStockPreMarketMostActiveOverview
+	preMarketErr         error
 	requestedIndustry    string
 }
 
@@ -163,4 +209,12 @@ func (m *mcpTestScreener) FetchUSAIndustryStocksOverview(industry string) ([]typ
 func (m *mcpTestScreener) FetchUSAIndustryStocksPerformance(industry string) ([]types.USAIndustryStockPerformance, error) {
 	m.requestedIndustry = industry
 	return m.stocksPerformance, m.stocksPerformanceErr
+}
+
+func (m *mcpTestScreener) FetchUSAStockUnusualVolumeOverview() ([]types.USAStockUnusualVolumeOverview, error) {
+	return m.unusualVolume, m.unusualVolumeErr
+}
+
+func (m *mcpTestScreener) FetchUSAStockPreMarketMostActiveOverview() ([]types.USAStockPreMarketMostActiveOverview, error) {
+	return m.preMarketMostActive, m.preMarketErr
 }

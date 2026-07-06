@@ -20,6 +20,14 @@ func (m *MockMarketDataScreener) FetchUSAIndustryStocksPerformance(string) ([]ty
 	return nil, nil
 }
 
+func (m *MockMarketDataScreener) FetchUSAStockUnusualVolumeOverview() ([]types.USAStockUnusualVolumeOverview, error) {
+	return nil, nil
+}
+
+func (m *MockMarketDataScreener) FetchUSAStockPreMarketMostActiveOverview() ([]types.USAStockPreMarketMostActiveOverview, error) {
+	return nil, nil
+}
+
 func (m *MockMarketDataScreener) FetchETFLargestInflowsOverview() ([]types.ETFFundFlowOverview, error) {
 	return nil, nil
 }

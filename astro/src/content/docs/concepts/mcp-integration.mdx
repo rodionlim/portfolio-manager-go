@@ -32,3 +32,70 @@ Existing module examples include:
 MCP tools should return compact, structured JSON and expose filters, IDs, and limits rather than whole datasets by default. This keeps LLM interactions predictable and avoids forcing clients to parse prose.
 
 For LLM-facing operations, prefer MCP tools over shelling out to the CLI. The CLI remains useful for humans and automation scripts, but MCP is better suited for schema-described, confirmation-gated LLM workflows.
+
+## Tool Inventory
+
+The MCP server exposes portfolio, blotter, reference-data, and market-data tools. Tool names are intentionally explicit so LLM clients can distinguish stock-market industries, individual stock screens, ETF screens, and write operations.
+
+### Market Data
+
+The market-data module exposes benchmark rates plus TradingView stock and ETF screener data through `pkg/mdata/mcp.go`. Stock-market industry tools are separate from ETF tools: stock screens do not provide fund flows, while sector ETF screens do.
+
+Benchmark rates:
+
+- `fetch_benchmark_interest_rates`: Fetch benchmark interest rates for a country, with an optional point count.
+
+TradingView USA stock industries:
+
+- `fetch_stock_industry_overview`: Fetch overview metrics for USA stock-market industries.
+- `fetch_stock_industry_performance`: Fetch performance metrics for USA stock-market industries.
+- `fetch_stock_industry_stocks_overview`: Fetch overview metrics for stocks inside one USA industry.
+- `fetch_stock_industry_stocks_performance`: Fetch performance metrics for stocks inside one USA industry.
+
+TradingView USA stock market movers:
+
+- `fetch_stock_unusual_volume_overview`: Fetch the USA unusual-volume stock screen, sorted by relative volume.
+- `fetch_stock_premarket_most_active_overview`: Fetch the USA pre-market most-active stock screen, sorted by pre-market volume.
+
+TradingView ETF fund-flow screens:
+
+- `fetch_etf_largest_inflows_overview`: Fetch overview metrics for the top 100 global ETFs ranked by largest inflows.
+- `fetch_etf_largest_inflows_performance`: Fetch performance metrics for the top 100 global ETFs ranked by largest inflows.
+- `fetch_etf_largest_inflows_fund_flows`: Fetch 1M, 3M, 1Y, 3Y, and YTD fund flows for the top 100 global ETFs ranked by largest inflows.
+- `fetch_etf_largest_outflows_overview`: Fetch overview metrics for the top 100 global ETFs ranked by largest outflows.
+- `fetch_etf_largest_outflows_performance`: Fetch performance metrics for the top 100 global ETFs ranked by largest outflows.
+- `fetch_etf_largest_outflows_fund_flows`: Fetch 1M, 3M, 1Y, 3Y, and YTD fund flows for the top 100 global ETFs ranked by largest outflows.
+
+TradingView sector ETF screens:
+
+- `fetch_sector_etf_overview`: Fetch overview metrics for the top 100 global sector ETFs.
+- `fetch_sector_etf_performance`: Fetch performance metrics for the top 100 global sector ETFs.
+- `fetch_sector_etf_fund_flows`: Fetch 1M, 3M, 1Y, 3Y, and YTD monetary fund flows for global sector ETFs.
+
+Deterministic strategy screen:
+
+- `screen_daily_market_rotation`: Build the daily US market-rotation payload from sector ETF fund flows, sector/industry performance, and stock performance. The tool precomputes joins, rankings, exclusions, and history transitions.
+
+Example query for an LLM client:
+
+> Search for unusual-volume stocks with larger market caps, positive EPS growth, and relative volume above 2 times.
+
+The client should call `fetch_stock_unusual_volume_overview`, then filter rows where `eps_diluted_growth_yoy_ttm > 0`, `relative_volume > 2`, and `market_cap` is present. Sort the remaining rows by descending `market_cap` to surface the larger names first.
+
+### Portfolio
+
+- `get_portfolio_positions`: Get current portfolio positions with market values and P&L, optionally filtered by book.
+- `delete_portfolio_position`: Delete one portfolio position by book and ticker. This is destructive and requires explicit confirmation with `confirm: "yes"`.
+
+### Blotter
+
+- `query_blotter_trades`: Query blotter trades by ticker, date range, trade type, and limit.
+- `insert_blotter_trade`: Draft or insert a blotter trade from natural-language details. This writes to the database only after explicit confirmation with `confirm: "yes"`.
+
+### Reference Data
+
+- `list_reference_data`: List ticker reference data with optional filters such as ids, asset class, asset sub-class, category, and limit.
+- `get_reference_data`: Get one ticker reference data record by id.
+- `add_reference_data`: Add ticker reference data. This writes to the database only after explicit confirmation with `confirm: "yes"`.
+- `update_reference_data`: Update ticker reference data by id. This writes to the database only after explicit confirmation with `confirm: "yes"`.
+- `delete_reference_data`: Delete ticker reference data by ids. This is destructive and requires explicit confirmation with `confirm: "yes"`.

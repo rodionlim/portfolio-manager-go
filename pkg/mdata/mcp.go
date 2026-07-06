@@ -15,6 +15,8 @@ const (
 	toolFetchStockIndustryPerformance       = "fetch_stock_industry_performance"
 	toolFetchStockIndustryStocksOverview    = "fetch_stock_industry_stocks_overview"
 	toolFetchStockIndustryStocksPerformance = "fetch_stock_industry_stocks_performance"
+	toolFetchStockUnusualVolumeOverview     = "fetch_stock_unusual_volume_overview"
+	toolFetchStockPreMarketActiveOverview   = "fetch_stock_premarket_most_active_overview"
 	toolFetchSectorETFOverview              = "fetch_sector_etf_overview"
 	toolFetchSectorETFPerformance           = "fetch_sector_etf_performance"
 	toolFetchSectorETFFundFlows             = "fetch_sector_etf_fund_flows"
@@ -41,16 +43,19 @@ func RegisterMCPTools(mcpServer *server.MCPServer, manager MarketDataManager) {
 func RegisterScreenerMCPTools(mcpServer *server.MCPServer, screener MarketDataScreener) {
 	industryOverviewTool := mcp.NewTool(toolFetchStockIndustryOverview,
 		mcp.WithDescription("Fetch overview metrics for USA stock-market industries. This is not an ETF dataset and does not contain fund flows. Do not use it for sector ETF or capital-flow requests."),
+		mcp.WithReadOnlyHintAnnotation(true),
 	)
 	mcpServer.AddTool(industryOverviewTool, createHandleFetchUSAIndustryOverview(screener))
 
 	industryPerformanceTool := mcp.NewTool(toolFetchStockIndustryPerformance,
 		mcp.WithDescription("Fetch performance for USA stock-market industries across daily, weekly, monthly, YTD, and multi-year periods. This is not an ETF dataset and has no fund-flow fields. Do not use it for sector ETF fund flows."),
+		mcp.WithReadOnlyHintAnnotation(true),
 	)
 	mcpServer.AddTool(industryPerformanceTool, createHandleFetchUSAIndustryPerformance(screener))
 
 	industryStocksOverviewTool := mcp.NewTool(toolFetchStockIndustryStocksOverview,
 		mcp.WithDescription("Fetch overview metrics for individual stocks within a USA stock-market industry. This returns underlying companies, not ETFs, and does not provide fund flows."),
+		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithString("industry",
 			mcp.Required(),
 			mcp.Description("Industry name or URL slug, for example 'Semiconductors' or 'semiconductors'"),
@@ -60,12 +65,25 @@ func RegisterScreenerMCPTools(mcpServer *server.MCPServer, screener MarketDataSc
 
 	industryStocksPerformanceTool := mcp.NewTool(toolFetchStockIndustryStocksPerformance,
 		mcp.WithDescription("Fetch performance for individual stocks within a USA stock-market industry. This returns underlying companies, not ETFs, and does not provide fund flows."),
+		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithString("industry",
 			mcp.Required(),
 			mcp.Description("Industry name or URL slug, for example 'Semiconductors' or 'semiconductors'"),
 		),
 	)
 	mcpServer.AddTool(industryStocksPerformanceTool, createHandleFetchUSAIndustryStocksPerformance(screener))
+
+	stockUnusualVolumeTool := mcp.NewTool(toolFetchStockUnusualVolumeOverview,
+		mcp.WithDescription("Fetch the TradingView USA unusual-volume stock market-mover overview screen, sorted by relative volume. This returns stocks, not ETFs, and does not provide fund flows."),
+		mcp.WithReadOnlyHintAnnotation(true),
+	)
+	mcpServer.AddTool(stockUnusualVolumeTool, createHandleFetchUSAStockUnusualVolumeOverview(screener))
+
+	stockPreMarketActiveTool := mcp.NewTool(toolFetchStockPreMarketActiveOverview,
+		mcp.WithDescription("Fetch the TradingView USA pre-market most-active stock market-mover overview screen, sorted by pre-market volume. This returns stocks, not ETFs, and does not provide fund flows."),
+		mcp.WithReadOnlyHintAnnotation(true),
+	)
+	mcpServer.AddTool(stockPreMarketActiveTool, createHandleFetchUSAStockPreMarketMostActiveOverview(screener))
 
 	etfTools := []struct {
 		name        string
@@ -82,10 +100,10 @@ func RegisterScreenerMCPTools(mcpServer *server.MCPServer, screener MarketDataSc
 		{toolFetchSectorETFFundFlows, "Fetch 1M, 3M, 1Y, 3Y, and YTD monetary fund flows for global sector ETFs. Use this when a request mentions sector fund flows, capital flows, inflows, or outflows; stock industries do not provide fund flows.", createHandleFetchETFFundFlows("sector-etfs", screener.FetchETFSectorFundFlows)},
 	}
 	for _, tool := range etfTools {
-		mcpServer.AddTool(mcp.NewTool(tool.name, mcp.WithDescription(tool.description)), tool.handler)
+		mcpServer.AddTool(mcp.NewTool(tool.name, mcp.WithDescription(tool.description), mcp.WithReadOnlyHintAnnotation(true)), tool.handler)
 	}
 	mcpServer.AddTool(
-		mcp.NewTool(toolFetchSectorETFOverview, mcp.WithDescription("Fetch overview metrics for the top 100 global sector ETFs. This returns ETFs, not stock-market industries or their underlying companies.")),
+		mcp.NewTool(toolFetchSectorETFOverview, mcp.WithDescription("Fetch overview metrics for the top 100 global sector ETFs. This returns ETFs, not stock-market industries or their underlying companies."), mcp.WithReadOnlyHintAnnotation(true)),
 		createHandleFetchETFSectorOverview(screener.FetchETFSectorOverview),
 	)
 	if rotationScreener, ok := screener.(MarketRotationScreener); ok {
@@ -143,6 +161,26 @@ func createHandleFetchUSAIndustryStocksPerformance(manager MarketDataScreener) f
 			return mcp.NewToolResultError(fmt.Sprintf("Failed to fetch USA industry stock performance: %v", err)), nil
 		}
 		return industryToolResult(newUSAIndustryStocksPerformanceResponse(industry, stocks))
+	}
+}
+
+func createHandleFetchUSAStockUnusualVolumeOverview(manager MarketDataScreener) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		stocks, err := manager.FetchUSAStockUnusualVolumeOverview()
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Failed to fetch USA unusual-volume stock overview: %v", err)), nil
+		}
+		return industryToolResult(newUSAStockUnusualVolumeOverviewResponse(stocks))
+	}
+}
+
+func createHandleFetchUSAStockPreMarketMostActiveOverview(manager MarketDataScreener) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		stocks, err := manager.FetchUSAStockPreMarketMostActiveOverview()
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Failed to fetch USA pre-market most-active stock overview: %v", err)), nil
+		}
+		return industryToolResult(newUSAStockPreMarketMostActiveOverviewResponse(stocks))
 	}
 }
 

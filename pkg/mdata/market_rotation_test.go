@@ -256,6 +256,14 @@ func (s *rotationTestScreener) FetchUSAIndustryStocksPerformance(industry string
 	return s.stockPerformance[industry], nil
 }
 
+func (s *rotationTestScreener) FetchUSAStockUnusualVolumeOverview() ([]types.USAStockUnusualVolumeOverview, error) {
+	return nil, nil
+}
+
+func (s *rotationTestScreener) FetchUSAStockPreMarketMostActiveOverview() ([]types.USAStockPreMarketMostActiveOverview, error) {
+	return nil, nil
+}
+
 type memoryRotationDB struct {
 	values map[string][]byte
 }

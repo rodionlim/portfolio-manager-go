@@ -22,6 +22,8 @@ const (
 	tradingViewFacadeURL                 = "https://screener-facade.tradingview.com/screener-facade/api/v1"
 	tradingViewIndustryTableID           = "sector_and_industry.industry"
 	tradingViewStocksTableID             = "sector_and_industry.industries_companies"
+	tradingViewStockUnusualVolumeTableID = "stocks_market_movers.unusual_volume"
+	tradingViewStockPreMarketActiveID    = "stocks_market_movers.active_pre_market_stocks"
 	tradingViewETFLargestInflowsTableID  = "etfs_funds.largest_inflows"
 	tradingViewETFLargestOutflowsTableID = "etfs_funds.largest_outflows"
 	tradingViewETFSectorTableID          = "etfs_funds.sector_etfs"
@@ -42,6 +44,7 @@ type TradingViewSource struct {
 	performanceMu       sync.Mutex
 	stocksOverviewMu    sync.Mutex
 	stocksPerformanceMu sync.Mutex
+	stockMoversMu       sync.Mutex
 	etfMu               sync.Mutex
 }
 
@@ -250,6 +253,86 @@ func (src *TradingViewSource) FetchUSAIndustryStocksPerformance(industry string)
 			OneYear: numberAt(response.Data[8], i), FiveYears: numberAt(response.Data[9], i),
 			TenYears: numberAt(response.Data[10], i), AllTime: numberAt(response.Data[11], i),
 			VolatilityOneWeek: numberAt(response.Data[12], i), VolatilityOneMonth: numberAt(response.Data[13], i),
+		})
+	}
+	src.cache.Set(cacheKey, result, tradingViewCacheTTL)
+	return result, nil
+}
+
+func (src *TradingViewSource) FetchUSAStockUnusualVolumeOverview() ([]types.USAStockUnusualVolumeOverview, error) {
+	cacheKey := "usa-stock-market-movers:unusual-volume:overview"
+	if result, ok := cachedValue[[]types.USAStockUnusualVolumeOverview](src, cacheKey); ok {
+		return result, nil
+	}
+	src.stockMoversMu.Lock()
+	defer src.stockMoversMu.Unlock()
+	if result, ok := cachedValue[[]types.USAStockUnusualVolumeOverview](src, cacheKey); ok {
+		return result, nil
+	}
+
+	response, err := src.scan(tradingViewStockUnusualVolumeTableID, "overview", map[string]string{"market": "america"}, tradingViewETFResultLimit)
+	if err != nil {
+		return nil, err
+	}
+	if len(response.Data) != 12 {
+		return nil, fmt.Errorf("unexpected TradingView unusual-volume overview column count: %d", len(response.Data))
+	}
+	result := make([]types.USAStockUnusualVolumeOverview, 0, len(response.Symbols))
+	for i, id := range response.Symbols {
+		stock, err := stockAt(response.Data[0], i)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, types.USAStockUnusualVolumeOverview{
+			ID: id, Ticker: stock.Name, Company: stock.Description, Exchange: stock.Exchange,
+			RelativeVolume: numberAt(response.Data[1], i),
+			Currency:       currencyAt(response.Data[2], i), Price: numberAt(response.Data[2], i),
+			Change: numberAt(response.Data[3], i), Volume: numberAt(response.Data[4], i),
+			MarketCap: numberAt(response.Data[5], i), MarketCapCurrency: currencyAt(response.Data[5], i),
+			PriceToEarnings: numberAt(response.Data[6], i),
+			EPSDilutedTTM:   numberAt(response.Data[7], i), EPSDilutedCurrency: currencyAt(response.Data[7], i),
+			EPSDilutedGrowthYoYTTM: numberAt(response.Data[8], i), DividendYieldTTM: numberAt(response.Data[9], i),
+			Sector: stringAt(response.Data[10], i), AnalystRating: stringAt(response.Data[11], i),
+		})
+	}
+	src.cache.Set(cacheKey, result, tradingViewCacheTTL)
+	return result, nil
+}
+
+func (src *TradingViewSource) FetchUSAStockPreMarketMostActiveOverview() ([]types.USAStockPreMarketMostActiveOverview, error) {
+	cacheKey := "usa-stock-market-movers:pre-market-most-active:overview"
+	if result, ok := cachedValue[[]types.USAStockPreMarketMostActiveOverview](src, cacheKey); ok {
+		return result, nil
+	}
+	src.stockMoversMu.Lock()
+	defer src.stockMoversMu.Unlock()
+	if result, ok := cachedValue[[]types.USAStockPreMarketMostActiveOverview](src, cacheKey); ok {
+		return result, nil
+	}
+
+	response, err := src.scan(tradingViewStockPreMarketActiveID, "overview", map[string]string{"market": "america"}, tradingViewETFResultLimit)
+	if err != nil {
+		return nil, err
+	}
+	if len(response.Data) != 11 {
+		return nil, fmt.Errorf("unexpected TradingView pre-market most-active overview column count: %d", len(response.Data))
+	}
+	result := make([]types.USAStockPreMarketMostActiveOverview, 0, len(response.Symbols))
+	for i, id := range response.Symbols {
+		stock, err := stockAt(response.Data[0], i)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, types.USAStockPreMarketMostActiveOverview{
+			ID: id, Ticker: stock.Name, Company: stock.Description, Exchange: stock.Exchange,
+			PreMarketVolume: numberAt(response.Data[1], i),
+			PreMarketClose:  numberAt(response.Data[2], i), PreMarketCurrency: currencyAt(response.Data[2], i),
+			PreMarketChangeAbs: numberAt(response.Data[3], i), PreMarketChange: numberAt(response.Data[4], i),
+			PreMarketGap: numberAt(response.Data[5], i),
+			Currency:     currencyAt(response.Data[6], i), Price: numberAt(response.Data[6], i),
+			Change: numberAt(response.Data[7], i), Volume: numberAt(response.Data[8], i),
+			MarketCap: numberAt(response.Data[9], i), MarketCapCurrency: currencyAt(response.Data[9], i),
+			MarketCapPerformance: numberAt(response.Data[10], i),
 		})
 	}
 	src.cache.Set(cacheKey, result, tradingViewCacheTTL)

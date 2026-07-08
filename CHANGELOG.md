@@ -1,3 +1,9 @@
+## [1.60.0] - 2026-07-08
+
+### 🚀 Features
+
+- *(installer)* Simplify installation of portfolio-manager-go as a service #202
+
 ## [1.59.0] - 2026-07-06
 
 ### 🚀 Features

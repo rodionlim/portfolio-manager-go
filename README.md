@@ -54,14 +54,14 @@ The easiest way to install Portfolio Manager is to download the latest release w
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash
-cd ~/portfolio-manager
-./portfolio-manager
 ```
 
-To install and start the app in one command:
+The installer downloads the binary, asks for optional analytics environment variables, and starts Portfolio Manager immediately.
+
+To keep Portfolio Manager running in the background on macOS or Linux:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash -s -- --run
+curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash -s -- --daemon
 ```
 
 ### Windows
@@ -99,6 +99,12 @@ For home-labbers, helpers scripts are exposed to allow easy installation of `por
 
 ```sh
 bash -c "$(wget -qLO - https://github.com/rodionlim/portfolio-manager-go/raw/main/lxc/portfolio-manager.sh)"
+```
+
+To upgrade later, open a shell inside the LXC container and run:
+
+```sh
+update
 ```
 
 #### Setting Environment Variables in Proxmox

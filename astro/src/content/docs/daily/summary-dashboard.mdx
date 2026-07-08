@@ -1,0 +1,81 @@
+---
+title: Summary Dashboard
+description: Read portfolio value, P&L, daily movement, and allocation summaries.
+---
+
+The Summary Dashboard is the fastest way to answer, "Where is my portfolio exposed right now?" It groups your current positions into practical views and lets you jump into the underlying holdings when something needs attention.
+
+Open it from the sidebar:
+
+```text
+Summary
+```
+
+## What It Shows
+
+At the top, Portfolio Manager shows portfolio-level totals in your base currency:
+
+| Metric | What it means | Example |
+| --- | --- | --- |
+| Market Value | Current total value after FX conversion | `SGD 482,400` |
+| Overall P&L | Total unrealized profit or loss after FX conversion | `SGD 38,250` |
+| Day Change | Change from cached previous prices, when available | `SGD -1,280 (-0.27%)` |
+
+Day Change appears only when cached historical prices are available for your current tickers.
+
+## Allocation Tables
+
+The dashboard then breaks the portfolio into four tables:
+
+| Table | Use it to answer |
+| --- | --- |
+| By Book | Which strategy, account, or portfolio sleeve holds the value? |
+| By Currency | How much exposure sits in each trading currency? |
+| By Category | Which sectors or categories dominate the portfolio? |
+| By Asset Subclass | How much is in stocks, ETFs, govies, cash-like assets, or other subclasses? |
+
+Each row shows value and P&L. When day-change data is available, rows also show the day's movement. Percentages beside amounts show each row's share of that table's total.
+
+## Example With Mock Data
+
+This example is illustrative. Your dashboard is calculated from your imported trades, position prices, FX rates, and reference data.
+
+| Group | Value | P&L | Day |
+| --- | ---: | ---: | ---: |
+| Core book | `320,400` | `28,200` | `-860` |
+| Income book | `112,000` | `7,100` | `140` |
+| Trading book | `50,000` | `-1,050` | `-560` |
+
+For category review, expand a row to see the tickers that make up the total:
+
+| Category | Ticker | Name | Value | P&L |
+| --- | --- | --- | ---: | ---: |
+| Technology | `AAPL` | Apple | `82,400` | `12,300` |
+| Technology | `MSFT` | Microsoft | `96,500` | `9,300` |
+| Govies | `BS23124S` | Singapore T-bill | `96,200` | `2,400` |
+
+## Useful Actions
+
+- Click a Book row to open Positions filtered to that book.
+- Expand a Category row to inspect the tickers contributing to that category.
+- Use the pencil action in expanded category details to update missing or incorrect reference data.
+- Sort Value, P&L, or Day columns when you want to find the largest exposure or biggest mover quickly.
+
+## Before You Rely on the Numbers
+
+Check these inputs when a number looks wrong:
+
+- Positions come from your imported or manually entered blotter trades.
+- Currency conversion uses each position's FX rate.
+- Category and asset subclass come from reference data, with Singapore government securities grouped as Govies.
+- Day Change needs cached previous prices. If it is missing, run or schedule historical price collection.
+
+## Related Screens
+
+Use Positions when you need the line-by-line holdings behind the summary:
+
+![Positions table showing portfolio holdings](/portfolio-manager-go/screenshots/Positions.png)
+
+Use Dividends when you want income detail instead of allocation detail:
+
+![Dividend summary showing monthly dividend totals](/portfolio-manager-go/screenshots/DividendsSummary.png)

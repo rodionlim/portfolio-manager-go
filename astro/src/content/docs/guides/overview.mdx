@@ -3,11 +3,9 @@ title: Overview
 description: A high-level guide to Portfolio Manager capabilities.
 ---
 
-# Overview
-
 Portfolio Manager helps value and analyze personal portfolios across multiple asset classes. It stores portfolio, reference, dividend, and coupon data locally, fetches market data from free public sources, and can run as a backend service with an optional web UI.
 
-## Core Capabilities
+## What You Can Do
 
 - Value assets across equities, FX, commodities, cash, bonds, and cryptocurrencies.
 - Fetch current and historical market data from sources such as Yahoo Finance, Google Finance, dividends.sg, ilovessb.com, MAS, Nasdaq, Barcharts, and TradingView.
@@ -20,8 +18,27 @@ Portfolio Manager helps value and analyze personal portfolios across multiple as
 - Expose OpenAPI and MCP interfaces for external systems and LLM clients.
 - Back up and restore data through local, Google Drive, or Nextcloud destinations.
 
-## Project Shape
+## A Typical Workflow
 
-The Go backend owns the portfolio, market data, analytics, backup, and MCP services. The React UI lives under `web/ui` and talks to the backend API. Generated OpenAPI artifacts and supporting documentation live in the repository `docs` directory.
+1. Install Portfolio Manager and open the web UI at `http://localhost:8080`.
+2. Import or add trades in the Blotter.
+3. Review current holdings in Positions.
+4. Use the Summary Dashboard to check exposure by book, currency, sector, and asset subclass.
+5. Update reference data when a holding is missing classification or ticker metadata.
+6. Use Analytics, Dividends, and Historical Data when you want deeper performance context.
 
-This Astro documentation site lives under `astro` and is published separately to GitHub Pages.
+## Product Screens
+
+These examples show the type of screens you will use after setup.
+
+![Positions table showing portfolio holdings](/portfolio-manager-go/screenshots/Positions.png)
+
+![Dividend summary showing monthly dividend totals](/portfolio-manager-go/screenshots/DividendsSummary.png)
+
+![Metrics chart showing portfolio performance over time](/portfolio-manager-go/screenshots/MetricsChart.png)
+
+## Where to Go Next
+
+- Start with [Installation](/portfolio-manager-go/guides/installation/) if Portfolio Manager is not running yet.
+- Open [Summary Dashboard](/portfolio-manager-go/daily/summary-dashboard/) when you want to understand the main dashboard.
+- Use [Quickstart](/portfolio-manager-go/guides/quickstart/) only if you are working from the source tree.

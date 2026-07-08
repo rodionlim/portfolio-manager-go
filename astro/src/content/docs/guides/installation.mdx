@@ -3,13 +3,49 @@ title: Installation
 description: Install and build Portfolio Manager locally.
 ---
 
-# Installation
-
-## Easiest Install
-
-For most users, install a prebuilt binary from the [latest GitHub release](https://github.com/rodionlim/portfolio-manager-go/releases/latest). You do not need Go, Node.js, or a local checkout for this path.
+For most users, install a prebuilt binary from the [latest GitHub release](https://github.com/rodionlim/portfolio-manager-go/releases/latest). You do not need Go, Node.js, or a local checkout.
 
 The app uses an embedded default configuration when `config.yaml` is not present. It creates local files such as `portfolio-manager.db` and `portfolio-manager.log` in the folder where you run it, so put the binary in a dedicated folder.
+
+## macOS and Linux
+
+Run the installer from Terminal:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash
+```
+
+The installer downloads the right binary, asks for optional analytics settings, and starts Portfolio Manager immediately. You can press Enter through the optional prompts to keep the defaults.
+
+After startup, open:
+
+- Web UI and backend: `http://localhost:8080`
+- MCP endpoint: `http://localhost:8081/mcp`
+
+### Optional Settings
+
+The installer may ask for:
+
+- `GEMINI_API_KEY`: optional. Enables Gemini-backed analytics workflows.
+- `ANALYTICS_SCHEDULE`: optional. Overrides the analytics collection cron schedule. Press Enter to use the app default, `0 17 * * 1`.
+
+When you provide either value, the installer writes `~/portfolio-manager/portfolio-manager.env` and uses it when starting the app.
+
+### Run in the Background
+
+If you want Portfolio Manager to keep running after you close Terminal, install it as a macOS LaunchAgent or Linux systemd user service:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash -s -- --daemon
+```
+
+This background setup currently targets macOS and Linux. Windows service setup can be added later.
+
+To install without starting immediately:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash -s -- --no-run
+```
 
 ### Windows
 
@@ -19,7 +55,7 @@ Open PowerShell and run:
 irm https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.ps1 | iex
 ```
 
-Then start it:
+Then start it from PowerShell:
 
 ```powershell
 cd "$env:USERPROFILE\portfolio-manager"
@@ -27,29 +63,6 @@ cd "$env:USERPROFILE\portfolio-manager"
 ```
 
 The backend starts on `http://localhost:8080`. The MCP server starts on `http://localhost:8081/mcp` when enabled by the embedded config.
-
-### macOS and Linux
-
-Current releases provide macOS Apple Silicon and Linux AMD64 binaries. Open Terminal and run:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash
-```
-
-Then start it:
-
-```sh
-cd ~/portfolio-manager
-./portfolio-manager
-```
-
-The backend starts on `http://localhost:8080`. The MCP server starts on `http://localhost:8081/mcp` when enabled by the embedded config.
-
-To install and start immediately on macOS or Linux, run:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/rodionlim/portfolio-manager-go/main/scripts/install.sh | bash -s -- --run
-```
 
 If you need to customize ports, database location, schedules, or API keys, create a `config.yaml` beside the binary and start with `./portfolio-manager -config config.yaml`.
 
@@ -86,6 +99,12 @@ For Proxmox LXC installation, run:
 
 ```sh
 bash -c "$(wget -qLO - https://github.com/rodionlim/portfolio-manager-go/raw/main/lxc/portfolio-manager.sh)"
+```
+
+To upgrade Portfolio Manager later, open a shell inside the LXC container and run:
+
+```sh
+update
 ```
 
 For environment variables in Proxmox, edit the generated systemd unit and point it at an environment file such as `/etc/sysconfig/PortfolioManager`.

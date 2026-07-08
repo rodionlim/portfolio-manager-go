@@ -26,6 +26,12 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Daily Portfolio Work',
+          items: [
+            { label: 'Summary Dashboard', slug: 'daily/summary-dashboard' },
+          ],
+        },
+        {
           label: 'Concepts',
           items: [
             { label: 'MCP Integration', slug: 'concepts/mcp-integration' },

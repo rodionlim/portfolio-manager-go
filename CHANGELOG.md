@@ -1,3 +1,13 @@
+## [1.60.1] - 2026-07-23
+
+### 🐛 Bug Fixes
+
+- *(analytics)* Correct sgx not returning latest reports due to lexi sort #204
+
+### 📚 Documentation
+
+- *(mcp)* Update recommended timeout guidelines
+
 ## [1.60.0] - 2026-07-08
 
 ### 🚀 Features

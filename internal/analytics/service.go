@@ -353,9 +353,9 @@ func (s *ServiceImpl) ListAndExtractMostTradedStocks(n int) ([]*MostTradedStocks
 		}
 	}
 
-	// Sort reports by report date (descending)
+	// Sort reports by parsed report date before applying the result limit.
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].ReportDate > results[j].ReportDate
+		return reportDateAfter(results[i].ReportDate, results[j].ReportDate)
 	})
 
 	// Limit results to latest n reports if n > 0
@@ -546,6 +546,25 @@ func normalizeMonthName(month string) string {
 	return month // Return as-is if already abbreviated or unknown
 }
 
+// reportDateAfter compares extracted report dates in "D Mon YYYY" format.
+// Valid dates sort ahead of malformed dates; malformed dates retain a
+// deterministic lexical ordering.
+func reportDateAfter(a, b string) bool {
+	aDate, aErr := time.Parse("2 Jan 2006", a)
+	bDate, bErr := time.Parse("2 Jan 2006", b)
+
+	if aErr == nil && bErr == nil {
+		return aDate.After(bDate)
+	}
+	if aErr == nil {
+		return true
+	}
+	if bErr == nil {
+		return false
+	}
+	return a > b
+}
+
 // parseFloat parses a string to float64, handling common formatting issues
 func parseFloat(s string) (float64, error) {
 	// Clean the string
@@ -618,9 +637,9 @@ func (s *ServiceImpl) ListAndExtractSectorFundsFlow(n int) ([]*SectorFundsFlowRe
 		}
 	}
 
-	// Sort reports by report date (descending)
+	// Sort reports by parsed report date before applying the result limit.
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].ReportDate > results[j].ReportDate
+		return reportDateAfter(results[i].ReportDate, results[j].ReportDate)
 	})
 
 	// Limit results to latest n reports if n > 0
@@ -788,9 +807,9 @@ func (s *ServiceImpl) ListAndExtractTop10Stocks(n int) ([]*Top10WeeklyReport, er
 		}
 	}
 
-	// Sort reports by report date (descending)
+	// Sort reports by parsed report date before applying the result limit.
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].ReportDate > results[j].ReportDate
+		return reportDateAfter(results[i].ReportDate, results[j].ReportDate)
 	})
 
 	// Limit results to latest n reports if n > 0

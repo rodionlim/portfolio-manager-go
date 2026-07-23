@@ -398,6 +398,16 @@ func TestServiceImpl_ListAllAnalysis(t *testing.T) {
 	mockAIAnalyzer.AssertExpectations(t)
 }
 
+func TestReportDateAfterUsesChronologicalOrder(t *testing.T) {
+	assert.True(t, reportDateAfter("13 Jul 2026", "6 Jul 2026"))
+	assert.False(t, reportDateAfter("6 Jul 2026", "13 Jul 2026"))
+	assert.True(t, reportDateAfter("1 Jan 2026", "31 Dec 2025"))
+
+	// A malformed filename date must not displace a valid recent report.
+	assert.True(t, reportDateAfter("13 Jul 2026", ""))
+	assert.False(t, reportDateAfter("", "13 Jul 2026"))
+}
+
 func TestServiceImpl_ExtractSectorFundsFlowFromFile(t *testing.T) {
 	// Arrange
 	mockSGXClient := new(MockSGXClient)

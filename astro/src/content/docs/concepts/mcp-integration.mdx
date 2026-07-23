@@ -7,6 +7,14 @@ description: How Portfolio Manager exposes LLM-facing tools.
 
 Portfolio Manager exposes LLM-facing capabilities through a central MCP server with module-local tool registration.
 
+## OpenClaw Configuration
+
+When using Portfolio Manager with OpenClaw, we recommend setting the MCP timeout to 120 seconds and probing the connection:
+
+```sh
+openclaw mcp configure portfolio-manager --timeout 120 --probe
+```
+
 ## Registration Pattern
 
 Each module that exposes MCP tools owns a local `mcp.go` file. That file defines tool names, schemas, handlers, and `RegisterMCPTools`.

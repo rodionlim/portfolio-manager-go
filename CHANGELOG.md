@@ -1,3 +1,9 @@
+## [1.60.2] - 2026-07-23
+
+### 🐛 Bug Fixes
+
+- *(ui)* Blotter should expose the option to update underlying ticker #206
+
 ## [1.60.1] - 2026-07-23
 
 ### 🐛 Bug Fixes

@@ -30,6 +30,7 @@ import { IconPaperclip } from "@tabler/icons-react";
 const instrumentTypeOptions = [
   { value: "outright", label: "Outright" },
   { value: "option", label: "Option" },
+  { value: "future", label: "Future" },
 ];
 
 const callPutOptions = [
@@ -300,8 +301,9 @@ export default function BlotterForm() {
         !["open", "autoclosed", "closed"].includes(value) &&
         "Status is required, and must be either open, autoclosed, or closed",
       instrumentType: (value) =>
-        !["outright", "option"].includes(String(value).toLowerCase()) &&
-        "Instrument type must be either outright or option",
+        !["outright", "option", "future"].includes(
+          String(value).toLowerCase(),
+        ) && "Instrument type must be either outright, option, or future",
       underlyingTicker: (value, values) =>
         values.instrumentType === "option" && !String(value).trim()
           ? "Underlying ticker is required for option trades"
@@ -721,11 +723,9 @@ export default function BlotterForm() {
               setInstrumentTypeValue(normalizedValue);
               form.setFieldValue("instrumentType", normalizedValue);
               if (normalizedValue !== "option") {
-                setUnderlyingTickerValue("");
                 setExpiryDateValue("");
                 setStrikePriceValue(0);
                 setCallPutValue("");
-                form.setFieldValue("underlyingTicker", "");
                 form.setFieldValue("underlyingSpotRef", 0);
                 form.setFieldValue("expiryDate", "");
                 form.setFieldValue("strikePrice", 0);
@@ -757,6 +757,21 @@ export default function BlotterForm() {
               data={tickerOptions}
               key={form.key("ticker")}
               {...form.getInputProps("ticker")}
+            />
+          )}
+          {!isOptionTrade && (
+            <Autocomplete
+              label="Underlying Ticker"
+              placeholder="Defaults to the ticker when left empty"
+              description="Optional grouping tag stored on this trade"
+              data={tickerOptions}
+              value={underlyingTickerValue}
+              onChange={(value) => {
+                const normalizedValue = value.toUpperCase();
+                setUnderlyingTickerValue(normalizedValue);
+                form.setFieldValue("underlyingTicker", normalizedValue);
+              }}
+              error={form.errors.underlyingTicker}
             />
           )}
           {isOptionTrade && (

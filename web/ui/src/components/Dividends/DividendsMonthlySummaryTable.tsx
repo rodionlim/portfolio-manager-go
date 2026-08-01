@@ -488,8 +488,8 @@ const DividendsMonthlySummaryTable: React.FC = () => {
     renderTopToolbarCustomActions: () => (
       <Box
         style={{
-          overflowX: "auto",
           width: "100%",
+          minWidth: 0,
         }}
       >
         <Box
@@ -498,8 +498,7 @@ const DividendsMonthlySummaryTable: React.FC = () => {
             gap: "12px",
             padding: "4px",
             alignItems: "center",
-            flexWrap: "nowrap",
-            minWidth: "max-content",
+            flexWrap: "wrap",
           }}
         >
           <Text fw={700} size="lg" style={{ whiteSpace: "nowrap" }}>

@@ -898,6 +898,9 @@ const PositionTable: React.FC = () => {
     data: groupedPositions,
     initialState: {
       columnOrder,
+      columnPinning: {
+        left: ["mrt-row-select", "mrt-row-expand", "Ticker"],
+      },
       showGlobalFilter: true,
       showColumnFilters: true,
       sorting: [{ id: "Mv", desc: true }],
@@ -971,6 +974,7 @@ const PositionTable: React.FC = () => {
         lineHeight: 1.1,
       },
     },
+    enableColumnPinning: true,
     enableRowSelection: true,
     positionToolbarAlertBanner: "bottom",
     renderDetailPanel: ({ row }) => {

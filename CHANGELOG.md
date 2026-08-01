@@ -1,3 +1,9 @@
+## [1.61.0] - 2026-08-01
+
+### 🚀 Features
+
+- *(ui)* Styling changes to pin columns and allow scrolling on mobile view
+
 ## [1.60.2] - 2026-07-23
 
 ### 🐛 Bug Fixes

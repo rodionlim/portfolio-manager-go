@@ -131,6 +131,9 @@ const ReferenceDataTable: React.FC = () => {
     columns,
     data: refData,
     initialState: {
+      columnPinning: {
+        left: ["mrt-row-select", "id"],
+      },
       showGlobalFilter: true,
       showColumnFilters: true,
       sorting: [
@@ -139,6 +142,7 @@ const ReferenceDataTable: React.FC = () => {
       ],
     },
     state: { density: "xs" },
+    enableColumnPinning: true,
     enableRowSelection: true,
     mantineTopToolbarProps: {
       style: {

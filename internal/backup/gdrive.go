@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -207,12 +208,42 @@ func (g *GDriveBackupSource) getOAuthClient(ctx context.Context, config *oauth2.
 				}
 			} else {
 				fmt.Printf("GDrive: Failed to refresh token: %v. Requesting new token...\n", err)
+				if isInvalidGrant(err) {
+					expiredFile, archiveErr := archiveExpiredToken(tokFile)
+					if archiveErr != nil {
+						fmt.Printf("GDrive: Warning - failed to archive expired token: %v\n", archiveErr)
+					} else {
+						fmt.Printf("GDrive: Archived expired token as %s\n", expiredFile)
+					}
+				}
 				tok = g.getTokenFromWeb(ctx, config)
 				g.saveToken(tokFile, tok)
 			}
 		}
 	}
 	return config.Client(ctx, tok)
+}
+
+func isInvalidGrant(err error) bool {
+	var retrieveErr *oauth2.RetrieveError
+	return errors.As(err, &retrieveErr) && retrieveErr.ErrorCode == "invalid_grant"
+}
+
+func archiveExpiredToken(tokenFile string) (string, error) {
+	expiredFile := tokenFile + ".expired"
+	if _, err := os.Stat(expiredFile); err == nil {
+		previousExpiredFile := fmt.Sprintf("%s.%s", expiredFile, time.Now().UTC().Format("20060102-150405.000000000"))
+		if err := os.Rename(expiredFile, previousExpiredFile); err != nil {
+			return "", fmt.Errorf("archive previous expired token: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		return "", fmt.Errorf("inspect previous expired token: %w", err)
+	}
+
+	if err := os.Rename(tokenFile, expiredFile); err != nil {
+		return "", fmt.Errorf("archive token: %w", err)
+	}
+	return expiredFile, nil
 }
 
 // getTokenFromWeb requests a token from the web, then returns the retrieved token.

@@ -1,3 +1,9 @@
+## [1.62.0] - 2026-08-02
+
+### 🚀 Features
+
+- *(ui)* Make summary page more informative and fix gdrive auth issues
+
 ## [1.61.0] - 2026-08-01
 
 ### 🚀 Features

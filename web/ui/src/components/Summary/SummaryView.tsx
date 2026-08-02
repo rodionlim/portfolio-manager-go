@@ -26,8 +26,13 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { RootState } from "../../store";
 import { ReferenceDataItem } from "../../types";
+import type { Trade } from "../../types/blotter";
 import { getUrl } from "../../utils/url";
 import { IsSGGovies } from "../../utils/referenceData";
+import type { TimestampedMetrics } from "../Analytics/types";
+import MonthlyPortfolioActivityTable from "./MonthlyPortfolioActivityTable";
+import { buildMonthlyPortfolioActivity } from "./monthlyActivity";
+import { calculateHeadlinePnlMetrics } from "./summaryMetrics";
 
 interface Position {
   Ticker: string;
@@ -113,6 +118,53 @@ const numberStyle: React.CSSProperties = {
   fontFeatureSettings: '"tnum" 1',
 };
 
+const PeriodPnlHeadline: React.FC<{
+  label: string;
+  value?: number;
+  isLoading: boolean;
+  hasError: boolean;
+}> = ({ label, value, isLoading, hasError }) => (
+  <Box py={2}>
+    <Group gap={6} wrap="nowrap">
+      <Box
+        w={6}
+        h={6}
+        style={{
+          flexShrink: 0,
+          borderRadius: "50%",
+          background: `var(--mantine-color-${
+            value === undefined ? "gray" : value < 0 ? "red" : "green"
+          }-6)`,
+        }}
+      />
+      <Text c="dimmed" size="xs" fw={600} tt="uppercase" lts={0.4}>
+        {label}
+      </Text>
+    </Group>
+    {isLoading ? (
+      <Loader size="xs" mt={4} />
+    ) : value === undefined ? (
+      <>
+        <Text fw={600} size="md" c="dimmed" style={{ lineHeight: 1.25 }}>
+          —
+        </Text>
+        <Text c="dimmed" size="xs">
+          {hasError ? "Unavailable" : "Insufficient history"}
+        </Text>
+      </>
+    ) : (
+      <Text
+        fw={600}
+        size="md"
+        c={value < 0 ? "red" : "green"}
+        style={{ lineHeight: 1.25, ...numberStyle }}
+      >
+        {formatMoney(value, "SGD")}
+      </Text>
+    )}
+  </Box>
+);
+
 const inlineMetricStyle: React.CSSProperties = {
   ...numberStyle,
   display: "inline-flex",
@@ -195,7 +247,7 @@ const SummaryTable: React.FC<{
   };
   expandable?: boolean;
   onEditReferenceData?: (detail: SummaryDetail) => void;
-  onViewPositionsByBook?: (book: string) => void;
+  onViewPositions?: (label: string) => void;
 }> = ({
   title,
   rows,
@@ -203,7 +255,7 @@ const SummaryTable: React.FC<{
   defaultSort = null,
   expandable = false,
   onEditReferenceData,
-  onViewPositionsByBook,
+  onViewPositions,
 }) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<{
@@ -326,7 +378,7 @@ const SummaryTable: React.FC<{
             const isExpanded = expandedRows.has(row.label);
             const details = summarizeDetails(row.details || []);
             const canExpand = expandable && details.length > 0;
-            const canViewPositionsByBook = Boolean(onViewPositionsByBook);
+            const canViewPositions = Boolean(onViewPositions);
 
             return (
               <React.Fragment key={row.label}>
@@ -352,9 +404,9 @@ const SummaryTable: React.FC<{
                           </Text>
                         </Group>
                       </UnstyledButton>
-                    ) : canViewPositionsByBook ? (
+                    ) : canViewPositions ? (
                       <UnstyledButton
-                        onClick={() => onViewPositionsByBook?.(row.label)}
+                        onClick={() => onViewPositions?.(row.label)}
                         style={{ width: "100%" }}
                       >
                         <Group gap={4} wrap="nowrap">
@@ -565,6 +617,50 @@ const SummaryView: React.FC = () => {
     enabled: uniqueTickers.length > 0,
   });
 
+  const {
+    data: historicalMetrics = [],
+    isLoading: isHistoricalMetricsLoading,
+    isError: hasHistoricalMetricsError,
+  } = useQuery<TimestampedMetrics[], Error>({
+    queryKey: ["historicalMetrics", "None"],
+    queryFn: async () => {
+      const resp = await fetch(getUrl("/api/v1/historical/metrics"));
+      if (!resp.ok) {
+        throw new Error("Failed to get historical metrics");
+      }
+      return resp.json();
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const headlinePnl = useMemo(
+    () => calculateHeadlinePnlMetrics(historicalMetrics),
+    [historicalMetrics],
+  );
+
+  const {
+    data: trades = [],
+    isLoading: areTradesLoading,
+    isError: hasTradesError,
+  } = useQuery<Trade[], Error>({
+    queryKey: ["trades"],
+    queryFn: async () => {
+      const resp = await fetch(getUrl("/api/v1/blotter/trade"));
+      if (!resp.ok) {
+        throw new Error("Failed to get trades");
+      }
+      return resp.json();
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const monthlyActivity = useMemo(
+    () => buildMonthlyPortfolioActivity(historicalMetrics, trades),
+    [historicalMetrics, trades],
+  );
+
   const hasCachedMetrics = Boolean(cachedPricesData?.metrics);
 
   const cachedPriceMap = useMemo(() => {
@@ -751,6 +847,12 @@ const SummaryView: React.FC = () => {
     });
   };
 
+  const handleViewPositionsByCurrency = (currency: string) => {
+    navigate("/positions", {
+      state: { ccy: currency },
+    });
+  };
+
   if (isLoading) {
     return (
       <Group justify="center" py="xl">
@@ -827,17 +929,68 @@ const SummaryView: React.FC = () => {
           ) : null}
         </SimpleGrid>
       </Paper>
+      <Paper
+        withBorder
+        p="sm"
+        radius="sm"
+        mb="md"
+        style={{ background: "var(--mantine-color-default-hover)" }}
+      >
+        <Group justify="space-between" align="center" mb="xs">
+          <Text c="dimmed" fw={600} size="sm">
+            Historical P&amp;L
+          </Text>
+          {headlinePnl.asOf ? (
+            <Text c="dimmed" size="xs">
+              Through {new Date(headlinePnl.asOf).toLocaleDateString()}
+            </Text>
+          ) : null}
+        </Group>
+        <SimpleGrid cols={{ base: 2, sm: 5 }} spacing="xs">
+          <PeriodPnlHeadline
+            label="1W"
+            value={headlinePnl.oneWeek}
+            isLoading={isHistoricalMetricsLoading}
+            hasError={hasHistoricalMetricsError}
+          />
+          <PeriodPnlHeadline
+            label="MTD"
+            value={headlinePnl.mtd}
+            isLoading={isHistoricalMetricsLoading}
+            hasError={hasHistoricalMetricsError}
+          />
+          <PeriodPnlHeadline
+            label="3M"
+            value={headlinePnl.threeMonth}
+            isLoading={isHistoricalMetricsLoading}
+            hasError={hasHistoricalMetricsError}
+          />
+          <PeriodPnlHeadline
+            label="6M"
+            value={headlinePnl.sixMonth}
+            isLoading={isHistoricalMetricsLoading}
+            hasError={hasHistoricalMetricsError}
+          />
+          <PeriodPnlHeadline
+            label="YTD"
+            value={headlinePnl.ytd}
+            isLoading={isHistoricalMetricsLoading}
+            hasError={hasHistoricalMetricsError}
+          />
+        </SimpleGrid>
+      </Paper>
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md" style={{ minWidth: 0 }}>
         <SummaryTable
           title="By Book"
           rows={byBook}
           showDailyPnl={hasCachedMetrics}
-          onViewPositionsByBook={handleViewPositionsByBook}
+          onViewPositions={handleViewPositionsByBook}
         />
         <SummaryTable
           title="By Currency"
           rows={byCurrency}
           showDailyPnl={hasCachedMetrics}
+          onViewPositions={handleViewPositionsByCurrency}
         />
         <SummaryTable
           title="By Category"
@@ -853,6 +1006,14 @@ const SummaryView: React.FC = () => {
           showDailyPnl={hasCachedMetrics}
         />
       </SimpleGrid>
+      <MonthlyPortfolioActivityTable
+        rows={monthlyActivity}
+        referenceData={refData}
+        isMetricsLoading={isHistoricalMetricsLoading}
+        areTradesLoading={areTradesLoading}
+        hasMetricsError={hasHistoricalMetricsError}
+        hasTradeError={hasTradesError}
+      />
     </Box>
   );
 };

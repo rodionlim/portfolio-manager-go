@@ -78,15 +78,19 @@ interface CachedPricesResponse {
 
 interface PositionLocationState {
   book?: unknown;
+  ccy?: unknown;
 }
 
-const getBookFromLocationState = (state: unknown) => {
-  if (!state || typeof state !== "object" || !("book" in state)) {
+const getFilterFromLocationState = (
+  state: unknown,
+  key: keyof PositionLocationState,
+) => {
+  if (!state || typeof state !== "object" || !(key in state)) {
     return null;
   }
 
-  const book = (state as PositionLocationState).book;
-  return typeof book === "string" && book ? book : null;
+  const value = (state as PositionLocationState)[key];
+  return typeof value === "string" && value ? value : null;
 };
 
 const isTBillTicker = (ticker: string) =>
@@ -201,18 +205,31 @@ const rowValueInSGD = (
 const PositionTable: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const bookFromLocationState = getBookFromLocationState(location.state);
+  const bookFromLocationState = getFilterFromLocationState(
+    location.state,
+    "book",
+  );
+  const ccyFromLocationState = getFilterFromLocationState(
+    location.state,
+    "ccy",
+  );
   const refData = useSelector((state: RootState) => state.referenceData.data);
   const [filteredPositions, setFilteredPositions] = useState<PositionRow[]>([]);
   const [columnFilters, setColumnFilters] = useState<
     Array<{ id: string; value: unknown }>
-  >(() =>
-    bookFromLocationState ? [{ id: "Book", value: bookFromLocationState }] : [],
-  );
+  >(() => [
+    ...(bookFromLocationState
+      ? [{ id: "Book", value: bookFromLocationState }]
+      : []),
+    ...(ccyFromLocationState
+      ? [{ id: "Ccy", value: ccyFromLocationState }]
+      : []),
+  ]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [priceLag, setPriceLag] = useState<"t-1" | "t-2">("t-1");
   const defaultTitleRef = useRef(document.title);
   const appliedBookFilterRef = useRef<string | null>(bookFromLocationState);
+  const appliedCcyFilterRef = useRef<string | null>(ccyFromLocationState);
 
   const {
     data: rawPositions = [],
@@ -308,6 +325,21 @@ const PositionTable: React.FC = () => {
       { id: "Book", value: bookFromLocationState },
     ]);
   }, [bookFromLocationState]);
+
+  useEffect(() => {
+    if (
+      !ccyFromLocationState ||
+      appliedCcyFilterRef.current === ccyFromLocationState
+    ) {
+      return;
+    }
+
+    appliedCcyFilterRef.current = ccyFromLocationState;
+    setColumnFilters((current) => [
+      ...current.filter((filter) => filter.id !== "Ccy"),
+      { id: "Ccy", value: ccyFromLocationState },
+    ]);
+  }, [ccyFromLocationState]);
 
   const groupedTargetTicker = (position: PositionRow) =>
     position.UnderlyingGroup || position.UnderlyingTicker || position.Ticker;

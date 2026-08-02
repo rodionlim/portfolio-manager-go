@@ -17,7 +17,12 @@ import {
   type MRT_ColumnDef,
   useMantineReactTable,
 } from "mantine-react-table";
-import { IconDownload, IconTrash, IconUpload } from "@tabler/icons-react";
+import {
+  IconDownload,
+  IconPencil,
+  IconTrash,
+  IconUpload,
+} from "@tabler/icons-react";
 import { getUrl } from "../../utils/url";
 import { TimestampedMetrics, MetricsJob } from "./types";
 import { withRollingVolatility, VolatilityMethod } from "./volatility";
@@ -35,6 +40,13 @@ interface DeleteMetricsResponse {
   failures: string[];
 }
 
+interface EditableMetricValues {
+  mv: number;
+  pricePaid: number;
+  totalDividends: number;
+  irrPercent: number;
+}
+
 const MetricsTable: React.FC<MetricsTableProps> = ({
   volatilityMethod,
   setVolatilityMethod,
@@ -44,6 +56,10 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
   const theme = useMantineTheme();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [isUpdatingMetric, setIsUpdatingMetric] = useState(false);
+  const [editableMetric, setEditableMetric] =
+    useState<EditableMetricValues | null>(null);
   const [selectedMetric, setSelectedMetric] =
     useState<TimestampedMetrics | null>(null);
   const [selectedMetrics, setSelectedMetrics] = useState<TimestampedMetrics[]>(
@@ -211,6 +227,78 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
       deleteMetrics([selectedMetric.timestamp]);
     }
     setDeleteModalOpen(false);
+  };
+
+  const updateMetric = async () => {
+    if (!selectedMetric || !editableMetric) return;
+
+    const values = Object.values(editableMetric);
+    if (values.some((value) => !Number.isFinite(value))) {
+      notifications.show({
+        color: "red",
+        title: "Invalid Values",
+        message: "All metric values must be valid numbers.",
+      });
+      return;
+    }
+
+    setIsUpdatingMetric(true);
+    try {
+      const bookFilter =
+        selectedBookFilter === "None" ? "" : selectedBookFilter || "";
+      const url = bookFilter
+        ? getUrl(
+            `/api/v1/historical/metrics?book_filter=${encodeURIComponent(
+              bookFilter,
+            )}`,
+          )
+        : getUrl("/api/v1/historical/metrics");
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          timestamp: selectedMetric.timestamp,
+          metrics: {
+            mv: editableMetric.mv,
+            pricePaid: editableMetric.pricePaid,
+            totalDividends: editableMetric.totalDividends,
+            irr: editableMetric.irrPercent / 100,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response
+          .json()
+          .catch(() => ({ message: `Update failed (${response.status})` }));
+        throw new Error(
+          errorPayload?.message || `Update failed (${response.status})`,
+        );
+      }
+
+      notifications.show({
+        title: "Success",
+        message: "Historical metrics record updated successfully",
+        color: "green",
+      });
+      setEditModalOpen(false);
+      setEditableMetric(null);
+      setSelectedMetric(null);
+      table.resetRowSelection();
+      await refetch();
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Unable to update record";
+      notifications.show({
+        color: "red",
+        title: "Update Failed",
+        message,
+      });
+    } finally {
+      setIsUpdatingMetric(false);
+    }
   };
 
   // Upload metrics CSV file
@@ -542,6 +630,27 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
             <Button
               onClick={() => {
                 const selectedRows = table.getSelectedRowModel().rows;
+                if (selectedRows.length !== 1) return;
+
+                const metric = selectedRows[0].original;
+                setSelectedMetric(metric);
+                setEditableMetric({
+                  mv: metric.metrics.mv,
+                  pricePaid: metric.metrics.pricePaid,
+                  totalDividends: metric.metrics.totalDividends,
+                  irrPercent: metric.metrics.irr * 100,
+                });
+                setEditModalOpen(true);
+              }}
+              leftSection={<IconPencil size={18} />}
+              variant="outline"
+              disabled={table.getSelectedRowModel().rows.length !== 1}
+            >
+              Update Record
+            </Button>
+            <Button
+              onClick={() => {
+                const selectedRows = table.getSelectedRowModel().rows;
                 if (selectedRows.length === 1) {
                   // Single selection
                   setSelectedMetric(selectedRows[0].original);
@@ -621,6 +730,114 @@ const MetricsTable: React.FC<MetricsTableProps> = ({
             Delete
           </Button>
         </Group>
+      </Modal>
+
+      <Modal
+        opened={editModalOpen}
+        onClose={() => {
+          if (!isUpdatingMetric) {
+            setEditModalOpen(false);
+            setEditableMetric(null);
+          }
+        }}
+        title="Update Historical Metrics"
+        size="sm"
+        closeOnClickOutside={!isUpdatingMetric}
+        closeOnEscape={!isUpdatingMetric}
+      >
+        {selectedMetric && editableMetric ? (
+          <Stack gap="sm">
+            <Box>
+              <Text size="xs" c="dimmed">
+                Record date
+              </Text>
+              <Text fw={600}>
+                {new Date(selectedMetric.timestamp).toLocaleDateString()}
+              </Text>
+            </Box>
+            <NumberInput
+              label="Market Value"
+              value={editableMetric.mv}
+              onChange={(value) =>
+                setEditableMetric((current) =>
+                  current ? { ...current, mv: Number(value) } : current,
+                )
+              }
+              decimalScale={2}
+              thousandSeparator=","
+            />
+            <NumberInput
+              label="Price Paid"
+              value={editableMetric.pricePaid}
+              onChange={(value) =>
+                setEditableMetric((current) =>
+                  current
+                    ? { ...current, pricePaid: Number(value) }
+                    : current,
+                )
+              }
+              decimalScale={2}
+              thousandSeparator=","
+            />
+            <NumberInput
+              label="Total Dividends"
+              value={editableMetric.totalDividends}
+              onChange={(value) =>
+                setEditableMetric((current) =>
+                  current
+                    ? { ...current, totalDividends: Number(value) }
+                    : current,
+                )
+              }
+              decimalScale={2}
+              thousandSeparator=","
+            />
+            <NumberInput
+              label="IRR (%)"
+              value={editableMetric.irrPercent}
+              onChange={(value) =>
+                setEditableMetric((current) =>
+                  current
+                    ? { ...current, irrPercent: Number(value) }
+                    : current,
+                )
+              }
+              decimalScale={4}
+              suffix="%"
+            />
+            <Box>
+              <Text size="xs" c="dimmed">
+                Calculated P&amp;L
+              </Text>
+              <Text fw={600}>
+                $
+                {(
+                  editableMetric.mv -
+                  editableMetric.pricePaid +
+                  editableMetric.totalDividends
+                ).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </Text>
+            </Box>
+            <Group justify="flex-end" mt="xs">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditModalOpen(false);
+                  setEditableMetric(null);
+                }}
+                disabled={isUpdatingMetric}
+              >
+                Cancel
+              </Button>
+              <Button onClick={updateMetric} loading={isUpdatingMetric}>
+                Save Changes
+              </Button>
+            </Group>
+          </Stack>
+        ) : null}
       </Modal>
 
       <Box mt="xs">

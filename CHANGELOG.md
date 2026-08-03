@@ -1,3 +1,9 @@
+## [1.62.1] - 2026-08-03
+
+### 🐛 Bug Fixes
+
+- *(ui)* Positions table on mobile view to have smaller ticker col
+
 ## [1.62.0] - 2026-08-02
 
 ### 🚀 Features

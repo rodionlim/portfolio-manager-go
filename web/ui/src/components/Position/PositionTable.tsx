@@ -20,6 +20,7 @@ import {
 import { getUrl } from "../../utils/url";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IconHistory, IconCoins } from "@tabler/icons-react";
+import { useMediaQuery } from "@mantine/hooks";
 
 import classes from "../../styles.module.css";
 
@@ -205,6 +206,7 @@ const rowValueInSGD = (
 const PositionTable: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const bookFromLocationState = getFilterFromLocationState(
     location.state,
     "book",
@@ -602,6 +604,7 @@ const PositionTable: React.FC = () => {
       {
         accessorKey: "Ticker",
         header: "Ticker",
+        ...(isMobile ? { size: 88 } : {}),
         Cell: ({ row, cell }) => {
           const value = cell.getValue<string>();
           if (!row.original.IsGroup) {
@@ -886,6 +889,7 @@ const PositionTable: React.FC = () => {
     dailyPnlPct,
     displayDailyTotals.dailyPnl,
     priceLag,
+    isMobile,
   ]);
 
   const columnOrder = useMemo(

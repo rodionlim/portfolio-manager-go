@@ -148,6 +148,7 @@ const aggregateTrades = (
 export const buildMonthlyPortfolioActivity = (
   historicalMetrics: TimestampedMetrics[],
   trades: Trade[],
+  currentMarketValue?: number,
   now = new Date(),
   monthCount = 12,
 ): MonthlyPortfolioActivity[] => {
@@ -184,11 +185,22 @@ export const buildMonthlyPortfolioActivity = (
     const year = monthStartDate.getUTCFullYear();
     const month = monthStartDate.getUTCMonth();
     const monthlyTrades = aggregateTrades(trades, monthStart, nextMonthStart);
+    const useCurrentMarketValue =
+      index === 0 &&
+      currentMarketValue !== undefined &&
+      Number.isFinite(currentMarketValue);
+    const endingPnl =
+      latest && useCurrentMarketValue
+        ? latest.pnl + currentMarketValue - latest.marketValue
+        : latest?.pnl;
 
     return {
       monthKey: `${year}-${String(month + 1).padStart(2, "0")}`,
       monthLabel: `${monthNames[month]}-${String(year).slice(-2)}`,
-      mtdPnl: latest && baseline ? latest.pnl - baseline.pnl : undefined,
+      mtdPnl:
+        endingPnl !== undefined && baseline
+          ? endingPnl - baseline.pnl
+          : undefined,
       dividends:
         latest && baseline
           ? latest.dividends - baseline.dividends
@@ -197,7 +209,9 @@ export const buildMonthlyPortfolioActivity = (
         (sum, trade) => sum + trade.pricePaid,
         0,
       ),
-      marketValue: latest?.marketValue,
+      marketValue: useCurrentMarketValue
+        ? currentMarketValue
+        : latest?.marketValue,
       trades: monthlyTrades,
     };
   });

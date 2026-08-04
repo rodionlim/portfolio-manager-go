@@ -586,6 +586,16 @@ const SummaryView: React.FC = () => {
     refetchOnWindowFocus: false,
   });
 
+  const overallMarketValue = useMemo(
+    () =>
+      positions.reduce(
+        (sum, position) => sum + position.Mv * (position.FxRate || 1),
+        0,
+      ),
+    [positions],
+  );
+  const currentMarketValue = isLoading ? undefined : overallMarketValue;
+
   const uniqueTickers = useMemo(() => {
     const tickers = new Set<string>();
     positions.forEach((position) => {
@@ -635,8 +645,8 @@ const SummaryView: React.FC = () => {
   });
 
   const headlinePnl = useMemo(
-    () => calculateHeadlinePnlMetrics(historicalMetrics),
-    [historicalMetrics],
+    () => calculateHeadlinePnlMetrics(historicalMetrics, currentMarketValue),
+    [historicalMetrics, currentMarketValue],
   );
 
   const {
@@ -657,8 +667,13 @@ const SummaryView: React.FC = () => {
   });
 
   const monthlyActivity = useMemo(
-    () => buildMonthlyPortfolioActivity(historicalMetrics, trades),
-    [historicalMetrics, trades],
+    () =>
+      buildMonthlyPortfolioActivity(
+        historicalMetrics,
+        trades,
+        currentMarketValue,
+      ),
+    [historicalMetrics, trades, currentMarketValue],
   );
 
   const hasCachedMetrics = Boolean(cachedPricesData?.metrics);
@@ -678,14 +693,6 @@ const SummaryView: React.FC = () => {
     () =>
       positions.reduce(
         (sum, position) => sum + position.PnL * (position.FxRate || 1),
-        0,
-      ),
-    [positions],
-  );
-  const overallMarketValue = useMemo(
-    () =>
-      positions.reduce(
-        (sum, position) => sum + position.Mv * (position.FxRate || 1),
         0,
       ),
     [positions],

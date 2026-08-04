@@ -64,6 +64,7 @@ describe("buildMonthlyPortfolioActivity", () => {
           SeqNum: 4,
         }),
       ],
+      undefined,
       new Date("2026-08-15T00:00:00Z"),
     );
 
@@ -109,6 +110,7 @@ describe("buildMonthlyPortfolioActivity", () => {
     const rows = buildMonthlyPortfolioActivity(
       [metric("2026-08-15T00:00:00Z", 50, 10, 1_200)],
       [],
+      undefined,
       new Date("2026-08-15T00:00:00Z"),
     );
 
@@ -120,5 +122,21 @@ describe("buildMonthlyPortfolioActivity", () => {
       marketValue: 1_200,
       trades: [],
     });
+  });
+
+  it("uses the current market value for the latest month only", () => {
+    const rows = buildMonthlyPortfolioActivity(
+      [
+        metric("2026-06-30T00:00:00Z", 10, 1, 900),
+        metric("2026-07-31T00:00:00Z", 30, 5, 1_100),
+        metric("2026-08-15T00:00:00Z", 50, 10, 1_200),
+      ],
+      [],
+      1_250,
+      new Date("2026-08-15T00:00:00Z"),
+    );
+
+    expect(rows[0]).toMatchObject({ marketValue: 1_250, mtdPnl: 70 });
+    expect(rows[1]).toMatchObject({ marketValue: 1_100, mtdPnl: 20 });
   });
 });

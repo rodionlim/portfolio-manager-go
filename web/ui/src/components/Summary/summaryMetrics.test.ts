@@ -47,4 +47,28 @@ describe("calculateHeadlinePnlMetrics", () => {
   it("returns no values when historical metrics are empty", () => {
     expect(calculateHeadlinePnlMetrics([])).toEqual({});
   });
+
+  it("uses current market value as the ending value for every period", () => {
+    const metrics = [
+      snapshot("2025-12-31T00:00:00Z", 20),
+      snapshot("2026-02-15T00:00:00Z", 40),
+      snapshot("2026-05-15T00:00:00Z", 80),
+      snapshot("2026-07-31T00:00:00Z", 130),
+      snapshot("2026-08-08T00:00:00Z", 150),
+      snapshot("2026-08-15T00:00:00Z", 180),
+    ];
+
+    const result = calculateHeadlinePnlMetrics(
+      metrics,
+      1_230,
+      new Date("2026-08-15T12:00:00Z"),
+    );
+
+    expect(result.oneWeek).toBe(80);
+    expect(result.mtd).toBe(100);
+    expect(result.threeMonth).toBe(150);
+    expect(result.sixMonth).toBe(190);
+    expect(result.ytd).toBe(210);
+    expect(result.asOf).toBe("2026-08-15T00:00:00.000Z");
+  });
 });

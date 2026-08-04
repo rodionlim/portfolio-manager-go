@@ -61,22 +61,44 @@ const pnlSince = (
 
 export const calculateHeadlinePnlMetrics = (
   historicalMetrics: TimestampedMetrics[],
+  currentMarketValue?: number,
+  now = new Date(),
 ): HeadlinePnlMetrics => {
   const snapshots = historicalMetrics
     .map((snapshot) => ({
       timestamp: snapshotDate(snapshot.timestamp),
       pnl: snapshotPnl(snapshot),
+      marketValue: snapshot.metrics.mv,
     }))
     .filter(
       (snapshot) =>
-        Number.isFinite(snapshot.timestamp) && Number.isFinite(snapshot.pnl),
+        Number.isFinite(snapshot.timestamp) &&
+        Number.isFinite(snapshot.pnl) &&
+        Number.isFinite(snapshot.marketValue),
     )
     .sort((left, right) => left.timestamp - right.timestamp);
 
-  const latest = snapshots.at(-1);
-  if (!latest) {
+  const latestSnapshot = snapshots.at(-1);
+  if (!latestSnapshot) {
     return {};
   }
+
+  const latest =
+    currentMarketValue !== undefined &&
+    Number.isFinite(currentMarketValue)
+      ? {
+          ...latestSnapshot,
+          timestamp: Date.UTC(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+          ),
+          pnl:
+            latestSnapshot.pnl +
+            currentMarketValue -
+            latestSnapshot.marketValue,
+        }
+      : latestSnapshot;
 
   const latestDate = new Date(latest.timestamp);
   const monthStart = new Date(

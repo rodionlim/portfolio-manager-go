@@ -1,3 +1,9 @@
+## [1.63.0] - 2026-08-04
+
+### 🚀 Features
+
+- *(summary)* Use current mv instead of metrics
+
 ## [1.62.1] - 2026-08-03
 
 ### 🐛 Bug Fixes

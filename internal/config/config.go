@@ -40,7 +40,8 @@ type MCPConfig struct {
 
 // MarketDataConfig nests all market data-related configuration
 type MarketDataConfig struct {
-	RateLimitMs int `yaml:"rateLimitMs"` // Minimum milliseconds between Yahoo Finance requests
+	RateLimitMs      int      `yaml:"rateLimitMs"`      // Minimum milliseconds between Yahoo Finance requests
+	ProviderPriority []string `yaml:"providerPriority"` // Priority of market data providers
 }
 
 // AnalyticsConfig nests all analytics-related configuration
@@ -150,6 +151,9 @@ func initializeConfig(data []byte) error {
 	// Set defaults for MarketDataConfig if not provided
 	if cfg.MarketData.RateLimitMs == 0 {
 		cfg.MarketData.RateLimitMs = 500 // default: 500ms between requests
+	}
+	if len(cfg.MarketData.ProviderPriority) == 0 {
+		cfg.MarketData.ProviderPriority = []string{"yahoo", "google", "dividends.sg"}
 	}
 
 	instance = &cfg

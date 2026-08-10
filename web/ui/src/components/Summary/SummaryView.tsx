@@ -31,7 +31,10 @@ import { getUrl } from "../../utils/url";
 import { IsSGGovies } from "../../utils/referenceData";
 import type { TimestampedMetrics } from "../Analytics/types";
 import MonthlyPortfolioActivityTable from "./MonthlyPortfolioActivityTable";
-import { buildMonthlyPortfolioActivity } from "./monthlyActivity";
+import {
+  buildMonthlyPortfolioActivity,
+  buildYearlyPortfolioActivity,
+} from "./monthlyActivity";
 import { calculateHeadlinePnlMetrics } from "./summaryMetrics";
 
 interface Position {
@@ -676,7 +679,20 @@ const SummaryView: React.FC = () => {
     [historicalMetrics, trades, currentMarketValue],
   );
 
+  const yearlyActivity = useMemo(
+    () =>
+      buildYearlyPortfolioActivity(
+        historicalMetrics,
+        trades,
+        currentMarketValue,
+      ),
+    [historicalMetrics, trades, currentMarketValue],
+  );
+
   const hasCachedMetrics = Boolean(cachedPricesData?.metrics);
+  const totalDividends =
+    cachedPricesData?.metrics?.metrics.totalDividends ??
+    headlinePnl.totalDividends;
 
   const cachedPriceMap = useMemo(() => {
     const map = new Map<string, CachedPrice>();
@@ -892,7 +908,7 @@ const SummaryView: React.FC = () => {
       </Title>
       <Paper withBorder p="md" radius="sm" mb="md">
         <SimpleGrid
-          cols={{ base: 1, xs: 2, md: hasCachedMetrics ? 3 : 2 }}
+          cols={{ base: 1, xs: 2, md: hasCachedMetrics ? 4 : 3 }}
           spacing="md"
         >
           <Box>
@@ -914,6 +930,27 @@ const SummaryView: React.FC = () => {
               style={{ lineHeight: 1.2, ...numberStyle }}
             >
               {formatMoney(overallPnl, "SGD")}
+            </Text>
+          </Box>
+          <Box>
+            <Text c="dimmed" size="sm" fw={600}>
+              Total Dividends
+            </Text>
+            <Text
+              fw={700}
+              size="xl"
+              c={
+                totalDividends === undefined
+                  ? undefined
+                  : totalDividends < 0
+                    ? "red"
+                    : "green"
+              }
+              style={{ lineHeight: 1.2, ...numberStyle }}
+            >
+              {totalDividends === undefined
+                ? "—"
+                : formatMoney(totalDividends, "SGD")}
             </Text>
           </Box>
           {hasCachedMetrics ? (
@@ -955,7 +992,7 @@ const SummaryView: React.FC = () => {
         </Group>
         <SimpleGrid cols={{ base: 2, sm: 5 }} spacing="xs">
           <PeriodPnlHeadline
-            label="1W"
+            label="7D"
             value={headlinePnl.oneWeek}
             isLoading={isHistoricalMetricsLoading}
             hasError={hasHistoricalMetricsError}
@@ -1014,7 +1051,8 @@ const SummaryView: React.FC = () => {
         />
       </SimpleGrid>
       <MonthlyPortfolioActivityTable
-        rows={monthlyActivity}
+        monthlyRows={monthlyActivity}
+        yearlyRows={yearlyActivity}
         referenceData={refData}
         isMetricsLoading={isHistoricalMetricsLoading}
         areTradesLoading={areTradesLoading}

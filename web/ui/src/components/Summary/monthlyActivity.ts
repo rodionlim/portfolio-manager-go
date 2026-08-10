@@ -21,6 +21,8 @@ export interface MonthlyPortfolioActivity {
   trades: MonthlyTickerActivity[];
 }
 
+export type YearlyPortfolioActivity = MonthlyPortfolioActivity;
+
 interface NormalizedSnapshot {
   timestamp: number;
   pnl: number;
@@ -150,7 +152,7 @@ export const buildMonthlyPortfolioActivity = (
   trades: Trade[],
   currentMarketValue?: number,
   now = new Date(),
-  monthCount = 12,
+  monthCount = 24,
 ): MonthlyPortfolioActivity[] => {
   const snapshots = normalizeSnapshots(historicalMetrics);
   const currentYear = now.getFullYear();
@@ -213,6 +215,67 @@ export const buildMonthlyPortfolioActivity = (
         ? currentMarketValue
         : latest?.marketValue,
       trades: monthlyTrades,
+    };
+  });
+};
+
+export const buildYearlyPortfolioActivity = (
+  historicalMetrics: TimestampedMetrics[],
+  trades: Trade[],
+  currentMarketValue?: number,
+  now = new Date(),
+  yearCount = 2,
+): YearlyPortfolioActivity[] => {
+  const snapshots = normalizeSnapshots(historicalMetrics);
+  const currentYear = now.getFullYear();
+
+  return Array.from({ length: yearCount }, (_, index) => {
+    const year = currentYear - index;
+    const yearStart = Date.UTC(year, 0, 1);
+    const nextYearStart = Date.UTC(year + 1, 0, 1);
+    const snapshotsInYear = snapshots.filter(
+      (snapshot) =>
+        snapshot.timestamp >= yearStart && snapshot.timestamp < nextYearStart,
+    );
+    const latest = snapshotsInYear.at(-1);
+    const baseline = latest
+      ? [...snapshots]
+          .reverse()
+          .find(
+            (snapshot) =>
+              snapshot.timestamp <= yearStart &&
+              snapshot.timestamp < latest.timestamp,
+          )
+      : undefined;
+    const yearlyTrades = aggregateTrades(trades, yearStart, nextYearStart);
+    const useCurrentMarketValue =
+      index === 0 &&
+      currentMarketValue !== undefined &&
+      Number.isFinite(currentMarketValue);
+    const endingPnl =
+      latest && useCurrentMarketValue
+        ? latest.pnl + currentMarketValue - latest.marketValue
+        : latest?.pnl;
+
+    return {
+      monthKey: String(year),
+      monthLabel: String(year),
+      mtdPnl:
+        endingPnl !== undefined && baseline
+          ? endingPnl - baseline.pnl
+          : undefined,
+      dividends:
+        latest && baseline
+          ? latest.dividends - baseline.dividends
+          : undefined,
+      netCashFlow: yearlyTrades.reduce(
+        (sum, trade) => sum + trade.pricePaid,
+        0,
+      ),
+      marketValue: useCurrentMarketValue
+        ? currentMarketValue
+        : latest?.marketValue,
+      trades: yearlyTrades,
     };
   });
 };

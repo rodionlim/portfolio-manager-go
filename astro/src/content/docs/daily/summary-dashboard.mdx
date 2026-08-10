@@ -1,6 +1,6 @@
 ---
 title: Summary Dashboard
-description: Read portfolio value, P&L, daily movement, and allocation summaries.
+description: Read portfolio value, dividends, historical P&L, daily movement, allocations, and portfolio activity.
 ---
 
 The Summary Dashboard is the fastest way to answer, "Where is my portfolio exposed right now?" It groups your current positions into practical views and lets you jump into the underlying holdings when something needs attention.
@@ -11,6 +11,10 @@ Open it from the sidebar:
 Summary
 ```
 
+![Summary Dashboard overview with portfolio figures blurred](/portfolio-manager-go/screenshots/SummaryOverview.png)
+
+The screenshots on this page blur portfolio figures for privacy.
+
 ## What It Shows
 
 At the top, Portfolio Manager shows portfolio-level totals in your base currency:
@@ -19,9 +23,24 @@ At the top, Portfolio Manager shows portfolio-level totals in your base currency
 | --- | --- | --- |
 | Market Value | Current total value after FX conversion | `SGD 482,400` |
 | Overall P&L | Total unrealized profit or loss after FX conversion | `SGD 38,250` |
+| Total Dividends | Cumulative dividends recorded in the latest portfolio metrics | `SGD 12,600` |
 | Day Change | Change from cached previous prices, when available | `SGD -1,280 (-0.27%)` |
 
 Day Change appears only when cached historical prices are available for your current tickers.
+
+## Historical P&L
+
+The Historical P&L strip compares the latest portfolio P&L with the most recent snapshot at or before each period boundary:
+
+| Period | Meaning |
+| --- | --- |
+| 7D | Rolling change over the trailing seven days |
+| MTD | Change since the start of the current month |
+| 3M | Change over the trailing three calendar months |
+| 6M | Change over the trailing six calendar months |
+| YTD | Change since the start of the current calendar year |
+
+A period displays **Insufficient history** when there is no suitable baseline snapshot. The date at the top right shows the latest historical metric used by the strip.
 
 ## Allocation Tables
 
@@ -61,6 +80,21 @@ For category review, expand a row to see the tickers that make up the total:
 - Use the pencil action in expanded category details to update missing or incorrect reference data.
 - Sort Value, P&L, or Day columns when you want to find the largest exposure or biggest mover quickly.
 
+## Portfolio Activity
+
+Below the allocation tables, Portfolio Activity combines historical performance with aggregated trades. Use the toggle to switch between:
+
+- **Monthly:** the current month and previous 23 calendar months.
+- **Yearly:** the current calendar year to date and the previous calendar year.
+
+![Monthly portfolio activity for the past 24 months with figures blurred](/portfolio-manager-go/screenshots/SummaryActivityMonthly.png)
+
+Each row shows period P&L, dividends received during the period, net cash flow, and ending portfolio market value. Expand a row to see trades grouped by ticker, including bought and sold quantities, average transaction price, and net price paid.
+
+![Yearly portfolio activity for the current and previous calendar years with figures blurred](/portfolio-manager-go/screenshots/SummaryActivityYearly.png)
+
+Period P&L and dividends require a historical snapshot at or before the period start. Net cash flow includes trade FX, with sell proceeds offsetting purchases.
+
 ## Before You Rely on the Numbers
 
 Check these inputs when a number looks wrong:
@@ -69,6 +103,7 @@ Check these inputs when a number looks wrong:
 - Currency conversion uses each position's FX rate.
 - Category and asset subclass come from reference data, with Singapore government securities grouped as Govies.
 - Day Change needs cached previous prices. If it is missing, run or schedule historical price collection.
+- Historical and activity comparisons need snapshots that cover the requested period boundaries.
 
 ## Related Screens
 

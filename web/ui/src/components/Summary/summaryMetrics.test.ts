@@ -13,7 +13,7 @@ const snapshot = (timestamp: string, pnl: number): TimestampedMetrics => ({
 });
 
 describe("calculateHeadlinePnlMetrics", () => {
-  it("calculates 1W, MTD, trailing 3M, 6M, and YTD P&L from unsorted snapshots", () => {
+  it("calculates 7D, MTD, trailing 3M, 6M, and YTD P&L from unsorted snapshots", () => {
     const result = calculateHeadlinePnlMetrics([
       snapshot("2026-08-15T00:00:00Z", 180),
       snapshot("2025-12-31T00:00:00Z", 20),
@@ -24,6 +24,7 @@ describe("calculateHeadlinePnlMetrics", () => {
     ]);
 
     expect(result.oneWeek).toBe(30);
+    expect(result.totalDividends).toBe(0);
     expect(result.mtd).toBe(50);
     expect(result.threeMonth).toBe(100);
     expect(result.sixMonth).toBe(140);

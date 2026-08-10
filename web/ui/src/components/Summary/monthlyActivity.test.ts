@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { TimestampedMetrics } from "../Analytics/types";
 import type { Trade } from "../../types/blotter";
-import { buildMonthlyPortfolioActivity } from "./monthlyActivity";
+import {
+  buildMonthlyPortfolioActivity,
+  buildYearlyPortfolioActivity,
+} from "./monthlyActivity";
 
 const metric = (
   timestamp: string,
@@ -35,7 +38,7 @@ const trade = (overrides: Partial<Trade>): Trade => ({
 });
 
 describe("buildMonthlyPortfolioActivity", () => {
-  it("builds twelve calendar months of portfolio metrics and ticker-level trades", () => {
+  it("builds 24 calendar months of portfolio metrics and ticker-level trades", () => {
     const rows = buildMonthlyPortfolioActivity(
       [
         metric("2026-05-31T00:00:00Z", 10, 1, 900),
@@ -81,6 +84,18 @@ describe("buildMonthlyPortfolioActivity", () => {
       "Nov-25",
       "Oct-25",
       "Sep-25",
+      "Aug-25",
+      "Jul-25",
+      "Jun-25",
+      "May-25",
+      "Apr-25",
+      "Mar-25",
+      "Feb-25",
+      "Jan-25",
+      "Dec-24",
+      "Nov-24",
+      "Oct-24",
+      "Sep-24",
     ]);
     expect(rows[2]).toMatchObject({
       mtdPnl: 20,
@@ -103,6 +118,38 @@ describe("buildMonthlyPortfolioActivity", () => {
       netQuantity: 10,
       averagePrice: 200,
       pricePaid: 2_400,
+    });
+  });
+
+  it("builds the current and previous calendar years", () => {
+    const rows = buildYearlyPortfolioActivity(
+      [
+        metric("2024-12-31T00:00:00Z", 10, 1, 900),
+        metric("2025-12-31T00:00:00Z", 50, 6, 1_100),
+        metric("2026-08-15T00:00:00Z", 80, 10, 1_200),
+      ],
+      [
+        trade({ TradeDate: "2025-06-10T00:00:00Z" }),
+        trade({ TradeID: "trade-2", TradeDate: "2026-06-10T00:00:00Z" }),
+      ],
+      1_250,
+      new Date("2026-08-15T00:00:00Z"),
+    );
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
+      monthLabel: "2026",
+      mtdPnl: 80,
+      dividends: 4,
+      netCashFlow: 1_300,
+      marketValue: 1_250,
+    });
+    expect(rows[1]).toMatchObject({
+      monthLabel: "2025",
+      mtdPnl: 40,
+      dividends: 5,
+      netCashFlow: 1_300,
+      marketValue: 1_100,
     });
   });
 

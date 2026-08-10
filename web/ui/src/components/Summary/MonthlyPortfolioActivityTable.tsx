@@ -5,6 +5,7 @@ import {
   Group,
   Loader,
   Paper,
+  SegmentedControl,
   Table,
   Text,
   Title,
@@ -37,7 +38,8 @@ const formatDate = (value: string) =>
   new Date(`${value}T00:00:00`).toLocaleDateString();
 
 interface MonthlyPortfolioActivityTableProps {
-  rows: MonthlyPortfolioActivity[];
+  monthlyRows: MonthlyPortfolioActivity[];
+  yearlyRows: MonthlyPortfolioActivity[];
   referenceData: ReferenceData | null;
   isMetricsLoading: boolean;
   areTradesLoading: boolean;
@@ -48,14 +50,18 @@ interface MonthlyPortfolioActivityTableProps {
 const MonthlyPortfolioActivityTable: React.FC<
   MonthlyPortfolioActivityTableProps
 > = ({
-  rows,
+  monthlyRows,
+  yearlyRows,
   referenceData,
   isMetricsLoading,
   areTradesLoading,
   hasMetricsError,
   hasTradeError,
 }) => {
+  const [view, setView] = useState<"month" | "year">("month");
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+  const rows = view === "month" ? monthlyRows : yearlyRows;
+  const isMonthly = view === "month";
 
   const toggleMonth = (monthKey: string) => {
     setExpandedMonths((current) => {
@@ -74,13 +80,26 @@ const MonthlyPortfolioActivityTable: React.FC<
       <Group justify="space-between" mb="sm">
         <Box>
           <Title order={4} size="h5">
-            Past 12 Months
+            {isMonthly ? "Past 24 Months" : "Past 2 Years"}
           </Title>
           <Text c="dimmed" size="xs">
-            Monthly portfolio performance and aggregated trading activity
+            {isMonthly ? "Monthly" : "Yearly"} portfolio performance and
+            aggregated trading activity
           </Text>
         </Box>
-        {isMetricsLoading || areTradesLoading ? <Loader size="sm" /> : null}
+        <Group gap="sm">
+          <SegmentedControl
+            size="xs"
+            value={view}
+            onChange={(value) => setView(value as "month" | "year")}
+            data={[
+              { label: "Monthly", value: "month" },
+              { label: "Yearly", value: "year" },
+            ]}
+            aria-label="Portfolio activity period"
+          />
+          {isMetricsLoading || areTradesLoading ? <Loader size="sm" /> : null}
+        </Group>
       </Group>
 
       <Table.ScrollContainer minWidth={720}>
@@ -94,8 +113,10 @@ const MonthlyPortfolioActivityTable: React.FC<
         >
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Month</Table.Th>
-              <Table.Th style={{ textAlign: "right" }}>MTD P&amp;L</Table.Th>
+              <Table.Th>{isMonthly ? "Month" : "Year"}</Table.Th>
+              <Table.Th style={{ textAlign: "right" }}>
+                {isMonthly ? "MTD" : "Annual"} P&amp;L
+              </Table.Th>
               <Table.Th style={{ textAlign: "right" }}>Dividends</Table.Th>
               <Table.Th style={{ textAlign: "right" }}>Net CF</Table.Th>
               <Table.Th style={{ textAlign: "right" }}>
@@ -189,7 +210,7 @@ const MonthlyPortfolioActivityTable: React.FC<
                             </Text>
                           ) : row.trades.length === 0 ? (
                             <Text c="dimmed" size="sm">
-                              No trades recorded for this month.
+                              {`No trades recorded for this ${isMonthly ? "month" : "year"}.`}
                             </Text>
                           ) : (
                             <Table.ScrollContainer minWidth={560}>
@@ -289,7 +310,9 @@ const MonthlyPortfolioActivityTable: React.FC<
                                 </Table.Tbody>
                                 <Table.Tfoot>
                                   <Table.Tr>
-                                    <Table.Th colSpan={7}>Month total</Table.Th>
+                                    <Table.Th colSpan={7}>
+                                      {isMonthly ? "Month" : "Year"} total
+                                    </Table.Th>
                                     <Table.Th
                                       style={{
                                         textAlign: "right",
@@ -322,9 +345,7 @@ const MonthlyPortfolioActivityTable: React.FC<
         </Text>
       ) : null}
       <Text c="dimmed" size="xs" mt="xs">
-        Monthly P&amp;L and dividends require a historical snapshot at or before
-        the start of the month. Net price paid includes trade FX, with sell
-        proceeds offsetting purchases.
+        {`${isMonthly ? "Monthly" : "Yearly"} P&L and dividends require a historical snapshot at or before the start of the ${isMonthly ? "month" : "year"}. Net price paid includes trade FX, with sell proceeds offsetting purchases.`}
       </Text>
     </Paper>
   );

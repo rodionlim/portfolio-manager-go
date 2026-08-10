@@ -2,6 +2,7 @@ import type { TimestampedMetrics } from "../Analytics/types";
 
 export interface HeadlinePnlMetrics {
   asOf?: string;
+  totalDividends?: number;
   oneWeek?: number;
   mtd?: number;
   threeMonth?: number;
@@ -69,12 +70,14 @@ export const calculateHeadlinePnlMetrics = (
       timestamp: snapshotDate(snapshot.timestamp),
       pnl: snapshotPnl(snapshot),
       marketValue: snapshot.metrics.mv,
+      totalDividends: snapshot.metrics.totalDividends,
     }))
     .filter(
       (snapshot) =>
         Number.isFinite(snapshot.timestamp) &&
         Number.isFinite(snapshot.pnl) &&
-        Number.isFinite(snapshot.marketValue),
+        Number.isFinite(snapshot.marketValue) &&
+        Number.isFinite(snapshot.totalDividends),
     )
     .sort((left, right) => left.timestamp - right.timestamp);
 
@@ -111,6 +114,7 @@ export const calculateHeadlinePnlMetrics = (
 
   return {
     asOf: latestDate.toISOString(),
+    totalDividends: latestSnapshot.totalDividends,
     oneWeek: pnlSince(snapshots, latest, oneWeekStart),
     mtd: pnlSince(snapshots, latest, monthStart),
     threeMonth: pnlSince(snapshots, latest, threeMonthStart),

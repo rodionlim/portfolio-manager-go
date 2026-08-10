@@ -1,3 +1,9 @@
+## [1.64.0] - 2026-08-10
+
+### 🚀 Features
+
+- *(ui)* Extend monthly view and add dividends to summary
+
 ## [1.63.0] - 2026-08-04
 
 ### 🚀 Features

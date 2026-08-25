@@ -46,6 +46,7 @@ interface Position {
   AssetSubClass: string;
   Mv: number;
   PnL: number;
+  Dividends: number;
   FxRate: number;
   Qty: number;
   Px: number;
@@ -60,6 +61,8 @@ interface SummaryDetail {
   marketValue: number;
   pnl: number;
   dailyPnl: number;
+  qty: number;
+  dividends: number;
   referenceData?: ReferenceDataItem;
 }
 
@@ -224,11 +227,15 @@ const summarizeDetails = (details: SummaryDetail[]) => {
         marketValue: 0,
         pnl: 0,
         dailyPnl: 0,
+        qty: 0,
+        dividends: 0,
         referenceData: detail.referenceData,
       } satisfies SummaryDetail);
     existing.marketValue += detail.marketValue;
     existing.pnl += detail.pnl;
     existing.dailyPnl += detail.dailyPnl;
+    existing.qty += detail.qty;
+    existing.dividends += detail.dividends;
     existing.referenceData = existing.referenceData || detail.referenceData;
     totals.set(detail.ticker, existing);
   });
@@ -249,7 +256,9 @@ const SummaryTable: React.FC<{
     direction: SummarySortDirection;
   };
   expandable?: boolean;
+  showPositionMetrics?: boolean;
   onEditReferenceData?: (detail: SummaryDetail) => void;
+  onViewTickerTrades?: (ticker: string) => void;
   onViewPositions?: (label: string) => void;
 }> = ({
   title,
@@ -257,7 +266,9 @@ const SummaryTable: React.FC<{
   showDailyPnl = false,
   defaultSort = null,
   expandable = false,
+  showPositionMetrics = false,
   onEditReferenceData,
+  onViewTickerTrades,
   onViewPositions,
 }) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -465,7 +476,15 @@ const SummaryTable: React.FC<{
                       <Collapse in={isExpanded}>
                         <Box p="xs">
                           <Table.ScrollContainer
-                            minWidth={showDailyPnl ? 600 : 480}
+                            minWidth={
+                              showPositionMetrics
+                                ? showDailyPnl
+                                  ? 780
+                                  : 660
+                                : showDailyPnl
+                                  ? 600
+                                  : 480
+                            }
                           >
                             <Table
                               withColumnBorders
@@ -489,12 +508,36 @@ const SummaryTable: React.FC<{
                                     Day
                                   </Table.Th>
                                 ) : null}
+                                {showPositionMetrics ? (
+                                  <>
+                                    <Table.Th style={{ textAlign: "right" }}>
+                                      Qty
+                                    </Table.Th>
+                                    <Table.Th style={{ textAlign: "right" }}>
+                                      Dividends
+                                    </Table.Th>
+                                  </>
+                                ) : null}
                               </Table.Tr>
                             </Table.Thead>
                             <Table.Tbody>
                               {details.map((detail) => (
                                 <Table.Tr key={detail.ticker}>
-                                  <Table.Td>{detail.ticker}</Table.Td>
+                                  <Table.Td>
+                                    {onViewTickerTrades ? (
+                                      <UnstyledButton
+                                        onClick={() =>
+                                          onViewTickerTrades(detail.ticker)
+                                        }
+                                      >
+                                        <Text c="blue" fw={500} size="sm">
+                                          {detail.ticker}
+                                        </Text>
+                                      </UnstyledButton>
+                                    ) : (
+                                      detail.ticker
+                                    )}
+                                  </Table.Td>
                                   <Table.Td>{detail.name}</Table.Td>
                                   <Table.Td>
                                     {onEditReferenceData ? (
@@ -545,6 +588,26 @@ const SummaryTable: React.FC<{
                                     >
                                       {formatAmount(detail.dailyPnl)}
                                     </Table.Td>
+                                  ) : null}
+                                  {showPositionMetrics ? (
+                                    <>
+                                      <Table.Td
+                                        style={{
+                                          textAlign: "right",
+                                          ...numberStyle,
+                                        }}
+                                      >
+                                        {detail.qty.toLocaleString()}
+                                      </Table.Td>
+                                      <Table.Td
+                                        style={{
+                                          textAlign: "right",
+                                          ...numberStyle,
+                                        }}
+                                      >
+                                        {formatAmount(detail.dividends)}
+                                      </Table.Td>
+                                    </>
                                   ) : null}
                                 </Table.Tr>
                               ))}
@@ -808,6 +871,8 @@ const SummaryView: React.FC = () => {
         marketValue,
         pnl,
         dailyPnl,
+        qty: position.Qty,
+        dividends: (position.Dividends || 0) * fxRate,
         referenceData: ref,
       } satisfies SummaryDetail;
 
@@ -868,6 +933,10 @@ const SummaryView: React.FC = () => {
     navigate("/positions", {
       state: { book },
     });
+  };
+
+  const handleViewTickerTrades = (ticker: string) => {
+    navigate(`/blotter?ticker=${encodeURIComponent(ticker)}`);
   };
 
   const handleViewPositionsByCurrency = (currency: string) => {
@@ -990,10 +1059,10 @@ const SummaryView: React.FC = () => {
             </Text>
           ) : null}
         </Group>
-        <SimpleGrid cols={{ base: 2, sm: 5 }} spacing="xs">
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xs">
           <PeriodPnlHeadline
-            label="7D"
-            value={headlinePnl.oneWeek}
+            label="WTD"
+            value={headlinePnl.wtd}
             isLoading={isHistoricalMetricsLoading}
             hasError={hasHistoricalMetricsError}
           />
@@ -1004,14 +1073,8 @@ const SummaryView: React.FC = () => {
             hasError={hasHistoricalMetricsError}
           />
           <PeriodPnlHeadline
-            label="3M"
-            value={headlinePnl.threeMonth}
-            isLoading={isHistoricalMetricsLoading}
-            hasError={hasHistoricalMetricsError}
-          />
-          <PeriodPnlHeadline
-            label="6M"
-            value={headlinePnl.sixMonth}
+            label="QTD"
+            value={headlinePnl.qtd}
             isLoading={isHistoricalMetricsLoading}
             hasError={hasHistoricalMetricsError}
           />
@@ -1042,7 +1105,9 @@ const SummaryView: React.FC = () => {
           showDailyPnl={hasCachedMetrics}
           defaultSort={{ key: "marketValue", direction: "desc" }}
           expandable
+          showPositionMetrics
           onEditReferenceData={handleEditReferenceData}
+          onViewTickerTrades={handleViewTickerTrades}
         />
         <SummaryTable
           title="By Asset Subclass"

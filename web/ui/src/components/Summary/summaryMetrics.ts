@@ -3,10 +3,9 @@ import type { TimestampedMetrics } from "../Analytics/types";
 export interface HeadlinePnlMetrics {
   asOf?: string;
   totalDividends?: number;
-  oneWeek?: number;
+  wtd?: number;
   mtd?: number;
-  threeMonth?: number;
-  sixMonth?: number;
+  qtd?: number;
   ytd?: number;
 }
 
@@ -14,21 +13,6 @@ const snapshotPnl = (snapshot: TimestampedMetrics) =>
   snapshot.metrics.mv -
   snapshot.metrics.pricePaid +
   snapshot.metrics.totalDividends;
-
-const subtractCalendarMonths = (date: Date, months: number) => {
-  const targetMonth = date.getUTCMonth() - months;
-  const lastDayOfTargetMonth = new Date(
-    Date.UTC(date.getUTCFullYear(), targetMonth + 1, 0),
-  ).getUTCDate();
-
-  return new Date(
-    Date.UTC(
-      date.getUTCFullYear(),
-      targetMonth,
-      Math.min(date.getUTCDate(), lastDayOfTargetMonth),
-    ),
-  );
-};
 
 const snapshotDate = (timestamp: string) => {
   const dateParts = timestamp.slice(0, 10).split("-").map(Number);
@@ -104,21 +88,27 @@ export const calculateHeadlinePnlMetrics = (
       : latestSnapshot;
 
   const latestDate = new Date(latest.timestamp);
+  const weekStart = new Date(latest.timestamp);
+  const daysSinceMonday = (latestDate.getUTCDay() + 6) % 7;
+  weekStart.setUTCDate(latestDate.getUTCDate() - daysSinceMonday);
   const monthStart = new Date(
     Date.UTC(latestDate.getUTCFullYear(), latestDate.getUTCMonth(), 1),
   );
+  const quarterStart = new Date(
+    Date.UTC(
+      latestDate.getUTCFullYear(),
+      Math.floor(latestDate.getUTCMonth() / 3) * 3,
+      1,
+    ),
+  );
   const yearStart = new Date(Date.UTC(latestDate.getUTCFullYear(), 0, 1));
-  const oneWeekStart = new Date(latest.timestamp - 7 * 24 * 60 * 60 * 1_000);
-  const threeMonthStart = subtractCalendarMonths(latestDate, 3);
-  const sixMonthStart = subtractCalendarMonths(latestDate, 6);
 
   return {
     asOf: latestDate.toISOString(),
     totalDividends: latestSnapshot.totalDividends,
-    oneWeek: pnlSince(snapshots, latest, oneWeekStart),
+    wtd: pnlSince(snapshots, latest, weekStart),
     mtd: pnlSince(snapshots, latest, monthStart),
-    threeMonth: pnlSince(snapshots, latest, threeMonthStart),
-    sixMonth: pnlSince(snapshots, latest, sixMonthStart),
+    qtd: pnlSince(snapshots, latest, quarterStart),
     ytd: pnlSince(snapshots, latest, yearStart),
   };
 };

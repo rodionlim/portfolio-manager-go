@@ -1,3 +1,9 @@
+## [1.65.0] - 2026-08-25
+
+### 🚀 Features
+
+- *(ui)* Make summary more informative by including dividends, qty and wtd, qtd stats
+
 ## [1.64.0] - 2026-08-10
 
 ### 🚀 Features

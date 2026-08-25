@@ -36,7 +36,12 @@ const HomeView: React.FC = () => {
   return (
     <Stack gap="md" align="flex-start">
       <Text>Select a valid action on the left navigation bar</Text>
-      <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="sm" w="100%" maw={520}>
+      <SimpleGrid
+        cols={{ base: 1, xs: 2, lg: Math.min(quickLinks.length, 5) }}
+        spacing="sm"
+        w="100%"
+        maw={1100}
+      >
         {quickLinks.map((link) => (
           <Button
             key={link.path}

@@ -119,6 +119,10 @@ describe("buildMonthlyPortfolioActivity", () => {
       averagePrice: 200,
       pricePaid: 2_400,
     });
+    expect(rows[0].mtdPnl).toBe(30);
+    expect(rows[0].dividends).toBe(2);
+    expect(rows[1].mtdPnl).toBe(-10);
+    expect(rows[1].dividends).toBe(3);
   });
 
   it("builds the current and previous calendar years", () => {

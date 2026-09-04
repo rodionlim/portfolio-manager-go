@@ -37,7 +37,7 @@ const pnlSince = (
     .reverse()
     .find(
       (snapshot) =>
-        snapshot.timestamp <= startTime &&
+        snapshot.timestamp < startTime &&
         snapshot.timestamp < latest.timestamp,
     );
 

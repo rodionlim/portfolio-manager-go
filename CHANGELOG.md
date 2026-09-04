@@ -1,3 +1,13 @@
+## [1.66.0] - 2026-09-04
+
+### 🚀 Features
+
+- *(summary)* Improve category table readability
+
+### 🐛 Bug Fixes
+
+- *(summary)* Include first-day pnl in period totals
+
 ## [1.65.0] - 2026-08-25
 
 ### 🚀 Features

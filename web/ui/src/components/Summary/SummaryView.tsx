@@ -62,6 +62,7 @@ interface SummaryDetail {
   pnl: number;
   dailyPnl: number;
   qty: number;
+  currentPrice: number;
   dividends: number;
   referenceData?: ReferenceDataItem;
 }
@@ -110,6 +111,12 @@ const formatAmount = (value: number) =>
   value.toLocaleString(undefined, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
+  });
+
+const formatPrice = (value: number) =>
+  value.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 4,
   });
 
 const formatPercentage = (value: number, total: number) => {
@@ -228,6 +235,7 @@ const summarizeDetails = (details: SummaryDetail[]) => {
         pnl: 0,
         dailyPnl: 0,
         qty: 0,
+        currentPrice: detail.currentPrice,
         dividends: 0,
         referenceData: detail.referenceData,
       } satisfies SummaryDetail);
@@ -235,6 +243,9 @@ const summarizeDetails = (details: SummaryDetail[]) => {
     existing.pnl += detail.pnl;
     existing.dailyPnl += detail.dailyPnl;
     existing.qty += detail.qty;
+    if (detail.currentPrice > 0) {
+      existing.currentPrice = detail.currentPrice;
+    }
     existing.dividends += detail.dividends;
     existing.referenceData = existing.referenceData || detail.referenceData;
     totals.set(detail.ticker, existing);
@@ -257,6 +268,7 @@ const SummaryTable: React.FC<{
   };
   expandable?: boolean;
   showPositionMetrics?: boolean;
+  compactLabelColumn?: boolean;
   onEditReferenceData?: (detail: SummaryDetail) => void;
   onViewTickerTrades?: (ticker: string) => void;
   onViewPositions?: (label: string) => void;
@@ -267,6 +279,7 @@ const SummaryTable: React.FC<{
   defaultSort = null,
   expandable = false,
   showPositionMetrics = false,
+  compactLabelColumn = false,
   onEditReferenceData,
   onViewTickerTrades,
   onViewPositions,
@@ -362,7 +375,9 @@ const SummaryTable: React.FC<{
       <Title order={4} mb="sm" size="h5">
         {title}
       </Title>
-      <Table.ScrollContainer minWidth={showDailyPnl ? 560 : 420}>
+      <Table.ScrollContainer
+        minWidth={compactLabelColumn ? 470 : showDailyPnl ? 560 : 420}
+      >
         <Table
           striped
           highlightOnHover
@@ -370,7 +385,16 @@ const SummaryTable: React.FC<{
           fz="sm"
           horizontalSpacing="xs"
           verticalSpacing="xs"
+          style={compactLabelColumn ? { tableLayout: "fixed" } : undefined}
         >
+        {compactLabelColumn ? (
+          <colgroup>
+            <col style={{ width: "28%" }} />
+            <col style={{ width: showDailyPnl ? "24%" : "36%" }} />
+            <col style={{ width: showDailyPnl ? "24%" : "36%" }} />
+            {showDailyPnl ? <col style={{ width: "24%" }} /> : null}
+          </colgroup>
+        ) : null}
         <Table.Thead>
           <Table.Tr>
             <Table.Th />
@@ -413,7 +437,16 @@ const SummaryTable: React.FC<{
                                 : "none",
                             }}
                           />
-                          <Text fw={500} size="sm">
+                          <Text
+                            fw={500}
+                            size="sm"
+                            truncate={compactLabelColumn ? "end" : undefined}
+                            title={
+                              compactLabelColumn
+                                ? row.displayLabel || row.label
+                                : undefined
+                            }
+                          >
                             {row.displayLabel || row.label}
                           </Text>
                         </Group>
@@ -516,6 +549,9 @@ const SummaryTable: React.FC<{
                                     <Table.Th style={{ textAlign: "right" }}>
                                       Dividends
                                     </Table.Th>
+                                    <Table.Th style={{ textAlign: "right" }}>
+                                      Current Px
+                                    </Table.Th>
                                   </>
                                 ) : null}
                               </Table.Tr>
@@ -606,6 +642,17 @@ const SummaryTable: React.FC<{
                                         }}
                                       >
                                         {formatAmount(detail.dividends)}
+                                      </Table.Td>
+                                      <Table.Td
+                                        style={{
+                                          textAlign: "right",
+                                          ...numberStyle,
+                                          whiteSpace: "nowrap",
+                                        }}
+                                      >
+                                        {detail.currentPrice > 0
+                                          ? formatPrice(detail.currentPrice)
+                                          : "—"}
                                       </Table.Td>
                                     </>
                                   ) : null}
@@ -865,13 +912,14 @@ const SummaryView: React.FC = () => {
       const detail = {
         ticker: position.Ticker,
         name: position.Name || ref?.name || position.Ticker,
-        ccy: position.Ccy,
+        ccy: currency,
         assetClass: position.AssetClass || ref?.asset_class || "",
         assetSubClass,
         marketValue,
         pnl,
         dailyPnl,
         qty: position.Qty,
+        currentPrice: position.Px,
         dividends: (position.Dividends || 0) * fxRate,
         referenceData: ref,
       } satisfies SummaryDetail;
@@ -1106,6 +1154,7 @@ const SummaryView: React.FC = () => {
           defaultSort={{ key: "marketValue", direction: "desc" }}
           expandable
           showPositionMetrics
+          compactLabelColumn
           onEditReferenceData={handleEditReferenceData}
           onViewTickerTrades={handleViewTickerTrades}
         />

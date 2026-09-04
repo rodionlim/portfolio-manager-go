@@ -180,7 +180,7 @@ export const buildMonthlyPortfolioActivity = (
           .reverse()
           .find(
             (snapshot) =>
-              snapshot.timestamp <= monthStart &&
+              snapshot.timestamp < monthStart &&
               snapshot.timestamp < latest.timestamp,
           )
       : undefined;
@@ -243,7 +243,7 @@ export const buildYearlyPortfolioActivity = (
           .reverse()
           .find(
             (snapshot) =>
-              snapshot.timestamp <= yearStart &&
+              snapshot.timestamp < yearStart &&
               snapshot.timestamp < latest.timestamp,
           )
       : undefined;

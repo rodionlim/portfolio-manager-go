@@ -67,4 +67,22 @@ describe("calculateHeadlinePnlMetrics", () => {
     expect(result.ytd).toBe(210);
     expect(result.asOf).toBe("2026-08-15T00:00:00.000Z");
   });
+
+  it("includes snapshots recorded on the first day of each period", () => {
+    const result = calculateHeadlinePnlMetrics([
+      snapshot("2025-12-31T00:00:00Z", 10),
+      snapshot("2026-01-01T00:00:00Z", 20),
+      snapshot("2026-06-30T00:00:00Z", 50),
+      snapshot("2026-07-01T00:00:00Z", 60),
+      snapshot("2026-08-28T00:00:00Z", 80),
+      snapshot("2026-08-31T00:00:00Z", 90),
+      snapshot("2026-09-01T00:00:00Z", 110),
+      snapshot("2026-09-04T00:00:00Z", 140),
+    ]);
+
+    expect(result.wtd).toBe(60);
+    expect(result.mtd).toBe(50);
+    expect(result.qtd).toBe(90);
+    expect(result.ytd).toBe(130);
+  });
 });

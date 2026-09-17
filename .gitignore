@@ -8,6 +8,7 @@ portfolio-manager*
 portfolio-manager.db
 
 node_modules
+.pnpm-store/
 
 npm_licenses.tar.bz2
 /web/ui/static
@@ -27,3 +28,6 @@ token.json
 package.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
+
+# Downloaded SGX weekly fund flow trackers
+/data/SGX_Fund_Flow_Weekly_Tracker_Week_of_*.xlsx

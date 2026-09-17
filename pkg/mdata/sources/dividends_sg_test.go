@@ -31,5 +31,5 @@ func TestDividendsSg_GetAssetPrice(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify we got some dividend data
-	assert.Greater(t, assetData.Price, 0, "should have received some price")
+	assert.Greater(t, assetData.Price, float64(0), "should have received some price")
 }

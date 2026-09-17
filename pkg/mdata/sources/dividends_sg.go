@@ -63,19 +63,43 @@ func (src *DividendsSg) GetAssetPrice(ticker string) (*types.AssetData, error) {
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
+	price, err := parseDividendsSgPrice(doc, ticker)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create asset data object
+	assetData := &types.AssetData{
+		Ticker:    ticker,
+		Price:     price,
+		Currency:  "SGD",
+		Timestamp: time.Now().Unix(),
+	}
+
+	// Store in cache
+	src.cache.Set(ticker, assetData, cache.DefaultExpiration)
+
+	return assetData, nil
+}
+
+func parseDividendsSgPrice(doc *goquery.Document, ticker string) (float64, error) {
 	var price float64
 	var priceFound bool
+	currencies := []string{"SGD", "USD", "HKD", "EUR", "GBP", "JPY", "MYR", "AUD", "CAD"}
 
-	// Find h4 elements containing span with price
-	doc.Find("h4").Each(func(i int, s *goquery.Selection) {
+	// Support the current quote container and legacy h4 layout.
+	doc.Find(".dividend-company-quote, h4").Each(func(i int, s *goquery.Selection) {
 		// If we've already found the price, skip
 		if priceFound {
 			return
 		}
 
-		// Look for a span inside this h4
+		// Look for a numeric price badge inside the quote container.
 		s.Find("span.badge").Each(func(j int, span *goquery.Selection) {
 			priceText := strings.TrimSpace(span.Text())
+			for _, currency := range currencies {
+				priceText = strings.TrimSpace(strings.TrimPrefix(priceText, currency))
+			}
 
 			// Try to parse as float
 			p, err := strconv.ParseFloat(priceText, 64)
@@ -85,16 +109,15 @@ func (src *DividendsSg) GetAssetPrice(ticker string) (*types.AssetData, error) {
 			}
 		})
 
-		// Fallback: If span.badge not found, check if currency code exists in the h4 text
+		// Fall back to the price following a currency code in the quote text.
 		if !priceFound {
-			h4Text := s.Text()
-			currencies := []string{"SGD", "USD", "HKD", "EUR", "GBP", "JPY", "MYR", "AUD", "CAD"}
+			quoteText := s.Text()
 
 			for _, currency := range currencies {
-				if strings.Contains(h4Text, currency) {
+				if strings.Contains(quoteText, currency) {
 					// Extract price after currency code
 					// Example: "TEMASEK S$500M 1.8% B 261124\t(TEMB)\tSGD 1.013\t\n\t\u00a0\n\t +0.79% +0.01"
-					parts := strings.Split(h4Text, currency)
+					parts := strings.Split(quoteText, currency)
 					if len(parts) > 1 {
 						// Get the part after currency code
 						afterCurrency := strings.TrimSpace(parts[1])
@@ -116,21 +139,10 @@ func (src *DividendsSg) GetAssetPrice(ticker string) (*types.AssetData, error) {
 	})
 
 	if !priceFound {
-		return nil, fmt.Errorf("could not find price for %s", ticker)
+		return 0, fmt.Errorf("could not find price for %s", ticker)
 	}
 
-	// Create asset data object
-	assetData := &types.AssetData{
-		Ticker:    ticker,
-		Price:     price,
-		Currency:  "SGD",
-		Timestamp: time.Now().Unix(),
-	}
-
-	// Store in cache
-	src.cache.Set(ticker, assetData, cache.DefaultExpiration)
-
-	return assetData, nil
+	return price, nil
 }
 
 func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float64) ([]types.DividendsMetadata, error) {

@@ -1,3 +1,9 @@
+## [1.66.1] - 2026-09-17
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Adapt to schema changes in dividends.sg
+
 ## [1.66.0] - 2026-09-04
 
 ### 🚀 Features

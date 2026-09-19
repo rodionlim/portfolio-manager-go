@@ -15,6 +15,15 @@ func TestParseDividendsSgPrice(t *testing.T) {
 		want float64
 	}{
 		{
+			name: "separate price and currency layout",
+			html: `<div class="dividend-company-quote"><strong class="dividend-company-price">1.001</strong><span class="dividend-company-currency">SGD</span><span class="dividend-company-change is-neutral">+0.00% +0.00</span></div>`,
+			want: 1.001,
+		},
+		{
+			name: "unavailable separate price does not use change",
+			html: `<div class="dividend-company-quote"><strong class="dividend-company-price">N/A</strong><span class="dividend-company-currency">SGD</span><span class="dividend-company-change is-neutral">+0.00% +0.00</span></div>`,
+		},
+		{
 			name: "current TEMB quote layout",
 			html: `<header class="dividend-company-header"><h1>TEMASEK S$500M 1.8% B 261124 <span>(TEMB)</span></h1><div class="dividend-company-quote"><span class="badge badge-secondary">SGD 1.001</span><a class="badge badge-success">+0.00% +0.00</a><small>Price updated (UTC): 2026-09-17 10:55:04</small></div></header>`,
 			want: 1.001,

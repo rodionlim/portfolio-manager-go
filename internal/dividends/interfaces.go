@@ -1,5 +1,20 @@
 package dividends
 
+// YearlyDividend represents dividend statistics for a specific year
+type YearlyDividend struct {
+	Year   int     `json:"year"`
+	Amount float64 `json:"amount"`
+}
+
+// DividendMetrics represents overall dividend performance metrics
+type DividendMetrics struct {
+	CAGR                  float64          `json:"cagr"`
+	AverageGrowth         float64          `json:"averageGrowth"`
+	YearlyDividends       []YearlyDividend `json:"yearlyDividends"`
+	TotalDividends        float64          `json:"totalDividends"`
+	AverageYearlyDividend float64          `json:"averageYearlyDividend"`
+}
+
 // Manager defines the interface for managing dividends
 type Manager interface {
 	// CalculateDividendsForAllTickers returns a map of all dividends indexed by ticker across entire portfolio

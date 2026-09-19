@@ -1,3 +1,9 @@
+## [1.66.2] - 2026-09-19
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Parse separate Dividends.sg price element
+
 ## [1.66.1] - 2026-09-17
 
 ### 🐛 Bug Fixes

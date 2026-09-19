@@ -1,3 +1,9 @@
+## [1.66.3] - 2026-09-19
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Reconcile duplicate Dividends.sg payout rows
+
 ## [1.66.2] - 2026-09-19
 
 ### 🐛 Bug Fixes

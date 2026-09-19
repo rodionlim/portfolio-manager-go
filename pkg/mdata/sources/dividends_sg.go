@@ -94,8 +94,11 @@ func parseDividendsSgPrice(doc *goquery.Document, ticker string) (float64, error
 			return
 		}
 
-		// Look for a numeric price badge inside the quote container.
-		s.Find("span.badge").Each(func(j int, span *goquery.Selection) {
+		// The current layout separates price and currency; older layouts use badges.
+		s.Find(".dividend-company-price, span.badge").Each(func(j int, span *goquery.Selection) {
+			if priceFound {
+				return
+			}
 			priceText := strings.TrimSpace(span.Text())
 			for _, currency := range currencies {
 				priceText = strings.TrimSpace(strings.TrimPrefix(priceText, currency))

@@ -2,12 +2,10 @@ package sources
 
 import (
 	"fmt"
-	"math"
 	"net/http"
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/types"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -181,94 +179,7 @@ func (src *DividendsSg) GetDividendsMetadata(ticker string, withholdingTax float
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	// Use map to aggregate dividends by date
-	dividendMap := make(map[string]float64)
-
-	isBond := false
-	doc.Find("table.table-bordered tr").Each(func(i int, s *goquery.Selection) {
-		// Skip header row, and determine if product is bond or equity
-		if i == 0 {
-			cells := s.Find("th")
-			if cells.Length() == 4 {
-				isBond = true
-			}
-			return
-		}
-
-		// Extract date and amount (equity)
-		cells := s.Find("td")
-		clen := cells.Length()
-		amountIdx := 3
-		dateIdx := 4
-		if clen < 4 { // Ensure we have enough cells
-			return
-		} else if clen == 4 {
-			amountIdx = 0
-			dateIdx = 1
-		}
-
-		if isBond {
-			// e.g. https://www.dividends.sg/view/TEMB, ex-date and particulars column
-			amountIdx = 3
-			dateIdx = 1
-		}
-
-		// Amount
-		amountStr := cells.Eq(amountIdx).Text()
-		if amountStr == "-" {
-			logger.Warn("skipping non-dividend event")
-			amountStr = "0"
-		}
-
-		// Parse amount, removing "SGD" prefix if present, also parsing for % for bonds
-		var amount float64
-		if strings.Contains(amountStr, "%") {
-			// check that amount string starts with Rate:, all other cases are not real dividends
-			if !strings.HasPrefix(amountStr, "Rate:") {
-				return
-			}
-			amountStr = strings.ReplaceAll(strings.TrimSpace(strings.TrimPrefix(amountStr, "Rate: ")), "%", "")
-			amount, err = strconv.ParseFloat(amountStr, 64)
-			if err != nil {
-				return
-			}
-			// here we make the assumption that the bond pays 2 times a year
-			// TODO: this might not be true and needs a rework, thankfully, semiannual bonds are the most common
-			amount = amount / 100 / 2
-		} else {
-			// handle USD denominated singapore stocks
-			amountStr = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(amountStr, "SGD"), "USD"))
-			amount, err = strconv.ParseFloat(amountStr, 64)
-			if err != nil {
-				return
-			}
-		}
-
-		// Date (ex-date)
-		dateStr := cells.Eq(dateIdx).Text()
-		if dateStr == "-" || dateStr == "" {
-			logger.Warn("empty date for dividend, please check if the website has changed")
-			return
-		}
-
-		// Add amount to existing date or create new entry
-		dividendMap[dateStr] += amount
-	})
-
-	// Convert map to sorted slice
-	var dividends []types.DividendsMetadata
-	for date, amount := range dividendMap {
-		dividends = append(dividends, types.DividendsMetadata{
-			Ticker:         ticker,
-			ExDate:         date,
-			Amount:         math.Round(amount*10000) / 10000, // Round to 4 decimal places
-			WithholdingTax: withholdingTax})                  // sg dividends have no withholding tax
-	}
-
-	// Sort dividends by date string (works because format is yyyy-mm-dd)
-	sort.Slice(dividends, func(i, j int) bool {
-		return dividends[i].ExDate < dividends[j].ExDate
-	})
+	dividends := parseDividendsSgMetadata(doc, ticker, withholdingTax)
 	dividends = src.withDividendSource(dividends, types.DividendSourceOfficial)
 
 	if src.db != nil {

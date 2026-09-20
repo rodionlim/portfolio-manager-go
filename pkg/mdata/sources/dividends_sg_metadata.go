@@ -1,11 +1,13 @@
 package sources
 
 import (
+	"fmt"
 	"math"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"portfolio-manager/pkg/types"
 
@@ -22,37 +24,45 @@ type dividendsSgComponent struct {
 }
 
 type dividendsSgCopies struct {
-	references    map[string]struct{}
-	legacySources map[string]struct{}
-	legacyCount   int
+	references          map[string]struct{}
+	unreferencedSources map[string]struct{}
+	unreferencedCount   int
 }
 
-func parseDividendsSgMetadata(doc *goquery.Document, ticker string, withholdingTax float64) []types.DividendsMetadata {
+func parseDividendsSgMetadata(doc *goquery.Document, ticker string, withholdingTax float64) ([]types.DividendsMetadata, error) {
 	components := make(map[dividendsSgComponent]*dividendsSgCopies)
-	doc.Find("table.table-bordered").Each(func(_ int, table *goquery.Selection) {
-		isBond := table.Find("tr").First().Find("th").Length() == 4
-		table.Find("tr").Each(func(_ int, row *goquery.Selection) {
-			cells := row.Find("td")
-			if cells.Length() < 4 {
+	tables := doc.Find(".dividend-history-table")
+	if tables.Length() == 0 {
+		return nil, fmt.Errorf("dividend history tables not found for %s", ticker)
+	}
+	var parseErr error
+	tables.Each(func(_ int, table *goquery.Selection) {
+		if parseErr != nil {
+			return
+		}
+		headers := []string{}
+		table.Find("thead th").Each(func(_ int, cell *goquery.Selection) {
+			headers = append(headers, strings.Join(strings.Fields(cell.Text()), " "))
+		})
+		isBond := strings.Join(headers, "|") == "Ex Date|Pay Date|Particulars / source"
+		if !isBond && strings.Join(headers, "|") != "Amount|Ex Date|Pay Date|Particulars / source" {
+			parseErr = fmt.Errorf("unrecognized dividend history columns for %s: %v", ticker, headers)
+			return
+		}
+		table.Find("tbody > tr").Each(func(_ int, row *goquery.Selection) {
+			cells := row.ChildrenFiltered("td")
+			if cells.Length() != len(headers) {
+				parseErr = fmt.Errorf("unexpected dividend row for %s: got %d columns", ticker, cells.Length())
 				return
 			}
-			// Equity rows omit the three year-summary cells after the first row.
-			amountIdx, dateIdx := 3, 4
-			if cells.Length() == 4 {
-				amountIdx, dateIdx = 0, 1
-			}
+			amountIdx, dateIdx := 0, 1
 			if isBond {
-				amountIdx, dateIdx = 3, 1
+				amountIdx, dateIdx = 2, 0
 			}
+
 			detail := cells.Last()
 			action := detail.Find(`a[href*="/dividend/show"]`).First()
 			particulars := action.Text()
-			if action.Length() == 0 {
-				// Legacy pages have plain particulars. Exclude source annotations.
-				clean := detail.Clone()
-				clean.Find(`small, a[href*="links.sgx.com"]`).Remove()
-				particulars = clean.Text()
-			}
 			particulars = strings.Join(strings.Fields(particulars), " ")
 			amountText := strings.TrimSpace(cells.Eq(amountIdx).Text())
 			if isBond {
@@ -88,10 +98,12 @@ func parseDividendsSgMetadata(doc *goquery.Document, ticker string, withholdingT
 				amount, err = strconv.ParseFloat(amountText, 64)
 			}
 			if err != nil || math.IsNaN(amount) || math.IsInf(amount, 0) {
+				parseErr = fmt.Errorf("invalid dividend amount for %s: %q", ticker, amountText)
 				return
 			}
 			exDate := strings.TrimSpace(cells.Eq(dateIdx).Text())
-			if exDate == "" || exDate == "-" {
+			if _, err := time.Parse("2006-01-02", exDate); err != nil {
+				parseErr = fmt.Errorf("invalid dividend ex-date for %s: %q", ticker, exDate)
 				return
 			}
 			key := dividendsSgComponent{
@@ -100,32 +112,35 @@ func parseDividendsSgMetadata(doc *goquery.Document, ticker string, withholdingT
 			}
 			copies := components[key]
 			if copies == nil {
-				copies = &dividendsSgCopies{references: make(map[string]struct{}), legacySources: make(map[string]struct{})}
+				copies = &dividendsSgCopies{references: make(map[string]struct{}), unreferencedSources: make(map[string]struct{})}
 				components[key] = copies
 			}
 			if match := dividendsSgReference.FindStringSubmatch(detail.Text()); match != nil {
 				copies.references[match[1]] = struct{}{}
 			} else {
-				// Identical copies of the same legacy source are one event, but
+				// Identical copies of the same unreferenced source are one event, but
 				// different source IDs (or unidentified rows) may be distinct events.
 				source, _ := action.Attr("href")
 				if source != "" {
-					if _, seen := copies.legacySources[source]; seen {
+					if _, seen := copies.unreferencedSources[source]; seen {
 						return
 					}
-					copies.legacySources[source] = struct{}{}
+					copies.unreferencedSources[source] = struct{}{}
 				}
-				copies.legacyCount++
+				copies.unreferencedCount++
 			}
 		})
 	})
 
+	if parseErr != nil {
+		return nil, parseErr
+	}
 	dividendMap := make(map[string]float64)
 	for component, copies := range components {
-		// Upstream exposes old rows alongside refreshed rows with SGX references.
+		// The current page still exposes unreferenced rows alongside matching SGX references.
 		// Match the two sets one-for-one only when every economic field agrees.
-		// Keep distinct references, unmatched legacy rows, and separate components.
-		count := max(len(copies.references), copies.legacyCount)
+		// Keep distinct references, unmatched unreferenced rows, and separate components.
+		count := max(len(copies.references), copies.unreferencedCount)
 		dividendMap[component.exDate] += component.amount * float64(count)
 	}
 	var dividends []types.DividendsMetadata
@@ -136,5 +151,5 @@ func parseDividendsSgMetadata(doc *goquery.Document, ticker string, withholdingT
 		})
 	}
 	sort.Slice(dividends, func(i, j int) bool { return dividends[i].ExDate < dividends[j].ExDate })
-	return dividends
+	return dividends, nil
 }

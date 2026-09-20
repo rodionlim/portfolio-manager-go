@@ -33,3 +33,20 @@ func TestDividendsSg_GetAssetPrice(t *testing.T) {
 	// Verify we got some dividend data
 	assert.Greater(t, assetData.Price, float64(0), "should have received some price")
 }
+
+func TestDividendsSg_CurrentEquityAndBondPages(t *testing.T) {
+	for _, ticker := range []string{"CLR", "TEMB", "6AZB"} {
+		t.Run(ticker, func(t *testing.T) {
+			ds := sources.NewDividendsSg(nil)
+			quote, err := ds.GetAssetPrice(ticker)
+			require.NoError(t, err)
+			require.Positive(t, quote.Price)
+			dividends, err := ds.GetDividendsMetadata(ticker, 0)
+			require.NoError(t, err)
+			require.NotEmpty(t, dividends)
+			for _, dividend := range dividends {
+				require.Positive(t, dividend.Amount)
+			}
+		})
+	}
+}

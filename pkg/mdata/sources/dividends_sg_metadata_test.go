@@ -2,6 +2,7 @@ package sources
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -13,7 +14,49 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const equityDividendHeader = `<table class="table table-bordered"><tr><th>Year</th><th>Yield</th><th>Annual DPS</th><th>Amount</th><th>Ex Date</th><th>Pay Date</th><th>Particulars / source</th></tr>`
+func TestDividendsSgCurrentPageFixtures(t *testing.T) {
+	for _, tt := range []struct {
+		ticker        string
+		price, amount float64
+		date          string
+		count         int
+	}{
+		{"CLR", 0.772, 0.023, "2026-07-30", 4},
+		{"TEMB", 1.001, 0.009, "2026-05-15", 3},
+		{"6AZB", 1.015, 0.015, "2026-03-10", 3},
+	} {
+		t.Run(tt.ticker, func(t *testing.T) {
+			raw, err := os.ReadFile("testdata/dividends_sg_" + strings.ToLower(tt.ticker) + ".html")
+			require.NoError(t, err)
+			doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(raw)))
+			require.NoError(t, err)
+			price, err := parseDividendsSgPrice(doc, tt.ticker)
+			require.NoError(t, err)
+			require.Equal(t, tt.price, price)
+			dividends, err := parseDividendsSgMetadata(doc, tt.ticker, 0)
+			require.NoError(t, err)
+			require.Len(t, dividends, tt.count)
+			require.Equal(t, tt.date, dividends[len(dividends)-1].ExDate)
+			require.Equal(t, tt.amount, dividends[len(dividends)-1].Amount)
+		})
+	}
+}
+
+func TestDividendsSgMetadataRejectsUnrecognizedOrPartialHistory(t *testing.T) {
+	for _, html := range []string{
+		`<html>temporarily unavailable</html>`,
+		`<table class="dividend-history-table"><thead><tr><th>Changed schema</th></tr></thead></table>`,
+		equityDividendHeader + equityDividendRow("SGD 0.01", "2026-07-30", "2026-08-28", "Rate", "1", "SG1") + equityDividendRow("Unavailable", "2026-07-30", "2026-08-28", "Rate", "2", "SG2") + "</table>",
+	} {
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+		require.NoError(t, err)
+		result, err := parseDividendsSgMetadata(doc, "CLR", 0)
+		require.Error(t, err)
+		require.Nil(t, result)
+	}
+}
+
+const equityDividendHeader = `<table class="dividend-history-table"><thead><tr><th>Amount</th><th>Ex Date</th><th>Pay Date</th><th>Particulars / source</th></tr></thead><tbody>`
 
 func equityDividendRow(amount, exDate, payDate, particulars, source, reference string) string {
 	detail := fmt.Sprintf(`<div><a href="/dividend/show?key=%s">%s</a></div>`, source, particulars)
@@ -30,7 +73,9 @@ func parseMetadataHTML(t *testing.T, html string) []types.DividendsMetadata {
 	t.Helper()
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
 	require.NoError(t, err)
-	return parseDividendsSgMetadata(doc, "CLR", 0.15)
+	result, err := parseDividendsSgMetadata(doc, "CLR", 0.15)
+	require.NoError(t, err)
+	return result
 }
 
 // The July 2026 CLR distribution appeared as three legacy components plus
@@ -54,9 +99,7 @@ func TestParseDividendsSgMetadata_CLRDuplicateComponents(t *testing.T) {
 				rows[i], rows[j] = rows[j], rows[i]
 			}
 		}
-		// Exercise the year-summary cells present only in the first equity row.
-		first := strings.Replace(rows[0], "<tr>", "<tr><td>2026</td><td>6%</td><td>SGD 0.045</td>", 1)
-		result := parseMetadataHTML(t, equityDividendHeader+first+strings.Join(rows[1:], "")+"</table>")
+		result := parseMetadataHTML(t, equityDividendHeader+strings.Join(rows, "")+"</tbody></table>")
 		require.Equal(t, []types.DividendsMetadata{{Ticker: "CLR", ExDate: "2026-07-30", Amount: 0.023, WithholdingTax: 0.15}}, result)
 	}
 }
@@ -89,10 +132,10 @@ func TestParseDividendsSgMetadata_PreservesDistinctEvents(t *testing.T) {
 }
 
 func TestParseDividendsSgMetadata_BondSourceAnnotations(t *testing.T) {
-	html := `<table class="table-bordered"><tr><th>Year</th><th>Ex Date</th><th>Pay Date</th><th>Particulars</th></tr>
-	<tr><td>2025</td><td>2025-05-16</td><td>2025-05-26</td><td><div><a href="/dividend/show?key=1">Rate: 1.8%</a></div><a href="https://links.sgx.com/1">Original source</a><small>Reference: SG250429INTR3MT9</small></td></tr>
-	<tr><td>2025</td><td>2025-05-16</td><td>2025-05-26</td><td><a href="/dividend/show?key=2">Rate: 1.8%</a></td></tr>
-	<tr><td>2024</td><td>2024-05-15</td><td>2024-05-24</td><td>Rate: 1.8%</td></tr></table>`
+	html := `<table class="dividend-history-table"><thead><tr><th>Ex Date</th><th>Pay Date</th><th>Particulars / source</th></tr></thead><tbody>
+	<tr><td>2025-05-16</td><td>2025-05-26</td><td><div><a href="/dividend/show?key=1">Rate: 1.8%</a></div><a href="https://links.sgx.com/1">Original source</a><small>Reference: SG250429INTR3MT9</small></td></tr>
+	<tr><td>2025-05-16</td><td>2025-05-26</td><td><a href="/dividend/show?key=2">Rate: 1.8%</a></td></tr>
+	<tr><td>2024-05-15</td><td>2024-05-24</td><td><a href="/dividend/show?key=3">Rate: 1.8%</a></td></tr></table>`
 	result := parseMetadataHTML(t, html)
 	require.Len(t, result, 2)
 	require.Equal(t, "2024-05-15", result[0].ExDate)
@@ -101,9 +144,9 @@ func TestParseDividendsSgMetadata_BondSourceAnnotations(t *testing.T) {
 }
 
 func TestParseDividendsSgMetadata_DoesNotCountBondPrincipalAsCoupon(t *testing.T) {
-	html := `<table class="table-bordered"><tr><th>Year</th><th>Ex Date</th><th>Pay Date</th><th>Particulars</th></tr>
-	<tr><td>2026</td><td>2026-03-10</td><td>2026-03-18</td><td><a href="/dividend/show?key=2214040">Rate: 3%</a><a href="https://links.sgx.com/1">Original source</a></td></tr>
-	<tr><td>2026</td><td>2026-03-10</td><td>2026-03-18</td><td><a href="/dividend/show?key=2214881">Rate: 100.5%</a><a href="https://links.sgx.com/2">Original source</a></td></tr></table>`
+	html := `<table class="dividend-history-table"><thead><tr><th>Ex Date</th><th>Pay Date</th><th>Particulars / source</th></tr></thead><tbody>
+	<tr><td>2026-03-10</td><td>2026-03-18</td><td><a href="/dividend/show?key=2214040">Rate: 3%</a><a href="https://links.sgx.com/1">Original source</a></td></tr>
+	<tr><td>2026-03-10</td><td>2026-03-18</td><td><a href="/dividend/show?key=2214881">Rate: 100.5%</a><a href="https://links.sgx.com/2">Original source</a></td></tr></table>`
 	result := parseMetadataHTML(t, html)
 	require.Len(t, result, 1)
 	require.Equal(t, 0.015, result[0].Amount)

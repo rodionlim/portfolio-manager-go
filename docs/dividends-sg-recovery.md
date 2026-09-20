@@ -1,5 +1,12 @@
 # Dividends.sg duplicate distributions and recovery
 
+The supported HTML layout is the September 20, 2026 interface: prices in
+`.company-quote-line` and yearly `.dividend-history-table` tables. Equity tables
+have Amount, Ex Date, Pay Date, and Particulars / source columns; bond tables
+omit Amount. Only desktop tables are read, not their mobile card copies. Earlier
+HTML layouts are not supported. Missing tables, changed headers, and unreadable
+cash amounts fail the fetch rather than saving a partial distribution total.
+
 Dividends.sg can expose legacy corporate-action rows alongside refreshed rows
 carrying an SGX reference. Adding every row by ex-date inflated some historical
 dividend totals in September 2026.

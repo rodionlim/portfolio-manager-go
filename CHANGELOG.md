@@ -1,3 +1,9 @@
+## [1.67.0] - 2026-09-22
+
+### 🚀 Features
+
+- *(dividends)* Use stored history for manually completed bonds
+
 ## [1.66.4] - 2026-09-20
 
 ### 🐛 Bug Fixes

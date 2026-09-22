@@ -16,24 +16,40 @@ func init() {
 }
 
 type TickerReference struct {
-	ID                string  `json:"id" yaml:"id" validate:"required,uppercase"`
-	Name              string  `json:"name" yaml:"name" validate:"required"`
-	UnderlyingTicker  string  `json:"underlying_ticker" yaml:"underlying_ticker" validate:"required,uppercase"`
-	YahooTicker       string  `json:"yahoo_ticker" yaml:"yahoo_ticker" validate:"uppercase"`
-	GoogleTicker      string  `json:"google_ticker" yaml:"google_ticker" validate:"uppercase"`
-	DividendsSgTicker string  `json:"dividends_sg_ticker" yaml:"dividends_sg_ticker" validate:"uppercase"`
-	NasdaqTicker      string  `json:"nasdaq_ticker" yaml:"nasdaq_ticker" validate:"uppercase"`
-	BarchartTicker    string  `json:"barchart_ticker" yaml:"barchart_ticker" validate:"uppercase"`
-	AssetClass        string  `json:"asset_class" yaml:"asset_class" validate:"required,asset_class"`
-	AssetSubClass     string  `json:"asset_sub_class" yaml:"asset_sub_class" validate:"asset_sub_class"`
-	Category          string  `json:"category" yaml:"category" validate:"category"`
-	SubCategory       string  `json:"sub_category" yaml:"sub_category"`
-	Ccy               string  `json:"ccy" yaml:"ccy" validate:"required,uppercase"`
-	Domicile          string  `json:"domicile" yaml:"domicile" validate:"required,uppercase"`
-	CouponRate        float64 `json:"coupon_rate" yaml:"coupon_rate"`
-	MaturityDate      string  `json:"maturity_date" yaml:"maturity_date" validate:"omitempty,datetime=2006-01-02"`
-	StrikePrice       float64 `json:"strike_price" yaml:"strike_price"`
-	CallPut           string  `json:"call_put" yaml:"call_put" validate:"oneof=call put"`
+	DividendHistoryComplete bool    `json:"dividend_history_complete" yaml:"dividend_history_complete"`
+	ID                      string  `json:"id" yaml:"id" validate:"required,uppercase"`
+	Name                    string  `json:"name" yaml:"name" validate:"required"`
+	UnderlyingTicker        string  `json:"underlying_ticker" yaml:"underlying_ticker" validate:"required,uppercase"`
+	YahooTicker             string  `json:"yahoo_ticker" yaml:"yahoo_ticker" validate:"uppercase"`
+	GoogleTicker            string  `json:"google_ticker" yaml:"google_ticker" validate:"uppercase"`
+	DividendsSgTicker       string  `json:"dividends_sg_ticker" yaml:"dividends_sg_ticker" validate:"uppercase"`
+	NasdaqTicker            string  `json:"nasdaq_ticker" yaml:"nasdaq_ticker" validate:"uppercase"`
+	BarchartTicker          string  `json:"barchart_ticker" yaml:"barchart_ticker" validate:"uppercase"`
+	AssetClass              string  `json:"asset_class" yaml:"asset_class" validate:"required,asset_class"`
+	AssetSubClass           string  `json:"asset_sub_class" yaml:"asset_sub_class" validate:"asset_sub_class"`
+	Category                string  `json:"category" yaml:"category" validate:"category"`
+	SubCategory             string  `json:"sub_category" yaml:"sub_category"`
+	Ccy                     string  `json:"ccy" yaml:"ccy" validate:"required,uppercase"`
+	Domicile                string  `json:"domicile" yaml:"domicile" validate:"required,uppercase"`
+	CouponRate              float64 `json:"coupon_rate" yaml:"coupon_rate"`
+	MaturityDate            string  `json:"maturity_date" yaml:"maturity_date" validate:"omitempty,datetime=2006-01-02"`
+	StrikePrice             float64 `json:"strike_price" yaml:"strike_price"`
+	CallPut                 string  `json:"call_put" yaml:"call_put" validate:"oneof=call put"`
+}
+
+// DividendStorageTicker follows the source's persisted dividend key, which may
+// differ from the portfolio ticker (e.g. a Dividends.sg symbol without .SI).
+func (t TickerReference) DividendStorageTicker() string {
+	if t.DividendsSgTicker != "" {
+		return t.DividendsSgTicker
+	}
+	if t.NasdaqTicker != "" {
+		return t.NasdaqTicker
+	}
+	if t.YahooTicker != "" {
+		return t.YahooTicker
+	}
+	return t.ID
 }
 
 // TickerReferenceWithSGXMapped extends TickerReference with SGX-compatible category mapping

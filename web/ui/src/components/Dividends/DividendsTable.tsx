@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   FileInput,
+  Group,
   Select,
   Text,
   Tooltip,
@@ -18,6 +19,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
 import { IconUpload, IconDownload } from "@tabler/icons-react";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../../store";
+import { fetchReferenceData } from "../../slices/referenceDataSlice";
+import type { ReferenceData } from "../../types";
 
 interface Position {
   Ticker: string;
@@ -50,9 +55,50 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
 }) => {
   const { colorScheme } = useMantineColorScheme();
   const queryClient = useQueryClient();
+  const dispatch = useDispatch<AppDispatch>();
+  const [savingCompletion, setSavingCompletion] = useState(false);
+  const { data: referenceData } = useQuery<ReferenceData>({
+    queryKey: ["dividendReferenceData"],
+    queryFn: async () => {
+      const resp = await fetch(getUrl("/api/v1/refdata"));
+      if (!resp.ok) throw new Error("Unable to load ticker settings");
+      return resp.json();
+    },
+  });
   const [selectedTicker, setSelectedTicker] = useState<string | null>(
     initialTicker,
   );
+  const selectedReference = selectedTicker ? referenceData?.[selectedTicker] : undefined;
+  const historyComplete = selectedReference?.dividend_history_complete === true;
+  const toggleCompletion = async () => {
+    if (!selectedReference) return;
+    setSavingCompletion(true);
+    try {
+      const resp = await fetch(getUrl("/api/v1/refdata"), {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...selectedReference, dividend_history_complete: !historyComplete }),
+      });
+      if (!resp.ok) {
+        const error = await resp.json();
+        throw new Error(error.message || "Unable to update dividend history status");
+      }
+      // Recalculate any cached totals using the updated refresh policy.
+      const reset = await fetch(getUrl("/api/v1/dividends/cache/reset"), { method: "POST" }).catch(() => null);
+      await queryClient.invalidateQueries({ queryKey: ["dividendReferenceData"] });
+      await queryClient.invalidateQueries({ queryKey: ["refData"] });
+      dispatch(fetchReferenceData());
+      await queryClient.invalidateQueries({ queryKey: ["dividends"] });
+      notifications.show({
+        title: "Dividend history status saved",
+        message: reset?.ok
+          ? (historyComplete ? "Automatic dividend refresh resumed." : "History marked complete. Only saved dividends will be used.")
+          : "Status saved, but cached totals could not be cleared. They may remain until the cache expires.",
+        color: reset?.ok ? "green" : "yellow",
+      });
+    } catch (error) {
+      notifications.show({ color: "red", title: "Unable to update dividend history", message: String(error) });
+    } finally { setSavingCompletion(false); }
+  };
 
   // Effect to update selectedTicker when initialTicker changes (e.g., from navigation)
   useEffect(() => {
@@ -64,7 +110,8 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
   // Fetch all positions to populate the dropdown of tickers
   const fetchPositions = async (): Promise<Position[]> => {
     try {
-      const resp = await fetch(getUrl("/api/v1/portfolio/positions"));
+      const resp = await fetch(getUrl("/api/v1/portfolio/positions/lite"));
+      if (!resp.ok) throw new Error("Unable to load tickers");
       const tickers: Position[] = await resp.json();
       return tickers;
     } catch (error: any) {
@@ -74,7 +121,7 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
         title: "Error",
         message: `Unable to fetch positions: ${error.message}`,
       });
-      return [];
+      throw error;
     }
   };
 
@@ -84,6 +131,10 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
 
     try {
       const resp = await fetch(getUrl(`/api/v1/dividends/${ticker}`));
+      if (!resp.ok) {
+        const error = await resp.json().catch(() => ({ message: "Unable to fetch dividends" }));
+        throw new Error(error.message || "Unable to fetch dividends");
+      }
       const dividends = await resp.json();
       return dividends;
     } catch (error: any) {
@@ -93,7 +144,7 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
         title: "Error",
         message: `Unable to fetch dividends for ${ticker}: ${error.message}`,
       });
-      return [];
+      throw error;
     }
   };
 
@@ -211,7 +262,7 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
     isLoading: isLoadingPositions,
     error: positionsError,
   } = useQuery({
-    queryKey: ["positions"],
+    queryKey: ["dividendTickerPositions"],
     queryFn: fetchPositions,
   });
 
@@ -378,6 +429,23 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
   // Render the component
   return (
     <div>
+    {selectedReference?.asset_class === "bond" && (
+      <Box mb="md" p="sm" style={{ border: "1px solid var(--mantine-color-default-border)", borderRadius: 8 }}>
+        <Group justify="space-between">
+          <Badge color={historyComplete ? "green" : "blue"}>
+            {historyComplete ? "Dividend history complete" : "Automatic dividend refresh"}
+          </Badge>
+          <Button variant="light" loading={savingCompletion} onClick={toggleCompletion}>
+            {historyComplete ? "Resume dividend refresh" : "Mark dividend history complete"}
+          </Button>
+        </Group>
+        <Text size="sm" mt="xs">
+          {historyComplete
+            ? "This bond uses saved dividend history only. Resume refreshing if you need to check for corrections."
+            : "For expired or redeemed bonds only: mark complete after checking that all coupons are recorded. This stops future dividend fetches for this ticker."}
+        </Text>
+      </Box>
+    )}
       <MantineReactTable table={table} />
       {dividendsError && (
         <Text c="red" ta="center" mt="md">

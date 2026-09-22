@@ -2,8 +2,12 @@ package sources
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
+
+	"portfolio-manager/internal/dal"
+	"portfolio-manager/pkg/mdata/storage"
 
 	testifydb "portfolio-manager/internal/mocks/testify/database"
 	"portfolio-manager/pkg/types"
@@ -12,6 +16,35 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func TestUpsertOfficialDividendsMetadata_TruncatedRefreshKeepsHiddenHistory(t *testing.T) {
+	db, err := dal.NewLevelDB(filepath.Join(t.TempDir(), "dividends"))
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	src := NewDividendsSg(db)
+	_, err = src.upsertOfficialDividendsMetadata("6AZB", []types.DividendsMetadata{
+		{Ticker: "6AZB", ExDate: "2021-09-10", Amount: 0.015},
+		{Ticker: "6AZB", ExDate: "2026-03-10", Amount: 0.030},
+	})
+	assert.NoError(t, err)
+	// The source hides the old date and corrects the duplicate-inflated recent one.
+	_, err = src.upsertOfficialDividendsMetadata("6AZB", []types.DividendsMetadata{
+		{Ticker: "6AZB", ExDate: "2026-03-10", Amount: 0.015},
+	})
+	assert.NoError(t, err)
+	// Even an empty successful refresh must not erase previously collected history.
+	_, err = src.upsertOfficialDividendsMetadata("6AZB", nil)
+	assert.NoError(t, err)
+	stored, err := storage.LoadDividends(db, "6AZB")
+	assert.NoError(t, err)
+	assert.Equal(t, []types.DividendsMetadata{
+		{Ticker: "6AZB", ExDate: "2021-09-10", Amount: 0.015, Source: types.DividendSourceOfficial},
+		{Ticker: "6AZB", ExDate: "2026-03-10", Amount: 0.015, Source: types.DividendSourceOfficial},
+	}, stored)
+}
 
 func TestStoreDividendsMetadata_Custom_Overlap(t *testing.T) {
 	// Setup

@@ -56,6 +56,29 @@ func TestDividendsSgMetadataRejectsUnrecognizedOrPartialHistory(t *testing.T) {
 	}
 }
 
+func TestDividendsSgMetadataUsesMachineReadableDates(t *testing.T) {
+	first := equityDividendRow("SGD 0.01", "2026-07-30", "2026-08-28", "Rate", "1", "SG1")
+	second := equityDividendRow("SGD 0.01", "2026-07-30", "2026-08-28", "Rate", "2", "")
+	second = strings.ReplaceAll(second, ">Ex-date<", ">30 Jul 2026<")
+	second = strings.ReplaceAll(second, ">Payment date<", ">28 Aug 2026<")
+	result := parseMetadataHTML(t, equityDividendHeader+first+second+"</table>")
+	require.Len(t, result, 1)
+	require.Equal(t, "2026-07-30", result[0].ExDate)
+	// Display text must not prevent matching the two copies of the same payout.
+	require.Equal(t, 0.01, result[0].Amount)
+	for _, broken := range []string{
+		strings.ReplaceAll(first, `datetime="2026-07-30"`, `datetime="invalid"`),
+		strings.ReplaceAll(first, `datetime="2026-08-28"`, `datetime="invalid"`),
+		strings.ReplaceAll(first, `datetime="2026-07-30"`, ""),
+	} {
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(equityDividendHeader + broken + "</table>"))
+		require.NoError(t, err)
+		result, err := parseDividendsSgMetadata(doc, "CLR", 0)
+		require.Error(t, err)
+		require.Nil(t, result)
+	}
+}
+
 const equityDividendHeader = `<table class="dividend-history-table"><thead><tr><th>Amount</th><th>Ex Date</th><th>Pay Date</th><th>Particulars / source</th></tr></thead><tbody>`
 
 func equityDividendRow(amount, exDate, payDate, particulars, source, reference string) string {
@@ -66,7 +89,7 @@ func equityDividendRow(amount, exDate, payDate, particulars, source, reference s
 	if reference != "" {
 		detail += `<small>Reference: ` + reference + `</small>`
 	}
-	return fmt.Sprintf(`<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>`, amount, exDate, payDate, detail)
+	return fmt.Sprintf(`<tr><td>%s</td><td><time datetime="%s">Ex-date</time></td><td><time datetime="%s">Payment date</time></td><td>%s</td></tr>`, amount, exDate, payDate, detail)
 }
 
 func parseMetadataHTML(t *testing.T, html string) []types.DividendsMetadata {
@@ -133,9 +156,9 @@ func TestParseDividendsSgMetadata_PreservesDistinctEvents(t *testing.T) {
 
 func TestParseDividendsSgMetadata_BondSourceAnnotations(t *testing.T) {
 	html := `<table class="dividend-history-table"><thead><tr><th>Ex Date</th><th>Pay Date</th><th>Particulars / source</th></tr></thead><tbody>
-	<tr><td>2025-05-16</td><td>2025-05-26</td><td><div><a href="/dividend/show?key=1">Rate: 1.8%</a></div><a href="https://links.sgx.com/1">Original source</a><small>Reference: SG250429INTR3MT9</small></td></tr>
-	<tr><td>2025-05-16</td><td>2025-05-26</td><td><a href="/dividend/show?key=2">Rate: 1.8%</a></td></tr>
-	<tr><td>2024-05-15</td><td>2024-05-24</td><td><a href="/dividend/show?key=3">Rate: 1.8%</a></td></tr></table>`
+	<tr><td><time datetime="2025-05-16">16 May 2025</time></td><td><time datetime="2025-05-26">26 May 2025</time></td><td><div><a href="/dividend/show?key=1">Rate: 1.8%</a></div><a href="https://links.sgx.com/1">Original source</a><small>Reference: SG250429INTR3MT9</small></td></tr>
+	<tr><td><time datetime="2025-05-16">16 May 2025</time></td><td><time datetime="2025-05-26">26 May 2025</time></td><td><a href="/dividend/show?key=2">Rate: 1.8%</a></td></tr>
+	<tr><td><time datetime="2024-05-15">15 May 2024</time></td><td><time datetime="2024-05-24">24 May 2024</time></td><td><a href="/dividend/show?key=3">Rate: 1.8%</a></td></tr></table>`
 	result := parseMetadataHTML(t, html)
 	require.Len(t, result, 2)
 	require.Equal(t, "2024-05-15", result[0].ExDate)
@@ -145,8 +168,8 @@ func TestParseDividendsSgMetadata_BondSourceAnnotations(t *testing.T) {
 
 func TestParseDividendsSgMetadata_DoesNotCountBondPrincipalAsCoupon(t *testing.T) {
 	html := `<table class="dividend-history-table"><thead><tr><th>Ex Date</th><th>Pay Date</th><th>Particulars / source</th></tr></thead><tbody>
-	<tr><td>2026-03-10</td><td>2026-03-18</td><td><a href="/dividend/show?key=2214040">Rate: 3%</a><a href="https://links.sgx.com/1">Original source</a></td></tr>
-	<tr><td>2026-03-10</td><td>2026-03-18</td><td><a href="/dividend/show?key=2214881">Rate: 100.5%</a><a href="https://links.sgx.com/2">Original source</a></td></tr></table>`
+	<tr><td><time datetime="2026-03-10">10 Mar 2026</time></td><td><time datetime="2026-03-18">18 Mar 2026</time></td><td><a href="/dividend/show?key=2214040">Rate: 3%</a><a href="https://links.sgx.com/1">Original source</a></td></tr>
+	<tr><td><time datetime="2026-03-10">10 Mar 2026</time></td><td><time datetime="2026-03-18">18 Mar 2026</time></td><td><a href="/dividend/show?key=2214881">Rate: 100.5%</a><a href="https://links.sgx.com/2">Original source</a></td></tr></table>`
 	result := parseMetadataHTML(t, html)
 	require.Len(t, result, 1)
 	require.Equal(t, 0.015, result[0].Amount)

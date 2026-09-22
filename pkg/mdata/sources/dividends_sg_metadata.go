@@ -101,13 +101,18 @@ func parseDividendsSgMetadata(doc *goquery.Document, ticker string, withholdingT
 				parseErr = fmt.Errorf("invalid dividend amount for %s: %q", ticker, amountText)
 				return
 			}
-			exDate := strings.TrimSpace(cells.Eq(dateIdx).Text())
+			exDate := strings.TrimSpace(cells.Eq(dateIdx).Find("time").AttrOr("datetime", ""))
 			if _, err := time.Parse("2006-01-02", exDate); err != nil {
 				parseErr = fmt.Errorf("invalid dividend ex-date for %s: %q", ticker, exDate)
 				return
 			}
+			payDate := strings.TrimSpace(cells.Eq(dateIdx+1).Find("time").AttrOr("datetime", ""))
+			if _, err := time.Parse("2006-01-02", payDate); err != nil {
+				parseErr = fmt.Errorf("invalid dividend payment date for %s: %q", ticker, payDate)
+				return
+			}
 			key := dividendsSgComponent{
-				exDate: exDate, payDate: strings.TrimSpace(cells.Eq(dateIdx + 1).Text()),
+				exDate: exDate, payDate: payDate,
 				currency: currency, particulars: particulars, amount: amount,
 			}
 			copies := components[key]

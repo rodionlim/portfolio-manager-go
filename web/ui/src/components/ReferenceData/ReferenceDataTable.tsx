@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { getUrl } from "../../utils/url";
 
 interface RefData {
+  dividend_history_complete?: boolean;
   id: string;
   name: string;
   underlying_ticker: string;
@@ -265,6 +266,7 @@ const ReferenceDataTable: React.FC = () => {
           maturity_date: selection.maturity_date,
           strike_price: selection.strike_price,
           call_put: selection.call_put,
+      dividend_history_complete: selection.dividend_history_complete,
         },
       });
     };

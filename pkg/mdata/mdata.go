@@ -13,6 +13,7 @@ import (
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata/sources"
+	"portfolio-manager/pkg/mdata/storage"
 	"portfolio-manager/pkg/rdata"
 	"portfolio-manager/pkg/types"
 )
@@ -559,6 +560,11 @@ func (m *Manager) GetDividendsMetadata(ticker string) ([]types.DividendsMetadata
 
 // GetDividendsMetadataFromTickerRef attempts to fetch dividends metadata from available sources
 func (m *Manager) GetDividendsMetadataFromTickerRef(tickerRef rdata.TickerReference) ([]types.DividendsMetadata, error) {
+	// Completion is a manual bond-only attestation. Bypass all upstream sources
+	// and source caches, including after a restart. Equities always refresh normally.
+	if tickerRef.AssetClass == rdata.AssetClassBonds && tickerRef.DividendHistoryComplete {
+		return storage.LoadDividends(m.db, tickerRef.DividendStorageTicker())
+	}
 	witholdingTax := m.MapDomicileToWitholdingTax(tickerRef.Domicile)
 
 	// for SSB, tickers are standardized against the following convention, e.g. SBJAN25

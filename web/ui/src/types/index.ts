@@ -1,4 +1,5 @@
 export interface ReferenceDataItem {
+  dividend_history_complete?: boolean;
   id: string;
   name: string;
   underlying_ticker: string;

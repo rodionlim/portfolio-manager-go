@@ -9,6 +9,7 @@ import (
 	"portfolio-manager/pkg/logging"
 	"portfolio-manager/pkg/mdata"
 	"portfolio-manager/pkg/rdata"
+	"portfolio-manager/pkg/types"
 	"strings"
 	"sync"
 	"time"
@@ -91,6 +92,15 @@ func (dm *DividendsManager) ResetCache() {
 }
 
 func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]Dividends, error) {
+	return dm.calculateDividendsForTicker(ticker, nil)
+}
+
+// CalculateDividendsForTickerInBook attributes a ticker's dividends to trades in one book.
+func (dm *DividendsManager) CalculateDividendsForTickerInBook(ticker, book string) ([]Dividends, error) {
+	return dm.calculateDividendsForTicker(ticker, &book)
+}
+
+func (dm *DividendsManager) calculateDividendsForTicker(ticker string, book *string) ([]Dividends, error) {
 	ticker = strings.ToUpper(ticker)
 
 	// Get ticker reference
@@ -121,8 +131,20 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 	if err != nil {
 		return nil, err
 	}
+	if book != nil {
+		bookTrades := make([]blotter.Trade, 0, len(trades))
+		for _, trade := range trades {
+			if strings.EqualFold(trade.Book, *book) {
+				bookTrades = append(bookTrades, trade)
+			}
+		}
+		trades = bookTrades
+	}
 
-	// Calculate total dividends based on trades and dividends data
+	return calculateDividendAmounts(dividends, trades), nil
+}
+
+func calculateDividendAmounts(dividends []types.DividendsMetadata, trades []blotter.Trade) []Dividends {
 	var allDividends []Dividends
 	for _, dividend := range dividends {
 		// If dividend.ExDate is in the future (after today), skip
@@ -155,7 +177,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleTicker(ticker string) ([]
 		}
 	}
 
-	return allDividends, nil
+	return allDividends
 }
 
 // CalculateDividendsForSingleBook calculates dividends for all tickers within a specific book
@@ -197,38 +219,7 @@ func (dm *DividendsManager) CalculateDividendsForSingleBook(book string) (map[st
 			continue // Skip if can't get dividends data
 		}
 
-		// Calculate total dividends based on trades and dividends data
-		var allDividends []Dividends
-		for _, dividend := range dividends {
-			// If dividend.ExDate is in the future (after today), skip
-			if common.IsFutureDate(dividend.ExDate) {
-				continue
-			}
-
-			// Use binary search to find the first trade with TradeDate >= ExDate
-			idx := SearchEarliestTradeIndexAfterExDate(trades, dividend.ExDate)
-
-			// Calculate total dividend amount for trades with TradeDate < ExDate
-			totalQty := 0.0
-			for i := range idx {
-				if trades[i].Side == blotter.TradeSideBuy {
-					totalQty += trades[i].Quantity
-				} else {
-					totalQty -= trades[i].Quantity
-				}
-			}
-
-			totalAmount := totalQty * dividend.Amount * (1 - dividend.WithholdingTax)
-			if totalAmount > 0 {
-				allDividends = append(allDividends, Dividends{
-					ExDate:         dividend.ExDate,
-					Amount:         totalAmount,
-					AmountPerShare: dividend.Amount,
-					Qty:            totalQty,
-					Source:         dividend.Source,
-				})
-			}
-		}
+		allDividends := calculateDividendAmounts(dividends, trades)
 
 		if len(allDividends) > 0 {
 			dividendsMap[ticker] = allDividends

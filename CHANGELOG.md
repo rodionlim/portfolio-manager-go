@@ -1,3 +1,13 @@
+## [1.67.1] - 2026-09-23
+
+### 🐛 Bug Fixes
+
+- *(portfolio)* Attribute position dividends by book
+
+### 📚 Documentation
+
+- *(api)* Document completed dividend history flag
+
 ## [1.67.0] - 2026-09-22
 
 ### 🚀 Features

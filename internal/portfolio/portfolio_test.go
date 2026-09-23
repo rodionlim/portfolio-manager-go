@@ -16,6 +16,21 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+type portfolioDividendTradeGetter struct {
+	trades []blotter.Trade
+}
+
+func (g portfolioDividendTradeGetter) GetTrades() []blotter.Trade { return g.trades }
+func (g portfolioDividendTradeGetter) GetTradesByTicker(string) ([]blotter.Trade, error) {
+	return g.trades, nil
+}
+func (g portfolioDividendTradeGetter) GetAllTickers() ([]string, error) {
+	return []string{"AAPL"}, nil
+}
+func (g portfolioDividendTradeGetter) GetTradeByID(string) (*blotter.Trade, error) {
+	return nil, fmt.Errorf("not used")
+}
+
 func createTestPortfolio() (*Portfolio, *mocks.MockDatabase) {
 	mockDB := new(mocks.MockDatabase)
 	mockDB.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
@@ -55,6 +70,44 @@ func TestNewPortfolio(t *testing.T) {
 	assert.NotNil(t, p)
 	assert.Equal(t, 0, p.currentSeqNum)
 	assert.Empty(t, p.positions)
+}
+
+func TestGetAllPositionsAttributesDividendsToEachBook(t *testing.T) {
+	db := mocks.NewMockDatabase()
+	db.On("Get", string(types.HeadSequencePortfolioKey), mock.Anything).Return(nil)
+	refData := mocks.NewMockReferenceManager()
+	_, err := refData.AddTicker(rdata.TickerReference{
+		ID: "AAPL", DividendsSgTicker: "AAPL", AssetClass: rdata.AssetClassEquities, Ccy: "SGD",
+	})
+	assert.NoError(t, err)
+	marketData := mocks.NewMockMarketDataManager()
+	marketData.SetDividendMetadata("AAPL", []types.DividendsMetadata{
+		{Ticker: "AAPL", ExDate: "2023-01-01", Amount: 1},
+	})
+	marketData.SetAssetPrice("AAPL", &types.AssetData{Price: 10})
+	trades := portfolioDividendTradeGetter{trades: []blotter.Trade{
+		{Ticker: "AAPL", Book: "Rodion", TradeDate: "2022-12-31", Quantity: 10, Side: blotter.TradeSideBuy},
+		{Ticker: "AAPL", Book: "Tactical", TradeDate: "2022-12-31", Quantity: 5, Side: blotter.TradeSideBuy},
+	}}
+
+	manager := dividends.NewDividendsManager(db, marketData, refData, trades)
+	p := NewPortfolio(db, marketData, refData, manager)
+	p.positions = map[string]map[string]*Position{
+		"Rodion":   {"AAPL": {Ticker: "AAPL", Book: "Rodion", Qty: 10, AvgPx: 8}},
+		"Tactical": {"AAPL": {Ticker: "AAPL", Book: "Tactical", Qty: 5, AvgPx: 8}},
+	}
+
+	positions, err := p.GetAllPositions()
+	assert.NoError(t, err)
+	assert.Len(t, positions, 2)
+	byBook := map[string]*Position{}
+	for _, position := range positions {
+		byBook[position.Book] = position
+	}
+	assert.Equal(t, float64(10), byBook["Rodion"].Dividends)
+	assert.Equal(t, float64(5), byBook["Tactical"].Dividends)
+	assert.Equal(t, float64(30), byBook["Rodion"].PnL)
+	assert.Equal(t, float64(15), byBook["Tactical"].PnL)
 }
 
 func TestUpdatePosition(t *testing.T) {

@@ -1,3 +1,9 @@
+## [1.68.0] - 2026-10-06
+
+### 🚀 Features
+
+- *(config)* Update cron schedule to push back EOD and upgrade gemini model
+
 ## [1.67.1] - 2026-09-23
 
 ### 🐛 Bug Fixes

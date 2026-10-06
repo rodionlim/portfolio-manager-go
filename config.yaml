@@ -16,11 +16,11 @@ dividends:
   withholdingTaxHK: 0
   withholdingTaxIE: 0.15
 metrics:
-  schedule: "10 17 * * 1-5" # daily at 5:10pm, Mon-Fri (excludes weekends)
+  schedule: "30 17 * * 1-5" # daily at 5:30pm, Mon-Fri (excludes weekends), SGX last trade at 5:16pm
 marketData:
   rateLimitMs: 750 # Minimum milliseconds between Yahoo Finance requests (increased from default 500ms to avoid rate limiting)
 analytics:
   geminiApiKey: "" # Set your Gemini API key here or via environment variable GEMINI_API_KEY
-  geminiModel: "gemini-3-flash-preview" # Gemini model to use (docs: https://ai.google.dev/gemini-api/docs/models)
+  geminiModel: "gemini-3.5-flash-lite" # Gemini model to use (docs: https://ai.google.dev/gemini-api/docs/models)
   dataDir: "./data" # Directory to store downloaded reports
   schedule: "0 17 * * 1" # Weekly on Mondays at 5:00 PM

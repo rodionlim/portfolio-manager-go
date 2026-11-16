@@ -1,3 +1,9 @@
+## [1.69.0] - 2026-11-16
+
+### 🚀 Features
+
+- *(ui)* Allow dividends override per row on ui
+
 ## [1.68.0] - 2026-10-06
 
 ### 🚀 Features

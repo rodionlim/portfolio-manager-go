@@ -1,3 +1,9 @@
+## [1.69.1] - 2026-11-16
+
+### 🐛 Bug Fixes
+
+- *(summary)* Correct bug with monthly pl calculations
+
 ## [1.69.0] - 2026-11-16
 
 ### 🚀 Features

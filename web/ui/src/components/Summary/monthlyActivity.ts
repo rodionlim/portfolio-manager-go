@@ -28,6 +28,7 @@ interface NormalizedSnapshot {
   pnl: number;
   dividends: number;
   marketValue: number;
+  pricePaid: number;
 }
 
 const monthNames = [
@@ -65,11 +66,40 @@ const normalizeSnapshots = (
         snapshot.metrics.totalDividends,
       dividends: snapshot.metrics.totalDividends,
       marketValue: snapshot.metrics.mv,
+      pricePaid: snapshot.metrics.pricePaid,
     }))
     .filter((snapshot) =>
       Object.values(snapshot).every((value) => Number.isFinite(value)),
     )
     .sort((left, right) => left.timestamp - right.timestamp);
+
+const tradeNetPricePaid = (trade: Trade): number => {
+  if (
+    !["buy", "sell"].includes(trade.Side.toLowerCase()) ||
+    !Number.isFinite(trade.Quantity) ||
+    !Number.isFinite(trade.Price)
+  ) {
+    return 0;
+  }
+  const fx = Number.isFinite(trade.Fx) && trade.Fx > 0 ? trade.Fx : 1;
+  const isBuy = trade.Side.toLowerCase() === "buy";
+  return trade.Price * trade.Quantity * fx * (isBuy ? 1 : -1);
+};
+
+export const calculateTotalPricePaid = (trades: Trade[]): number =>
+  trades.reduce((sum, trade) => sum + tradeNetPricePaid(trade), 0);
+
+const calculateNetCashFlowAfter = (
+  trades: Trade[],
+  afterTimestamp: number,
+): number =>
+  trades.reduce((sum, trade) => {
+    const tradeTimestamp = dateOnlyTimestamp(trade.TradeDate);
+    if (!Number.isFinite(tradeTimestamp) || tradeTimestamp <= afterTimestamp) {
+      return sum;
+    }
+    return sum + tradeNetPricePaid(trade);
+  }, 0);
 
 const aggregateTrades = (
   trades: Trade[],
@@ -153,6 +183,7 @@ export const buildMonthlyPortfolioActivity = (
   currentMarketValue?: number,
   now = new Date(),
   monthCount = 24,
+  currentPricePaid?: number,
 ): MonthlyPortfolioActivity[] => {
   const snapshots = normalizeSnapshots(historicalMetrics);
   const currentYear = now.getFullYear();
@@ -191,9 +222,20 @@ export const buildMonthlyPortfolioActivity = (
       index === 0 &&
       currentMarketValue !== undefined &&
       Number.isFinite(currentMarketValue);
+    const pricePaidDelta =
+      latest &&
+      currentPricePaid !== undefined &&
+      Number.isFinite(currentPricePaid)
+        ? currentPricePaid - latest.pricePaid
+        : latest
+          ? calculateNetCashFlowAfter(trades, latest.timestamp)
+          : 0;
     const endingPnl =
       latest && useCurrentMarketValue
-        ? latest.pnl + currentMarketValue - latest.marketValue
+        ? latest.pnl +
+          currentMarketValue -
+          latest.marketValue -
+          pricePaidDelta
         : latest?.pnl;
 
     return {
@@ -225,6 +267,7 @@ export const buildYearlyPortfolioActivity = (
   currentMarketValue?: number,
   now = new Date(),
   yearCount = 2,
+  currentPricePaid?: number,
 ): YearlyPortfolioActivity[] => {
   const snapshots = normalizeSnapshots(historicalMetrics);
   const currentYear = now.getFullYear();
@@ -252,9 +295,20 @@ export const buildYearlyPortfolioActivity = (
       index === 0 &&
       currentMarketValue !== undefined &&
       Number.isFinite(currentMarketValue);
+    const pricePaidDelta =
+      latest &&
+      currentPricePaid !== undefined &&
+      Number.isFinite(currentPricePaid)
+        ? currentPricePaid - latest.pricePaid
+        : latest
+          ? calculateNetCashFlowAfter(trades, latest.timestamp)
+          : 0;
     const endingPnl =
       latest && useCurrentMarketValue
-        ? latest.pnl + currentMarketValue - latest.marketValue
+        ? latest.pnl +
+          currentMarketValue -
+          latest.marketValue -
+          pricePaidDelta
         : latest?.pnl;
 
     return {

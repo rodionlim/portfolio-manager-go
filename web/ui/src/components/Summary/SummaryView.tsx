@@ -34,6 +34,7 @@ import MonthlyPortfolioActivityTable from "./MonthlyPortfolioActivityTable";
 import {
   buildMonthlyPortfolioActivity,
   buildYearlyPortfolioActivity,
+  calculateTotalPricePaid,
 } from "./monthlyActivity";
 import { calculateHeadlinePnlMetrics } from "./summaryMetrics";
 
@@ -757,11 +758,6 @@ const SummaryView: React.FC = () => {
     refetchOnWindowFocus: false,
   });
 
-  const headlinePnl = useMemo(
-    () => calculateHeadlinePnlMetrics(historicalMetrics, currentMarketValue),
-    [historicalMetrics, currentMarketValue],
-  );
-
   const {
     data: trades = [],
     isLoading: areTradesLoading,
@@ -779,14 +775,36 @@ const SummaryView: React.FC = () => {
     refetchOnWindowFocus: false,
   });
 
+  const currentPricePaid = useMemo(
+    () =>
+      areTradesLoading || hasTradesError
+        ? undefined
+        : calculateTotalPricePaid(trades),
+    [trades, areTradesLoading, hasTradesError],
+  );
+
+  const headlinePnl = useMemo(
+    () =>
+      calculateHeadlinePnlMetrics(
+        historicalMetrics,
+        currentMarketValue,
+        undefined,
+        currentPricePaid,
+      ),
+    [historicalMetrics, currentMarketValue, currentPricePaid],
+  );
+
   const monthlyActivity = useMemo(
     () =>
       buildMonthlyPortfolioActivity(
         historicalMetrics,
         trades,
         currentMarketValue,
+        undefined,
+        undefined,
+        currentPricePaid,
       ),
-    [historicalMetrics, trades, currentMarketValue],
+    [historicalMetrics, trades, currentMarketValue, currentPricePaid],
   );
 
   const yearlyActivity = useMemo(
@@ -795,8 +813,11 @@ const SummaryView: React.FC = () => {
         historicalMetrics,
         trades,
         currentMarketValue,
+        undefined,
+        undefined,
+        currentPricePaid,
       ),
-    [historicalMetrics, trades, currentMarketValue],
+    [historicalMetrics, trades, currentMarketValue, currentPricePaid],
   );
 
   const hasCachedMetrics = Boolean(cachedPricesData?.metrics);

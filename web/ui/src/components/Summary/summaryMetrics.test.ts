@@ -85,4 +85,28 @@ describe("calculateHeadlinePnlMetrics", () => {
     expect(result.qtd).toBe(90);
     expect(result.ytd).toBe(130);
   });
+
+  it("accounts for currentPricePaid when trades occur after the latest snapshot", () => {
+    const metrics = [
+      snapshot("2025-12-31T00:00:00Z", 20),
+      snapshot("2026-06-30T00:00:00Z", 100),
+      snapshot("2026-07-31T00:00:00Z", 130),
+      snapshot("2026-08-08T00:00:00Z", 150),
+      // mv: 1,180, pricePaid: 1,000, pnl: 180
+      snapshot("2026-08-15T00:00:00Z", 180),
+    ];
+
+    // Suppose 500 was sold at par: currentMarketValue drops by 500 (to 680) and currentPricePaid drops by 500 (to 500)
+    const result = calculateHeadlinePnlMetrics(
+      metrics,
+      680,
+      new Date("2026-08-16T12:00:00Z"),
+      500,
+    );
+
+    expect(result.wtd).toBe(30);
+    expect(result.mtd).toBe(50);
+    expect(result.qtd).toBe(80);
+    expect(result.ytd).toBe(160);
+  });
 });

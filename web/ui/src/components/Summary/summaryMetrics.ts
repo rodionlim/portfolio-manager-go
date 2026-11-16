@@ -48,12 +48,14 @@ export const calculateHeadlinePnlMetrics = (
   historicalMetrics: TimestampedMetrics[],
   currentMarketValue?: number,
   now = new Date(),
+  currentPricePaid?: number,
 ): HeadlinePnlMetrics => {
   const snapshots = historicalMetrics
     .map((snapshot) => ({
       timestamp: snapshotDate(snapshot.timestamp),
       pnl: snapshotPnl(snapshot),
       marketValue: snapshot.metrics.mv,
+      pricePaid: snapshot.metrics.pricePaid,
       totalDividends: snapshot.metrics.totalDividends,
     }))
     .filter(
@@ -61,6 +63,7 @@ export const calculateHeadlinePnlMetrics = (
         Number.isFinite(snapshot.timestamp) &&
         Number.isFinite(snapshot.pnl) &&
         Number.isFinite(snapshot.marketValue) &&
+        Number.isFinite(snapshot.pricePaid) &&
         Number.isFinite(snapshot.totalDividends),
     )
     .sort((left, right) => left.timestamp - right.timestamp);
@@ -69,6 +72,11 @@ export const calculateHeadlinePnlMetrics = (
   if (!latestSnapshot) {
     return {};
   }
+
+  const pricePaidDelta =
+    currentPricePaid !== undefined && Number.isFinite(currentPricePaid)
+      ? currentPricePaid - latestSnapshot.pricePaid
+      : 0;
 
   const latest =
     currentMarketValue !== undefined &&
@@ -83,7 +91,8 @@ export const calculateHeadlinePnlMetrics = (
           pnl:
             latestSnapshot.pnl +
             currentMarketValue -
-            latestSnapshot.marketValue,
+            latestSnapshot.marketValue -
+            pricePaidDelta,
         }
       : latestSnapshot;
 

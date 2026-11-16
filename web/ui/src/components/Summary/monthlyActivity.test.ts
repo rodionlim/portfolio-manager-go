@@ -4,6 +4,7 @@ import type { Trade } from "../../types/blotter";
 import {
   buildMonthlyPortfolioActivity,
   buildYearlyPortfolioActivity,
+  calculateTotalPricePaid,
 } from "./monthlyActivity";
 
 const metric = (
@@ -189,5 +190,55 @@ describe("buildMonthlyPortfolioActivity", () => {
 
     expect(rows[0]).toMatchObject({ marketValue: 1_250, mtdPnl: 70 });
     expect(rows[1]).toMatchObject({ marketValue: 1_100, mtdPnl: 20 });
+  });
+
+  it("adjusts live ending P&L for trade cash flows so selling does not reduce MTD P&L by sale proceeds", () => {
+    const snapshots = [
+      metric("2026-10-31T00:00:00Z", 100, 10, 10_000),
+      // On Nov 15, MV is 10,200, dividends 10, PnL 300 => pricePaid = 9,910
+      metric("2026-11-15T00:00:00Z", 300, 10, 10_200),
+    ];
+    const trades = [
+      trade({
+        TradeID: "initial-buy",
+        TradeDate: "2026-01-10T00:00:00Z",
+        Ticker: "TEMB",
+        Side: "buy",
+        Quantity: 9_910,
+        Price: 1,
+        Fx: 1,
+      }),
+      // Sold 5,000 of TEMB at 1.00 on Nov 16 after the Nov 15 snapshot
+      trade({
+        TradeID: "temb-sell",
+        TradeDate: "2026-11-16T00:00:00Z",
+        Ticker: "TEMB",
+        Side: "sell",
+        Quantity: 5_000,
+        Price: 1,
+        Fx: 1,
+      }),
+    ];
+
+    // Live market value dropped by 5,000 due to the sale (from 10,200 to 5,200)
+    const currentMarketValue = 5_200;
+    const currentPricePaid = calculateTotalPricePaid(trades); // 4,910
+
+    const monthlyRows = buildMonthlyPortfolioActivity(
+      snapshots,
+      trades,
+      currentMarketValue,
+      new Date("2026-11-16T12:00:00Z"),
+      24,
+      currentPricePaid,
+    );
+
+    // MTD P&L should remain 300 - 100 = 200 (not drop by 5,000 to -4,800)
+    expect(monthlyRows[0]).toMatchObject({
+      monthLabel: "Nov-26",
+      mtdPnl: 200,
+      netCashFlow: -5_000,
+      marketValue: 5_200,
+    });
   });
 });

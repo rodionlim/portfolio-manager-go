@@ -1,10 +1,12 @@
 import React, { useMemo, useState, useEffect } from "react";
 import {
+  ActionIcon,
   Badge,
   Box,
   Button,
   FileInput,
   Group,
+  NumberInput,
   Select,
   Text,
   Tooltip,
@@ -18,7 +20,13 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { getUrl } from "../../utils/url";
-import { IconUpload, IconDownload } from "@tabler/icons-react";
+import {
+  IconUpload,
+  IconDownload,
+  IconPencil,
+  IconCheck,
+  IconX,
+} from "@tabler/icons-react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchReferenceData } from "../../slices/referenceDataSlice";
@@ -68,6 +76,11 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
   const [selectedTicker, setSelectedTicker] = useState<string | null>(
     initialTicker,
   );
+  const [editingExDate, setEditingExDate] = useState<string | null>(null);
+  const [editingAmountPerShare, setEditingAmountPerShare] = useState<
+    number | string
+  >("");
+  const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
   const selectedReference = selectedTicker ? referenceData?.[selectedTicker] : undefined;
   const historyComplete = selectedReference?.dividend_history_complete === true;
   const toggleCompletion = async () => {
@@ -106,6 +119,12 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
       setSelectedTicker(initialTicker);
     }
   }, [initialTicker]);
+
+  // Reset inline edit state when ticker changes
+  useEffect(() => {
+    setEditingExDate(null);
+    setEditingAmountPerShare("");
+  }, [selectedTicker]);
 
   // Fetch all positions to populate the dropdown of tickers
   const fetchPositions = async (): Promise<Position[]> => {
@@ -256,6 +275,113 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
     }
   };
 
+  const handleStartInlineEdit = (dividend: Dividend) => {
+    setEditingExDate(dividend.ExDate);
+    setEditingAmountPerShare(dividend.AmountPerShare);
+  };
+
+  const handleCancelInlineEdit = () => {
+    setEditingExDate(null);
+    setEditingAmountPerShare("");
+  };
+
+  const handleSaveInlineEdit = async (dividend: Dividend) => {
+    if (!selectedTicker) return;
+
+    const parsedAmount = Number(editingAmountPerShare);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      notifications.show({
+        color: "red",
+        title: "Invalid Amount",
+        message: "Amount per share must be a valid positive number.",
+      });
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      const metaResp = await fetch(
+        getUrl(`/api/v1/mdata/dividends/${selectedTicker}`),
+      );
+      if (!metaResp.ok) {
+        throw new Error(
+          `Failed to load dividend metadata (${metaResp.status})`,
+        );
+      }
+      const metadata: DividendsMetadata[] = (await metaResp.json()) || [];
+      const existingMeta = metadata.find((m) => m.ExDate === dividend.ExDate);
+
+      const fallbackWithholdingTax =
+        dividend.Qty > 0 && dividend.AmountPerShare > 0
+          ? Math.max(
+              0,
+              Math.round(
+                (1 - dividend.Amount / (dividend.Qty * dividend.AmountPerShare)) *
+                  10000,
+              ) / 10000,
+            )
+          : 0;
+
+      // Preserve existing Custom dividends for other dates while keeping unedited Official rows untouched
+      const customDividends: DividendsMetadata[] = metadata.filter(
+        (m) => m.Source === "Custom" && m.ExDate !== dividend.ExDate,
+      );
+
+      customDividends.push({
+        Ticker: existingMeta?.Ticker || selectedTicker,
+        ExDate: dividend.ExDate,
+        Amount: parsedAmount,
+        Interest: existingMeta?.Interest ?? 0,
+        AvgInterest: existingMeta?.AvgInterest ?? 0,
+        WithholdingTax: existingMeta?.WithholdingTax ?? fallbackWithholdingTax,
+        Source: "Custom",
+      });
+
+      customDividends.sort((a, b) => a.ExDate.localeCompare(b.ExDate));
+
+      const storeResp = await fetch(
+        getUrl(`/api/v1/mdata/dividends/${selectedTicker}`),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(customDividends),
+        },
+      );
+
+      if (!storeResp.ok) {
+        const errText = await storeResp.text();
+        throw new Error(
+          errText || `Failed to save custom dividend (${storeResp.status})`,
+        );
+      }
+
+      // Reset aggregated dividends cache so summary tabs also reflect the custom change
+      fetch(getUrl("/api/v1/dividends/cache/reset"), {
+        method: "POST",
+      }).catch(() => {});
+
+      await queryClient.invalidateQueries({ queryKey: ["dividends"] });
+      queryClient.invalidateQueries({ queryKey: ["allDividends"] });
+
+      setEditingExDate(null);
+      setEditingAmountPerShare("");
+      notifications.show({
+        color: "green",
+        title: "Dividend Updated",
+        message: `Saved custom dividend for ${selectedTicker} on ${new Date(dividend.ExDate).toLocaleDateString()}.`,
+      });
+    } catch (error: any) {
+      console.error("Error saving custom dividend:", error);
+      notifications.show({
+        color: "red",
+        title: "Save Error",
+        message: `Unable to save custom dividend for ${selectedTicker}: ${error.message}`,
+      });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   // Query to fetch positions for dropdown
   const {
     data: positions = [],
@@ -323,19 +449,106 @@ const DividendsTable: React.FC<DividendsTableProps> = ({
       {
         accessorKey: "AmountPerShare",
         header: "Amount Per Share",
-        Cell: ({ cell }) => {
+        Cell: ({ cell, row }) => {
+          if (editingExDate === row.original.ExDate) {
+            return (
+              <NumberInput
+                value={editingAmountPerShare}
+                onChange={setEditingAmountPerShare}
+                decimalScale={4}
+                min={0}
+                step={0.0001}
+                size="xs"
+                w={130}
+                disabled={isSavingEdit}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSaveInlineEdit(row.original);
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    handleCancelInlineEdit();
+                  }
+                }}
+              />
+            );
+          }
           return cell.getValue<number>().toFixed(4);
         },
       },
       {
         accessorKey: "Amount",
         header: "Total Amount (After withholding tax)",
-        Cell: ({ cell }) => {
+        Cell: ({ cell, row }) => {
+          if (editingExDate === row.original.ExDate) {
+            const parsed = Number(editingAmountPerShare);
+            if (Number.isFinite(parsed) && parsed >= 0) {
+              const netMultiplier =
+                row.original.AmountPerShare > 0
+                  ? row.original.Amount / row.original.AmountPerShare
+                  : row.original.Qty;
+              return (parsed * netMultiplier).toFixed(2);
+            }
+          }
           return cell.getValue<number>().toFixed(2);
         },
       },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        size: 90,
+        Cell: ({ row }) => {
+          const isEditingRow = editingExDate === row.original.ExDate;
+          if (isEditingRow) {
+            return (
+              <Group gap={4} wrap="nowrap">
+                <Tooltip label="Save custom dividend">
+                  <ActionIcon
+                    color="green"
+                    variant="subtle"
+                    size="sm"
+                    loading={isSavingEdit}
+                    onClick={() => handleSaveInlineEdit(row.original)}
+                    aria-label="Save custom dividend"
+                  >
+                    <IconCheck size={16} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Cancel">
+                  <ActionIcon
+                    color="gray"
+                    variant="subtle"
+                    size="sm"
+                    disabled={isSavingEdit}
+                    onClick={handleCancelInlineEdit}
+                    aria-label="Cancel edit"
+                  >
+                    <IconX size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            );
+          }
+
+          return (
+            <Tooltip label="Edit amount per share">
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                disabled={isSavingEdit}
+                onClick={() => handleStartInlineEdit(row.original)}
+                aria-label="Edit amount per share"
+              >
+                <IconPencil size={16} />
+              </ActionIcon>
+            </Tooltip>
+          );
+        },
+      },
     ],
-    [],
+    [editingExDate, editingAmountPerShare, isSavingEdit, selectedTicker],
   );
 
   // Configure the table

@@ -556,7 +556,7 @@ func (p *Portfolio) enrichPosition(position *Position) error {
 	switch tickerRef.AssetClass {
 	case rdata.AssetClassEquities, rdata.AssetClassBonds:
 		// get dividends
-		dividends, err := p.dividendsMgr.CalculateDividendsForSingleTicker(position.Ticker)
+		dividends, err := p.dividendsMgr.CalculateDividendsForTickerInBook(position.Ticker, position.Book)
 		if err != nil {
 			// we don't exit here, some tickers might have changed their names over time
 			p.logger.Warnf("Failed to get dividends for ticker %s: %v", position.Ticker, err)

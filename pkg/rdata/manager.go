@@ -8,6 +8,7 @@ import (
 	"portfolio-manager/internal/dal"
 	"portfolio-manager/pkg/common"
 	"portfolio-manager/pkg/logging"
+	"portfolio-manager/pkg/mdata/storage"
 	"portfolio-manager/pkg/types"
 
 	"gopkg.in/yaml.v2"
@@ -90,6 +91,9 @@ func (rm *Manager) seedReferenceData(filePath string) error {
 }
 
 func (rm *Manager) AddTicker(ticker TickerReference) (string, error) {
+	if err := rm.validateDividendCompletion(ticker); err != nil {
+		return "", err
+	}
 	err := rm.db.Put(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, ticker.ID), ticker)
 	if err != nil {
 		return "", err
@@ -101,7 +105,25 @@ func (rm *Manager) UpdateTicker(ticker *TickerReference) error {
 	if ticker.ID == "" {
 		return errors.New("ticker ID is required")
 	}
+	if err := rm.validateDividendCompletion(*ticker); err != nil {
+		return err
+	}
 	return rm.db.Put(fmt.Sprintf("%s:%s", types.ReferenceDataKeyPrefix, ticker.ID), ticker)
+}
+
+var ErrDividendCompletion = errors.New("invalid dividend history completion")
+
+func (rm *Manager) validateDividendCompletion(ticker TickerReference) error {
+	if !ticker.DividendHistoryComplete {
+		return nil
+	}
+	if ticker.AssetClass != AssetClassBonds {
+		return fmt.Errorf("%w: only bonds can have completed dividend history", ErrDividendCompletion)
+	}
+	if _, err := storage.LoadDividends(rm.db, ticker.DividendStorageTicker()); err != nil {
+		return fmt.Errorf("%w: %v", ErrDividendCompletion, err)
+	}
+	return nil
 }
 
 func (rm *Manager) DeleteTicker(id string) error {

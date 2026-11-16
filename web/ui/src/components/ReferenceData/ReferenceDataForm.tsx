@@ -60,6 +60,7 @@ export default function ReferenceDataForm() {
   const form = useForm({
     mode: "uncontrolled",
     initialValues: {
+    dividend_history_complete: location.state?.dividend_history_complete ?? false,
       id: location.state?.id || "",
       name: location.state?.name || "",
       underlying_ticker: location.state?.underlying_ticker || "",

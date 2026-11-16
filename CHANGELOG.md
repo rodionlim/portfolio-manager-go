@@ -1,3 +1,147 @@
+## [1.67.1] - 2026-09-23
+
+### 🐛 Bug Fixes
+
+- *(portfolio)* Attribute position dividends by book
+
+### 📚 Documentation
+
+- *(api)* Document completed dividend history flag
+
+## [1.67.0] - 2026-09-22
+
+### 🚀 Features
+
+- *(dividends)* Use stored history for manually completed bonds
+
+## [1.66.4] - 2026-09-20
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Support current Dividends.sg quote and history layout
+
+## [1.66.3] - 2026-09-19
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Reconcile duplicate Dividends.sg payout rows
+
+## [1.66.2] - 2026-09-19
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Parse separate Dividends.sg price element
+
+## [1.66.1] - 2026-09-17
+
+### 🐛 Bug Fixes
+
+- *(mdata)* Adapt to schema changes in dividends.sg
+
+## [1.66.0] - 2026-09-04
+
+### 🚀 Features
+
+- *(summary)* Improve category table readability
+
+### 🐛 Bug Fixes
+
+- *(summary)* Include first-day pnl in period totals
+
+## [1.65.0] - 2026-08-25
+
+### 🚀 Features
+
+- *(ui)* Make summary more informative by including dividends, qty and wtd, qtd stats
+
+## [1.64.0] - 2026-08-10
+
+### 🚀 Features
+
+- *(ui)* Extend monthly view and add dividends to summary
+
+## [1.63.0] - 2026-08-04
+
+### 🚀 Features
+
+- *(summary)* Use current mv instead of metrics
+
+## [1.62.1] - 2026-08-03
+
+### 🐛 Bug Fixes
+
+- *(ui)* Positions table on mobile view to have smaller ticker col
+
+## [1.62.0] - 2026-08-02
+
+### 🚀 Features
+
+- *(ui)* Make summary page more informative and fix gdrive auth issues
+
+## [1.61.0] - 2026-08-01
+
+### 🚀 Features
+
+- *(ui)* Styling changes to pin columns and allow scrolling on mobile view
+
+## [1.60.2] - 2026-07-23
+
+### 🐛 Bug Fixes
+
+- *(ui)* Blotter should expose the option to update underlying ticker #206
+
+## [1.60.1] - 2026-07-23
+
+### 🐛 Bug Fixes
+
+- *(analytics)* Correct sgx not returning latest reports due to lexi sort #204
+
+### 📚 Documentation
+
+- *(mcp)* Update recommended timeout guidelines
+
+## [1.60.0] - 2026-07-08
+
+### 🚀 Features
+
+- *(installer)* Simplify installation of portfolio-manager-go as a service #202
+
+## [1.59.0] - 2026-07-06
+
+### 🚀 Features
+
+- *(screener)* Add two more tradingview endpoints on unusual volume and most active premarket, simplify installation #199 #200
+
+## [1.58.0] - 2026-07-04
+
+### 🚀 Features
+
+- *(ui)* Add market value to summary values
+- *(ui)* Add daily pnl change to summary values
+
+## [1.57.0] - 2026-07-04
+
+### 🚀 Features
+
+- *(ui)* Add quick links and improvements to summary view #196
+
+## [1.56.1] - 2026-06-29
+
+### 🐛 Bug Fixes
+
+- *(ui)* Reference data update button not accessible in mobile view
+- *(refdata)* Refdata mcp needs better written prompts to fill in the right data #194
+
+### ⚙️ Miscellaneous Tasks
+
+- *(mdata)* Market rotation were missing DRAM sector hints
+
+## [1.56.0] - 2026-06-29
+
+### 🚀 Features
+
+- *(mdata)* Refine market rotation to give more weight to 3m funds flow
+
 ## [1.55.0] - 2026-06-27
 
 ### 🚀 Features

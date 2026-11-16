@@ -3861,6 +3861,9 @@ const docTemplate = `{
                 "coupon_rate": {
                     "type": "number"
                 },
+                "dividend_history_complete": {
+                    "type": "boolean"
+                },
                 "dividends_sg_ticker": {
                     "type": "string"
                 },

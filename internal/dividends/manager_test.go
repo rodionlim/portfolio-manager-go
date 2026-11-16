@@ -103,6 +103,36 @@ func TestCalculateDividendsForSingleBookBuysAndSells(t *testing.T) {
 	assert.Equal(t, expectedDividends, dividends)
 }
 
+func TestCalculateDividendsForTickerInBookSplitsPayoutsByTradeHistory(t *testing.T) {
+	dm, _, blotterMgr, err := setup()
+	assert.NoError(t, err)
+
+	blotterMgr.SetTrades("AAPL", []blotter.Trade{
+		{Ticker: "AAPL", Book: "Rodion", TradeDate: "2022-12-31", Quantity: 100, Side: blotter.TradeSideBuy},
+		{Ticker: "AAPL", Book: "Tactical", TradeDate: "2022-12-31", Quantity: 50, Side: blotter.TradeSideBuy},
+		{Ticker: "AAPL", Book: "Rodion", TradeDate: "2023-01-15", Quantity: 20, Side: blotter.TradeSideSell},
+	})
+
+	rodion, err := dm.CalculateDividendsForTickerInBook("AAPL", "rodion")
+	assert.NoError(t, err)
+	assert.Equal(t, []Dividends{
+		{ExDate: "2023-01-01", Amount: 70, AmountPerShare: 1, Qty: 100, Source: types.DividendSourceOfficial},
+		{ExDate: "2023-02-01", Amount: 112, AmountPerShare: 2, Qty: 80, Source: types.DividendSourceOfficial},
+	}, rodion)
+
+	tactical, err := dm.CalculateDividendsForTickerInBook("AAPL", "Tactical")
+	assert.NoError(t, err)
+	assert.Equal(t, []Dividends{
+		{ExDate: "2023-01-01", Amount: 35, AmountPerShare: 1, Qty: 50, Source: types.DividendSourceOfficial},
+		{ExDate: "2023-02-01", Amount: 70, AmountPerShare: 2, Qty: 50, Source: types.DividendSourceOfficial},
+	}, tactical)
+
+	all, err := dm.CalculateDividendsForSingleTicker("AAPL")
+	assert.NoError(t, err)
+	assert.Equal(t, rodion[0].Amount+tactical[0].Amount, all[0].Amount)
+	assert.Equal(t, rodion[1].Amount+tactical[1].Amount, all[1].Amount)
+}
+
 func TestCalculateDividendsForSSB(t *testing.T) {
 	dm, mdataMgr, blotterMgr, err := setup()
 	assert.NoError(t, err)

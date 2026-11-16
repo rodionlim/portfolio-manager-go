@@ -2,6 +2,7 @@ package rdata
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"portfolio-manager/pkg/logging"
@@ -63,6 +64,10 @@ func HandleReferenceDataPost(refSvc ReferenceManager) http.HandlerFunc {
 
 		id, err := refSvc.AddTicker(refDataRequest)
 		if err != nil {
+			if errors.Is(err, ErrDividendCompletion) {
+				writeJSONError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			msg := fmt.Sprintf("Failed to add reference data [%s]\n", id)
 			logging.GetLogger().Error(msg, err)
 			writeJSONError(w, msg, http.StatusInternalServerError)
@@ -130,6 +135,10 @@ func HandleReferenceDataUpdate(refSvc ReferenceManager) http.HandlerFunc {
 
 		err = refSvc.UpdateTicker(&refDataRequest)
 		if err != nil {
+			if errors.Is(err, ErrDividendCompletion) {
+				writeJSONError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			logging.GetLogger().Error("Failed to update reference data", err)
 			writeJSONError(w, "Failed to update reference data", http.StatusInternalServerError)
 			return

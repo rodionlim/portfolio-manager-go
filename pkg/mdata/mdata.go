@@ -712,18 +712,36 @@ func (m *Manager) StoreCustomDividendsMetadata(ticker string, dividends []types.
 		return err
 	}
 
+	stored := false
 	if tickerRef.DividendsSgTicker != "" {
 		if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
-			_, err = dividendsSg.StoreDividendsMetadata(tickerRef.DividendsSgTicker, dividends, true)
-			return err
+			if _, err = dividendsSg.StoreDividendsMetadata(tickerRef.DividendsSgTicker, dividends, true); err != nil {
+				return err
+			}
+			stored = true
+		}
+	}
+
+	if tickerRef.NasdaqTicker != "" {
+		if nasdaq, ok := m.sources[sources.Nasdaq]; ok {
+			if _, err = nasdaq.StoreDividendsMetadata(tickerRef.NasdaqTicker, dividends, true); err != nil {
+				return err
+			}
+			stored = true
 		}
 	}
 
 	if tickerRef.YahooTicker != "" {
 		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
-			_, err = yahoo.StoreDividendsMetadata(tickerRef.YahooTicker, dividends, true)
-			return err
+			if _, err = yahoo.StoreDividendsMetadata(tickerRef.YahooTicker, dividends, true); err != nil {
+				return err
+			}
+			stored = true
 		}
+	}
+
+	if stored {
+		return nil
 	}
 
 	return errors.New("unable to store custom dividends metadata for this data source")
@@ -739,16 +757,36 @@ func (m *Manager) DeleteDividendsMetadata(ticker string, isCustom bool) error {
 		return err
 	}
 
+	deleted := false
 	if tickerRef.DividendsSgTicker != "" {
 		if dividendsSg, ok := m.sources[sources.DividendsSingapore]; ok {
-			return dividendsSg.DeleteDividendsMetadata(tickerRef.DividendsSgTicker, isCustom)
+			if err = dividendsSg.DeleteDividendsMetadata(tickerRef.DividendsSgTicker, isCustom); err != nil {
+				return err
+			}
+			deleted = true
+		}
+	}
+
+	if tickerRef.NasdaqTicker != "" {
+		if nasdaq, ok := m.sources[sources.Nasdaq]; ok {
+			if err = nasdaq.DeleteDividendsMetadata(tickerRef.NasdaqTicker, isCustom); err != nil {
+				return err
+			}
+			deleted = true
 		}
 	}
 
 	if tickerRef.YahooTicker != "" {
 		if yahoo, ok := m.sources[sources.YahooFinance]; ok {
-			return yahoo.DeleteDividendsMetadata(tickerRef.YahooTicker, isCustom)
+			if err = yahoo.DeleteDividendsMetadata(tickerRef.YahooTicker, isCustom); err != nil {
+				return err
+			}
+			deleted = true
 		}
+	}
+
+	if deleted {
+		return nil
 	}
 
 	return errors.New("unable to delete dividends metadata for this data source")
